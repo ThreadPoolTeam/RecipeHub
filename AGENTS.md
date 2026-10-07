@@ -64,6 +64,11 @@ RecipeHub/
 ---
 
 ## Working Rules for Agents
+- **Documentation & Planning Hierarchy (BẮT BUỘC):**
+  - Mọi kế hoạch (plan), giai đoạn thực thi (phases), báo cáo khảo sát (reports, research) **BẮT BUỘC** phải được tạo bên trong thư mục `docs/plans/` (Ví dụ: `docs/plans/<timestamp>-<plan-name>/`).
+  - Mọi nhật ký ca làm việc, tiến độ triển khai **BẮT BUỘC** lưu trong `docs/journals/` (Ví dụ: `docs/journals/<timestamp>-<topic>.md`).
+  - Toàn bộ tài liệu nghiệp vụ, hướng dẫn môn học, đề bài, tệp PDF nguồn lưu trong `docs/materials/`.
+  - **TUYỆT ĐỐI KHÔNG** tạo thư mục `plans/` hay `journals/` ở root level của repository.
 - **Language & Style:** Communication in Vietnamese, concise/terse caveman style unless asked otherwise.
 - **Git Workflow:** Atomic commits (no big-bang commits). Include scope prefixes: `feat:`, `fix:`, `docs:`, `refactor:`, `chore:`.
 - **Validation:** Always verify changes (`dotnet build src/backend/RecipeHub.sln`, `npm run build`) before claiming completion.

@@ -22,4 +22,4 @@ Greenfield assignment repository. Requested technology foundation only; business
 - Persistent phase checklists are the implementation handoff.
 
 ## Next
-Execute `plans/261007-0357-recipehub-platform-foundation/plan.md`; create separate business plans later.
+Execute `docs/plans/261007-0357-recipehub-platform-foundation/plan.md`; create separate business plans later.
