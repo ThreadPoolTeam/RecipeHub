@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\RecipeHub.Audit.Application\RecipeHub.Audit.Application.csproj" />
+    <ProjectReference Include="..\RecipeHub.Audit.Domain\RecipeHub.Audit.Domain.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\RecipeHub.BuildingBlocks\RecipeHub.BuildingBlocks.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

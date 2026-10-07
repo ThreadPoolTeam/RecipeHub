@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\RecipeHub.Content.Infrastructure\RecipeHub.Content.Infrastructure.csproj" />
+    <ProjectReference Include="..\RecipeHub.Content.Application\RecipeHub.Content.Application.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\RecipeHub.BuildingBlocks\RecipeHub.BuildingBlocks.csproj" />
+    <ProjectReference Include="..\..\..\Contracts\RecipeHub.GrpcContracts\RecipeHub.GrpcContracts.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>
