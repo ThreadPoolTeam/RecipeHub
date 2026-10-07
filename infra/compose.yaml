@@ -1,0 +1,180 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: recipehub-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-recipehub_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-recipehub_secret_pw}
+      POSTGRES_DB: ${POSTGRES_DB:-recipehub_default}
+      IDENTITY_DB_USER: ${IDENTITY_DB_USER:-identity_user}
+      IDENTITY_DB_PASSWORD: ${IDENTITY_DB_PASSWORD:-identity_pw}
+      IDENTITY_DB_NAME: ${IDENTITY_DB_NAME:-recipehub_identity}
+      RECIPE_DB_USER: ${RECIPE_DB_USER:-recipe_user}
+      RECIPE_DB_PASSWORD: ${RECIPE_DB_PASSWORD:-recipe_pw}
+      RECIPE_DB_NAME: ${RECIPE_DB_NAME:-recipehub_recipe}
+      CONTENT_DB_USER: ${CONTENT_DB_USER:-content_user}
+      CONTENT_DB_PASSWORD: ${CONTENT_DB_PASSWORD:-content_pw}
+      CONTENT_DB_NAME: ${CONTENT_DB_NAME:-recipehub_content}
+      AUDIT_DB_USER: ${AUDIT_DB_USER:-audit_user}
+      AUDIT_DB_PASSWORD: ${AUDIT_DB_PASSWORD:-audit_pw}
+      AUDIT_DB_NAME: ${AUDIT_DB_NAME:-recipehub_audit}
+    volumes:
+      - ./postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-recipehub_admin}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: recipehub-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  identity-service:
+    build:
+      context: ../src/backend
+      dockerfile: Services/Identity/RecipeHub.Identity.Api/Dockerfile
+    container_name: recipehub-identity
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__Database=Host=postgres;Port=5432;Database=${IDENTITY_DB_NAME:-recipehub_identity};Username=${IDENTITY_DB_USER:-identity_user};Password=${IDENTITY_DB_PASSWORD:-identity_pw}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5001/health/live || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  recipe-service:
+    build:
+      context: ../src/backend
+      dockerfile: Services/Recipe/RecipeHub.Recipe.Api/Dockerfile
+    container_name: recipehub-recipe
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__Database=Host=postgres;Port=5432;Database=${RECIPE_DB_NAME:-recipehub_recipe};Username=${RECIPE_DB_USER:-recipe_user};Password=${RECIPE_DB_PASSWORD:-recipe_pw}
+      - ConnectionStrings__Redis=redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5002/health/live || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  content-service:
+    build:
+      context: ../src/backend
+      dockerfile: Services/Content/RecipeHub.Content.Api/Dockerfile
+    container_name: recipehub-content
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__Database=Host=postgres;Port=5432;Database=${CONTENT_DB_NAME:-recipehub_content};Username=${CONTENT_DB_USER:-content_user};Password=${CONTENT_DB_PASSWORD:-content_pw}
+      - Grpc__RecipeServiceUrl=http://recipe-service:5002
+    depends_on:
+      postgres:
+        condition: service_healthy
+      recipe-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5003/health/live || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  audit-service:
+    build:
+      context: ../src/backend
+      dockerfile: Services/Audit/RecipeHub.Audit.Api/Dockerfile
+    container_name: recipehub-audit
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__Database=Host=postgres;Port=5432;Database=${AUDIT_DB_NAME:-recipehub_audit};Username=${AUDIT_DB_USER:-audit_user};Password=${AUDIT_DB_PASSWORD:-audit_pw}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5004/health/live || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    build:
+      context: ../src/backend
+      dockerfile: Workers/RecipeHub.BackgroundWorker/Dockerfile
+    container_name: recipehub-worker
+    restart: unless-stopped
+    environment:
+      - DOTNET_ENVIRONMENT=Development
+      - ConnectionStrings__Redis=redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  gateway:
+    build:
+      context: ../src/backend
+      dockerfile: Gateway/RecipeHub.Gateway/Dockerfile
+    container_name: recipehub-gateway
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      identity-service:
+        condition: service_healthy
+      recipe-service:
+        condition: service_healthy
+      content-service:
+        condition: service_healthy
+      audit-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health/live || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ../src/frontend/recipehub-web
+      dockerfile: Dockerfile
+    container_name: recipehub-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - GATEWAY_INTERNAL_URL=http://gateway:5000
+    depends_on:
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
