@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+option csharp_namespace = "RecipeHub.GrpcContracts";
+
+package recipehub.contracts.v1;
+
+service ServiceProbe {
+  rpc Ping (ProbeRequest) returns (ProbeResponse);
+}
+
+message ProbeRequest {
+  string caller_service = 1;
+  string correlation_id = 2;
+  string timestamp_utc = 3;
+}
+
+message ProbeResponse {
+  string target_service = 1;
+  string correlation_id = 2;
+  string status = 3;
+  string timestamp_utc = 4;
+}
