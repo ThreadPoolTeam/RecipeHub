@@ -1,0 +1,9 @@
+Font Family: Google Sans
+Source: Google Fonts (https://fonts.google.com/specimen/Google+Sans)
+CDN: https://fonts.gstatic.com/s/googlesans/v71/
+
+Distribution & Usage Notes:
+- Self-hosted for RecipeHub web application landing presentation.
+- Subsets included: Vietnamese (U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, etc.), Latin-ext, Latin.
+- Weights: 400 (Regular), 500 (Medium), 700 (Bold).
+- Licensing is subject to Google Fonts terms of service and respective typeface distributor agreements. Used strictly for educational / course project presentation (PRN232/PRM Semester 8, FPT University).

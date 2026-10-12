@@ -158,7 +158,7 @@ services:
 
   frontend:
     build:
-      context: ../src/frontend/recipehub-web
+      context: ../src/frontend
       dockerfile: Dockerfile
     container_name: recipehub-frontend
     restart: unless-stopped

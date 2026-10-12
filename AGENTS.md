@@ -1,5 +1,10 @@
 # Agent Operating Guidelines & Project Context
 
+# PROJECT KNOWLEDGE BASE
+
+- Prefer `caveman` skill lite mode + `sequential-thinking` for structured reasoning.
+- **CodeGraph**: Project indexed with CodeGraph. Use `codegraph_explore` MCP or `codegraph explore` CLI BEFORE `grep` or Read.
+
 ## Project Overview
 - **Project Name:** RecipeHub
 - **Domain:** Coffee & Beverage R&D Formula Management System (Hệ thống quản lý công thức R&D chuỗi đồ uống)
