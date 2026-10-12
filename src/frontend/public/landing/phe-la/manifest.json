@@ -1,0 +1,78 @@
+{
+  "source": "docs/videos/tvc-phe-la.mp4",
+  "sourceDuration": 15,
+  "trim": {
+    "start": 0,
+    "end": 15,
+    "duration": 15
+  },
+  "dimensions": {
+    "width": 1920,
+    "height": 1080
+  },
+  "profiles": {
+    "desktop": {
+      "count": 360,
+      "pattern": "frame-%04d.webp",
+      "fps": 24,
+      "quality": 78,
+      "totalBytes": 23254256,
+      "totalBytesFormatted": "22.18 MB"
+    },
+    "mobile": {
+      "count": 240,
+      "pattern": "frame-%04d.webp",
+      "fps": 16,
+      "quality": 72,
+      "totalBytes": 13492266,
+      "totalBytesFormatted": "12.87 MB"
+    }
+  },
+  "chapters": [
+    {
+      "id": "hero",
+      "name": "Mở đầu",
+      "time": 0,
+      "startProgress": 0,
+      "endProgress": 0.12,
+      "desktopIndex": 0,
+      "mobileIndex": 0
+    },
+    {
+      "id": "ingredients",
+      "name": "Nguyên liệu",
+      "time": 1.44,
+      "startProgress": 0.12,
+      "endProgress": 0.34,
+      "desktopIndex": 34,
+      "mobileIndex": 23
+    },
+    {
+      "id": "process",
+      "name": "Thao tác & Chế biến",
+      "time": 4.38,
+      "startProgress": 0.34,
+      "endProgress": 0.72,
+      "desktopIndex": 105,
+      "mobileIndex": 70
+    },
+    {
+      "id": "drink",
+      "name": "Thành phẩm",
+      "time": 10.04,
+      "startProgress": 0.72,
+      "endProgress": 1,
+      "desktopIndex": 240,
+      "mobileIndex": 160
+    }
+  ],
+  "fallbacks": {
+    "poster": "poster.webp",
+    "chapters": {
+      "ingredients": "chapters/ingredients.webp",
+      "process": "chapters/process.webp",
+      "drink": "chapters/drink.webp"
+    }
+  },
+  "generatedAt": "2026-10-12T04:03:00.228Z"
+}
