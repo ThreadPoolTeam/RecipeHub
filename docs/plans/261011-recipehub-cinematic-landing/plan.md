@@ -12,6 +12,8 @@
 **Created:** 2026-10-11.
 **Dependencies:** Frontend foundation hiện có. Plan nền tảng `../261007-0357-recipehub-platform-foundation/plan.md` còn ghi pending; không suy ra toàn bộ nền tảng đã được nghiệm thu. Landing không cần backend chạy.
 
+**Liên hệ plan FE — 2026-10-14:** [Plan FE theo vai trò](../261014-recipehub-frontend-role-flows/plan.md) thay các placeholder `/rnd`, `/viewer`, `/admin`, không thay landing `/`, video/frame hay `.landing-root`. Không có phụ thuộc đầu ra chặn nhau. Hai plan dùng cùng font/token nhưng FE mới scope style riêng; integration owner giữ quyền sửa file chung. Các mô tả Next 14/React 18 trong khảo sát dưới là lịch sử tại thời điểm lập plan, không phải phiên bản hiện tại (`package.json` hiện khai báo Next `^16.4.0`, React `^19.3.0`). Không suy ra landing đã nghiệm thu từ source đang có.
+
 ---
 
 ## 1. Quyết định đã được người dùng xác nhận
