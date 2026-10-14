@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using RecipeHub.Recipe.Domain.Entities;
 using RecipeEntity = RecipeHub.Recipe.Domain.Entities.Recipe;
 
-namespace RecipeHub.Recipe.Infrastructure.Persistence;
+namespace RecipeHub.Recipe.Infrastructure.Data;
 
 public partial class RecipeDbContext : DbContext
 {
