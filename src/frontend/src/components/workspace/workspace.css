@@ -1,0 +1,62 @@
+/* Scoped styling for RecipeHub Workspace & Auth */
+
+.workspace-root,
+.auth-root {
+  --bg-main: #FAF9F5;
+  --bg-surface: #FFFFFF;
+  --bg-surface-elevated: #F3F0E8;
+  --bg-surface-hover: #ECE8DE;
+  
+  --text-main: #1C1917;
+  --text-muted: #6B665E;
+  --text-dim: #9C9689;
+  
+  --border-subtle: #EFECE4;
+  --border-base: #E2DDD2;
+  --border-hover: #C5BFB1;
+  
+  --accent-gold: #B47820;
+  --accent-gold-hover: #9E6515;
+  --accent-gold-bg: rgba(180, 120, 32, 0.08);
+  
+  --status-draft: #B45309;
+  --status-pending: #1D4ED8;
+  --status-approved: #15803D;
+  --status-archived: #6B7280;
+  --status-danger: #B91C1C;
+
+  font-family: 'Google Sans', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  min-height: 100vh;
+}
+
+/* Custom scrollbars inside workspace */
+.workspace-root ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.workspace-root ::-webkit-scrollbar-track {
+  background: var(--bg-surface);
+}
+
+.workspace-root ::-webkit-scrollbar-thumb {
+  background: rgba(242, 240, 235, 0.18);
+  border-radius: 3px;
+}
+
+.workspace-root ::-webkit-scrollbar-thumb:hover {
+  background: rgba(242, 240, 235, 0.3);
+}
+
+/* Focus outlines */
+.workspace-root input:focus-visible,
+.workspace-root select:focus-visible,
+.workspace-root textarea:focus-visible,
+.workspace-root button:focus-visible,
+.auth-root input:focus-visible,
+.auth-root button:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 1px;
+}

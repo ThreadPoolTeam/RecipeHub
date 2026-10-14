@@ -17,6 +17,13 @@ created: 2026-10-07
 
 Build only the technical frame shown in the supplied architecture: .NET 8 Clean Architecture service shells, YARP, PostgreSQL, Redis Streams, a .NET worker, gRPC wiring, Next.js, and Docker Compose. One placeholder health/message path proves wiring. Formula rules from the Phê La PDF remain future work.
 
+### Frontend cutover — 2026-10-14
+
+- [Plan FE theo vai trò](../261014-recipehub-frontend-role-flows/plan.md) kế thừa shell hiện có và thay placeholder `/rnd`, `/viewer`, `/admin` bằng trải nghiệm demo có Auth và dữ liệu dùng chung.
+- Các mục “không fake business data/auth” bên dưới mô tả phạm vi plan nền tảng ban đầu, không cấm phạm vi FE mới người dùng đã yêu cầu. Sau cutover không khôi phục placeholder lên các route này.
+- Không phụ thuộc backend runtime để dựng FE mới; hai plan không chặn nhau (`blockedBy`/`blocks` rỗng). File frontend dùng chung chỉ do integration owner sửa, không chạy hai plan ghi đè cùng lúc.
+- Metadata `pending` giữ nguyên: chưa có lần nghiệm thu mới cho toàn bộ nền tảng.
+
 ## Scope Boundary
 
 ### In scope
