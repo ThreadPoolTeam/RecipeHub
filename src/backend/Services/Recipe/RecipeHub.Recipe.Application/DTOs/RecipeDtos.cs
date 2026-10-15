@@ -1,5 +1,7 @@
 namespace RecipeHub.Recipe.Application.DTOs;
 
+public sealed record PagedResponse<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount);
+
 public sealed record RecipeSummaryResponse(
     Guid Id,
     string Code,
@@ -77,21 +79,54 @@ public sealed record CreateRecipeStepMediaRequest(
 
 public sealed record CreateRecipeStepRequest(
     int SortOrder,
-    string Title,
-    string Description,
+    string? Title,
+    string? Description,
     int? DurationSeconds,
     decimal? TemperatureCelsius,
     string? Equipment,
     string? SafetyNote,
     string? CompletionCriteria,
-    IReadOnlyList<CreateRecipeStepMediaRequest> Media);
+    IReadOnlyList<CreateRecipeStepMediaRequest>? Media);
 
 public sealed record CreateRecipeRequest(
-    string Code,
-    string Name,
+    string? Code,
+    string? Name,
     string? Description,
     decimal YieldQuantity,
     Guid YieldUnitId,
+    string? YieldNote,
     Guid? SourceRecipeId,
-    IReadOnlyList<CreateRecipeIngredientRequest> Ingredients,
-    IReadOnlyList<CreateRecipeStepRequest> Steps);
+    IReadOnlyList<CreateRecipeIngredientRequest>? Ingredients,
+    IReadOnlyList<CreateRecipeStepRequest>? Steps);
+
+public sealed record UpdateRecipeRequest(
+    string? Code,
+    string? Name,
+    string? Description,
+    decimal YieldQuantity,
+    Guid YieldUnitId,
+    string? YieldNote,
+    long ExpectedRowVersion,
+    IReadOnlyList<CreateRecipeIngredientRequest>? Ingredients,
+    IReadOnlyList<CreateRecipeStepRequest>? Steps);
+
+public sealed record CloneRecipeRequest(string? Code, string? Name);
+
+public sealed record ReviewRecipeVersionRequest(string? Comment);
+
+public sealed record RecipeVersionSummaryResponse(
+    Guid Id,
+    int VersionNumber,
+    string Status,
+    string Name,
+    long RowVersion,
+    Guid CreatedByUserRef,
+    DateTime CreatedAt,
+    DateTime UpdatedAt);
+
+public sealed record RecipeVersionReviewResponse(
+    long Id,
+    string Action,
+    string? Comment,
+    Guid PerformedByUserRef,
+    DateTime PerformedAt);

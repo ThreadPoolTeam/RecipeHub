@@ -23,9 +23,10 @@ public sealed class IngredientService : IIngredientService
     public async Task<IReadOnlyList<IngredientResponse>> SearchAsync(
         string? query,
         string? state,
+        Guid? categoryId,
         CancellationToken cancellationToken)
     {
-        var ingredients = await _ingredientRepository.SearchAsync(query, state, cancellationToken);
+        var ingredients = await _ingredientRepository.SearchAsync(query, state, categoryId, cancellationToken);
         return ingredients.Select(MapIngredient).ToArray();
     }
 
@@ -53,6 +54,7 @@ public sealed class IngredientService : IIngredientService
             ?? throw new NotFoundException($"Ingredient category '{request.CategoryId}' was not found.");
         var unit = await _unitRepository.GetByPublicIdAsync(request.DefaultUnitId, cancellationToken)
             ?? throw new NotFoundException($"Unit '{request.DefaultUnitId}' was not found.");
+        ValidateActiveReferences(category.State, unit.State);
         var now = DateTime.UtcNow;
         var ingredient = new Ingredient
         {
@@ -100,6 +102,7 @@ public sealed class IngredientService : IIngredientService
             ?? throw new NotFoundException($"Ingredient category '{request.CategoryId}' was not found.");
         var unit = await _unitRepository.GetByPublicIdAsync(request.DefaultUnitId, cancellationToken)
             ?? throw new NotFoundException($"Unit '{request.DefaultUnitId}' was not found.");
+        ValidateActiveReferences(category.State, unit.State);
 
         ingredient.Code = code;
         ingredient.NormalizedCode = normalizedCode;
@@ -132,6 +135,20 @@ public sealed class IngredientService : IIngredientService
         await _ingredientRepository.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<IngredientResponse> ActivateAsync(
+        Guid publicId,
+        Guid actorUserId,
+        CancellationToken cancellationToken)
+    {
+        var ingredient = await GetIngredientAsync(publicId, cancellationToken);
+        ValidateActiveReferences(ingredient.Category.State, ingredient.DefaultUnit.State);
+        ingredient.State = "active";
+        ingredient.UpdatedByUserRef = actorUserId;
+        ingredient.UpdatedAt = DateTime.UtcNow;
+        await _ingredientRepository.SaveChangesAsync(cancellationToken);
+        return MapIngredient(ingredient);
+    }
+
     private async Task<Ingredient> GetIngredientAsync(Guid publicId, CancellationToken cancellationToken) =>
         await _ingredientRepository.GetByPublicIdAsync(publicId, cancellationToken)
         ?? throw new NotFoundException($"Ingredient '{publicId}' was not found.");
@@ -142,9 +159,17 @@ public sealed class IngredientService : IIngredientService
         ingredient.Description, ingredient.Warning, ingredient.Note, ingredient.ImageAssetRef,
         ingredient.State, ingredient.CreatedAt, ingredient.UpdatedAt);
 
-    private static string RequireText(string value, string fieldName)
+    private static void ValidateActiveReferences(string categoryState, string unitState)
     {
-        var trimmed = value.Trim();
+        if (!string.Equals(categoryState, "active", StringComparison.OrdinalIgnoreCase))
+            throw new ValidationException("The selected ingredient category is inactive.");
+        if (!string.Equals(unitState, "active", StringComparison.OrdinalIgnoreCase))
+            throw new ValidationException("The selected default unit is inactive.");
+    }
+
+    private static string RequireText(string? value, string fieldName)
+    {
+        var trimmed = value?.Trim() ?? string.Empty;
         return trimmed.Length > 0 ? trimmed : throw new ValidationException($"{fieldName} is required.");
     }
 

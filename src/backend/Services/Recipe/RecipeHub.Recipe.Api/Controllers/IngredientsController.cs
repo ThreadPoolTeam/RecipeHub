@@ -19,9 +19,10 @@ public sealed class IngredientsController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<IngredientResponse>>> Search(
         [FromQuery] string? query,
         [FromQuery] string? state,
+        [FromQuery] Guid? categoryId,
         CancellationToken cancellationToken)
     {
-        var ingredients = await _ingredientService.SearchAsync(query, state, cancellationToken);
+        var ingredients = await _ingredientService.SearchAsync(query, state, categoryId, cancellationToken);
         return Ok(ingredients);
     }
 
@@ -71,5 +72,17 @@ public sealed class IngredientsController : ControllerBase
             cancellationToken);
 
         return NoContent();
+    }
+
+    [HttpPatch("{publicId:guid}/activate")]
+    public async Task<ActionResult<IngredientResponse>> Activate(
+        Guid publicId,
+        CancellationToken cancellationToken)
+    {
+        var ingredient = await _ingredientService.ActivateAsync(
+            publicId,
+            RequestActor.GetUserId(HttpContext),
+            cancellationToken);
+        return Ok(ingredient);
     }
 }

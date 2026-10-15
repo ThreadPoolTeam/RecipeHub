@@ -17,6 +17,7 @@ public sealed class IngredientRepository : IIngredientRepository
     public async Task<IReadOnlyList<Ingredient>> SearchAsync(
         string? query,
         string? state,
+        Guid? categoryId,
         CancellationToken cancellationToken)
     {
         var ingredients = _dbContext.Ingredients
@@ -38,7 +39,12 @@ public sealed class IngredientRepository : IIngredientRepository
             ingredients = ingredients.Where(item => item.State == state.Trim().ToLowerInvariant());
         }
 
-        return await ingredients.OrderBy(item => item.Name).ToArrayAsync(cancellationToken);
+        if (categoryId.HasValue)
+        {
+            ingredients = ingredients.Where(item => item.Category.PublicId == categoryId.Value);
+        }
+
+        return await ingredients.OrderBy(item => item.Name).Take(200).ToArrayAsync(cancellationToken);
     }
 
     public Task<Ingredient?> GetByPublicIdAsync(Guid publicId, CancellationToken cancellationToken) =>

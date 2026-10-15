@@ -23,4 +23,26 @@ public sealed class IngredientCategoryRepository : IIngredientCategoryRepository
         _dbContext.IngredientCategories.SingleOrDefaultAsync(
             item => item.PublicId == publicId,
             cancellationToken);
+
+    public Task<bool> CodeExistsAsync(
+        string normalizedCode,
+        Guid? excludedPublicId,
+        CancellationToken cancellationToken) =>
+        _dbContext.IngredientCategories.AnyAsync(
+            item => item.NormalizedCode == normalizedCode && item.PublicId != excludedPublicId,
+            cancellationToken);
+
+    public Task<bool> NameExistsAsync(
+        string normalizedName,
+        Guid? excludedPublicId,
+        CancellationToken cancellationToken) =>
+        _dbContext.IngredientCategories.AnyAsync(
+            item => item.NormalizedName == normalizedName && item.PublicId != excludedPublicId,
+            cancellationToken);
+
+    public async Task AddAsync(IngredientCategory category, CancellationToken cancellationToken) =>
+        await _dbContext.IngredientCategories.AddAsync(category, cancellationToken);
+
+    public async Task SaveChangesAsync(CancellationToken cancellationToken) =>
+        await _dbContext.SaveChangesAsync(cancellationToken);
 }
