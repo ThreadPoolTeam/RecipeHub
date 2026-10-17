@@ -32,6 +32,7 @@ var app = builder.Build();
 
 app.UseExceptionHandler();
 app.MapGrpcService<ProbeServiceImpl>();
+app.MapGrpcService<RecipeAiContextQueryServiceImpl>();
 app.MapControllers();
 
 app.MapGet("/", () => Results.Ok(new
