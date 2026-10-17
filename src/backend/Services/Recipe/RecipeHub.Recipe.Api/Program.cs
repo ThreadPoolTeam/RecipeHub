@@ -1,11 +1,19 @@
 using RecipeHub.BuildingBlocks.Events;
+using RecipeHub.Recipe.Api;
 using RecipeHub.Recipe.Api.Services;
+using RecipeHub.Recipe.Application;
+using RecipeHub.Recipe.Infrastructure;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddGrpc();
+builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ApplicationExceptionHandler>();
+builder.Services.AddRecipeApplication();
+builder.Services.AddRecipeInfrastructure(builder.Configuration);
 
 // Redis connection (optional/graceful fallback)
 var redisConn = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
@@ -22,7 +30,9 @@ catch
 
 var app = builder.Build();
 
+app.UseExceptionHandler();
 app.MapGrpcService<ProbeServiceImpl>();
+app.MapControllers();
 
 app.MapGet("/", () => Results.Ok(new
 {
