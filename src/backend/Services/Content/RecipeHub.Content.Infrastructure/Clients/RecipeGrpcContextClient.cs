@@ -17,7 +17,7 @@ public sealed class RecipeGrpcContextClient : IRecipeContextClient
         IConfiguration configuration,
         ILogger<RecipeGrpcContextClient> logger)
     {
-        _recipeGrpcUrl = configuration["Grpc:RecipeServiceUrl"] ?? "http://localhost:5002";
+        _recipeGrpcUrl = configuration["Grpc:RecipeServiceUrl"] ?? "http://localhost:5012";
         _logger = logger;
     }
 

@@ -67,7 +67,7 @@ app.MapGet("/api/v1/content/info", () => Results.Ok(new
 // Endpoint trigger gRPC Ping to Recipe.Api
 app.MapGet("/api/v1/content/probe-recipe", async (IConfiguration config) =>
 {
-    var recipeGrpcUrl = config["Grpc:RecipeServiceUrl"] ?? "http://localhost:5002";
+    var recipeGrpcUrl = config["Grpc:RecipeServiceUrl"] ?? "http://localhost:5012";
     try
     {
         using var channel = GrpcChannel.ForAddress(recipeGrpcUrl);
