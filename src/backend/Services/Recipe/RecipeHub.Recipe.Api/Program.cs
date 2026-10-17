@@ -1,5 +1,6 @@
 using RecipeHub.BuildingBlocks.Events;
 using RecipeHub.Recipe.Api;
+using RecipeHub.Recipe.Api.Swagger;
 using RecipeHub.Recipe.Api.Services;
 using RecipeHub.Recipe.Application;
 using RecipeHub.Recipe.Infrastructure;
@@ -13,6 +14,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "RecipeHub.Recipe.Api", Version = "v1" });
+    c.OperationFilter<SwaggerXUserIdHeaderFilter>();
 });
 builder.Services.AddHealthChecks();
 builder.Services.AddProblemDetails();

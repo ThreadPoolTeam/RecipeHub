@@ -18,10 +18,11 @@ public sealed class MediaAssetsController : ControllerBase
     [HttpPost]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadMediaAsset(
-        [FromForm] IFormFile? file,
-        [FromForm] string? originalFileName,
+        [FromForm] UploadMediaAssetRequest request,
         CancellationToken ct)
     {
+        var file = request.File;
+        var originalFileName = request.OriginalFileName;
         if (file == null || file.Length == 0)
         {
             return BadRequest(new ProblemDetails
@@ -93,4 +94,10 @@ public sealed class MediaAssetsController : ControllerBase
             Detail = "Media asset deletion is deferred pending distributed reservation fencing protocol (R5 gate)."
         });
     }
+}
+
+public sealed class UploadMediaAssetRequest
+{
+    public IFormFile? File { get; set; }
+    public string? OriginalFileName { get; set; }
 }

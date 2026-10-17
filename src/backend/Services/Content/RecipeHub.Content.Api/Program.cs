@@ -1,5 +1,6 @@
 using Grpc.Net.Client;
 using RecipeHub.Content.Api;
+using RecipeHub.Content.Api.Swagger;
 using RecipeHub.Content.Application;
 using RecipeHub.Content.Infrastructure;
 using RecipeHub.GrpcContracts;
@@ -12,6 +13,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "RecipeHub.Content.Api", Version = "v1" });
+    c.OperationFilter<SwaggerXUserIdHeaderFilter>();
 });
 builder.Services.AddHealthChecks();
 builder.Services.AddProblemDetails();

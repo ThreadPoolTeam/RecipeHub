@@ -16,6 +16,7 @@ public static class DependencyInjection
     public static IServiceCollection AddContentInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("ContentDb")
+                               ?? configuration.GetConnectionString("Database")
                                ?? configuration.GetConnectionString("DefaultConnection")
                                ?? "Host=localhost;Port=5432;Database=recipehub_content;Username=postgres;Password=postgres";
 
