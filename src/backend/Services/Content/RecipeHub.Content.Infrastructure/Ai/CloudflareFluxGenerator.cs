@@ -42,7 +42,7 @@ public sealed class CloudflareFluxGenerator : IAiImageGenerator
         var payload = new
         {
             prompt = prompt,
-            num_steps = 4
+            steps = 4
         };
 
         var json = JsonSerializer.Serialize(payload);
