@@ -9,10 +9,19 @@ public sealed class LocalTemporaryImageStore : ITemporaryImageStore
 
     public LocalTemporaryImageStore(IConfiguration configuration)
     {
-        var configuredPath = configuration["TemporaryStorage:BasePath"] ?? "temp-drafts";
-        _basePath = Path.IsPathRooted(configuredPath)
-            ? configuredPath
-            : Path.Combine(Directory.GetCurrentDirectory(), configuredPath);
+        var configuredPath = configuration["TemporaryStorage:BasePath"];
+        if (string.IsNullOrWhiteSpace(configuredPath))
+        {
+            _basePath = Path.Combine(Path.GetTempPath(), "recipehub", "temp-drafts");
+        }
+        else if (Path.IsPathRooted(configuredPath))
+        {
+            _basePath = configuredPath;
+        }
+        else
+        {
+            _basePath = Path.Combine(Path.GetTempPath(), "recipehub", configuredPath);
+        }
 
         if (!Directory.Exists(_basePath))
         {
@@ -33,10 +42,9 @@ public sealed class LocalTemporaryImageStore : ITemporaryImageStore
         await File.WriteAllBytesAsync(fullPath, bytes, ct);
         return relativePath;
     }
-
     public Task<Stream?> OpenReadAsync(string relativePath, CancellationToken ct = default)
     {
-        var fullPath = Path.Combine(_basePath, relativePath);
+        var fullPath = GetSafeFullPath(relativePath);
         if (!File.Exists(fullPath))
         {
             return Task.FromResult<Stream?>(null);
@@ -48,7 +56,7 @@ public sealed class LocalTemporaryImageStore : ITemporaryImageStore
 
     public Task DeleteAsync(string relativePath, CancellationToken ct = default)
     {
-        var fullPath = Path.Combine(_basePath, relativePath);
+        var fullPath = GetSafeFullPath(relativePath);
         if (File.Exists(fullPath))
         {
             File.Delete(fullPath);
@@ -58,7 +66,13 @@ public sealed class LocalTemporaryImageStore : ITemporaryImageStore
 
     public bool Exists(string relativePath)
     {
-        var fullPath = Path.Combine(_basePath, relativePath);
+        var fullPath = GetSafeFullPath(relativePath);
         return File.Exists(fullPath);
+    }
+
+    private string GetSafeFullPath(string relativePath)
+    {
+        var fileName = Path.GetFileName(relativePath);
+        return Path.Combine(_basePath, fileName);
     }
 }

@@ -265,8 +265,9 @@ def run_tests():
 
             if final_state == "generated":
                 suite.record("Background Worker AI Image Generation", True, 200, 0, "Draft successfully generated image")
-                code, res, t = suite.request("GET", f"{content_url}/api/v1/content/image-drafts/{live_draft_id}/preview")
-                suite.record("GET .../image-drafts/{id}/preview", code == 200, code, t)
+                image_endpoint = draft_info.get("previewUrl") if isinstance(draft_info, dict) and draft_info.get("previewUrl") else f"/api/v1/content/image-drafts/{live_draft_id}/image"
+                code, res, t = suite.request("GET", f"{content_url}{image_endpoint}")
+                suite.record(f"GET {image_endpoint} (Preview Image Stream)", code == 200, code, t)
                 code, res, t = suite.request("POST", f"{content_url}/api/v1/content/image-drafts/{live_draft_id}/accept")
                 suite.record("POST .../image-drafts/{id}/accept", code in (200, 201), code, t, str(res))
             else:

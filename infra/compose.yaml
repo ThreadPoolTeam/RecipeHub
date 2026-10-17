@@ -89,6 +89,9 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__Database=Host=postgres;Port=5432;Database=${CONTENT_DB_NAME:-recipehub_content};Username=${CONTENT_DB_USER:-content_user};Password=${CONTENT_DB_PASSWORD:-content_pw}
       - Grpc__RecipeServiceUrl=http://recipe-service:5012
+      - TemporaryStorage__BasePath=/app/temp-drafts
+    volumes:
+      - temp-drafts:/app/temp-drafts
     depends_on:
       postgres:
         condition: service_healthy
@@ -129,6 +132,9 @@ services:
       - ConnectionStrings__Redis=redis:6379
       - ConnectionStrings__ContentDb=Host=postgres;Port=5432;Database=${CONTENT_DB_NAME:-recipehub_content};Username=${CONTENT_DB_USER:-content_user};Password=${CONTENT_DB_PASSWORD:-content_pw}
       - Grpc__RecipeServiceUrl=http://recipe-service:5012
+      - TemporaryStorage__BasePath=/app/temp-drafts
+    volumes:
+      - temp-drafts:/app/temp-drafts
     depends_on:
       redis:
         condition: service_healthy
@@ -183,3 +189,4 @@ services:
 
 volumes:
   pgdata:
+  temp-drafts:
