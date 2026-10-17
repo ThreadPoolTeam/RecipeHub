@@ -231,7 +231,7 @@ def run_tests():
     drafts_list_ok = code == 200 and isinstance(res, dict) and "items" in res
     suite.record("GET /api/v1/content/image-drafts?recipeVersionId=...", drafts_list_ok, code, t, str(res))
     live_draft_id = None
-    if (args.full or args.live_ai) and recipe_read_ok:
+    if args.live_ai and recipe_read_ok:
         print(f"\n{BOLD}{YELLOW}Executing AI Image Draft Creation & Polling Lifecycle...{RESET}")
         row_v = recipe_detail.get("rowVersion", 1)
         draft_payload = {
@@ -263,21 +263,19 @@ def run_tests():
             print(f"       Draft Final State: {final_state}")
 
             if final_state == "generated":
+                suite.record("Background Worker AI Image Generation", True, 200, 0, "Draft successfully generated image")
                 code, res, t = suite.request("GET", f"{content_url}/api/v1/content/image-drafts/{live_draft_id}/preview")
                 suite.record("GET .../image-drafts/{id}/preview", code == 200, code, t)
                 code, res, t = suite.request("POST", f"{content_url}/api/v1/content/image-drafts/{live_draft_id}/accept")
                 suite.record("POST .../image-drafts/{id}/accept", code in (200, 201), code, t, str(res))
             else:
-                # Test Regenerate & Discard endpoints
-                regen_payload = {
-                    "userBrief": "Thêm lát cam vàng tươi trên miệng ly",
-                    "expectedRecipeRevision": row_v
-                }
-                code, res, t = suite.request("POST", f"{content_url}/api/v1/content/image-drafts/{live_draft_id}/regenerate", data=regen_payload)
-                suite.record("POST .../image-drafts/{id}/regenerate", code == 202, code, t, str(res))
+                # Generation failed in worker! Record FAIL for the generation step
+                err_msg = draft_info.get("errorMessage", "Draft generation failed in worker") if isinstance(draft_info, dict) else "Worker failed"
+                suite.record("Background Worker AI Image Generation", False, 500, 0, f"State: {final_state} | {err_msg}")
 
+                # Discard test draft
                 code, res, t = suite.request("POST", f"{content_url}/api/v1/content/image-drafts/{live_draft_id}/discard")
-                suite.record("POST .../image-drafts/{id}/discard", code == 200, code, t, str(res))
+                suite.record("POST .../image-drafts/{id}/discard (Cleanup)", code == 200, code, t, str(res))
     elif drafts_list_ok and len(res.get("items", [])) > 0:
         sample_draft_id = res["items"][0].get("draftId")
         code, res, t = suite.request("GET", f"{content_url}/api/v1/content/image-drafts/{sample_draft_id}")
