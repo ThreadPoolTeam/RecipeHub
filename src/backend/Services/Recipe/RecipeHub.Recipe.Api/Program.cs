@@ -9,6 +9,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddGrpc();
 builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new() { Title = "RecipeHub.Recipe.Api", Version = "v1" });
+});
 builder.Services.AddHealthChecks();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApplicationExceptionHandler>();
@@ -29,6 +34,15 @@ catch
 }
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "RecipeHub Recipe API v1");
+    });
+}
 
 app.UseExceptionHandler();
 app.MapGrpcService<ProbeServiceImpl>();

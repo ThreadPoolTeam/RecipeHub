@@ -8,10 +8,14 @@ using StackExchange.Redis;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new() { Title = "RecipeHub.Content.Api", Version = "v1" });
+});
 builder.Services.AddHealthChecks();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApplicationExceptionHandler>();
-
 builder.Services.AddContentApplication();
 builder.Services.AddContentInfrastructure(builder.Configuration);
 
@@ -29,9 +33,17 @@ catch
 
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "RecipeHub Content API v1");
+    });
+}
+
 app.UseExceptionHandler();
 app.MapControllers();
-
 app.MapGet("/", () => Results.Ok(new
 {
     service = "RecipeHub.Content.Api",
