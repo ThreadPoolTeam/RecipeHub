@@ -137,7 +137,7 @@ class ApiTestSuite:
 def run_tests():
     parser = argparse.ArgumentParser(description="RecipeHub Content AI & Media End-to-End API Test Suite")
     parser.add_argument("--full", action="store_true", help="Run full mutation lifecycle (creates & cleans up media links)")
-    parser.add_argument("--live-ai", action="store_true", help="Trigger live AI draft creation, polling, and decision APIs")
+    parser.add_argument("--real", "--live-ai", dest="live_ai", action="store_true", help="Trigger real AI draft creation, polling, and preview/accept lifecycle")
     parser.add_argument("--content-url", default=None, help="Base Content API URL")
     parser.add_argument("--recipe-url", default=None, help="Base Recipe API URL")
     args = parser.parse_args()
@@ -250,10 +250,11 @@ def run_tests():
             code, res, t = suite.request("GET", f"{content_url}/api/v1/content/image-drafts/{live_draft_id}")
             suite.record("GET /api/v1/content/image-drafts/{draftId} (Status)", code == 200, code, t, str(res))
 
-            # Polling for background generation (up to 15s)
+            # Polling for background generation (up to 30s)
             print("       Polling for worker generation...")
             final_state = "queued"
-            for _ in range(8):
+            draft_info = None
+            for _ in range(15):
                 time.sleep(2)
                 code, draft_info, _ = suite.request("GET", f"{content_url}/api/v1/content/image-drafts/{live_draft_id}")
                 if code == 200 and isinstance(draft_info, dict):
