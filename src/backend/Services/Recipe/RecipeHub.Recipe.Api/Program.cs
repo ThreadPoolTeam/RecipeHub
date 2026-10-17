@@ -5,8 +5,18 @@ using RecipeHub.Recipe.Api.Services;
 using RecipeHub.Recipe.Application;
 using RecipeHub.Recipe.Infrastructure;
 using StackExchange.Redis;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    // Cổng 5002: HTTP/1.1 phục vụ REST API & Swagger UI
+    options.ListenAnyIP(5002, o => o.Protocols = HttpProtocols.Http1);
+
+    // Cổng 5012: HTTP/2 dành riêng cho các service gọi gRPC nội bộ
+    options.ListenAnyIP(5012, o => o.Protocols = HttpProtocols.Http2);
+});
 
 builder.Services.AddGrpc();
 builder.Services.AddControllers();
