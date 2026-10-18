@@ -9,7 +9,7 @@
 ## 1. Nội dung công việc hoàn thành
 
 1. **Khởi tạo nhánh tính năng:** Tạo nhánh `feat/mobile-flutter-app` từ nhánh `dev` mới nhất của `ThreadPoolTeam/RecipeHub`.
-2. **Tổ chức cấu trúc thư mục:** Đưa mã nguồn Flutter vào `src/mobile/recipehub_mobile`, dọn dẹp các thư mục rác (`build/`, `.dart_tool/`, `.idea/`).
+2. **Tổ chức cấu trúc thư mục:** Đưa mã nguồn Flutter trực tiếp vào `src/mobile/` (tương xứng với `src/frontend/`), dọn dẹp các thư mục rác (`build/`, `.dart_tool/`, `.idea/`).
 3. **Cài đặt thư viện kết nối mạng:**
    * Bổ sung `dio: ^5.4.0` (Client mạng, interceptor, timeout).
    * Bổ sung `uuid: ^4.3.3` (Sinh mã `Idempotency-Key` bảo vệ mutation).

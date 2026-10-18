@@ -46,25 +46,25 @@ RecipeHub/
 ├── src/
 │   ├── backend/
 │   ├── frontend/
-│   └── mobile/
-│       └── recipehub_mobile/
-│           ├── lib/
-│           │   ├── core/
-│           │   │   ├── config/app_config.dart
-│           │   │   ├── network/api_client.dart
-│           │   │   ├── models/recipe_models.dart
-│           │   │   ├── models/content_models.dart
-│           │   │   ├── services/recipe_service.dart
-│           │   │   ├── services/content_service.dart
-│           │   │   └── theme/nomad_kit.dart
-│           │   ├── features/
-│           │   │   ├── auth/
-│           │   │   ├── rd_staff/
-│           │   │   ├── barista/
-│           │   │   └── admin/
-│           │   └── main.dart
-│           └── pubspec.yaml
-└── docs/plans/261019-mobile-flutter-integration/plan.md
+│   └── mobile/                       # Flutter App đặt trực tiếp tại src/mobile (tương tự src/frontend)
+│       ├── lib/
+│       │   ├── core/
+│       │   │   ├── config/app_config.dart
+│       │   │   ├── network/api_client.dart
+│       │   │   ├── models/recipe_models.dart
+│       │   │   ├── models/content_models.dart
+│       │   │   ├── services/recipe_service.dart
+│       │   │   ├── services/content_service.dart
+│       │   │   └── theme/nomad_kit.dart
+│       │   ├── features/
+│       │   │   ├── auth/
+│       │   │   ├── rd_staff/
+│       │   │   ├── barista/
+│       │   │   └── admin/
+│       │   └── main.dart
+│       ├── test/
+│       ├── pubspec.yaml
+│       └── README.md
 ```
 
 ---
