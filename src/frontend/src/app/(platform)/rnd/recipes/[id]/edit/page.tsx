@@ -20,6 +20,10 @@ import { RecipeVersion, Ingredient, RecipeIngredient, RecipeStep, AiCandidate, M
 import { Button, TextInput, TextArea, Select, Alert } from '@/components/workspace/fields';
 import { MediaLibrary } from '@/components/workspace/media-library';
 import { Dialog } from '@/components/workspace/dialog';
+import { UnitItem } from '@/lib/api/backend-repository';
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export default function EditRecipePage() {
   const params = useParams();
   const router = useRouter();
@@ -29,7 +33,6 @@ export default function EditRecipePage() {
 
   // Recipe State
   const [recipe, setRecipe] = useState<RecipeVersion | null>(null);
-  const [expectedRevision, setExpectedRevision] = useState<number>(1);
   const [loading, setLoading] = useState(true);
 
   // Form Fields
@@ -37,7 +40,8 @@ export default function EditRecipePage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [targetYield, setTargetYield] = useState<number>(1);
-  const [yieldUnit, setYieldUnit] = useState('ly (500ml)');
+  const [yieldUnit, setYieldUnit] = useState('');
+  const [availableUnits, setAvailableUnits] = useState<UnitItem[]>([]);
 
   // Dynamic Lists
   const [availableIngredients, setAvailableIngredients] = useState<Ingredient[]>([]);
@@ -48,15 +52,6 @@ export default function EditRecipePage() {
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-
-  // AI Text Suggestion Modal State
-  const [isAiTextModalOpen, setIsAiTextModalOpen] = useState(false);
-  const [activeStepIndexForAi, setActiveStepIndexForAi] = useState<number | null>(null);
-  const [aiPrompt, setAiPrompt] = useState('Chuẩn hóa câu văn mô tả kỹ thuật pha chế theo tiêu chuẩn Barista chuyên nghiệp.');
-  const [originalText, setOriginalText] = useState('');
-  const [suggestedText, setSuggestedText] = useState('');
-  const [isGeneratingAiText, setIsGeneratingAiText] = useState(false);
-  const [aiTextError, setAiTextError] = useState<string | null>(null);
 
   // AI Image Candidate State
   const [isAiImageModalOpen, setIsAiImageModalOpen] = useState(false);
@@ -84,17 +79,18 @@ export default function EditRecipePage() {
       repo.getRecipeVersion(session, id),
       repo.getIngredients('', '', true),
       repo.getMedia(),
+      repo.getUnits(),
     ])
-      .then(([rec, ings, mediaList]) => {
+      .then(([rec, ings, mediaList, units]) => {
         if (!isMounted) return;
         setRecipe(rec);
-        setExpectedRevision(rec.revision);
 
         setCode(rec.code);
         setName(rec.name);
         setDescription(rec.description || '');
         setTargetYield(rec.targetYield || 1);
-        setYieldUnit(rec.yieldUnit || 'ly (500ml)');
+        setYieldUnit(rec.yieldUnit || units[0]?.code || '');
+        setAvailableUnits(units.filter((unit) => unit.state === 'active'));
         setIngredients(rec.ingredients || []);
         setSteps(rec.steps || []);
 
@@ -183,39 +179,13 @@ export default function EditRecipePage() {
     setSteps(updated.map((s, idx) => ({ ...s, stepNumber: idx + 1 })));
   };
 
-  // AI Text Suggestion Trigger
-  const handleOpenAiText = (stepIndex: number) => {
-    setActiveStepIndexForAi(stepIndex);
-    const text = steps[stepIndex].instruction;
-    setOriginalText(text);
-    setSuggestedText('');
-    setAiTextError(null);
-    setIsAiTextModalOpen(true);
-  };
-
-  const handleGenerateAiText = async () => {
-    if (!session) return;
-    try {
-      setIsGeneratingAiText(true);
-      setAiTextError(null);
-      const generated = await repo.generateAiText(session, aiPrompt, originalText);
-      setSuggestedText(generated);
-    } catch (err: unknown) {
-      const e = err as Error;
-      setAiTextError(e.message || 'Lỗi khi gọi mô phỏng AI Text.');
-    } finally {
-      setIsGeneratingAiText(false);
-    }
-  };
-
-  const handleAcceptAiText = () => {
-    if (activeStepIndexForAi === null) return;
-    handleUpdateStep(activeStepIndexForAi, { instruction: suggestedText });
-    setIsAiTextModalOpen(false);
-  };
-
   // AI Image Candidate Trigger
   const handleOpenAiImage = (step: RecipeStep) => {
+    if (!UUID_PATTERN.test(step.id)) {
+      setErrorMsg('Hãy lưu bản nháp trước để tạo bước trên hệ thống, sau đó mới dùng AI tạo ảnh.');
+      return;
+    }
+
     setActiveStepForImage(step);
     setImagePrompt(`Hình minh họa bước: ${step.title} (${recipe?.name})`);
     setGeneratedCandidate(null);
@@ -324,6 +294,10 @@ export default function EditRecipePage() {
       setErrorMsg('Vui lòng nhập đầy đủ mã và tên công thức.');
       return;
     }
+    if (!yieldUnit) {
+      setErrorMsg('Recipe Service chưa có đơn vị thành phẩm khả dụng.');
+      return;
+    }
 
     try {
       setSaving(true);
@@ -335,16 +309,17 @@ export default function EditRecipePage() {
           name: cleanName,
           description: description.trim(),
           targetYield: Number(targetYield) || 1,
-          yieldUnit: yieldUnit.trim() || 'ly (500ml)',
+          yieldUnit,
           ingredients: ingredients,
           steps: steps,
         },
-        expectedRevision
+        0
       );
 
       setRecipe(updated);
-      setExpectedRevision(updated.revision);
-      setSuccessMsg(`Đã lưu bản nháp thành công! (Revision: #${updated.revision})`);
+      setIngredients(updated.ingredients);
+      setSteps(updated.steps);
+      setSuccessMsg('Đã lưu bản nháp thành công!');
       touch();
     } catch (err: unknown) {
       const e = err as Error;
@@ -377,24 +352,21 @@ export default function EditRecipePage() {
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-16">
       {/* Header & Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E2DDD2] pb-5">
         <div>
-          <div className="flex items-center gap-2 text-xs text-zinc-400 mb-1">
-            <Link href="/rnd/recipes" className="hover:text-zinc-200">
+          <div className="flex items-center gap-2 text-xs text-[#78716C] mb-1">
+            <Link href="/rnd/recipes" className="hover:text-[#1C1917]">
               Công Thức
             </Link>
             <span>/</span>
-            <Link href={`/rnd/recipes/${recipe.id}`} className="hover:text-zinc-200 font-mono">
+            <Link href={`/rnd/recipes/${recipe.id}`} className="hover:text-[#1C1917] font-mono">
               {recipe.code}
             </Link>
             <span>/</span>
-            <span className="text-[#DEBF64]">Biên Tập</span>
+            <span className="text-[#B47820] font-medium">Biên Tập</span>
           </div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-zinc-100">Chỉnh Sửa Công Thức</h1>
-            <span className="font-mono text-xs px-2 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-800">
-              Rev #{expectedRevision}
-            </span>
+            <h1 className="text-2xl font-bold text-[#1C1917]">Chỉnh Sửa Công Thức</h1>
           </div>
         </div>
 
@@ -450,10 +422,14 @@ export default function EditRecipePage() {
             value={targetYield}
             onChange={(e) => setTargetYield(Math.max(1, Number(e.target.value) || 1))}
           />
-          <TextInput
+          <Select
             label="Đơn Vị Thành Phẩm *"
             value={yieldUnit}
             onChange={(e) => setYieldUnit(e.target.value)}
+            options={availableUnits.map((unit) => ({
+              value: unit.code,
+              label: `${unit.name} (${unit.code})`,
+            }))}
           />
         </div>
       </div>
@@ -465,7 +441,7 @@ export default function EditRecipePage() {
             <h2 className="text-base font-bold text-[#1C1917] flex items-center gap-2">
               <FlaskConical className="w-4 h-4 text-[#B47820]" /> 2. Thành Phần Nguyên Liệu ({ingredients.length})
             </h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-[#78716C] mt-0.5">
               Thay đổi định lượng, đơn vị hoặc giai đoạn sử dụng nguyên liệu.
             </p>
           </div>
@@ -475,7 +451,7 @@ export default function EditRecipePage() {
         </div>
 
         {ingredients.length === 0 ? (
-          <div className="text-center p-8 border border-dashed border-zinc-800 rounded-lg text-zinc-400">
+          <div className="text-center p-8 border border-dashed border-[#E2DDD2] bg-[#FAF9F5] rounded-xl text-[#78716C]">
             <p className="text-sm">Chưa có nguyên liệu nào.</p>
             <Button
               type="button"
@@ -492,7 +468,7 @@ export default function EditRecipePage() {
             {ingredients.map((item, idx) => (
               <div
                 key={idx}
-                className="grid grid-cols-1 md:grid-cols-12 gap-3 p-3 bg-zinc-900/60 border border-zinc-800 rounded-lg items-end"
+                className="grid grid-cols-1 md:grid-cols-12 gap-3 p-3.5 bg-[#FAF9F5] border border-[#E2DDD2] rounded-xl items-end shadow-2xs hover:border-[#C5BFB1] transition"
               >
                 <div className="md:col-span-4">
                   <Select
@@ -555,13 +531,13 @@ export default function EditRecipePage() {
       </div>
 
       {/* 3. Steps Builder with AI & Media features */}
-      <div className="bg-[#141418] border border-zinc-800 rounded-xl p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
+      <div className="bg-white border border-[#E2DDD2] rounded-xl p-6 space-y-5 shadow-xs">
+        <div className="flex items-center justify-between border-b border-[#E2DDD2] pb-3">
           <div>
-            <h2 className="text-base font-bold text-zinc-100 flex items-center gap-2">
-              <span>🪜</span> 3. Quy Trình Thao Tác & Hỗ Trợ AI ({steps.length})
+            <h2 className="text-base font-bold text-[#1C1917] flex items-center gap-2">
+              <span className="text-[#B47820]">🪜</span> 3. Quy Trình Thao Tác &amp; Hỗ Trợ AI ({steps.length})
             </h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-[#78716C] mt-0.5">
               Sắp xếp thứ tự bước, nhờ AI gợi ý hoàn thiện mô tả hoặc sinh hình ảnh concept thao tác.
             </p>
           </div>
@@ -571,7 +547,7 @@ export default function EditRecipePage() {
         </div>
 
         {steps.length === 0 ? (
-          <div className="text-center p-8 border border-dashed border-zinc-800 rounded-lg text-zinc-400">
+          <div className="text-center p-8 border border-dashed border-[#E2DDD2] bg-[#FAF9F5] rounded-xl text-[#78716C]">
             <p className="text-sm">Chưa có bước thao tác nào.</p>
             <Button
               type="button"
@@ -591,16 +567,16 @@ export default function EditRecipePage() {
               return (
                 <div
                   key={step.id}
-                  className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4.5 space-y-3.5 relative"
+                  className="bg-[#FAF9F5] border border-[#E2DDD2] rounded-xl p-4.5 space-y-3.5 relative shadow-2xs hover:border-[#C5BFB1] transition"
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 flex-1">
-                      <span className="w-6 h-6 rounded-full bg-[#C9A84C]/20 text-[#DEBF64] flex items-center justify-center font-bold text-xs">
+                    <div className="flex items-center gap-2.5 flex-1">
+                      <span className="w-6 h-6 rounded-full bg-[#B47820]/15 text-[#B47820] flex items-center justify-center font-bold text-xs">
                         {idx + 1}
                       </span>
                       <input
                         type="text"
-                        className="bg-zinc-800/80 border border-zinc-700/60 rounded px-2.5 py-1 text-sm font-semibold text-zinc-100 w-full max-w-sm focus:outline-none focus:border-[#C9A84C]"
+                        className="bg-white border border-[#E2DDD2] rounded-md px-3 py-1.5 text-sm font-semibold text-[#1C1917] w-full max-w-sm focus:outline-none focus:border-[#B47820] shadow-2xs transition"
                         value={step.title}
                         onChange={(e) => handleUpdateStep(idx, { title: e.target.value })}
                         placeholder="Tiêu đề bước..."
@@ -641,20 +617,11 @@ export default function EditRecipePage() {
                     </div>
                   </div>
 
-                  {/* Instruction with AI Text Button */}
+                  {/* Step instruction */}
                   <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-medium text-zinc-300">
-                        Nội Dung Hướng Dẫn Kỹ Thuật:
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenAiText(idx)}
-                        className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1 font-medium bg-purple-950/40 px-2 py-0.5 rounded border border-purple-800/60"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" /> AI Gợi Ý Văn Bản
-                      </button>
-                    </div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-[#44403C]">
+                      Nội Dung Hướng Dẫn Kỹ Thuật:
+                    </label>
                     <TextArea
                       value={step.instruction}
                       onChange={(e) => handleUpdateStep(idx, { instruction: e.target.value })}
@@ -700,31 +667,31 @@ export default function EditRecipePage() {
                   </div>
 
                   {/* Media & AI Image actions for Step */}
-                  <div className="border-t border-zinc-800/80 pt-3 flex flex-wrap items-center justify-between gap-3">
+                  <div className="border-t border-[#E2DDD2] pt-3 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       {coverUrl ? (
                         <div className="flex items-center gap-3">
                           <img
                             src={coverUrl}
                             alt="Cover"
-                            className="w-16 h-12 rounded object-cover border border-zinc-700"
+                            className="w-16 h-12 rounded-md object-cover border border-[#E2DDD2] shadow-2xs"
                           />
                           <div className="text-xs text-[#78716C]">
                             <div className="flex items-center gap-1.5">
                               <Check className="w-3.5 h-3.5 text-emerald-600" />
-                              <span className="text-emerald-700 font-medium">Đã gắn ảnh minh họa</span>
+                              <span className="text-emerald-700 font-medium">Đã gắn ảnh thao tác</span>
                             </div>
                             <button
                               type="button"
                               onClick={() => handleUpdateStep(idx, { coverMediaAssetId: undefined })}
-                              className="text-rose-500 hover:underline block text-[11px] mt-0.5"
+                              className="text-rose-600 hover:underline block text-[11px] mt-0.5"
                             >
                               Gỡ ảnh
                             </button>
                           </div>
                         </div>
                       ) : (
-                        <span className="text-xs text-zinc-500 italic">Chưa gắn ảnh thao tác</span>
+                        <span className="text-xs text-[#A8A29E] italic">Chưa gắn ảnh thao tác</span>
                       )}
                     </div>
 
@@ -744,7 +711,7 @@ export default function EditRecipePage() {
                         className="border-purple-300 text-purple-700 hover:bg-purple-50"
                         onClick={() => handleOpenAiImage(step)}
                       >
-                        <Sparkles className="w-3.5 h-3.5 mr-1" /> AI Tạo Ảnh Thao Tác
+                        <Sparkles className="w-3.5 h-3.5 mr-1 text-purple-600" /> AI Tạo Ảnh Thao Tác
                       </Button>
                     </div>
                   </div>
@@ -756,7 +723,7 @@ export default function EditRecipePage() {
       </div>
 
       {/* Bottom Floating Bar */}
-      <div className="flex items-center justify-between pt-4 border-t border-zinc-800">
+      <div className="flex items-center justify-between pt-4 border-t border-[#E2DDD2]">
         <Link href={`/rnd/recipes/${recipe.id}`}>
           <Button variant="secondary">Quay Lại Chi Tiết</Button>
         </Link>
@@ -764,69 +731,6 @@ export default function EditRecipePage() {
           <Save className="w-4 h-4 mr-1.5" /> Lưu Bản Nháp
         </Button>
       </div>
-
-      {/* AI Text Side-by-Side Comparison Dialog */}
-      <Dialog
-        isOpen={isAiTextModalOpen}
-        onClose={() => {
-          if (!isGeneratingAiText) setIsAiTextModalOpen(false);
-        }}
-        title="✨ Trợ Lý AI: Chuẩn Hóa Văn Bản Kỹ Thuật"
-        description="So sánh trực quan giữa nội dung ban đầu và đề xuất hoàn thiện từ trợ lý AI trước khi áp dụng."
-        confirmLabel="Áp Dụng Bản Gợi Ý"
-        confirmVariant="gold"
-        isConfirming={isGeneratingAiText}
-        onConfirm={handleAcceptAiText}
-      >
-        <div className="space-y-4 py-2">
-          {aiTextError && <Alert type="error" message={aiTextError} />}
-
-          <div className="space-y-1.5">
-            <TextInput
-              label="Yêu cầu hiệu chỉnh cho AI (Prompt)"
-              value={aiPrompt}
-              onChange={(e) => setAiPrompt(e.target.value)}
-              placeholder="VD: Viết lại ngắn gọn, rõ ràng theo tiêu chuẩn barista..."
-            />
-            <div className="flex justify-end pt-1">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleGenerateAiText}
-                isLoading={isGeneratingAiText}
-                className="text-purple-300 border-purple-800"
-              >
-                Gửi Yêu Cầu Tạo Đề Xuất
-              </Button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-lg">
-              <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
-                Nội Dung Hiện Tại
-              </h4>
-              <p className="text-xs text-zinc-300 whitespace-pre-wrap min-h-[90px]">
-                {originalText || <span className="italic text-zinc-500">(Đang trống)</span>}
-              </p>
-            </div>
-
-            <div className="p-3 bg-purple-950/20 border border-purple-800/60 rounded-lg">
-              <h4 className="text-xs font-semibold text-purple-300 uppercase tracking-wider mb-2 flex items-center justify-between">
-                <span>Gợi Ý Chuẩn Hóa Từ AI</span>
-                {suggestedText && <span className="text-[10px] text-emerald-400">Sẵn sàng</span>}
-              </h4>
-              <p className="text-xs text-zinc-100 whitespace-pre-wrap min-h-[90px]">
-                {suggestedText || (
-                  <span className="italic text-zinc-500">
-                    Bấm &quot;Gửi Yêu Cầu&quot; để AI đề xuất nội dung chuẩn hóa.
-                  </span>
-                )}
-              </p>
-            </div>
-          </div>
-        </div>
-      </Dialog>
 
       {/* AI Image Candidate Dialog */}
       <Dialog
@@ -863,15 +767,15 @@ export default function EditRecipePage() {
           </div>
 
           {candidateAssetUrl && (
-            <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-xl space-y-3">
+            <div className="p-4 bg-[#FAF9F5] border border-[#E2DDD2] rounded-xl space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-purple-300">
+                <span className="text-xs font-semibold text-purple-700">
                   ✨ Ảnh Đề Xuất Mới (Candidate)
                 </span>
-                <span className="text-[11px] text-amber-400">Hạn duyệt: 30 phút</span>
+                <span className="text-[11px] text-[#B47820] font-medium">Hạn duyệt: 30 phút</span>
               </div>
 
-              <div className="flex justify-center bg-zinc-950 p-2 rounded-lg border border-zinc-800">
+              <div className="flex justify-center bg-white p-3 rounded-lg border border-[#E2DDD2]">
                 <img
                   src={candidateAssetUrl}
                   alt="Candidate Concept"

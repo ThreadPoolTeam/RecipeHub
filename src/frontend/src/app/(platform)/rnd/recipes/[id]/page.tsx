@@ -14,7 +14,7 @@ import {
   Send,
   RefreshCw,
   GitFork,
-  FileDown,
+  Archive,
 } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { RecipeVersion, Ingredient, MediaAsset } from '@/lib/demo/types';
@@ -38,6 +38,9 @@ export default function RecipeDetailPage() {
   // Action Loading
   const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
   const [isCreatingNextVer, setIsCreatingNextVer] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
+  const [isActivating, setIsActivating] = useState(false);
+  const [isArchiveConfirmOpen, setIsArchiveConfirmOpen] = useState(false);
 
   // Variant Dialog state
   const [isVariantDialogOpen, setIsVariantDialogOpen] = useState(false);
@@ -162,6 +165,43 @@ export default function RecipeDetailPage() {
     }
   };
 
+  // Action: Archive Recipe
+  const handleArchiveRecipe = async () => {
+    if (!session || !recipe) return;
+    try {
+      setIsArchiving(true);
+      setErrorMsg(null);
+      const updated = await repo.archiveRecipe(session, recipe.id);
+      setRecipe(updated);
+      touch();
+      setIsArchiveConfirmOpen(false);
+      setActionSuccess('Đã chuyển công thức vào kho lưu trữ (Archived) thành công!');
+    } catch (err: unknown) {
+      const e = err as Error;
+      setErrorMsg(e.message || 'Lỗi khi lưu trữ công thức.');
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
+  // Action: Activate (Restore) Recipe
+  const handleActivateRecipe = async () => {
+    if (!session || !recipe) return;
+    try {
+      setIsActivating(true);
+      setErrorMsg(null);
+      const updated = await repo.activateRecipe(session, recipe.id);
+      setRecipe(updated);
+      touch();
+      setActionSuccess('Đã khôi phục công thức về trạng thái hoạt động thành công!');
+    } catch (err: unknown) {
+      const e = err as Error;
+      setErrorMsg(e.message || 'Lỗi khi khôi phục công thức.');
+    } finally {
+      setIsActivating(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-12 text-center text-zinc-400">
@@ -242,11 +282,28 @@ export default function RecipeDetailPage() {
             <GitFork className="w-3.5 h-3.5 mr-1 text-[#78716C]" /> Tạo biến thể
           </Button>
 
-          <Link href={`/rnd/recipes/${recipe.id}/document`}>
-            <Button variant="secondary" size="sm">
-              <FileDown className="w-3.5 h-3.5 mr-1 text-[#B47820]" /> Xuất SOP
+          {recipe.status === 'Archived' ? (
+            <Button
+              variant="gold"
+              size="sm"
+              isLoading={isActivating}
+              onClick={handleActivateRecipe}
+              title="Khôi phục công thức hoạt động"
+            >
+              <RefreshCw className="w-3.5 h-3.5 mr-1" /> Khôi phục
             </Button>
-          </Link>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+              onClick={() => setIsArchiveConfirmOpen(true)}
+              title="Lưu trữ công thức này"
+            >
+              <Archive className="w-3.5 h-3.5 mr-1" /> Lưu trữ
+            </Button>
+          )}
+
         </div>
       </div>
 
@@ -264,6 +321,19 @@ export default function RecipeDetailPage() {
           message={errorMsg}
           onClose={() => setErrorMsg(null)}
         />
+      )}
+
+      {/* Archived Warning Banner */}
+      {recipe.status === 'Archived' && (
+        <div className="p-4 bg-zinc-100 border border-zinc-300 rounded-lg flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-2 text-zinc-700 text-sm">
+            <Archive className="w-4 h-4 text-zinc-500" />
+            <span>Công thức này đang ở trạng thái <strong>Lưu trữ (Archived)</strong> và đang bị khóa chỉnh sửa.</span>
+          </div>
+          <Button variant="gold" size="sm" isLoading={isActivating} onClick={handleActivateRecipe}>
+            Khôi phục hoạt động
+          </Button>
+        </div>
       )}
 
       {/* Reviewer Comment Box (Amber Highlight for Returned/Draft feedback) */}
@@ -301,10 +371,6 @@ export default function RecipeDetailPage() {
           <div>
             <span className="text-xs text-[#A8A29E] block">Người khởi tạo</span>
             <span className="font-mono text-[#78716C] text-xs">{recipe.creatorEmail}</span>
-          </div>
-          <div>
-            <span className="text-xs text-[#A8A29E] block">Lần sửa đổi</span>
-            <span className="font-mono text-[#78716C] text-xs">rev #{recipe.revision}</span>
           </div>
         </div>
 
@@ -482,6 +548,20 @@ export default function RecipeDetailPage() {
           />
         </div>
       </Dialog>
+
+      {/* Archive Confirm Dialog */}
+      <Dialog
+        isOpen={isArchiveConfirmOpen}
+        onClose={() => {
+          if (!isArchiving) setIsArchiveConfirmOpen(false);
+        }}
+        title={`Lưu Trữ Công Thức ${recipe.code}?`}
+        description="Công thức sẽ được đưa vào kho lưu trữ (Archived) và bị khóa. Bạn vẫn có thể tìm kiếm trong bộ lọc Lưu Trữ và khôi phục lại bất kỳ lúc nào."
+        confirmLabel="Xác Nhận Lưu Trữ"
+        confirmVariant="danger"
+        isConfirming={isArchiving}
+        onConfirm={handleArchiveRecipe}
+      />
     </div>
   );
 }

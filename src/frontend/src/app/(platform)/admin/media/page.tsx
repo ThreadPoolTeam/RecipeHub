@@ -53,7 +53,7 @@ export default function AdminMediaPage() {
 
       {/* Media Library Full Component */}
       <div className="bg-[#141418] border border-zinc-800 rounded-xl p-4 sm:p-6 shadow-sm">
-        <MediaLibrary mode="manage" allowDelete={true} />
+        <MediaLibrary mode="manage" allowDelete={false} />
       </div>
     </div>
   );

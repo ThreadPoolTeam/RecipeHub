@@ -7,8 +7,6 @@ import { Ingredient } from '@/lib/demo/types';
 import { Button, TextInput, Select, Alert } from '@/components/workspace/fields';
 import { DataTable } from '@/components/workspace/data-table';
 import { Dialog } from '@/components/workspace/dialog';
-const INGREDIENT_GROUPS = ['Trà', 'Sữa & Kem', 'Siro & Đường', 'Topping', 'Khác'];
-const UNIT_OPTIONS = ['g', 'ml', 'shot', 'muỗng', 'gói', 'quả', 'lon', 'hộp'];
 
 interface IngredientFormData {
   code: string;
@@ -23,8 +21,8 @@ interface IngredientFormData {
 const initialFormData: IngredientFormData = {
   code: '',
   name: '',
-  group: 'Trà',
-  defaultUnit: 'g',
+  group: '',
+  defaultUnit: '',
   isActive: true,
   costPerUnit: 0,
   supplierNotes: '',
@@ -33,6 +31,8 @@ const initialFormData: IngredientFormData = {
 export default function RndIngredientsPage() {
   const { session, repo, dataVersion, touch } = useDemo();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [ingredientGroups, setIngredientGroups] = useState<string[]>([]);
+  const [unitOptions, setUnitOptions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filters
@@ -72,6 +72,24 @@ export default function RndIngredientsPage() {
     fetchIngredients();
   }, [repo, dataVersion]);
 
+  useEffect(() => {
+    let isMounted = true;
+    Promise.all([repo.getIngredientCategories(), repo.getUnits()])
+      .then(([categories, units]) => {
+        if (!isMounted) return;
+        setIngredientGroups(categories.filter((item) => item.state === 'active').map((item) => item.name));
+        setUnitOptions(units.filter((item) => item.state === 'active').map((item) => item.code));
+      })
+      .catch((error: unknown) => {
+        if (isMounted) {
+          setAlertNotice({ type: 'error', message: error instanceof Error ? error.message : 'Không thể tải catalog Recipe Service.' });
+        }
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [repo]);
+
   // Client-side filtering
   const filteredIngredients = useMemo(() => {
     return ingredients.filter((item) => {
@@ -109,7 +127,11 @@ export default function RndIngredientsPage() {
   // Open Create Modal
   const handleOpenCreate = () => {
     setEditingIngredient(null);
-    setFormData(initialFormData);
+    setFormData({
+      ...initialFormData,
+      group: ingredientGroups[0] ?? '',
+      defaultUnit: unitOptions[0] ?? '',
+    });
     setFormError(null);
     setIsModalOpen(true);
   };
@@ -344,7 +366,7 @@ export default function RndIngredientsPage() {
             }}
             options={[
               { value: 'all', label: 'Tất cả phân nhóm' },
-              ...INGREDIENT_GROUPS.map((g) => ({ value: g, label: g })),
+              ...ingredientGroups.map((g) => ({ value: g, label: g })),
             ]}
           />
         </div>
@@ -424,14 +446,14 @@ export default function RndIngredientsPage() {
               label="Nhóm Nguyên Liệu *"
               value={formData.group}
               onChange={(e) => setFormData({ ...formData, group: e.target.value })}
-              options={INGREDIENT_GROUPS.map((g) => ({ value: g, label: g }))}
+              options={ingredientGroups.map((g) => ({ value: g, label: g }))}
             />
 
             <Select
               label="Đơn Vị Tính Chuẩn *"
               value={formData.defaultUnit}
               onChange={(e) => setFormData({ ...formData, defaultUnit: e.target.value })}
-              options={UNIT_OPTIONS.map((u) => ({ value: u, label: u }))}
+              options={unitOptions.map((u) => ({ value: u, label: u }))}
             />
           </div>
 

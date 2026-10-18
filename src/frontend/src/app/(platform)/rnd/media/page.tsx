@@ -16,7 +16,7 @@ export default function RndMediaPage() {
         </p>
       </div>
 
-      <MediaLibrary mode="manage" allowDelete={true} />
+      <MediaLibrary mode="manage" allowDelete={false} />
     </div>
   );
 }

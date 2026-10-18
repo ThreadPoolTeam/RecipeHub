@@ -17,6 +17,7 @@ import {
 import { useDemo } from '@/lib/demo/provider';
 import { Ingredient, RecipeIngredient, RecipeStep } from '@/lib/demo/types';
 import { Button, TextInput, TextArea, Select, Alert } from '@/components/workspace/fields';
+import { UnitItem } from '@/lib/api/backend-repository';
 export default function NewRecipePage() {
   const router = useRouter();
   const { session, repo, touch } = useDemo();
@@ -26,7 +27,8 @@ export default function NewRecipePage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [targetYield, setTargetYield] = useState<number>(1);
-  const [yieldUnit, setYieldUnit] = useState('ly (500ml)');
+  const [yieldUnit, setYieldUnit] = useState('');
+  const [availableUnits, setAvailableUnits] = useState<UnitItem[]>([]);
 
   // Ingredients State
   const [availableIngredients, setAvailableIngredients] = useState<Ingredient[]>([]);
@@ -52,9 +54,17 @@ export default function NewRecipePage() {
   // Load available ingredients
   useEffect(() => {
     let isMounted = true;
-    repo.getIngredients('', '', true).then((items) => {
-      if (isMounted) setAvailableIngredients(items);
-    }).catch(() => {});
+    Promise.all([repo.getIngredients('', '', true), repo.getUnits()])
+      .then(([items, units]) => {
+        if (!isMounted) return;
+        const activeUnits = units.filter((unit) => unit.state === 'active');
+        setAvailableIngredients(items);
+        setAvailableUnits(activeUnits);
+        setYieldUnit((current) => current || activeUnits[0]?.code || '');
+      })
+      .catch((error: unknown) => {
+        if (isMounted) setErrorMsg(error instanceof Error ? error.message : 'Không thể tải danh mục Recipe Service.');
+      });
     return () => {
       isMounted = false;
     };
@@ -154,6 +164,10 @@ export default function NewRecipePage() {
       setErrorMsg('Vui lòng nhập tên công thức.');
       return;
     }
+    if (!yieldUnit) {
+      setErrorMsg('Recipe Service chưa có đơn vị thành phẩm khả dụng.');
+      return;
+    }
 
     // Validate quantities
     for (let i = 0; i < recipeIngredients.length; i++) {
@@ -178,7 +192,7 @@ export default function NewRecipePage() {
         name: cleanName,
         description: description.trim(),
         targetYield: Number(targetYield) || 1,
-        yieldUnit: yieldUnit.trim() || 'ly (500ml)',
+        yieldUnit,
         ingredients: recipeIngredients,
         steps: steps,
       });
@@ -196,20 +210,20 @@ export default function NewRecipePage() {
   return (
     <form onSubmit={handleSubmit} className="space-y-8 max-w-5xl mx-auto pb-12">
       {/* Top Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E2DDD2] pb-5">
         <div>
-          <div className="flex items-center gap-2 text-xs text-zinc-400 mb-1">
-            <Link href="/rnd/recipes" className="hover:text-zinc-200">
+          <div className="flex items-center gap-2 text-xs text-[#78716C] mb-1">
+            <Link href="/rnd/recipes" className="hover:text-[#1C1917]">
               Công Thức
             </Link>
             <span>/</span>
-            <span className="text-[#DEBF64]">Tạo Mới Bản Nháp</span>
+            <span className="text-[#B47820] font-medium">Tạo Mới Bản Nháp</span>
           </div>
           <h1 className="text-2xl font-bold text-[#1C1917] flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-[#B47820]" />
             <span>Tạo Bản Nháp Công Thức R&amp;D</span>
           </h1>
-          <p className="text-sm text-zinc-400 mt-1">
+          <p className="text-sm text-[#78716C] mt-1">
             Khởi tạo phiên bản v1.0. Bạn có thể lưu nháp, thử nghiệm AI và hoàn thiện trước khi gửi thẩm định.
           </p>
         </div>
@@ -267,11 +281,14 @@ export default function NewRecipePage() {
             onChange={(e) => setTargetYield(Math.max(1, Number(e.target.value) || 1))}
           />
 
-          <TextInput
+          <Select
             label="Đơn Vị Thành Phẩm *"
-            placeholder="VD: ly (500ml), bình (1.5L), mẻ..."
             value={yieldUnit}
             onChange={(e) => setYieldUnit(e.target.value)}
+            options={availableUnits.map((unit) => ({
+              value: unit.code,
+              label: `${unit.name} (${unit.code})`,
+            }))}
           />
         </div>
       </div>
@@ -283,7 +300,7 @@ export default function NewRecipePage() {
             <h2 className="text-base font-bold text-[#1C1917] flex items-center gap-2">
               <FlaskConical className="w-4 h-4 text-[#B47820]" /> 2. Thành Phần &amp; Định Lượng Nguyên Liệu ({recipeIngredients.length})
             </h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-[#78716C] mt-0.5">
               Chọn nguyên liệu từ kho chuẩn, nhập định lượng (&gt; 0) và phân tách giai đoạn nếu cần.
             </p>
           </div>
@@ -299,11 +316,11 @@ export default function NewRecipePage() {
         </div>
 
         {availableIngredients.length === 0 ? (
-          <div className="p-4 bg-zinc-900/60 rounded-lg text-xs text-zinc-400 border border-zinc-800">
-            Kho nguyên liệu đang trống. Hãy vào mục <Link href="/rnd/ingredients" className="text-[#C9A84C] underline">Kho Nguyên Liệu</Link> để tạo trước.
+          <div className="p-4 bg-[#FAF9F5] rounded-xl text-xs text-[#78716C] border border-[#E2DDD2]">
+            Kho nguyên liệu đang trống. Hãy vào mục <Link href="/rnd/ingredients" className="text-[#B47820] font-medium underline">Kho Nguyên Liệu</Link> để tạo trước.
           </div>
         ) : recipeIngredients.length === 0 ? (
-          <div className="text-center p-8 border border-dashed border-zinc-800 rounded-lg text-zinc-400 space-y-2">
+          <div className="text-center p-8 border border-dashed border-[#E2DDD2] bg-[#FAF9F5] rounded-xl text-[#78716C] space-y-2">
             <p className="text-sm">Chưa có nguyên liệu nào được thêm vào công thức này.</p>
             <Button type="button" variant="secondary" size="sm" onClick={handleAddIngredient}>
               + Thêm Nguyên Liệu Đầu Tiên
@@ -314,7 +331,7 @@ export default function NewRecipePage() {
             {recipeIngredients.map((item, idx) => (
               <div
                 key={idx}
-                className="grid grid-cols-1 md:grid-cols-12 gap-3 p-3.5 bg-zinc-900/60 border border-zinc-800 rounded-lg items-end"
+                className="grid grid-cols-1 md:grid-cols-12 gap-3 p-3.5 bg-[#FAF9F5] border border-[#E2DDD2] rounded-xl items-end shadow-2xs hover:border-[#C5BFB1] transition"
               >
                 <div className="md:col-span-4">
                   <Select
@@ -375,13 +392,13 @@ export default function NewRecipePage() {
       </div>
 
       {/* 3. Steps Builder */}
-      <div className="bg-[#141418] border border-zinc-800 rounded-xl p-6 space-y-5">
-        <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
+      <div className="bg-white border border-[#E2DDD2] rounded-xl p-6 space-y-5 shadow-xs">
+        <div className="flex items-center justify-between border-b border-[#E2DDD2] pb-3">
           <div>
             <h2 className="text-base font-bold text-[#1C1917] flex items-center gap-2">
               <ListOrdered className="w-4 h-4 text-[#B47820]" /> 3. Quy Trình Pha Chế &amp; Chuẩn Thao Tác SOP ({steps.length})
             </h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-[#78716C] mt-0.5">
               Mô tả chi tiết từng thao tác, thời gian khuấy/ủ, nhiệt độ và tiêu chí hoàn thành.
             </p>
           </div>
@@ -391,7 +408,7 @@ export default function NewRecipePage() {
         </div>
 
         {steps.length === 0 ? (
-          <div className="text-center p-8 border border-dashed border-zinc-800 rounded-lg text-zinc-400 space-y-2">
+          <div className="text-center p-8 border border-dashed border-[#E2DDD2] bg-[#FAF9F5] rounded-xl text-[#78716C] space-y-2">
             <p className="text-sm">Chưa có bước thao tác nào.</p>
             <Button type="button" variant="secondary" size="sm" onClick={handleAddStep}>
               + Tạo Bước Đầu Tiên
@@ -402,16 +419,16 @@ export default function NewRecipePage() {
             {steps.map((step, idx) => (
               <div
                 key={step.id}
-                className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4.5 space-y-3.5 relative"
+                className="bg-[#FAF9F5] border border-[#E2DDD2] rounded-xl p-4.5 space-y-3.5 relative shadow-2xs hover:border-[#C5BFB1] transition"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 flex-1">
-                    <span className="w-6 h-6 rounded-full bg-[#C9A84C]/20 text-[#DEBF64] flex items-center justify-center font-bold text-xs">
+                  <div className="flex items-center gap-2.5 flex-1">
+                    <span className="w-6 h-6 rounded-full bg-[#B47820]/15 text-[#B47820] flex items-center justify-center font-bold text-xs">
                       {idx + 1}
                     </span>
                     <input
                       type="text"
-                      className="bg-zinc-800/80 border border-zinc-700/60 rounded px-2.5 py-1 text-sm font-semibold text-zinc-100 w-full max-w-sm focus:outline-none focus:border-[#C9A84C]"
+                      className="bg-white border border-[#E2DDD2] rounded-md px-3 py-1.5 text-sm font-semibold text-[#1C1917] w-full max-w-sm focus:outline-none focus:border-[#B47820] shadow-2xs transition"
                       value={step.title}
                       placeholder="Tiêu đề bước..."
                       onChange={(e) => handleUpdateStep(idx, { title: e.target.value })}

@@ -40,9 +40,9 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- 6. Recipe Version (Dùng ID này để test gen ảnh: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa)
-INSERT INTO recipe_db.recipe_version (id, public_id, recipe_id, version_number, status, name, normalized_name, description, row_version, created_by_user_ref, updated_by_user_ref)
+INSERT INTO recipe_db.recipe_version (id, public_id, recipe_id, version_number, status, name, normalized_name, description, created_by_user_ref, updated_by_user_ref)
 VALUES
-  (1, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 1, 1, 'draft', 'Trà Đào Cam Sả Đặc Biệt', 'tra dao cam sa dac biet', 'Thức uống thanh mát giải nhiệt mùa hè kết hợp trà đen ủ lạnh, đào tươi giòn ngọt, cam vàng mọng nước và hương thơm nhẹ của sả tươi.', 1, '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001')
+  (1, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 1, 1, 'draft', 'Trà Đào Cam Sả Đặc Biệt', 'tra dao cam sa dac biet', 'Thức uống thanh mát giải nhiệt mùa hè kết hợp trà đen ủ lạnh, đào tươi giòn ngọt, cam vàng mọng nước và hương thơm nhẹ của sả tươi.', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001')
 ON CONFLICT (id) DO NOTHING;
 
 -- 7. Recipe Yield

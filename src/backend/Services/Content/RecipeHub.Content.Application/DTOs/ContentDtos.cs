@@ -9,13 +9,13 @@ public sealed record CreateDraftRequest
     public Guid? RecipeStepId { get; init; }
     public string TargetKind { get; init; } = "step_instruction";
     public string? UserBrief { get; init; }
-    public long ExpectedRecipeRevision { get; init; }
+    public long ExpectedRecipeRevision { get; init; } = 0;
 }
 
 public sealed record RegenerateDraftRequest
 {
     public string? UserBrief { get; init; }
-    public long ExpectedRecipeRevision { get; init; }
+    public long ExpectedRecipeRevision { get; init; } = 0;
 }
 
 public sealed record DraftDetailResponse

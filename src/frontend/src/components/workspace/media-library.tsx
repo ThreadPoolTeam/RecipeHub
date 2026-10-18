@@ -469,7 +469,7 @@ export function MediaLibrary({
               )}
             </div>
 
-            {(allowDelete || session?.role === 'admin') && (
+            {allowDelete && (
               <div className="pt-3 border-t border-[#E2DDD2] flex justify-between items-center">
                 {inspectingMedia.state === 'DeleteFailed' ? (
                   <Button

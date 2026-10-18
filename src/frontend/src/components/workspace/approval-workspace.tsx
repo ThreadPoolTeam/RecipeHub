@@ -8,8 +8,6 @@ import {
   Clock,
   Thermometer,
   Wrench,
-  FileText,
-  CheckSquare,
   ArrowLeft,
 } from 'lucide-react';
 import { RecipeVersion, Ingredient } from '@/lib/demo/types';
@@ -17,7 +15,6 @@ import { useDemo } from '@/lib/demo/provider';
 import { canApproveRecipe } from '@/lib/demo/permissions';
 import { StatusBadge, MediaSourceBadge } from './status-badge';
 import { Button, TextArea, Alert } from './fields';
-import { DocumentWorkspace } from './document-workspace';
 
 interface ApprovalWorkspaceProps {
   recipeId: string;
@@ -29,7 +26,6 @@ export function ApprovalWorkspace({ recipeId }: ApprovalWorkspaceProps) {
 
   const [recipe, setRecipe] = useState<RecipeVersion | null>(null);
   const [ingredientsMap, setIngredientsMap] = useState<Map<string, Ingredient>>(new Map());
-  const [activeTab, setActiveTab] = useState<'review' | 'document'>('review');
   const [comment, setComment] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -138,31 +134,6 @@ export function ApprovalWorkspace({ recipeId }: ApprovalWorkspaceProps) {
           </p>
         </div>
 
-        {/* Tab switch */}
-        <div className="flex items-center gap-1.5 bg-[#FAF8F2] p-1 rounded-lg border border-[#E2DDD2] text-xs">
-          <button
-            onClick={() => setActiveTab('review')}
-            className={`px-3 py-1.5 rounded-md transition flex items-center gap-1.5 ${
-              activeTab === 'review'
-                ? 'bg-[#1C1917] text-white font-semibold'
-                : 'text-[#78716C] hover:text-[#1C1917]'
-            }`}
-          >
-            <CheckSquare className="w-3.5 h-3.5" />
-            <span>Thẩm Định Hồ Sơ</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('document')}
-            className={`px-3 py-1.5 rounded-md transition flex items-center gap-1.5 ${
-              activeTab === 'document'
-                ? 'bg-[#1C1917] text-white font-semibold'
-                : 'text-[#78716C] hover:text-[#1C1917]'
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5" />
-            <span>Tài Liệu &amp; Xuất PDF</span>
-          </button>
-        </div>
       </div>
       {errorMsg && (
         <Alert variant="error" title="Lỗi thao tác">
@@ -185,10 +156,7 @@ export function ApprovalWorkspace({ recipeId }: ApprovalWorkspaceProps) {
         </Alert>
       )}
 
-      {activeTab === 'document' ? (
-        <DocumentWorkspace recipe={recipe} />
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left 2 Cols: Formula & SOP Details */}
           <div className="lg:col-span-2 space-y-6">
             {/* Description & Yield */}
@@ -372,8 +340,7 @@ export function ApprovalWorkspace({ recipeId }: ApprovalWorkspaceProps) {
               )}
             </div>
           </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
