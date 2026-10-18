@@ -4,6 +4,8 @@ public partial class RecipeStepMedia
 {
     public long Id { get; set; }
 
+    public Guid PublicId { get; set; } = Guid.NewGuid();
+
     public long RecipeStepId { get; set; }
 
     public Guid MediaAssetRef { get; set; }

@@ -14,6 +14,8 @@ public partial class RecipeVersion
 
     public long RecipeId { get; set; }
 
+    public Guid? PrimaryMediaAssetRef { get; set; }
+
     /// <summary>
     /// Phiên bản nguồn khi revision hoặc clone.
     /// </summary>

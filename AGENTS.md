@@ -65,7 +65,10 @@ RecipeHub/
    - Production JWT token issuance / OAuth2 flows.
    - AI/Gemini formula assistants.
    - Cloudflare R2 file storage.
-
+5. **API Documentation (Swagger/OpenAPI):**
+   - Mọi backend API service (`Api` projects) BẮT BUỘC phải tích hợp Swagger (`Swashbuckle.AspNetCore`).
+   - Cấu hình Swagger UI sẵn sàng cho môi trường Development.
+   - BẮT BUỘC cập nhật tài liệu Swagger đầy đủ mỗi khi bổ sung hoặc thay đổi endpoint/API mới.
 ---
 
 ## Working Rules for Agents
@@ -77,3 +80,4 @@ RecipeHub/
 - **Language & Style:** Communication in Vietnamese, concise/terse caveman style unless asked otherwise.
 - **Git Workflow:** Atomic commits (no big-bang commits). Include scope prefixes: `feat:`, `fix:`, `docs:`, `refactor:`, `chore:`.
 - **Validation:** Always verify changes (`dotnet build src/backend/RecipeHub.sln`, `npm run build`) before claiming completion.
+- **API Swagger Enforcement (BẮT BUỘC):** Luôn đảm bảo mọi backend API service có Swagger và duy trì cập nhật khi thêm endpoint mới. Không được bỏ qua cấu hình Swagger UI khi tạo service mới hoặc refactor.

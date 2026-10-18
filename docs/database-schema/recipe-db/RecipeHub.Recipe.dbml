@@ -161,11 +161,11 @@ Table recipe_db.recipe_version {
   normalized_name text [not null, note: 'Tên chuẩn hóa để tìm kiếm không phân biệt hoa thường.']
   description text
   row_version bigint [not null, default: 0, note: 'Concurrency token, tăng sau mỗi lần cập nhật.']
+  primary_media_asset_ref uuid [note: 'MediaAsset public ID từ Content Service làm ảnh đại diện thành phẩm.']
   created_by_user_ref uuid [not null]
   updated_by_user_ref uuid [not null]
   created_at timestamptz [not null, default: `now()`]
   updated_at timestamptz [not null, default: `now()`]
-
   indexes {
     (recipe_id, version_number) [unique, name: 'recipe_version_number_uidx']
     normalized_name [name: 'recipe_version_name_idx']
@@ -173,6 +173,7 @@ Table recipe_db.recipe_version {
     created_by_user_ref [name: 'recipe_version_created_by_idx']
     updated_at [name: 'recipe_version_updated_at_idx']
     based_on_version_id [name: 'recipe_version_based_on_idx']
+    primary_media_asset_ref [name: 'recipe_version_primary_media_idx']
   }
 
   checks {
@@ -260,6 +261,7 @@ Table recipe_db.recipe_ingredient {
 // Ordered preparation steps.
 Table recipe_db.recipe_step {
   id bigint [pk, increment]
+  public_id uuid [not null, unique, note: 'ID công khai ổn định của bước công thức.']
   recipe_version_id bigint [not null]
   sort_order integer [not null]
   title text [not null]
@@ -285,6 +287,7 @@ Table recipe_db.recipe_step {
 // Media references owned by Content Service.
 Table recipe_db.recipe_step_media {
   id bigint [pk, increment]
+  public_id uuid [not null, unique, note: 'ID công khai ổn định của liên kết media (linkId).']
   recipe_step_id bigint [not null]
   media_asset_ref uuid [not null, note: 'MediaAsset public ID từ Content Service; không tạo FK xuyên database.']
   sort_order integer [not null, default: 1]

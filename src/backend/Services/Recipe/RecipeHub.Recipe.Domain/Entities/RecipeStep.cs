@@ -7,6 +7,8 @@ public partial class RecipeStep
 {
     public long Id { get; set; }
 
+    public Guid PublicId { get; set; } = Guid.NewGuid();
+
     public long RecipeVersionId { get; set; }
 
     public int SortOrder { get; set; }

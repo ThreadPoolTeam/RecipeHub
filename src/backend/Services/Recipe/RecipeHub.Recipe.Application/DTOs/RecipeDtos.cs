@@ -29,6 +29,14 @@ public sealed record RecipeIngredientResponse(
     string? Warning);
 
 public sealed record RecipeStepMediaResponse(
+    Guid LinkId,
+    Guid MediaAssetRef,
+    int SortOrder,
+    bool IsPrimary,
+    string? Caption);
+
+public sealed record RecipeStepMediaDetailResponse(
+    Guid LinkId,
     Guid MediaAssetRef,
     int SortOrder,
     bool IsPrimary,
@@ -36,6 +44,7 @@ public sealed record RecipeStepMediaResponse(
 
 public sealed record RecipeStepResponse(
     long Id,
+    Guid PublicId,
     int SortOrder,
     string Title,
     string Description,
@@ -45,7 +54,6 @@ public sealed record RecipeStepResponse(
     string? SafetyNote,
     string? CompletionCriteria,
     IReadOnlyList<RecipeStepMediaResponse> Media);
-
 public sealed record RecipeDetailResponse(
     Guid Id,
     string Code,
@@ -56,6 +64,7 @@ public sealed record RecipeDetailResponse(
     string Name,
     string? Description,
     long RowVersion,
+    Guid? PrimaryMediaAssetRef,
     RecipeYieldResponse? Yield,
     IReadOnlyList<RecipeIngredientResponse> Ingredients,
     IReadOnlyList<RecipeStepResponse> Steps,
@@ -71,11 +80,22 @@ public sealed record CreateRecipeIngredientRequest(
     string? DuplicateReason,
     string? Note);
 
+public sealed record SetPrimaryImageRequest(Guid MediaAssetRef, long ExpectedRowVersion);
+
+public sealed record RemovePrimaryImageRequest(long ExpectedRowVersion);
+
 public sealed record CreateRecipeStepMediaRequest(
     Guid MediaAssetRef,
     int SortOrder,
     bool IsPrimary,
-    string? Caption);
+    string? Caption,
+    long ExpectedRowVersion = 0);
+
+public sealed record UpdateRecipeStepMediaRequest(
+    int? SortOrder,
+    bool? IsPrimary,
+    string? Caption,
+    long ExpectedRowVersion);
 
 public sealed record CreateRecipeStepRequest(
     int SortOrder,
@@ -86,8 +106,41 @@ public sealed record CreateRecipeStepRequest(
     string? Equipment,
     string? SafetyNote,
     string? CompletionCriteria,
-    IReadOnlyList<CreateRecipeStepMediaRequest>? Media);
+    IReadOnlyList<CreateRecipeStepMediaRequest>? Media,
+    Guid? PublicId = null);
 
+public sealed record UpdateRecipeStepRequest(
+    int SortOrder,
+    string? Title,
+    string? Description,
+    int? DurationSeconds,
+    decimal? TemperatureCelsius,
+    string? Equipment,
+    string? SafetyNote,
+    string? CompletionCriteria,
+    IReadOnlyList<CreateRecipeStepMediaRequest>? Media,
+    Guid? PublicId = null)
+{
+    public UpdateRecipeStepRequest(
+        Guid? publicId,
+        int sortOrder,
+        string? title,
+        string? description,
+        int? durationSeconds,
+        decimal? temperatureCelsius,
+        string? equipment,
+        string? safetyNote,
+        string? completionCriteria,
+        IReadOnlyList<CreateRecipeStepMediaRequest>? media)
+        : this(sortOrder, title, description, durationSeconds, temperatureCelsius, equipment, safetyNote, completionCriteria, media, publicId)
+    {
+    }
+
+    public static implicit operator UpdateRecipeStepRequest(CreateRecipeStepRequest create) =>
+        new(create.SortOrder, create.Title, create.Description, create.DurationSeconds,
+            create.TemperatureCelsius, create.Equipment, create.SafetyNote, create.CompletionCriteria,
+            create.Media, create.PublicId);
+}
 public sealed record CreateRecipeRequest(
     string? Code,
     string? Name,
@@ -108,7 +161,7 @@ public sealed record UpdateRecipeRequest(
     string? YieldNote,
     long ExpectedRowVersion,
     IReadOnlyList<CreateRecipeIngredientRequest>? Ingredients,
-    IReadOnlyList<CreateRecipeStepRequest>? Steps);
+    IReadOnlyList<UpdateRecipeStepRequest>? Steps);
 
 public sealed record CloneRecipeRequest(string? Code, string? Name);
 

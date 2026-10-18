@@ -146,4 +146,69 @@ public sealed class RecipesController : ControllerBase
             publicId, versionId, request, RequestActor.GetUserId(HttpContext), cancellationToken);
         return Ok(review);
     }
+
+    [HttpPut("{publicId:guid}/versions/{versionId:guid}/primary-image")]
+    public async Task<ActionResult<RecipeDetailResponse>> SetPrimaryImage(
+        Guid publicId,
+        Guid versionId,
+        [FromBody] SetPrimaryImageRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _recipeService.SetPrimaryImageAsync(
+            publicId, versionId, request, RequestActor.GetUserId(HttpContext), cancellationToken);
+        return Ok(response);
+    }
+
+    [HttpDelete("{publicId:guid}/versions/{versionId:guid}/primary-image")]
+    public async Task<IActionResult> RemovePrimaryImage(
+        Guid publicId,
+        Guid versionId,
+        [FromBody] RemovePrimaryImageRequest request,
+        CancellationToken cancellationToken)
+    {
+        await _recipeService.RemovePrimaryImageAsync(
+            publicId, versionId, request, RequestActor.GetUserId(HttpContext), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("{publicId:guid}/versions/{versionId:guid}/steps/{stepId:guid}/media")]
+    public async Task<ActionResult<RecipeStepMediaDetailResponse>> AddStepMedia(
+        Guid publicId,
+        Guid versionId,
+        Guid stepId,
+        [FromBody] CreateRecipeStepMediaRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _recipeService.AddStepMediaAsync(
+            publicId, versionId, stepId, request, RequestActor.GetUserId(HttpContext), cancellationToken);
+        return Created($"/api/v1/recipes/{publicId}/versions/{versionId}/steps/{stepId}/media/{response.LinkId}", response);
+    }
+
+    [HttpPatch("{publicId:guid}/versions/{versionId:guid}/steps/{stepId:guid}/media/{linkId:guid}")]
+    public async Task<ActionResult<RecipeStepMediaDetailResponse>> UpdateStepMedia(
+        Guid publicId,
+        Guid versionId,
+        Guid stepId,
+        Guid linkId,
+        [FromBody] UpdateRecipeStepMediaRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _recipeService.UpdateStepMediaAsync(
+            publicId, versionId, stepId, linkId, request, RequestActor.GetUserId(HttpContext), cancellationToken);
+        return Ok(response);
+    }
+
+    [HttpDelete("{publicId:guid}/versions/{versionId:guid}/steps/{stepId:guid}/media/{linkId:guid}")]
+    public async Task<IActionResult> RemoveStepMedia(
+        Guid publicId,
+        Guid versionId,
+        Guid stepId,
+        Guid linkId,
+        [FromQuery] long expectedRowVersion,
+        CancellationToken cancellationToken)
+    {
+        await _recipeService.RemoveStepMediaAsync(
+            publicId, versionId, stepId, linkId, expectedRowVersion, RequestActor.GetUserId(HttpContext), cancellationToken);
+        return NoContent();
+    }
 }

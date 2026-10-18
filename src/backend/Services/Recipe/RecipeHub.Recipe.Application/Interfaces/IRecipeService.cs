@@ -24,4 +24,9 @@ public interface IRecipeService
     Task<RecipeVersionReviewResponse> ApproveAsync(Guid publicId, Guid versionId, ReviewRecipeVersionRequest request, Guid actorUserId, CancellationToken cancellationToken);
     Task<RecipeVersionReviewResponse> ReturnAsync(Guid publicId, Guid versionId, ReviewRecipeVersionRequest request, Guid actorUserId, CancellationToken cancellationToken);
     Task<IReadOnlyList<RecipeVersionReviewResponse>> GetReviewsAsync(Guid publicId, Guid versionId, CancellationToken cancellationToken);
+    Task<RecipeDetailResponse> SetPrimaryImageAsync(Guid recipePublicId, Guid versionPublicId, SetPrimaryImageRequest request, Guid actorId, CancellationToken cancellationToken = default);
+    Task RemovePrimaryImageAsync(Guid recipePublicId, Guid versionPublicId, RemovePrimaryImageRequest request, Guid actorId, CancellationToken cancellationToken = default);
+    Task<RecipeStepMediaDetailResponse> AddStepMediaAsync(Guid recipePublicId, Guid versionPublicId, Guid stepPublicId, CreateRecipeStepMediaRequest request, Guid actorId, CancellationToken cancellationToken = default);
+    Task<RecipeStepMediaDetailResponse> UpdateStepMediaAsync(Guid recipePublicId, Guid versionPublicId, Guid stepPublicId, Guid linkId, UpdateRecipeStepMediaRequest request, Guid actorId, CancellationToken cancellationToken = default);
+    Task RemoveStepMediaAsync(Guid recipePublicId, Guid versionPublicId, Guid stepPublicId, Guid linkId, long expectedRowVersion, Guid actorId, CancellationToken cancellationToken = default);
 }

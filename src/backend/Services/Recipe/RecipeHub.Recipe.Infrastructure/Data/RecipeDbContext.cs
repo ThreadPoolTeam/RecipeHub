@@ -243,6 +243,8 @@ public partial class RecipeDbContext : DbContext
 
             entity.HasIndex(e => new { e.RecipeVersionId, e.SortOrder }, "recipe_step_order_uidx").IsUnique();
 
+            entity.HasIndex(e => e.PublicId, "recipe_step_public_id_key").IsUnique();
+
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.CompletionCriteria).HasColumnName("completion_criteria");
             entity.Property(e => e.CreatedAt)
@@ -257,6 +259,7 @@ public partial class RecipeDbContext : DbContext
             entity.Property(e => e.TemperatureCelsius)
                 .HasPrecision(8, 2)
                 .HasColumnName("temperature_celsius");
+            entity.Property(e => e.PublicId).HasColumnName("public_id");
             entity.Property(e => e.Title).HasColumnName("title");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("now()")
@@ -282,7 +285,7 @@ public partial class RecipeDbContext : DbContext
             entity.HasIndex(e => e.RecipeStepId, "recipe_step_one_primary_media_uidx")
                 .IsUnique()
                 .HasFilter("(is_primary = true)");
-
+            entity.HasIndex(e => e.PublicId, "recipe_step_media_public_id_key").IsUnique();
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Caption).HasColumnName("caption");
             entity.Property(e => e.CreatedAt)
@@ -294,6 +297,7 @@ public partial class RecipeDbContext : DbContext
             entity.Property(e => e.MediaAssetRef)
                 .HasComment("MediaAsset public ID từ Content Service; không tạo FK xuyên database.")
                 .HasColumnName("media_asset_ref");
+            entity.Property(e => e.PublicId).HasColumnName("public_id");
             entity.Property(e => e.RecipeStepId).HasColumnName("recipe_step_id");
             entity.Property(e => e.SortOrder)
                 .HasDefaultValue(1)
@@ -341,9 +345,11 @@ public partial class RecipeDbContext : DbContext
             entity.Property(e => e.NormalizedName)
                 .HasComment("Tên chuẩn hóa để tìm kiếm không phân biệt hoa thường.")
                 .HasColumnName("normalized_name");
+            entity.Property(e => e.PrimaryMediaAssetRef).HasColumnName("primary_media_asset_ref");
             entity.Property(e => e.PublicId).HasColumnName("public_id");
             entity.Property(e => e.RecipeId).HasColumnName("recipe_id");
             entity.Property(e => e.RowVersion)
+                .IsConcurrencyToken()
                 .HasDefaultValue(0L)
                 .HasComment("Concurrency token, tăng sau mỗi lần cập nhật.")
                 .HasColumnName("row_version");

@@ -99,5 +99,19 @@ RecipeHub/
 - Triển khai Entity Framework Core DbContext và Migrations với bảng dữ liệu công thức, nguyên liệu.
 - Xử lý nghiệp vụ REST CRUD: Quản lý công thức, phiên bản công thức, quy trình phê duyệt R&D.
 - Cơ chế xác thực JWT Login / Refresh Token và Authorize Policies (RBAC) thực tế.
-- Bộ máy đồng bộ trạng thái ngoại tuyến, Outbox Pattern, DLQ (Dead Letter Queue) cho Redis Streams.
+- Đồng bộ trạng thái ngoại tuyến và messaging reliability dùng chung. Outbox/Redis Streams cho Content đã chọn ở mục 5 nhưng chưa triển khai; không phải hạ tầng outbox toàn nền tảng đã có.
 - Upload file đa phương tiện (PDF, hình ảnh) và tích hợp AI gợi ý công thức.
+
+## 5. Content AI & Media — kiến trúc đã chọn, chưa triển khai
+
+Quyết định: **PostgreSQL + transactional outbox + Redis Streams** cho gen ảnh bất đồng bộ. API ghi draft và outbox trong cùng transaction; relay chuyển job sang Redis; worker gen ảnh, lưu kết quả rồi mới ACK. PostgreSQL giữ trạng thái, Redis vận chuyển job, kho tạm giữ ảnh chờ duyệt 30 phút; Accept mới lưu ảnh chính thức lên Cloudinary.
+
+Patterns chính:
+- **Transactional outbox:** tránh draft đã lưu nhưng mất yêu cầu gửi job; không tạo transaction nguyên tử giữa PostgreSQL và Redis.
+- **At-least-once + idempotent processing:** message có thể giao lại; cùng request/job không được tạo thêm draft/asset nghiệp vụ. Không hứa AI provider được gọi đúng một lần.
+- **Ports & adapters / Clean Architecture:** Application định nghĩa use case và interface; Infrastructure triển khai DB, Redis, AI, storage và gRPC.
+- **Worker host:** dự kiến tái sử dụng `src/backend/Workers/RecipeHub.BackgroundWorker/` để khởi chạy consumer/relay/cleanup Content, giữ heartbeat hiện có; có thể tách host Content khi cần isolation. Adapter kỹ thuật có thể nằm trong Content.Infrastructure, use case nằm trong Content.Application và rule nằm trong Domain. Worker hiện chỉ xử lý heartbeat, chưa có các nhiệm vụ Content này.
+
+**Phạm vi plan mới:** 12 API Content + 5 API Recipe quản lý liên kết ảnh, theo code dev `260f673`. Khi triển khai có thể bổ sung schema/DTO/identity Recipe cần thiết, nhưng mỗi service vẫn sở hữu DB riêng; gỡ ảnh khỏi bước không xóa file Cloudinary. Lượt cập nhật này chỉ pull dev và sửa tài liệu, chưa viết API.
+
+Xem [plan Content và Recipe media](docs/plans/261017-content-ai-media/plan.md), [ERD và quy tắc ảnh](docs/database-schema/content-db/README.md). Profile ảnh hiện tại: FLUX.1 Schnell, prompt cuối tối đa 2048 ký tự, 4 steps, native dimensions; không nhận tỷ lệ/kích thước tùy chọn, không thêm provider ảnh thứ hai. Prompt LLM đề xuất Gemini `gemini-2.5-flash`. Mục 16 là self-review có bằng chứng từ dev: auth, schema/state, concurrency, usage/delete và deployment còn là các gate trước triển khai thật. DBML hai bảng hiện chưa đồng bộ đủ các quyết định mới; chưa phải migration đầy đủ.
