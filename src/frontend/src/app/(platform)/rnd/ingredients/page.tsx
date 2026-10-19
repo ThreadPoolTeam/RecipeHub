@@ -1,51 +1,23 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { FlaskConical, Plus, Pencil, Check, X } from 'lucide-react';
+import Link from 'next/link';
+import { FlaskConical, Plus, Pencil } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { Ingredient } from '@/lib/demo/types';
-import { Button, TextInput, Select, Alert, SearchInput } from '@/components/workspace/fields';
+import { Button, Select, Alert, SearchInput } from '@/components/workspace/fields';
 import { DataTable } from '@/components/workspace/data-table';
-import { Dialog } from '@/components/workspace/dialog';
-
-interface IngredientFormData {
-  code: string;
-  name: string;
-  group: string;
-  defaultUnit: string;
-  isActive: boolean;
-  costPerUnit: number;
-  supplierNotes: string;
-}
-
-const initialFormData: IngredientFormData = {
-  code: '',
-  name: '',
-  group: '',
-  defaultUnit: '',
-  isActive: true,
-  costPerUnit: 0,
-  supplierNotes: '',
-};
 
 export default function RndIngredientsPage() {
   const { session, repo, dataVersion, touch } = useDemo();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [ingredientGroups, setIngredientGroups] = useState<string[]>([]);
-  const [unitOptions, setUnitOptions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [groupFilter, setGroupFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
-
-  // Modal state
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
-  const [formData, setFormData] = useState<IngredientFormData>(initialFormData);
-  const [formSubmitting, setFormSubmitting] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
 
   // Success/Error notification
   const [alertNotice, setAlertNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -74,15 +46,14 @@ export default function RndIngredientsPage() {
 
   useEffect(() => {
     let isMounted = true;
-    Promise.all([repo.getIngredientCategories(), repo.getUnits()])
-      .then(([categories, units]) => {
+    repo.getIngredientCategories()
+      .then((categories) => {
         if (!isMounted) return;
         setIngredientGroups(categories.filter((item) => item.state === 'active').map((item) => item.name));
-        setUnitOptions(units.filter((item) => item.state === 'active').map((item) => item.code));
       })
       .catch((error: unknown) => {
         if (isMounted) {
-          setAlertNotice({ type: 'error', message: error instanceof Error ? error.message : 'Không thể tải catalog Recipe Service.' });
+          setAlertNotice({ type: 'error', message: error instanceof Error ? error.message : 'Không thể tải phân nhóm nguyên liệu.' });
         }
       });
     return () => {
@@ -124,100 +95,6 @@ export default function RndIngredientsPage() {
     return filteredIngredients.slice(start, start + pageSize);
   }, [filteredIngredients, currentPage, pageSize]);
 
-  // Open Create Modal
-  const handleOpenCreate = () => {
-    setEditingIngredient(null);
-    setFormData({
-      ...initialFormData,
-      group: ingredientGroups[0] ?? '',
-      defaultUnit: unitOptions[0] ?? '',
-    });
-    setFormError(null);
-    setIsModalOpen(true);
-  };
-
-  // Open Edit Modal
-  const handleOpenEdit = (ingredient: Ingredient) => {
-    setEditingIngredient(ingredient);
-    setFormData({
-      code: ingredient.code,
-      name: ingredient.name,
-      group: ingredient.group || 'Khác',
-      defaultUnit: ingredient.defaultUnit || 'ml',
-      isActive: ingredient.isActive,
-      costPerUnit: ingredient.costPerUnit || 0,
-      supplierNotes: ingredient.supplierNotes || '',
-    });
-    setFormError(null);
-    setIsModalOpen(true);
-  };
-
-  // Save (Create or Update)
-  const handleSave = async () => {
-    if (!session) return;
-    setFormError(null);
-
-    // Validation
-    const cleanCode = formData.code.trim().toUpperCase();
-    const cleanName = formData.name.trim();
-
-    if (!cleanCode) {
-      setFormError('Vui lòng nhập mã nguyên liệu (vd: ING-TRA-01).');
-      return;
-    }
-    if (!cleanName) {
-      setFormError('Vui lòng nhập tên nguyên liệu.');
-      return;
-    }
-
-    // Code uniqueness check
-    const isCodeDuplicate = ingredients.some((ing) => {
-      if (editingIngredient && ing.id === editingIngredient.id) return false;
-      return ing.code.toUpperCase() === cleanCode;
-    });
-
-    if (isCodeDuplicate) {
-      setFormError(`Mã nguyên liệu "${cleanCode}" đã tồn tại trên hệ thống. Vui lòng chọn mã khác.`);
-      return;
-    }
-
-    try {
-      setFormSubmitting(true);
-      if (editingIngredient) {
-        await repo.updateIngredient(session, editingIngredient.id, {
-          code: cleanCode,
-          name: cleanName,
-          group: formData.group,
-          defaultUnit: formData.defaultUnit,
-          isActive: formData.isActive,
-          costPerUnit: Number(formData.costPerUnit) || 0,
-          supplierNotes: formData.supplierNotes.trim(),
-        });
-        setAlertNotice({ type: 'success', message: `Đã cập nhật nguyên liệu: ${cleanName}` });
-      } else {
-        await repo.createIngredient(session, {
-          code: cleanCode,
-          name: cleanName,
-          group: formData.group,
-          defaultUnit: formData.defaultUnit,
-          isActive: formData.isActive,
-          costPerUnit: Number(formData.costPerUnit) || 0,
-          supplierNotes: formData.supplierNotes.trim(),
-        });
-        setAlertNotice({ type: 'success', message: `Đã thêm nguyên liệu mới: ${cleanName}` });
-      }
-
-      touch();
-      setIsModalOpen(false);
-      await fetchIngredients();
-    } catch (err: unknown) {
-      const e = err as Error;
-      setFormError(e.message || 'Lỗi khi lưu nguyên liệu.');
-    } finally {
-      setFormSubmitting(false);
-    }
-  };
-
   // Quick Toggle Active/Inactive
   const handleToggleActive = async (ingredient: Ingredient) => {
     if (!session) return;
@@ -244,10 +121,19 @@ export default function RndIngredientsPage() {
       render: (item: Ingredient) => (
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[11px] font-semibold px-1.5 py-0.5 rounded bg-[#F5F0E8] text-[#B47820] border border-[#E8E2D9]">
+            <Link
+              href={`/rnd/ingredients/${item.id}/edit`}
+              className="font-mono text-[11px] font-semibold px-1.5 py-0.5 rounded bg-[#F5F0E8] text-[#B47820] border border-[#E8E2D9] hover:bg-[#EAE3D6] transition"
+              title="Xem & chỉnh sửa nguyên liệu"
+            >
               {item.code}
-            </span>
-            <span className="font-semibold text-[#1A1917] text-sm">{item.name}</span>
+            </Link>
+            <Link
+              href={`/rnd/ingredients/${item.id}/edit`}
+              className="font-semibold text-[#1A1917] hover:text-[#B47820] text-sm text-left transition truncate"
+            >
+              {item.name}
+            </Link>
           </div>
           {item.supplierNotes && (
             <p className="text-xs text-[#706E68] mt-0.5 line-clamp-1 italic">
@@ -269,14 +155,6 @@ export default function RndIngredientsPage() {
       header: 'Đơn Vị Chuẩn',
       render: (item: Ingredient) => (
         <span className="font-mono text-xs text-[#706E68]">{item.defaultUnit}</span>
-      ),
-    },
-    {
-      header: 'Giá tham khảo',
-      render: (item: Ingredient) => (
-        <span className="text-xs text-[#1A1917]">
-          {item.costPerUnit ? `${item.costPerUnit.toLocaleString('vi-VN')} đ` : '—'}
-        </span>
       ),
     },
     {
@@ -304,14 +182,15 @@ export default function RndIngredientsPage() {
       header: 'Thao Tác',
       className: 'text-right',
       render: (item: Ingredient) => (
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => handleOpenEdit(item)}
+        <div className="flex items-center justify-end">
+          <Link
+            href={`/rnd/ingredients/${item.id}/edit`}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-[#706E68] hover:text-[#B47820] hover:bg-[#F5F0E8] border border-transparent hover:border-[#E8E2D9] transition"
+            title="Chỉnh sửa nguyên liệu"
+            aria-label="Chỉnh sửa nguyên liệu"
           >
-            Sửa
-          </Button>
+            <Pencil className="w-4 h-4" />
+          </Link>
         </div>
       ),
     },
@@ -326,13 +205,15 @@ export default function RndIngredientsPage() {
             <FlaskConical className="w-5 h-5 text-[#B47820]" /> Kho Nguyên Liệu R&amp;D
           </h1>
           <p className="text-xs sm:text-sm text-[#706E68] mt-0.5">
-            Định nghĩa danh mục nguyên liệu tiêu chuẩn, đơn vị đo và giá tham khảo.
+            Định nghĩa danh mục nguyên liệu tiêu chuẩn và đơn vị đo phục vụ xây dựng công thức.
           </p>
         </div>
         <div>
-          <Button variant="gold" size="sm" onClick={handleOpenCreate}>
-            <Plus className="w-4 h-4 mr-1" /> Thêm nguyên liệu
-          </Button>
+          <Link href="/rnd/ingredients/new">
+            <Button variant="gold" size="sm">
+              <Plus className="w-4 h-4 mr-1" /> Thêm nguyên liệu
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -411,89 +292,6 @@ export default function RndIngredientsPage() {
           onPageChange: setCurrentPage,
         }}
       />
-
-      {/* Create / Edit Modal */}
-      <Dialog
-        isOpen={isModalOpen}
-        onClose={() => {
-          if (!formSubmitting) setIsModalOpen(false);
-        }}
-        title={editingIngredient ? `Chỉnh Sửa: ${editingIngredient.name}` : 'Thêm Nguyên Liệu Tiêu Chuẩn'}
-        description="Mã nguyên liệu là duy nhất, dùng để liên kết tự động trong các bản thảo công thức R&D."
-        confirmLabel={editingIngredient ? 'Cập Nhật' : 'Tạo Mới'}
-        confirmVariant="gold"
-        isConfirming={formSubmitting}
-        onConfirm={handleSave}
-      >
-        <div className="space-y-4 py-2">
-          {formError && <Alert type="error" message={formError} />}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <TextInput
-              label="Mã Nguyên Liệu *"
-              placeholder="VD: ING-TRA-01"
-              value={formData.code}
-              onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-              helper="Mã viết hoa, không trùng lặp"
-            />
-
-            <TextInput
-              label="Tên Nguyên Liệu *"
-              placeholder="VD: Trà Ô Long Rang Thượng Hạng"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Select
-              label="Nhóm Nguyên Liệu *"
-              value={formData.group}
-              onChange={(e) => setFormData({ ...formData, group: e.target.value })}
-              options={ingredientGroups.map((g) => ({ value: g, label: g }))}
-            />
-
-            <Select
-              label="Đơn Vị Tính Chuẩn *"
-              value={formData.defaultUnit}
-              onChange={(e) => setFormData({ ...formData, defaultUnit: e.target.value })}
-              options={unitOptions.map((u) => ({ value: u, label: u }))}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <TextInput
-              label="Giá Đơn Vị Dự Kiến (VNĐ)"
-              type="number"
-              placeholder="0"
-              value={formData.costPerUnit || ''}
-              onChange={(e) => setFormData({ ...formData, costPerUnit: Number(e.target.value) || 0 })}
-              helper="Ước tính giá vốn nguyên liệu"
-            />
-
-            <div className="flex flex-col justify-end">
-              <label className="flex items-center gap-2 cursor-pointer pb-2 text-sm text-[#1A1917]">
-                <input
-                  type="checkbox"
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="rounded border-[#E8E2D9] bg-white text-[#B47820] focus:ring-[#B47820] w-4 h-4"
-                />
-                <span>Kích hoạt sử dụng trong công thức</span>
-              </label>
-            </div>
-          </div>
-
-          <div>
-            <TextInput
-              label="Ghi Chú Nhà Cung Cấp / Bảo Quản"
-              placeholder="VD: Công ty TNHH Trà Việt - bảo quản nơi khô ráo, kín khí..."
-              value={formData.supplierNotes}
-              onChange={(e) => setFormData({ ...formData, supplierNotes: e.target.value })}
-            />
-          </div>
-        </div>
-      </Dialog>
     </div>
   );
 }
