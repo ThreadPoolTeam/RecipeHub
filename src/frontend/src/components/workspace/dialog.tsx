@@ -52,29 +52,29 @@ export function Dialog({
     >
       <div
         ref={dialogRef}
-        className="w-full max-w-lg bg-white border border-[#E2DDD2] rounded-lg shadow-xl p-6 text-[#1C1917] space-y-4"
+        className="w-full max-w-lg bg-white border border-[#E8E2D9] rounded-xl shadow-xl p-6 text-[#1A1917] space-y-4"
       >
         <div className="flex items-start justify-between">
           <div>
-            <h3 id="dialog-title" className="text-lg font-bold text-[#1C1917]">
+            <h3 id="dialog-title" className="text-lg font-bold text-[#1A1917]">
               {title}
             </h3>
             {description && (
-              <p className="mt-1 text-xs text-[#78716C]">{description}</p>
+              <p className="mt-1 text-xs text-[#706E68]">{description}</p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="text-[#78716C] hover:text-[#1C1917] p-1 rounded transition text-sm"
+            className="text-[#706E68] hover:text-[#1A1917] p-1 rounded transition text-sm"
             aria-label="Đóng hộp thoại"
           >
             ✕
           </button>
         </div>
 
-        <div className="py-2 text-sm text-[#1C1917]">{children}</div>
+        <div className="py-2 text-sm text-[#1A1917]">{children}</div>
 
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#E2DDD2]">
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#E8E2D9]">
           <Button variant="ghost" onClick={onClose} disabled={isConfirming}>
             Hủy bỏ
           </Button>

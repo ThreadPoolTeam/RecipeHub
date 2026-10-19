@@ -203,24 +203,24 @@ export function MediaLibrary({
       )}
 
       {/* Upload Zone */}
-      <div className="p-4 bg-white border border-[#E2DDD2] rounded-lg space-y-3 shadow-xs">
+      <div className="p-4 bg-white border border-[#E8E2D9] rounded-xl space-y-3 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h4 className="text-sm font-semibold text-[#1C1917] flex items-center gap-2">
+            <h4 className="text-sm font-semibold text-[#1A1917] flex items-center gap-2">
               <UploadCloud className="w-4 h-4 text-[#B47820]" /> Tải lên tư liệu hình ảnh SOP &amp; R&amp;D
             </h4>
-            <p className="text-xs text-[#78716C] mt-0.5">
+            <p className="text-xs text-[#706E68] mt-0.5">
               Hỗ trợ JPG, PNG, WebP, SVG. Giới hạn tối đa 5 MB/tệp.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-[#F5F2EB] px-2.5 py-1 rounded-md border border-[#E2DDD2] text-xs text-[#78716C]">
+            <div className="flex items-center gap-2 bg-[#F5F0E8] px-2.5 py-1 rounded-md border border-[#E8E2D9] text-xs text-[#706E68]">
               <span>Nguồn:</span>
               <select
                 value={uploadSource}
                 onChange={(e) => setUploadSource(e.target.value as MediaSource)}
-                className="bg-transparent text-[#1C1917] font-medium focus:outline-none"
+                className="bg-transparent text-[#1A1917] font-medium focus:outline-none"
               >
                 <option value="Real">Ảnh chụp SOP thực tế</option>
                 <option value="AiIllustration">Concept AI (Minh họa)</option>
@@ -247,14 +247,14 @@ export function MediaLibrary({
         </div>
       </div>
       {/* Filter Tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E2DDD2] pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E8E2D9] pb-3">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setFilterSource('all')}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
               filterSource === 'all'
-                ? 'bg-[#1C1917] text-white font-semibold'
-                : 'bg-white text-[#78716C] border border-[#E2DDD2] hover:bg-[#F5F2EB]'
+                ? 'bg-[#1A1917] text-white font-semibold'
+                : 'bg-white text-[#706E68] border border-[#E8E2D9] hover:bg-[#F5F0E8]'
             }`}
           >
             Tất cả ({mediaList.length})
@@ -263,8 +263,8 @@ export function MediaLibrary({
             onClick={() => setFilterSource('Real')}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
               filterSource === 'Real'
-                ? 'bg-[#1C1917] text-white font-semibold'
-                : 'bg-white text-[#78716C] border border-[#E2DDD2] hover:bg-[#F5F2EB]'
+                ? 'bg-[#1A1917] text-white font-semibold'
+                : 'bg-white text-[#706E68] border border-[#E8E2D9] hover:bg-[#F5F0E8]'
             }`}
           >
             <Camera className="w-3.5 h-3.5 text-[#B47820]" />
@@ -274,8 +274,8 @@ export function MediaLibrary({
             onClick={() => setFilterSource('AiIllustration')}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
               filterSource === 'AiIllustration'
-                ? 'bg-[#1C1917] text-white font-semibold'
-                : 'bg-white text-[#78716C] border border-[#E2DDD2] hover:bg-[#F5F2EB]'
+                ? 'bg-[#1A1917] text-white font-semibold'
+                : 'bg-white text-[#706E68] border border-[#E8E2D9] hover:bg-[#F5F0E8]'
             }`}
           >
             <Sparkles className="w-3.5 h-3.5 text-[#B47820]" />
@@ -284,12 +284,12 @@ export function MediaLibrary({
         </div>
 
         {/* State filter */}
-        <div className="flex items-center gap-2 text-xs text-[#78716C]">
+        <div className="flex items-center gap-2 text-xs text-[#706E68]">
           <span>Trạng thái:</span>
           <select
             value={filterState}
             onChange={(e) => setFilterState(e.target.value as 'all' | MediaState)}
-            className="bg-white border border-[#E2DDD2] text-[#1C1917] rounded-md px-2 py-1 shadow-xs"
+            className="bg-white border border-[#E8E2D9] text-[#1A1917] rounded-md px-2 py-1 shadow-xs"
           >
             <option value="all">Tất cả trạng thái</option>
             <option value="Active">Đang hoạt động (Active)</option>
@@ -300,12 +300,12 @@ export function MediaLibrary({
 
       {/* Media Grid */}
       {loading ? (
-        <div className="p-12 text-center text-[#78716C]">
+        <div className="p-12 text-center text-[#706E68]">
           <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-[#B47820] mb-2"></div>
           <p className="text-xs">Đang tải danh mục tư liệu hình ảnh...</p>
         </div>
       ) : filteredMedia.length === 0 ? (
-        <div className="p-12 text-center text-[#78716C] bg-white border border-[#E2DDD2] rounded-lg">
+        <div className="p-12 text-center text-[#706E68] bg-white border border-[#E8E2D9] rounded-lg">
           Không có tệp hình ảnh nào trong mục này.
         </div>
       ) : (
@@ -318,11 +318,11 @@ export function MediaLibrary({
               <div
                 key={item.id}
                 className={`group relative bg-white border ${
-                  isSelected ? 'border-[#B47820] ring-2 ring-[#B47820]/30' : 'border-[#E2DDD2] hover:border-[#B47820]'
+                  isSelected ? 'border-[#B47820] ring-2 ring-[#B47820]/30' : 'border-[#E8E2D9] hover:border-[#B47820]'
                 } rounded-lg overflow-hidden flex flex-col transition shadow-xs hover:shadow-sm`}
               >
                 {/* Thumbnail Preview */}
-                <div className="aspect-video w-full bg-[#F5F2EB] flex items-center justify-center overflow-hidden relative">
+                <div className="aspect-video w-full bg-[#F5F0E8] flex items-center justify-center overflow-hidden relative">
                   {previewUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -331,7 +331,7 @@ export function MediaLibrary({
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
-                    <span className="text-[#A8A29E] text-xs">Không có ảnh</span>
+                    <span className="text-[#8C887F] text-xs">Không có ảnh</span>
                   )}
                   <div className="absolute top-1.5 left-1.5 flex flex-col gap-1">
                     <MediaSourceBadge source={item.source} />
@@ -346,10 +346,10 @@ export function MediaLibrary({
                 {/* Details */}
                 <div className="p-2.5 flex-1 flex flex-col justify-between space-y-2">
                   <div>
-                    <h5 className="text-xs font-semibold text-[#1C1917] truncate" title={item.name}>
+                    <h5 className="text-xs font-semibold text-[#1A1917] truncate" title={item.name}>
                       {item.name}
                     </h5>
-                    <p className="text-[10px] text-[#78716C] mt-0.5">
+                    <p className="text-[10px] text-[#706E68] mt-0.5">
                       {(item.sizeBytes / 1024).toFixed(1)} KB • {item.uploadedBy.split('@')[0]}
                     </p>
                   </div>
@@ -403,7 +403,7 @@ export function MediaLibrary({
           description={`ID: ${inspectingMedia.id} | Người tải lên: ${inspectingMedia.uploadedBy}`}
         >
           <div className="space-y-4">
-            <div className="aspect-video w-full rounded-md overflow-hidden bg-[#F5F2EB] flex items-center justify-center border border-[#E2DDD2]">
+            <div className="aspect-video w-full rounded-md overflow-hidden bg-[#F5F0E8] flex items-center justify-center border border-[#E8E2D9]">
               {previewUrls[inspectingMedia.id] && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -414,28 +414,28 @@ export function MediaLibrary({
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-xs bg-[#FAF8F2] p-3 rounded-md border border-[#E2DDD2] text-[#1C1917]">
+            <div className="grid grid-cols-2 gap-2 text-xs bg-[#FAF9F5] p-3 rounded-md border border-[#E8E2D9] text-[#1A1917]">
               <div>
-                <span className="text-[#78716C]">Phân loại:</span>{' '}
-                <span className="font-medium text-[#1C1917]">{inspectingMedia.source}</span>
+                <span className="text-[#706E68]">Phân loại:</span>{' '}
+                <span className="font-medium text-[#1A1917]">{inspectingMedia.source}</span>
               </div>
               <div>
-                <span className="text-[#78716C]">Trạng thái:</span>{' '}
-                <span className="font-medium text-[#1C1917]">{inspectingMedia.state}</span>
+                <span className="text-[#706E68]">Trạng thái:</span>{' '}
+                <span className="font-medium text-[#1A1917]">{inspectingMedia.state}</span>
               </div>
               <div>
-                <span className="text-[#78716C]">Kích thước:</span>{' '}
-                <span className="font-medium text-[#1C1917]">{(inspectingMedia.sizeBytes / 1024).toFixed(1)} KB</span>
+                <span className="text-[#706E68]">Kích thước:</span>{' '}
+                <span className="font-medium text-[#1A1917]">{(inspectingMedia.sizeBytes / 1024).toFixed(1)} KB</span>
               </div>
               <div>
-                <span className="text-[#78716C]">Định dạng:</span>{' '}
-                <span className="font-medium text-[#1C1917]">{inspectingMedia.mimeType}</span>
+                <span className="text-[#706E68]">Định dạng:</span>{' '}
+                <span className="font-medium text-[#1A1917]">{inspectingMedia.mimeType}</span>
               </div>
             </div>
 
             {/* Reference Inspection */}
-            <div className="space-y-2 border-t border-[#E2DDD2] pt-3">
-              <h5 className="text-xs font-semibold uppercase tracking-wider text-[#78716C]">
+            <div className="space-y-2 border-t border-[#E8E2D9] pt-3">
+              <h5 className="text-xs font-semibold uppercase tracking-wider text-[#706E68]">
                 Ràng buộc tham chiếu công thức &amp; SOP:
               </h5>
               {inspectRefs ? (
@@ -465,12 +465,12 @@ export function MediaLibrary({
                   </div>
                 )
               ) : (
-                <p className="text-xs text-[#78716C]">Đang kiểm tra ràng buộc tham chiếu...</p>
+                <p className="text-xs text-[#706E68]">Đang kiểm tra ràng buộc tham chiếu...</p>
               )}
             </div>
 
             {allowDelete && (
-              <div className="pt-3 border-t border-[#E2DDD2] flex justify-between items-center">
+              <div className="pt-3 border-t border-[#E8E2D9] flex justify-between items-center">
                 {inspectingMedia.state === 'DeleteFailed' ? (
                   <Button
                     variant="danger"
@@ -491,7 +491,7 @@ export function MediaLibrary({
                     <Trash2 className="w-3.5 h-3.5 mr-1" /> Xóa tệp này
                   </Button>
                 )}
-                <span className="text-[11px] text-[#78716C]">
+                <span className="text-[11px] text-[#706E68]">
                   {inspectRefs && (inspectRefs.recipes.length > 0 || inspectRefs.documents.length > 0)
                     ? 'Bị khóa do có tham chiếu'
                     : 'Hợp lệ để xóa'}

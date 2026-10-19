@@ -138,8 +138,8 @@ export function DocumentWorkspace({ recipe, readOnly = false }: DocumentWorkspac
 
   if (loading || !draft) {
     return (
-      <div className="p-8 text-center text-zinc-400">
-        <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-[#C9A84C]"></div>
+      <div className="p-8 text-center text-[#706E68]">
+        <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-[#B47820]"></div>
         <p className="mt-2 text-xs">Đang tải không gian biên tập tài liệu...</p>
       </div>
     );
@@ -181,7 +181,7 @@ export function DocumentWorkspace({ recipe, readOnly = false }: DocumentWorkspac
           </Button>
         </div>
       ) : (
-        <div className="p-3.5 bg-white border border-[#E2DDD2] rounded-lg text-xs text-[#78716C] flex items-center justify-between shadow-xs">
+        <div className="p-3.5 bg-white border border-[#E8E2D9] rounded-lg text-xs text-[#706E68] flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
             <span>Chưa có ấn bản tài liệu chính thức được phát hành cho phiên bản này.</span>
@@ -199,13 +199,13 @@ export function DocumentWorkspace({ recipe, readOnly = false }: DocumentWorkspac
       {/* Editor & Actions Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Settings Column */}
-        <div className="lg:col-span-2 space-y-4 bg-white p-5 rounded-lg border border-[#E2DDD2] shadow-xs">
-          <div className="flex items-center justify-between border-b border-[#E2DDD2] pb-3">
+        <div className="lg:col-span-2 space-y-4 bg-white p-5 rounded-xl border border-[#E8E2D9] shadow-xs">
+          <div className="flex items-center justify-between border-b border-[#E8E2D9] pb-3">
             <div>
-              <h4 className="text-sm font-bold text-[#1C1917] uppercase tracking-wider">
+              <h4 className="text-sm font-bold text-[#1A1917] uppercase tracking-wider">
                 Cấu hình trình bày tài liệu SOP
               </h4>
-              <p className="text-xs text-[#78716C] mt-0.5">
+              <p className="text-xs text-[#706E68] mt-0.5">
                 Các tùy biến hiển thị tại đây không làm thay đổi nội dung công thức gốc.
               </p>
             </div>
@@ -216,7 +216,7 @@ export function DocumentWorkspace({ recipe, readOnly = false }: DocumentWorkspac
                 isLoading={isSavingDraft}
                 onClick={handleSaveDraft}
               >
-                <Save className="w-3.5 h-3.5 mr-1 text-[#78716C]" /> Lưu cấu hình
+                <Save className="w-3.5 h-3.5 mr-1 text-[#706E68]" /> Lưu cấu hình
               </Button>
             )}
           </div>
@@ -244,11 +244,11 @@ export function DocumentWorkspace({ recipe, readOnly = false }: DocumentWorkspac
 
             {/* Cover photo override */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-300">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#1A1917]">
                 Ảnh Bìa Tài Liệu
               </label>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-zinc-400">
+                <span className="text-xs text-[#706E68]">
                   {draft.coverMediaIdOverride
                     ? `Đang chọn ảnh tùy chỉnh: ID ${draft.coverMediaIdOverride}`
                     : 'Đang dùng ảnh đại diện mặc định của bước 1'}
@@ -257,7 +257,7 @@ export function DocumentWorkspace({ recipe, readOnly = false }: DocumentWorkspac
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-xs text-[#C9A84C]"
+                    className="text-xs text-[#B47820]"
                     onClick={() => setIsCoverPickerOpen(true)}
                   >
                     Đổi ảnh bìa...
@@ -277,13 +277,13 @@ export function DocumentWorkspace({ recipe, readOnly = false }: DocumentWorkspac
             </div>
 
             {/* Step Caption Overrides */}
-            <div className="space-y-3 pt-2 border-t border-zinc-800">
-              <h5 className="text-xs font-semibold uppercase text-zinc-300">
+            <div className="space-y-3 pt-2 border-t border-[#E8E2D9]">
+              <h5 className="text-xs font-semibold uppercase text-[#1A1917]">
                 Chú thích ảnh theo từng bước (Step Captions):
               </h5>
               {recipe.steps.map((step) => (
-                <div key={step.id} className="p-3 bg-zinc-900/60 rounded border border-zinc-800/80 space-y-1">
-                  <div className="text-xs font-medium text-zinc-300">
+                <div key={step.id} className="p-3 bg-[#FAF9F5] rounded-lg border border-[#E8E2D9] space-y-1">
+                  <div className="text-xs font-medium text-[#1A1917]">
                     Bước {step.stepNumber}: {step.title}
                   </div>
                   <TextInput
@@ -319,18 +319,18 @@ export function DocumentWorkspace({ recipe, readOnly = false }: DocumentWorkspac
         {/* Action & Preview Column */}
         {/* Export & Preview Column */}
         <div className="space-y-4">
-          <div className="p-5 bg-white border border-[#E2DDD2] rounded-lg space-y-4 shadow-xs">
-            <h4 className="text-sm font-bold text-[#1C1917] uppercase tracking-wider border-b border-[#E2DDD2] pb-3">
+          <div className="p-5 bg-white border border-[#E8E2D9] rounded-xl space-y-4 shadow-xs">
+            <h4 className="text-sm font-bold text-[#1A1917] uppercase tracking-wider border-b border-[#E8E2D9] pb-3">
               Tác vụ xuất bản tài liệu PDF
             </h4>
-            <p className="text-xs text-[#78716C]">
+            <p className="text-xs text-[#706E68]">
               Tạo tệp PDF A4 sắc nét phông chữ tiếng Việt với đầy đủ bảng định lượng và quy trình SOP.
             </p>
 
             <div className="space-y-3 pt-1">
-              <div className="p-3 bg-[#FAF8F2] rounded-lg border border-[#E2DDD2] text-xs space-y-1">
-                <span className="font-semibold text-[#1C1917]">1. Xuất Bản Thử Nghiệm</span>
-                <p className="text-[#78716C]">
+              <div className="p-3 bg-[#FAF9F5] rounded-lg border border-[#E8E2D9] text-xs space-y-1">
+                <span className="font-semibold text-[#1A1917]">1. Xuất Bản Thử Nghiệm</span>
+                <p className="text-[#706E68]">
                   Có đóng dấu watermark &quot;BẢN NHÁP — CHƯA PHÁT HÀNH&quot;. Dành cho chuyên viên kiểm tra trước.
                 </p>
                 <div className="pt-2">
@@ -346,9 +346,9 @@ export function DocumentWorkspace({ recipe, readOnly = false }: DocumentWorkspac
                 </div>
               </div>
 
-              <div className="p-3 bg-[#FAF8F2] rounded-lg border border-[#E2DDD2] text-xs space-y-1">
-                <span className="font-semibold text-[#1C1917]">2. Xuất Bản Phát Hành Chính Thức</span>
-                <p className="text-[#78716C]">
+              <div className="p-3 bg-[#FAF9F5] rounded-lg border border-[#E8E2D9] text-xs space-y-1">
+                <span className="font-semibold text-[#1A1917]">2. Xuất Bản Phát Hành Chính Thức</span>
+                <p className="text-[#706E68]">
                   Bản sạch không có watermark. Chỉ kích hoạt khi công thức đạt trạng thái{' '}
                   <strong className="text-emerald-700">Đã Phê Duyệt (Approved)</strong>.
                 </p>
