@@ -29,10 +29,33 @@
 
 ---
 
-## 2. Kết quả kiểm tra & Đo đạc (Verification)
+## 2. Tích hợp nhánh, Giải quyết Conflict & Loại bỏ màu cam
+
+### A. Nhánh & Chuỗi Atomic Commits
+- Tạo nhánh mới `feat/warm-editorial-ui` từ commit `c5333fe` (`origin/feat/implement-recipe-content`).
+- Khôi phục UI Warm Editorial, giải quyết toàn bộ 24 khối conflict trên 7 tệp:
+  - Giữ nguyên 100% logic API, validation, và dynamic groups từ backend.
+  - Ghép chuẩn xác nút "Xuất SOP" cạnh khối khôi phục/lưu trữ công thức (`rnd/recipes/[id]/page.tsx`).
+  - Thay thế toàn bộ 63 token màu cam đất cũ (`#A9583E`, `#CC785C`, `#8F4731`) sang bảng màu Warm Gold chuẩn (`#B47820`, `#C9A84C`, `#9A6416`).
+- Chuỗi 6 commit nguyên tử (Atomic commits):
+  1. `c4b9454`: `docs: update design system and plans for Warm Editorial UI`
+  2. `fe9a55e`: `feat(ui): design system tokens, typography, and landing page redesign`
+  3. `8c5436c`: `feat(ui): shared workspace components with Apple-style controls and Warm Gold tokens`
+  4. `bab33db`: `feat(ui): collapsible slim sidebar and user pages (profile, settings, help)`
+  5. `41e3313`: `feat(auth): grant R&D direct approval and remove separate reviewer role`
+  6. `72d2dcb`: `feat(ui): apply Warm Editorial styling to platform routes and retain API bindings`
+
+### B. Pull Request
+- Đã mở Pull Request #8 vào nhánh `dev`:
+  - **URL:** `https://github.com/ThreadPoolTeam/RecipeHub/pull/8`
+  - **Base:** `dev` &larr; **Head:** `feat/warm-editorial-ui`
+
+---
+
+## 3. Kết quả kiểm tra & Đo đạc (Verification)
 
 - **Frontend build (`npm run build` trong `src/frontend`):**
   - Trình biên dịch: Next.js 16.4.0 (Turbopack).
-  - Kết quả: **Thành công 100%** (22/22 routes biên dịch tĩnh và động hoàn tất trong ~6.6s, 0 lỗi TypeScript).
-- **Backend build:**
-  - `dotnet build src/backend/RecipeHub.sln` gặp lỗi chia sẻ tệp (`MSB3027 / MSB3021: file is being used by another process`) do các tiến trình API/Gateway/Worker của RecipeHub đang chạy trực tiếp trên máy. Mã nguồn C# backend không bị thay đổi.
+  - Kết quả: **Thành công 100%** (25/25 routes biên dịch và prerender thành công trong ~5.6s, 0 lỗi TypeScript, 0 lỗi lint).
+- **Kiểm tra mã màu:** Quét toàn bộ `src/frontend/src` tìm `#A9583E`, `#CC785C`, `#8F4731`, `orange-` &rarr; Kết quả: 0 kết quả (đã sạch 100% màu cam).
+- **Git working tree:** Sạch hoàn toàn, không còn tệp unmerged (`git diff --diff-filter=U` rỗng).
