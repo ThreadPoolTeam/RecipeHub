@@ -13,6 +13,11 @@ import {
   X,
   Sparkles,
   Check,
+  Trash2,
+  Clock,
+  Thermometer,
+  CheckCircle2,
+  Utensils,
 } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { Ingredient, RecipeIngredient, RecipeStep } from '@/lib/demo/types';
@@ -373,17 +378,15 @@ export default function NewRecipePage() {
                   />
                 </div>
 
-                <div className="md:col-span-1 flex justify-end">
-                  <Button
+                <div className="md:col-span-1 flex items-end">
+                  <button
                     type="button"
-                    variant="danger"
-                    size="sm"
-                    className="w-full"
                     onClick={() => handleRemoveIngredient(idx)}
                     title="Xóa nguyên liệu"
+                    className="w-full h-[38px] rounded-xl text-[#8C887F] hover:text-rose-600 hover:bg-rose-50 border border-[#E8E2D9] hover:border-rose-200 transition flex items-center justify-center"
                   >
-                    <X className="w-4 h-4" />
-                  </Button>
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -419,97 +422,134 @@ export default function NewRecipePage() {
             {steps.map((step, idx) => (
               <div
                 key={step.id}
-                className="bg-[#FAF9F5] border border-[#E8E2D9] rounded-xl p-4.5 space-y-3.5 relative shadow-2xs hover:border-[#C5BFB1] transition"
+                className="bg-white border border-[#E8E2D9] rounded-2xl shadow-xs overflow-hidden transition-all duration-200 hover:shadow-sm hover:border-[#D5CEBF]"
               >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5 flex-1">
-                    <span className="w-6 h-6 rounded-full bg-[#B47820]/15 text-[#B47820] flex items-center justify-center font-bold text-xs">
+                {/* Step Header Bar */}
+                <div className="bg-[#FAF9F5] border-b border-[#E8E2D9] px-4 py-3 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <span className="w-7 h-7 rounded-full bg-[#B47820] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
                       {idx + 1}
                     </span>
                     <input
                       type="text"
-                      className="bg-white border border-[#E8E2D9] rounded-md px-3 py-1.5 text-sm font-semibold text-[#1A1917] w-full max-w-sm focus:outline-none focus:border-[#B47820] shadow-2xs transition"
+                      className="bg-white border border-[#E8E2D9] rounded-xl px-3.5 py-1.5 text-sm font-semibold text-[#1A1917] w-full max-w-md focus:outline-none focus:border-[#B47820] focus:ring-2 focus:ring-[#B47820]/15 shadow-2xs transition placeholder:text-[#8C887F]"
                       value={step.title}
-                      placeholder="Tiêu đề bước..."
+                      placeholder="Tên bước (VD: Chiết xuất espresso, Đánh bọt sữa...)"
                       onChange={(e) => handleUpdateStep(idx, { title: e.target.value })}
                     />
                   </div>
 
-                  <div className="flex items-center gap-1.5">
-                    <Button
+                  {/* Reorder and Delete Controls */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
                       type="button"
-                      variant="ghost"
-                      size="sm"
                       disabled={idx === 0}
                       onClick={() => handleMoveStep(idx, 'up')}
                       title="Di chuyển lên"
+                      className="p-1.5 rounded-lg text-[#706E68] hover:text-[#1A1917] hover:bg-white border border-transparent hover:border-[#E8E2D9] disabled:opacity-30 disabled:pointer-events-none transition"
                     >
-                      <ArrowUp className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button
+                      <ArrowUp className="w-4 h-4" />
+                    </button>
+                    <button
                       type="button"
-                      variant="ghost"
-                      size="sm"
                       disabled={idx === steps.length - 1}
                       onClick={() => handleMoveStep(idx, 'down')}
                       title="Di chuyển xuống"
+                      className="p-1.5 rounded-lg text-[#706E68] hover:text-[#1A1917] hover:bg-white border border-transparent hover:border-[#E8E2D9] disabled:opacity-30 disabled:pointer-events-none transition"
                     >
-                      <ArrowDown className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button
+                      <ArrowDown className="w-4 h-4" />
+                    </button>
+                    <button
                       type="button"
-                      variant="danger"
-                      size="sm"
                       onClick={() => handleRemoveStep(idx)}
                       title="Xóa bước này"
+                      className="p-1.5 rounded-lg text-[#8C887F] hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition"
                     >
-                      <X className="w-4 h-4" />
-                    </Button>
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
 
-                <TextArea
-                  label="Hướng Dẫn Thao Tác Chi Tiết *"
-                  placeholder="Mô tả kỹ thuật ủ trà, đánh bọt, rót tầng hoặc lắc shaker..."
-                  value={step.instruction}
-                  onChange={(e) => handleUpdateStep(idx, { instruction: e.target.value })}
-                  rows={2}
-                />
+                {/* Step Body */}
+                <div className="p-4 space-y-4">
+                  {/* Step instruction */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-[#1A1917] flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-[#B47820]" />
+                      <span>Hướng dẫn thao tác chi tiết <span className="text-rose-500">*</span></span>
+                    </label>
+                    <textarea
+                      className="w-full bg-[#FAF9F5]/50 border border-[#E8E2D9] rounded-xl px-3.5 py-2.5 text-sm text-[#1A1917] placeholder:text-[#8C887F] focus:bg-white focus:border-[#B47820] focus:ring-2 focus:ring-[#B47820]/15 outline-none transition shadow-2xs"
+                      placeholder="Mô tả kỹ thuật ủ trà, đánh bọt, rót tầng hoặc lắc shaker..."
+                      value={step.instruction}
+                      onChange={(e) => handleUpdateStep(idx, { instruction: e.target.value })}
+                      rows={2}
+                    />
+                  </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-1">
-                  <TextInput
-                    label="Thời gian (giây)"
-                    type="number"
-                    placeholder="VD: 30"
-                    value={step.durationSeconds || ''}
-                    onChange={(e) =>
-                      handleUpdateStep(idx, { durationSeconds: Number(e.target.value) || undefined })
-                    }
-                  />
+                  {/* Step Attributes - Compact Grid with icons */}
+                  <div className="bg-[#FAF9F5] border border-[#E8E2D9] rounded-xl p-3.5">
+                    <div className="text-[11px] font-semibold text-[#706E68] uppercase tracking-wider mb-2.5">
+                      Thông số kỹ thuật
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      <div>
+                        <label className="text-xs font-medium text-[#706E68] flex items-center gap-1 mb-1">
+                          <Clock className="w-3.5 h-3.5 text-[#B47820]" /> Thời gian (giây)
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="VD: 30"
+                          value={step.durationSeconds || ''}
+                          onChange={(e) =>
+                            handleUpdateStep(idx, { durationSeconds: Number(e.target.value) || undefined })
+                          }
+                          className="w-full bg-white border border-[#E8E2D9] rounded-lg px-3 py-1.5 text-xs text-[#1A1917] placeholder:text-[#8C887F] focus:border-[#B47820] focus:ring-2 focus:ring-[#B47820]/15 outline-none transition shadow-2xs"
+                        />
+                      </div>
 
-                  <TextInput
-                    label="Nhiệt độ (°C)"
-                    type="number"
-                    placeholder="VD: 85"
-                    value={step.temperatureCelsius || ''}
-                    onChange={(e) =>
-                      handleUpdateStep(idx, { temperatureCelsius: Number(e.target.value) || undefined })
-                    }
-                  />
+                      <div>
+                        <label className="text-xs font-medium text-[#706E68] flex items-center gap-1 mb-1">
+                          <Thermometer className="w-3.5 h-3.5 text-[#B47820]" /> Nhiệt độ (°C)
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="VD: 85"
+                          value={step.temperatureCelsius || ''}
+                          onChange={(e) =>
+                            handleUpdateStep(idx, { temperatureCelsius: Number(e.target.value) || undefined })
+                          }
+                          className="w-full bg-white border border-[#E8E2D9] rounded-lg px-3 py-1.5 text-xs text-[#1A1917] placeholder:text-[#8C887F] focus:border-[#B47820] focus:ring-2 focus:ring-[#B47820]/15 outline-none transition shadow-2xs"
+                        />
+                      </div>
 
-                  <TextInput
-                    label="Dụng cụ cần dùng"
-                    placeholder="VD: Bình ủ, nhiệt kế"
-                    value={step.equipment || ''}
-                    onChange={(e) => handleUpdateStep(idx, { equipment: e.target.value })}
-                  />
+                      <div>
+                        <label className="text-xs font-medium text-[#706E68] flex items-center gap-1 mb-1">
+                          <Utensils className="w-3.5 h-3.5 text-[#B47820]" /> Dụng cụ cần dùng
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="VD: Bình ủ, nhiệt kế"
+                          value={step.equipment || ''}
+                          onChange={(e) => handleUpdateStep(idx, { equipment: e.target.value })}
+                          className="w-full bg-white border border-[#E8E2D9] rounded-lg px-3 py-1.5 text-xs text-[#1A1917] placeholder:text-[#8C887F] focus:border-[#B47820] focus:ring-2 focus:ring-[#B47820]/15 outline-none transition shadow-2xs"
+                        />
+                      </div>
 
-                  <TextInput
-                    label="Tiêu chí hoàn thành"
-                    placeholder="VD: Cốt trà sánh, thơm đậm"
-                    value={step.completionCriteria || ''}
-                    onChange={(e) => handleUpdateStep(idx, { completionCriteria: e.target.value })}
-                  />
+                      <div>
+                        <label className="text-xs font-medium text-[#706E68] flex items-center gap-1 mb-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#B47820]" /> Tiêu chí hoàn thành
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="VD: Cốt trà sánh, thơm đậm"
+                          value={step.completionCriteria || ''}
+                          onChange={(e) => handleUpdateStep(idx, { completionCriteria: e.target.value })}
+                          className="w-full bg-white border border-[#E8E2D9] rounded-lg px-3 py-1.5 text-xs text-[#1A1917] placeholder:text-[#8C887F] focus:border-[#B47820] focus:ring-2 focus:ring-[#B47820]/15 outline-none transition shadow-2xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -518,7 +558,7 @@ export default function NewRecipePage() {
       </div>
 
       {/* Action Footer */}
-      <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-800">
+      <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#E8E2D9]">
         <Link href="/rnd/recipes">
           <Button type="button" variant="secondary">
             Hủy Bỏ
