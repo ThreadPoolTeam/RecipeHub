@@ -537,9 +537,11 @@ export class BackendRepository extends DemoRepository {
 
   override async getRecipes(actor: SessionInfo, filter?: RecipeFilter): Promise<PaginatedResult<RecipeVersion>> {
     const effectiveFilter = filter ?? {};
+    const requestedPageSize = effectiveFilter.pageSize ?? 10;
+    const clampedPageSize = Math.min(Math.max(1, requestedPageSize), 100);
     const params = new URLSearchParams({
       page: String(effectiveFilter.page ?? 1),
-      pageSize: String(effectiveFilter.pageSize ?? 10),
+      pageSize: String(clampedPageSize),
     });
     if (effectiveFilter.query?.trim()) params.set('query', effectiveFilter.query.trim());
     if (effectiveFilter.status && effectiveFilter.status !== 'all') {
