@@ -14,6 +14,9 @@
 
 **Liên hệ plan FE — 2026-10-14:** [Plan FE theo vai trò](../261014-recipehub-frontend-role-flows/plan.md) thay các placeholder `/rnd`, `/viewer`, `/admin`, không thay landing `/`, video/frame hay `.landing-root`. Không có phụ thuộc đầu ra chặn nhau. Hai plan dùng cùng font/token nhưng FE mới scope style riêng; integration owner giữ quyền sửa file chung. Các mô tả Next 14/React 18 trong khảo sát dưới là lịch sử tại thời điểm lập plan, không phải phiên bản hiện tại (`package.json` hiện khai báo Next `^16.4.0`, React `^19.3.0`). Không suy ra landing đã nghiệm thu từ source đang có.
 
+**Design cutover — 2026-10-19:** [Warm Editorial toàn bộ UI](../261019-warm-editorial-ui/plan.md) thay quy chuẩn NoirLuxe cho navbar, workspace, CTA/footer và các trang app; giữ nguyên ScrollFrameStory, assets, native scroll và credit Phê La. Khi triển khai presentation mới, dùng plan mới thay các chỉ dẫn màu/header cũ bên dưới. Không có blocker đầu ra bắt buộc; không chạy hai plan sửa cùng landing đồng thời. Status lịch sử không được coi là nghiệm thu hiện tại.
+
+
 ---
 
 ## 1. Quyết định đã được người dùng xác nhận

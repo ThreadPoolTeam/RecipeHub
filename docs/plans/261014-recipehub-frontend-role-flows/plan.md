@@ -43,6 +43,11 @@ Frontend thực tế ở `src/frontend/`; package.json khai báo Next `^16.4.0`,
 
 Không có quan hệ đầu ra bắt buộc giữa các plan; `blockedBy`/`blocks` để rỗng cả hai chiều. Không đánh dấu plan cũ completed khi chưa nghiệm thu.
 
+### Design cutover — 2026-10-19
+
+[Warm Editorial toàn bộ UI](../261019-warm-editorial-ui/plan.md) kế thừa flow/component đã có, thay quy chuẩn màu và presentation cho mọi route. Không khôi phục NoirLuxe hoặc ghi đè data provider hiện hành theo mô tả demo lịch sử của plan này. Quan hệ kế thừa, không có blocker hoàn thành cả plan; `blocks/blockedBy` vẫn rỗng. Source thực tế phải được đọc lại trước thực thi; không suy ra plan này đã hoàn tất.
+
+
 ## Các phase
 
 | Phase | Tên | Trạng thái |
