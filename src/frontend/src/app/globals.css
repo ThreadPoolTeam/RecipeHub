@@ -78,23 +78,69 @@
 }
 
 :root {
-  --color-noir: #0C0C0E;
-  --color-warm-white: #F2F0EB;
-  --color-gold: #C9A84C;
-  --color-gold-hover: #DEBF64;
-  --color-surface: #161619;
-  --color-surface-card: #1A1A1E;
-  --color-border: rgba(242, 240, 235, 0.12);
-  --color-muted: #9E9A90;
+  /* Warm Editorial Semantic Tokens */
+  --canvas: #FAF9F5;
+  --surface: #FFFFFF;
+  --surface-soft: #F5F0E8;
+  --surface-hover: #ECE6DA;
+  --border: #E8E2D9;
+  --border-strong: #D5CEBF;
+  --ink: #1A1917;
+  --muted: #706E68;
+  --muted-soft: #8C887F;
+  --accent: #B47820;
+  --accent-hover: #9E6714;
+  --action: #B47820;
+  --action-hover: #9E6714;
+
+  /* Status Tokens */
+  --status-draft-fg: #9A3412;
+  --status-draft-bg: #FFF7ED;
+  --status-draft-border: #FED7AA;
+
+  --status-pending-fg: #1E40AF;
+  --status-pending-bg: #EFF6FF;
+  --status-pending-border: #BFDBFE;
+
+  --status-approved-fg: #166534;
+  --status-approved-bg: #F0FDF4;
+  --status-approved-border: #BBF7D0;
+
+  --status-returned-fg: #991B1B;
+  --status-returned-bg: #FEF2F2;
+  --status-returned-border: #FECACA;
+
+  --status-archived-fg: #475569;
+  --status-archived-bg: #F8FAFC;
+  --status-archived-border: #E2E8F0;
+
+  /* Cinematic Exception Tokens (Strictly for Landing Story Canvas) */
+  --cinematic-bg: #0C0C0E;
+  --cinematic-ink: #F2F0EB;
+  --cinematic-muted: #9E9A90;
+  --cinematic-border: rgba(242, 240, 235, 0.12);
+  --cinematic-gold: #C9A84C;
+  --cinematic-gold-hover: #DEBF64;
+
+  /* Fallback aliases for legacy mapping */
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-action: var(--action);
 }
 
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Google Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--canvas);
+  color: var(--ink);
 }
 
 .landing-root {
   font-family: 'Google Sans', system-ui, -apple-system, sans-serif;
-  background-color: var(--color-noir);
-  color: var(--color-warm-white);
+  background-color: var(--canvas);
+  color: var(--ink);
   min-height: 100vh;
 }
