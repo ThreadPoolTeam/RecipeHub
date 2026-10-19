@@ -15,6 +15,7 @@ import {
   RefreshCw,
   GitFork,
   Archive,
+  FileDown,
 } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { RecipeVersion, Ingredient, MediaAsset } from '@/lib/demo/types';
@@ -204,8 +205,8 @@ export default function RecipeDetailPage() {
 
   if (loading) {
     return (
-      <div className="p-12 text-center text-zinc-400">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#C9A84C]" />
+      <div className="p-12 text-center text-[#706E68]">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#B47820]" />
         <p className="mt-3 text-sm">Đang tải hồ sơ công thức...</p>
       </div>
     );
@@ -227,18 +228,18 @@ export default function RecipeDetailPage() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
       {/* Breadcrumb & Top Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E2DDD2] pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E8E2D9] pb-4">
         <div>
-          <div className="flex items-center gap-2 text-xs text-[#78716C] mb-1">
-            <Link href="/rnd/recipes" className="hover:text-[#1C1917] flex items-center gap-1 font-medium">
+          <div className="flex items-center gap-2 text-xs text-[#706E68] mb-1">
+            <Link href="/rnd/recipes" className="hover:text-[#1A1917] flex items-center gap-1 font-medium">
               <ArrowLeft className="w-3 h-3" /> Công thức R&amp;D
             </Link>
             <span>/</span>
             <span className="font-mono text-[#B47820] font-semibold">{recipe.code}</span>
           </div>
           <div className="flex items-center gap-2.5 flex-wrap">
-            <h1 className="text-xl sm:text-2xl font-bold text-[#1C1917]">{recipe.name}</h1>
-            <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#F5F2EB] text-[#B47820] font-semibold border border-[#E2DDD2]">
+            <h1 className="text-xl sm:text-2xl font-bold text-[#1A1917]">{recipe.name}</h1>
+            <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#F5F0E8] text-[#B47820] font-semibold border border-[#E8E2D9]">
               {recipe.versionLabel}
             </span>
             <StatusBadge status={recipe.status} />
@@ -279,8 +280,14 @@ export default function RecipeDetailPage() {
           )}
 
           <Button variant="secondary" size="sm" onClick={handleOpenVariantDialog} title="Nhân bản công thức làm biến thể">
-            <GitFork className="w-3.5 h-3.5 mr-1 text-[#78716C]" /> Tạo biến thể
+            <GitFork className="w-3.5 h-3.5 mr-1 text-[#706E68]" /> Tạo biến thể
           </Button>
+
+          <Link href={`/rnd/recipes/${recipe.id}/document`}>
+            <Button variant="secondary" size="sm">
+              <FileDown className="w-3.5 h-3.5 mr-1 text-[#B47820]" /> Xuất SOP
+            </Button>
+          </Link>
 
           {recipe.status === 'Archived' ? (
             <Button
@@ -352,51 +359,54 @@ export default function RecipeDetailPage() {
           )}
         </div>
       )}
-      {/* Metadata Card */}
-      <div className="bg-white border border-[#E2DDD2] rounded-lg p-5 space-y-3 shadow-xs">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-[#78716C]">
+      <div className="bg-white border border-[#E8E2D9] rounded-xl p-5 space-y-3 shadow-xs">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-[#706E68]">
           Thông số kỹ thuật
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
           <div>
-            <span className="text-xs text-[#A8A29E] block">Mã công thức</span>
-            <span className="font-mono font-semibold text-[#1C1917]">{recipe.code}</span>
+            <span className="text-xs text-[#8C887F] block">Mã công thức</span>
+            <span className="font-mono font-semibold text-[#1A1917]">{recipe.code}</span>
           </div>
           <div>
-            <span className="text-xs text-[#A8A29E] block">Sản lượng chuẩn</span>
-            <span className="font-semibold text-[#1C1917]">
+            <span className="text-xs text-[#8C887F] block">Sản lượng chuẩn</span>
+            <span className="font-semibold text-[#1A1917]">
               {recipe.targetYield} {recipe.yieldUnit}
             </span>
           </div>
           <div>
-            <span className="text-xs text-[#A8A29E] block">Người khởi tạo</span>
-            <span className="font-mono text-[#78716C] text-xs">{recipe.creatorEmail}</span>
+            <span className="text-xs text-[#8C887F] block">Người khởi tạo</span>
+            <span className="font-mono text-[#706E68] text-xs">{recipe.creatorEmail}</span>
+          </div>
+          <div>
+            <span className="text-xs text-[#8C887F] block">Lần sửa đổi</span>
+            <span className="font-mono text-[#706E68] text-xs">rev #{recipe.revision}</span>
           </div>
         </div>
 
         {recipe.description && (
-          <div className="border-t border-[#EFECE4] pt-2.5 text-xs text-[#78716C]">
-            <span className="font-semibold text-[#1C1917] mr-1">Mô tả hương vị:</span>
+          <div className="border-t border-[#E8E2D9] pt-2.5 text-xs text-[#706E68]">
+            <span className="font-semibold text-[#1A1917] mr-1">Mô tả hương vị:</span>
             {recipe.description}
           </div>
         )}
       </div>
       {/* Ingredients Section */}
-      <div className="bg-white border border-[#E2DDD2] rounded-lg p-5 space-y-3 shadow-xs">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-[#78716C] flex items-center justify-between">
+      <div className="bg-white border border-[#E8E2D9] rounded-xl p-5 space-y-3 shadow-xs">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-[#706E68] flex items-center justify-between">
           <span>Định lượng nguyên liệu ({recipe.ingredients.length})</span>
-          <span className="text-xs font-normal normal-case text-[#A8A29E]">
+          <span className="text-xs font-normal normal-case text-[#8C887F]">
             Định mức: {recipe.targetYield} {recipe.yieldUnit}
           </span>
         </h2>
 
         {recipe.ingredients.length === 0 ? (
-          <p className="text-sm text-[#A8A29E] italic">Chưa có nguyên liệu nào trong công thức.</p>
+          <p className="text-sm text-[#8C887F] italic">Chưa có nguyên liệu nào trong công thức.</p>
         ) : (
-          <div className="overflow-x-auto rounded-md border border-[#E2DDD2]">
+          <div className="overflow-x-auto rounded-md border border-[#E8E2D9]">
             <table className="w-full text-left text-sm border-collapse">
               <thead>
-                <tr className="bg-[#FBF9F5] border-b border-[#E2DDD2] text-xs text-[#78716C] uppercase tracking-wider font-semibold">
+                <tr className="bg-[#F5F0E8] border-b border-[#E8E2D9] text-xs text-[#706E68] uppercase tracking-wider font-semibold">
                   <th className="py-2 px-3">STT</th>
                   <th className="py-2 px-3">Mã &amp; Tên nguyên liệu</th>
                   <th className="py-2 px-3">Nhóm</th>
@@ -405,7 +415,7 @@ export default function RecipeDetailPage() {
                   <th className="py-2 px-3">Ghi chú</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#EFECE4]">
+              <tbody className="divide-y divide-[#E8E2D9]">
                 {recipe.ingredients.map((item, index) => {
                   const ing = ingredientsMap[item.ingredientId];
                   return (
@@ -439,13 +449,13 @@ export default function RecipeDetailPage() {
       </div>
 
       {/* Steps Section */}
-      <div className="bg-white border border-[#E2DDD2] rounded-lg p-5 space-y-3 shadow-xs">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-[#78716C]">
+      <div className="bg-white border border-[#E8E2D9] rounded-xl p-5 space-y-3 shadow-xs">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-[#706E68]">
           Quy trình chuẩn thao tác SOP ({recipe.steps.length} bước)
         </h2>
 
         {recipe.steps.length === 0 ? (
-          <p className="text-sm text-[#A8A29E] italic">Chưa có các bước hướng dẫn thao tác.</p>
+          <p className="text-sm text-[#8C887F] italic">Chưa có các bước hướng dẫn thao tác.</p>
         ) : (
           <div className="space-y-3">
             {recipe.steps.map((step, idx) => {
@@ -454,17 +464,17 @@ export default function RecipeDetailPage() {
               return (
                 <div
                   key={step.id}
-                  className="bg-[#FAF8F2] border border-[#E2DDD2] rounded-lg p-4 space-y-2.5"
+                  className="bg-[#FAF9F5] border border-[#E8E2D9] rounded-lg p-4 space-y-2.5"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-full bg-[#B47820]/15 text-[#B47820] flex items-center justify-center font-bold text-xs">
+                      <span className="w-5 h-5 rounded-full bg-[#C9A84C]/15 text-[#B47820] flex items-center justify-center font-bold text-xs">
                         {idx + 1}
                       </span>
-                      <h3 className="font-bold text-[#1C1917] text-sm">{step.title}</h3>
+                      <h3 className="font-bold text-[#1A1917] text-sm">{step.title}</h3>
                     </div>
 
-                    <div className="flex items-center gap-2 text-xs text-[#78716C] font-mono">
+                    <div className="flex items-center gap-2 text-xs text-[#706E68] font-mono">
                       {step.durationSeconds && (
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3 text-[#B47820]" /> {step.durationSeconds}s
@@ -478,27 +488,28 @@ export default function RecipeDetailPage() {
                     </div>
                   </div>
 
-                  <p className="text-xs sm:text-sm text-[#1C1917] whitespace-pre-wrap pl-7 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-[#1A1917] whitespace-pre-wrap pl-7 leading-relaxed">
                     {step.instruction}
                   </p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-7 pt-1 text-xs text-[#78716C]">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-7 pt-1 text-xs text-[#706E68]">
                     {step.equipment && (
                       <div>
-                        <span className="font-semibold text-[#1C1917]">Dụng cụ:</span> {step.equipment}
+                        <span className="font-semibold text-[#1A1917]">Dụng cụ:</span> {step.equipment}
                       </div>
                     )}
                     {step.completionCriteria && (
                       <div>
-                        <span className="font-semibold text-[#1C1917]">Tiêu chí đạt:</span> {step.completionCriteria}
+                        <span className="font-semibold text-[#1A1917]">Tiêu chí đạt:</span> {step.completionCriteria}
                       </div>
                     )}
                   </div>
 
+
                   {/* Media Preview & Cover Badge */}
                   {coverUrl && (
                     <div className="pl-7 pt-1">
-                      <div className="relative inline-block border border-[#E2DDD2] rounded-md overflow-hidden bg-white shadow-xs">
+                      <div className="relative inline-block border border-[#E8E2D9] rounded-md overflow-hidden bg-white shadow-xs">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={coverUrl}

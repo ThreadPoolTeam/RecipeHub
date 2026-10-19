@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { FlaskConical, Plus, Pencil, Check, X } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { Ingredient } from '@/lib/demo/types';
-import { Button, TextInput, Select, Alert } from '@/components/workspace/fields';
+import { Button, TextInput, Select, Alert, SearchInput } from '@/components/workspace/fields';
 import { DataTable } from '@/components/workspace/data-table';
 import { Dialog } from '@/components/workspace/dialog';
 
@@ -244,13 +244,13 @@ export default function RndIngredientsPage() {
       render: (item: Ingredient) => (
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[11px] font-semibold px-1.5 py-0.5 rounded bg-[#F5F2EB] text-[#B47820] border border-[#E2DDD2]">
+            <span className="font-mono text-[11px] font-semibold px-1.5 py-0.5 rounded bg-[#F5F0E8] text-[#B47820] border border-[#E8E2D9]">
               {item.code}
             </span>
-            <span className="font-semibold text-[#1C1917] text-sm">{item.name}</span>
+            <span className="font-semibold text-[#1A1917] text-sm">{item.name}</span>
           </div>
           {item.supplierNotes && (
-            <p className="text-xs text-[#78716C] mt-0.5 line-clamp-1 italic">
+            <p className="text-xs text-[#706E68] mt-0.5 line-clamp-1 italic">
               NCC: {item.supplierNotes}
             </p>
           )}
@@ -260,7 +260,7 @@ export default function RndIngredientsPage() {
     {
       header: 'Nhóm',
       render: (item: Ingredient) => (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#F5F2EB] text-[#78716C] border border-[#E2DDD2]">
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#F5F0E8] text-[#706E68] border border-[#E8E2D9]">
           {item.group}
         </span>
       ),
@@ -268,13 +268,13 @@ export default function RndIngredientsPage() {
     {
       header: 'Đơn Vị Chuẩn',
       render: (item: Ingredient) => (
-        <span className="font-mono text-xs text-[#78716C]">{item.defaultUnit}</span>
+        <span className="font-mono text-xs text-[#706E68]">{item.defaultUnit}</span>
       ),
     },
     {
       header: 'Giá tham khảo',
       render: (item: Ingredient) => (
-        <span className="text-xs text-[#1C1917]">
+        <span className="text-xs text-[#1A1917]">
           {item.costPerUnit ? `${item.costPerUnit.toLocaleString('vi-VN')} đ` : '—'}
         </span>
       ),
@@ -320,12 +320,12 @@ export default function RndIngredientsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E2DDD2] pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E8E2D9] pb-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#1C1917] flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#1A1917] flex items-center gap-2">
             <FlaskConical className="w-5 h-5 text-[#B47820]" /> Kho Nguyên Liệu R&amp;D
           </h1>
-          <p className="text-xs sm:text-sm text-[#78716C] mt-0.5">
+          <p className="text-xs sm:text-sm text-[#706E68] mt-0.5">
             Định nghĩa danh mục nguyên liệu tiêu chuẩn, đơn vị đo và giá tham khảo.
           </p>
         </div>
@@ -345,13 +345,17 @@ export default function RndIngredientsPage() {
       )}
 
       {/* Filter Toolbar */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-white border border-[#E2DDD2] p-3 rounded-lg shadow-xs">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-white border border-[#E8E2D9] p-3 rounded-2xl shadow-xs">
         <div className="md:col-span-2">
-          <TextInput
+          <SearchInput
             placeholder="Tìm theo mã hoặc tên nguyên liệu..."
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
+            onClear={() => {
+              setSearchQuery('');
               setCurrentPage(1);
             }}
           />
@@ -468,12 +472,12 @@ export default function RndIngredientsPage() {
             />
 
             <div className="flex flex-col justify-end">
-              <label className="flex items-center gap-2 cursor-pointer pb-2 text-sm text-zinc-300">
+              <label className="flex items-center gap-2 cursor-pointer pb-2 text-sm text-[#1A1917]">
                 <input
                   type="checkbox"
                   checked={formData.isActive}
                   onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="rounded border-zinc-700 bg-zinc-800 text-[#C9A84C] focus:ring-[#C9A84C] w-4 h-4"
+                  className="rounded border-[#E8E2D9] bg-white text-[#B47820] focus:ring-[#B47820] w-4 h-4"
                 />
                 <span>Kích hoạt sử dụng trong công thức</span>
               </label>

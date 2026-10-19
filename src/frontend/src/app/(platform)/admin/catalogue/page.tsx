@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useDemo } from '@/lib/demo/provider';
 import { Ingredient } from '@/lib/demo/types';
-import { Button, TextInput, Select, TextArea, Alert } from '@/components/workspace/fields';
+import { Button, TextInput, Select, TextArea, Alert, SearchInput } from '@/components/workspace/fields';
 import { DataTable } from '@/components/workspace/data-table';
 import { Dialog } from '@/components/workspace/dialog';
 import { CatalogItem, UnitItem } from '@/lib/api/backend-repository';
@@ -358,11 +358,11 @@ export default function AdminCataloguePage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E2D9]">
         <div>
-          <h1 className="text-2xl font-bold text-[#F2F0EB]">Danh mục Đơn vị & Nguyên liệu Toàn cục</h1>
-          <p className="text-zinc-400 text-xs mt-1">
-            Quy chuẩn danh mục nguyên vật liệu R&D BeverageLab, quản lý đơn vị đo lường và định mức chi phí.
+          <h1 className="text-2xl font-bold text-[#1A1917]">Danh mục Đơn vị &amp; Nguyên liệu Toàn cục</h1>
+          <p className="text-[#706E68] text-xs mt-1">
+            Quy chuẩn danh mục nguyên vật liệu R&amp;D BeverageLab, quản lý đơn vị đo lường và định mức chi phí.
           </p>
         </div>
         <Button variant="gold" onClick={() => setIsCreateOpen(true)}>
@@ -579,33 +579,34 @@ export default function AdminCataloguePage() {
 
       {/* Metrics Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
-        <div className="bg-[#18181C] border border-zinc-800 rounded-lg p-3">
-          <div className="text-[11px] text-zinc-400 uppercase font-semibold">Tổng nguyên liệu</div>
-          <div className="text-xl font-bold text-[#F2F0EB] mt-1">{stats.total}</div>
+        <div className="bg-white border border-[#E8E2D9] rounded-lg p-3 shadow-xs">
+          <div className="text-[11px] text-[#706E68] uppercase font-semibold">Tổng nguyên liệu</div>
+          <div className="text-xl font-bold text-[#1A1917] mt-1">{stats.total}</div>
         </div>
-        <div className="bg-[#18181C] border border-zinc-800 rounded-lg p-3">
-          <div className="text-[11px] text-zinc-400 uppercase font-semibold">Đang kích hoạt</div>
-          <div className="text-xl font-bold text-emerald-400 mt-1">{stats.active}</div>
+        <div className="bg-white border border-[#E8E2D9] rounded-lg p-3 shadow-xs">
+          <div className="text-[11px] text-[#706E68] uppercase font-semibold">Đang kích hoạt</div>
+          <div className="text-xl font-bold text-emerald-700 mt-1">{stats.active}</div>
         </div>
-        <div className="bg-[#18181C] border border-zinc-800 rounded-lg p-3">
-          <div className="text-[11px] text-zinc-400 uppercase font-semibold">Vô hiệu hóa</div>
-          <div className="text-xl font-bold text-zinc-500 mt-1">{stats.inactive}</div>
+        <div className="bg-white border border-[#E8E2D9] rounded-lg p-3 shadow-xs">
+          <div className="text-[11px] text-[#706E68] uppercase font-semibold">Vô hiệu hóa</div>
+          <div className="text-xl font-bold text-[#706E68] mt-1">{stats.inactive}</div>
         </div>
         {groups.map((g) => (
-          <div key={g} className="bg-[#18181C] border border-zinc-800 rounded-lg p-3">
-            <div className="text-[11px] text-zinc-400 uppercase font-semibold truncate">{g}</div>
-            <div className="text-xl font-bold text-[#DEBF64] mt-1">{stats.groupCount[g] || 0}</div>
+          <div key={g} className="bg-white border border-[#E8E2D9] rounded-lg p-3 shadow-xs">
+            <div className="text-[11px] text-[#706E68] uppercase font-semibold truncate">{g}</div>
+            <div className="text-xl font-bold text-[#B47820] mt-1">{stats.groupCount[g] || 0}</div>
           </div>
         ))}
       </div>
 
       {/* Search & Filters */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-4 bg-[#18181C] border border-zinc-800 rounded-lg">
+      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-4 bg-white border border-[#E8E2D9] rounded-2xl shadow-xs">
         <div className="sm:col-span-2">
-          <TextInput
+          <SearchInput
             placeholder="Tìm theo tên nguyên liệu, mã code hoặc ghi chú..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onClear={() => setSearchTerm('')}
           />
         </div>
         <div>
@@ -644,13 +645,13 @@ export default function AdminCataloguePage() {
             render: (i) => (
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-[#DEBF64] bg-[#2A2415] px-1.5 py-0.5 rounded border border-[#C9A84C]/30">
+                  <span className="font-mono text-xs font-bold text-[#B47820] bg-[#FAF9F5] px-1.5 py-0.5 rounded border border-[#B47820]/30">
                     {i.code}
                   </span>
-                  <span className="font-semibold text-zinc-100">{i.name}</span>
+                  <span className="font-semibold text-[#1A1917]">{i.name}</span>
                 </div>
                 {i.supplierNotes && (
-                  <div className="text-[11px] text-zinc-400 mt-0.5 truncate max-w-md">
+                  <div className="text-[11px] text-[#706E68] mt-0.5 truncate max-w-md">
                     Ghi chú: {i.supplierNotes}
                   </div>
                 )}
@@ -660,7 +661,7 @@ export default function AdminCataloguePage() {
           {
             header: 'Nhóm (Group)',
             render: (i) => (
-              <span className="inline-block px-2 py-0.5 rounded text-xs bg-zinc-800 text-zinc-300 border border-zinc-700">
+              <span className="inline-block px-2 py-0.5 rounded text-xs bg-[#FAF9F5] text-[#1A1917] border border-[#E8E2D9]">
                 {i.group}
               </span>
             ),
@@ -668,13 +669,13 @@ export default function AdminCataloguePage() {
           {
             header: 'Đơn vị đo',
             render: (i) => (
-              <span className="font-mono text-xs text-zinc-300 font-semibold">{i.defaultUnit}</span>
+              <span className="font-mono text-xs text-[#1A1917] font-semibold">{i.defaultUnit}</span>
             ),
           },
           {
             header: 'Đơn giá định mức',
             render: (i) => (
-              <div className="font-mono text-xs text-zinc-300">
+              <div className="font-mono text-xs text-[#1A1917]">
                 {typeof i.costPerUnit === 'number' && i.costPerUnit > 0
                   ? `${i.costPerUnit.toLocaleString('vi-VN')} đ / ${i.defaultUnit}`
                   : '—'}
@@ -685,13 +686,13 @@ export default function AdminCataloguePage() {
             header: 'Trạng thái',
             render: (i) =>
               i.isActive ? (
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-emerald-950/60 text-emerald-300 border border-emerald-800">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
                   Kích hoạt
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-zinc-900 text-zinc-500 border border-zinc-800">
-                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-600" />
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-600 border border-zinc-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
                   Vô hiệu
                 </span>
               ),
@@ -875,14 +876,14 @@ export default function AdminCataloguePage() {
             rows={2}
           />
 
-          <label className="flex items-center gap-2 p-3 bg-zinc-900 border border-zinc-800 rounded cursor-pointer">
+          <label className="flex items-center gap-2 p-3 bg-[#FAF9F5] border border-[#E8E2D9] rounded cursor-pointer">
             <input
               type="checkbox"
               checked={newIsActive}
               onChange={(e) => setNewIsActive(e.target.checked)}
-              className="w-4 h-4 accent-[#C9A84C]"
+              className="w-4 h-4 accent-[#B47820]"
             />
-            <span className="text-xs text-zinc-300 font-medium">Kích hoạt sử dụng ngay trong R&D Editor</span>
+            <span className="text-xs text-[#1A1917] font-medium">Kích hoạt sử dụng ngay trong R&amp;D Editor</span>
           </label>
         </div>
       </Dialog>
@@ -931,18 +932,18 @@ export default function AdminCataloguePage() {
           <TextArea
             label="Ghi chú & Nhà cung cấp"
             value={editNotes}
-            onChange={(e) => setNewNotes(e.target.value)}
+            onChange={(e) => setEditNotes(e.target.value)}
             rows={2}
           />
 
-          <label className="flex items-center gap-2 p-3 bg-zinc-900 border border-zinc-800 rounded cursor-pointer">
+          <label className="flex items-center gap-2 p-3 bg-[#FAF9F5] border border-[#E8E2D9] rounded cursor-pointer">
             <input
               type="checkbox"
               checked={editIsActive}
               onChange={(e) => setEditIsActive(e.target.checked)}
-              className="w-4 h-4 accent-[#C9A84C]"
+              className="w-4 h-4 accent-[#B47820]"
             />
-            <span className="text-xs text-zinc-300 font-medium">Trạng thái kích hoạt (Active)</span>
+            <span className="text-xs text-[#1A1917] font-medium">Trạng thái kích hoạt (Active)</span>
           </label>
         </div>
       </Dialog>

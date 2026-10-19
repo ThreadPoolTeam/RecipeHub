@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { AuditEntry } from '@/lib/demo/types';
-import { Button, TextInput, Select } from '@/components/workspace/fields';
+import { Button, TextInput, SearchInput, Select } from '@/components/workspace/fields';
 import { DataTable } from '@/components/workspace/data-table';
 import { RoleBadge } from '@/components/workspace/status-badge';
 import { Dialog } from '@/components/workspace/dialog';
@@ -89,46 +89,47 @@ export default function AdminAuditLogsPage() {
 
   const getActionColor = (action: string) => {
     if (action.includes('CREATE') || action.includes('PUBLISH')) {
-      return 'bg-emerald-950/60 text-emerald-300 border-emerald-800';
+      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
     }
     if (action.includes('APPROVE')) {
-      return 'bg-[#2A2415] text-[#DEBF64] border-[#C9A84C]/40';
+      return 'bg-[#FAF9F5] text-[#B47820] border-[#B47820]/30';
     }
     if (action.includes('REJECT') || action.includes('LOCK') || action.includes('DELETE')) {
-      return 'bg-rose-950/60 text-rose-300 border-rose-800';
+      return 'bg-rose-50 text-rose-700 border-rose-200';
     }
     if (action.includes('UPDATE')) {
-      return 'bg-blue-950/60 text-blue-300 border-blue-800';
+      return 'bg-blue-50 text-blue-700 border-blue-200';
     }
-    return 'bg-zinc-800 text-zinc-300 border-zinc-700';
+    return 'bg-[#FAF9F5] text-[#706E68] border-[#E8E2D9]';
   };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E2D9]">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700 mb-1.5">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#FAF9F5] text-[#706E68] border border-[#E8E2D9] mb-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-[#B47820]" />
             <span>Unalterable Audit Trail</span>
           </div>
-          <h1 className="text-2xl font-bold text-[#F2F0EB]">Nhật ký Truy vết Hoạt động (Audit Logs)</h1>
-          <p className="text-zinc-400 text-xs mt-1">
+          <h1 className="text-2xl font-bold text-[#1A1917]">Nhật ký Truy vết Hoạt động (Audit Logs)</h1>
+          <p className="text-[#706E68] text-xs mt-1">
             Ghi nhận toàn bộ thao tác đăng nhập, chỉnh sửa công thức, phê duyệt SOP và thay đổi thiết lập hệ thống.
           </p>
         </div>
-        <div className="text-xs text-zinc-400 font-mono">
-          Tổng cộng: <span className="text-[#DEBF64] font-bold">{logs.length}</span> sự kiện
+        <div className="text-xs text-[#706E68] font-mono">
+          Tổng cộng: <span className="text-[#B47820] font-bold">{logs.length}</span> sự kiện
         </div>
       </div>
 
       {/* Filter toolbar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-4 bg-[#18181C] border border-zinc-800 rounded-lg">
+      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-4 bg-white border border-[#E8E2D9] rounded-2xl shadow-xs">
         <div className="sm:col-span-2">
-          <TextInput
+          <SearchInput
             placeholder="Lọc theo Email người thao tác (Actor)..."
             value={actorQuery}
             onChange={(e) => setActorQuery(e.target.value)}
+            onClear={() => setActorQuery('')}
           />
         </div>
         <div>
@@ -164,7 +165,7 @@ export default function AdminAuditLogsPage() {
           {
             header: 'Thời gian',
             render: (l) => (
-              <span className="font-mono text-xs text-zinc-400 whitespace-nowrap">
+              <span className="font-mono text-xs text-[#706E68] whitespace-nowrap">
                 {formatTimestamp(l.timestamp)}
               </span>
             ),
@@ -173,7 +174,7 @@ export default function AdminAuditLogsPage() {
             header: 'Người thao tác (Actor)',
             render: (l) => (
               <div>
-                <div className="text-xs font-semibold text-zinc-200">{l.actorEmail}</div>
+                <div className="text-xs font-semibold text-[#1A1917]">{l.actorEmail}</div>
                 <div className="mt-0.5">
                   <RoleBadge role={l.actorRole} />
                 </div>
@@ -196,11 +197,11 @@ export default function AdminAuditLogsPage() {
             header: 'Đối tượng tác động (Target)',
             render: (l) => (
               <div>
-                <span className="inline-block px-1.5 py-0.5 rounded text-[10px] uppercase font-semibold bg-zinc-900 text-zinc-400 border border-zinc-800">
+                <span className="inline-block px-2 py-0.5 rounded-full text-[10px] uppercase font-semibold bg-[#FAF9F5] text-[#706E68] border border-[#E8E2D9]">
                   {l.targetType}
                 </span>
                 {l.targetId && (
-                  <div className="font-mono text-[11px] text-zinc-400 truncate max-w-[140px] mt-0.5" title={l.targetId}>
+                  <div className="font-mono text-[11px] text-[#706E68] truncate max-w-[140px] mt-0.5" title={l.targetId}>
                     {l.targetId}
                   </div>
                 )}
@@ -211,19 +212,19 @@ export default function AdminAuditLogsPage() {
             header: 'Chi tiết thông số (Details)',
             render: (l) => {
               if (!l.details || Object.keys(l.details).length === 0) {
-                return <span className="text-xs text-zinc-500">—</span>;
+                return <span className="text-xs text-[#706E68]">—</span>;
               }
               const summary = JSON.stringify(l.details);
               return (
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs text-zinc-400 truncate max-w-[200px]" title={summary}>
+                  <span className="font-mono text-xs text-[#706E68] truncate max-w-[200px]" title={summary}>
                     {summary}
                   </span>
                   <Button
                     size="sm"
                     variant="ghost"
                     onClick={() => setActiveLog(l)}
-                    className="text-xs text-[#DEBF64] hover:text-[#C9A84C] px-2 py-0.5 h-auto"
+                    className="text-xs text-[#B47820] hover:text-[#9A6416] px-2 py-0.5 h-auto"
                   >
                     Xem JSON
                   </Button>
@@ -245,30 +246,30 @@ export default function AdminAuditLogsPage() {
         onConfirm={() => setActiveLog(null)}
       >
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2 text-xs bg-zinc-900 p-3 rounded border border-zinc-800">
+          <div className="grid grid-cols-2 gap-2 text-xs bg-[#FAF9F5] p-3 rounded-xl border border-[#E8E2D9]">
             <div>
-              <span className="text-zinc-500">ID sự kiện:</span>{' '}
-              <span className="font-mono text-zinc-300">{activeLog?.id}</span>
+              <span className="text-[#706E68]">ID sự kiện:</span>{' '}
+              <span className="font-mono text-[#1A1917]">{activeLog?.id}</span>
             </div>
             <div>
-              <span className="text-zinc-500">Target Type:</span>{' '}
-              <span className="font-mono text-[#DEBF64]">{activeLog?.targetType}</span>
+              <span className="text-[#706E68]">Target Type:</span>{' '}
+              <span className="font-mono text-[#B47820] font-semibold">{activeLog?.targetType}</span>
             </div>
             <div>
-              <span className="text-zinc-500">Actor Role:</span>{' '}
-              <span className="text-zinc-300">{activeLog?.actorRole}</span>
+              <span className="text-[#706E68]">Actor Role:</span>{' '}
+              <span className="text-[#1A1917]">{activeLog?.actorRole}</span>
             </div>
             <div>
-              <span className="text-zinc-500">Target ID:</span>{' '}
-              <span className="font-mono text-zinc-300">{activeLog?.targetId || 'N/A'}</span>
+              <span className="text-[#706E68]">Target ID:</span>{' '}
+              <span className="font-mono text-[#1A1917]">{activeLog?.targetId || 'N/A'}</span>
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase">
+            <label className="block text-xs font-semibold text-[#706E68] mb-1.5 uppercase">
               Payload JSON chi tiết
             </label>
-            <pre className="p-3 bg-[#121215] border border-zinc-800 rounded-lg text-xs font-mono text-emerald-400 overflow-x-auto max-h-60 leading-relaxed">
+            <pre className="p-3 bg-[#FAF9F5] border border-[#E8E2D9] rounded-xl text-xs font-mono text-emerald-800 overflow-x-auto max-h-60 leading-relaxed">
               {JSON.stringify(activeLog?.details || {}, null, 2)}
             </pre>
           </div>

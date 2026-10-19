@@ -10,7 +10,7 @@ export default function ApprovalDetailPage() {
   const recipeId = params?.id as string;
 
   if (!recipeId) {
-    return <div className="p-8 text-center text-zinc-400">Không tìm thấy mã hồ sơ.</div>;
+    return <div className="p-8 text-center text-[#706E68]">Không tìm thấy mã hồ sơ.</div>;
   }
 
   return (
@@ -18,7 +18,7 @@ export default function ApprovalDetailPage() {
       <div>
         <Link
           href="/approvals"
-          className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-amber-400 transition"
+          className="inline-flex items-center gap-1.5 text-xs text-[#706E68] hover:text-[#B47820] transition"
         >
           <span>&larr;</span>
           <span>Quay lại danh sách Hàng chờ phê duyệt</span>

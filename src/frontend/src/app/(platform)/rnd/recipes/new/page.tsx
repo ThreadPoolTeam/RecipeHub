@@ -210,20 +210,20 @@ export default function NewRecipePage() {
   return (
     <form onSubmit={handleSubmit} className="space-y-8 max-w-5xl mx-auto pb-12">
       {/* Top Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E2DDD2] pb-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E8E2D9] pb-5">
         <div>
-          <div className="flex items-center gap-2 text-xs text-[#78716C] mb-1">
-            <Link href="/rnd/recipes" className="hover:text-[#1C1917]">
+          <div className="flex items-center gap-2 text-xs text-[#706E68] mb-1">
+            <Link href="/rnd/recipes" className="hover:text-[#1A1917]">
               Công Thức
             </Link>
             <span>/</span>
             <span className="text-[#B47820] font-medium">Tạo Mới Bản Nháp</span>
           </div>
-          <h1 className="text-2xl font-bold text-[#1C1917] flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-[#1A1917] flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-[#B47820]" />
             <span>Tạo Bản Nháp Công Thức R&amp;D</span>
           </h1>
-          <p className="text-sm text-[#78716C] mt-1">
+          <p className="text-sm text-[#706E68] mt-1">
             Khởi tạo phiên bản v1.0. Bạn có thể lưu nháp, thử nghiệm AI và hoàn thiện trước khi gửi thẩm định.
           </p>
         </div>
@@ -242,8 +242,8 @@ export default function NewRecipePage() {
       {errorMsg && <Alert type="error" message={errorMsg} />}
 
       {/* 1. Basic Metadata */}
-      <div className="bg-white border border-[#E2DDD2] rounded-xl p-6 space-y-5 shadow-xs">
-        <h2 className="text-base font-bold text-[#1C1917] flex items-center gap-2 border-b border-[#E2DDD2] pb-3">
+      <div className="bg-white border border-[#E8E2D9] rounded-xl p-6 space-y-5 shadow-xs">
+        <h2 className="text-base font-bold text-[#1A1917] flex items-center gap-2 border-b border-[#E8E2D9] pb-3">
           <FileText className="w-4 h-4 text-[#B47820]" /> 1. Thông Tin Cơ Bản &amp; Định Mức
         </h2>
 
@@ -294,13 +294,13 @@ export default function NewRecipePage() {
       </div>
 
       {/* 2. Ingredients Builder */}
-      <div className="bg-[#141418] border border-zinc-800 rounded-xl p-6 space-y-5">
-        <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
+      <div className="bg-white border border-[#E8E2D9] rounded-xl p-6 space-y-5 shadow-xs">
+        <div className="flex items-center justify-between border-b border-[#E8E2D9] pb-3">
           <div>
-            <h2 className="text-base font-bold text-[#1C1917] flex items-center gap-2">
+            <h2 className="text-base font-bold text-[#1A1917] flex items-center gap-2">
               <FlaskConical className="w-4 h-4 text-[#B47820]" /> 2. Thành Phần &amp; Định Lượng Nguyên Liệu ({recipeIngredients.length})
             </h2>
-            <p className="text-xs text-[#78716C] mt-0.5">
+            <p className="text-xs text-[#706E68] mt-0.5">
               Chọn nguyên liệu từ kho chuẩn, nhập định lượng (&gt; 0) và phân tách giai đoạn nếu cần.
             </p>
           </div>
@@ -316,11 +316,11 @@ export default function NewRecipePage() {
         </div>
 
         {availableIngredients.length === 0 ? (
-          <div className="p-4 bg-[#FAF9F5] rounded-xl text-xs text-[#78716C] border border-[#E2DDD2]">
+          <div className="p-4 bg-[#FAF9F5] rounded-xl text-xs text-[#706E68] border border-[#E8E2D9]">
             Kho nguyên liệu đang trống. Hãy vào mục <Link href="/rnd/ingredients" className="text-[#B47820] font-medium underline">Kho Nguyên Liệu</Link> để tạo trước.
           </div>
         ) : recipeIngredients.length === 0 ? (
-          <div className="text-center p-8 border border-dashed border-[#E2DDD2] bg-[#FAF9F5] rounded-xl text-[#78716C] space-y-2">
+          <div className="text-center p-8 border border-dashed border-[#E8E2D9] bg-[#FAF9F5] rounded-xl text-[#706E68] space-y-2">
             <p className="text-sm">Chưa có nguyên liệu nào được thêm vào công thức này.</p>
             <Button type="button" variant="secondary" size="sm" onClick={handleAddIngredient}>
               + Thêm Nguyên Liệu Đầu Tiên
@@ -331,7 +331,7 @@ export default function NewRecipePage() {
             {recipeIngredients.map((item, idx) => (
               <div
                 key={idx}
-                className="grid grid-cols-1 md:grid-cols-12 gap-3 p-3.5 bg-[#FAF9F5] border border-[#E2DDD2] rounded-xl items-end shadow-2xs hover:border-[#C5BFB1] transition"
+                className="grid grid-cols-1 md:grid-cols-12 gap-3 p-3.5 bg-[#FAF9F5] border border-[#E8E2D9] rounded-xl items-end shadow-2xs hover:border-[#C5BFB1] transition"
               >
                 <div className="md:col-span-4">
                   <Select
@@ -392,13 +392,13 @@ export default function NewRecipePage() {
       </div>
 
       {/* 3. Steps Builder */}
-      <div className="bg-white border border-[#E2DDD2] rounded-xl p-6 space-y-5 shadow-xs">
-        <div className="flex items-center justify-between border-b border-[#E2DDD2] pb-3">
+      <div className="bg-white border border-[#E8E2D9] rounded-xl p-6 space-y-5 shadow-xs">
+        <div className="flex items-center justify-between border-b border-[#E8E2D9] pb-3">
           <div>
-            <h2 className="text-base font-bold text-[#1C1917] flex items-center gap-2">
+            <h2 className="text-base font-bold text-[#1A1917] flex items-center gap-2">
               <ListOrdered className="w-4 h-4 text-[#B47820]" /> 3. Quy Trình Pha Chế &amp; Chuẩn Thao Tác SOP ({steps.length})
             </h2>
-            <p className="text-xs text-[#78716C] mt-0.5">
+            <p className="text-xs text-[#706E68] mt-0.5">
               Mô tả chi tiết từng thao tác, thời gian khuấy/ủ, nhiệt độ và tiêu chí hoàn thành.
             </p>
           </div>
@@ -408,7 +408,7 @@ export default function NewRecipePage() {
         </div>
 
         {steps.length === 0 ? (
-          <div className="text-center p-8 border border-dashed border-[#E2DDD2] bg-[#FAF9F5] rounded-xl text-[#78716C] space-y-2">
+          <div className="text-center p-8 border border-dashed border-[#E8E2D9] bg-[#FAF9F5] rounded-xl text-[#706E68] space-y-2">
             <p className="text-sm">Chưa có bước thao tác nào.</p>
             <Button type="button" variant="secondary" size="sm" onClick={handleAddStep}>
               + Tạo Bước Đầu Tiên
@@ -419,7 +419,7 @@ export default function NewRecipePage() {
             {steps.map((step, idx) => (
               <div
                 key={step.id}
-                className="bg-[#FAF9F5] border border-[#E2DDD2] rounded-xl p-4.5 space-y-3.5 relative shadow-2xs hover:border-[#C5BFB1] transition"
+                className="bg-[#FAF9F5] border border-[#E8E2D9] rounded-xl p-4.5 space-y-3.5 relative shadow-2xs hover:border-[#C5BFB1] transition"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5 flex-1">
@@ -428,7 +428,7 @@ export default function NewRecipePage() {
                     </span>
                     <input
                       type="text"
-                      className="bg-white border border-[#E2DDD2] rounded-md px-3 py-1.5 text-sm font-semibold text-[#1C1917] w-full max-w-sm focus:outline-none focus:border-[#B47820] shadow-2xs transition"
+                      className="bg-white border border-[#E8E2D9] rounded-md px-3 py-1.5 text-sm font-semibold text-[#1A1917] w-full max-w-sm focus:outline-none focus:border-[#B47820] shadow-2xs transition"
                       value={step.title}
                       placeholder="Tiêu đề bước..."
                       onChange={(e) => handleUpdateStep(idx, { title: e.target.value })}

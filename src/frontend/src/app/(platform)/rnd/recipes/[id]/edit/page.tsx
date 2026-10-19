@@ -331,8 +331,8 @@ export default function EditRecipePage() {
 
   if (loading) {
     return (
-      <div className="p-12 text-center text-zinc-400">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#C9A84C]" />
+      <div className="p-12 text-center text-[#706E68]">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#B47820]" />
         <p className="mt-3 text-sm">Đang mở trình biên tập công thức...</p>
       </div>
     );
@@ -352,21 +352,21 @@ export default function EditRecipePage() {
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-16">
       {/* Header & Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E2DDD2] pb-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E8E2D9] pb-5">
         <div>
-          <div className="flex items-center gap-2 text-xs text-[#78716C] mb-1">
-            <Link href="/rnd/recipes" className="hover:text-[#1C1917]">
+          <div className="flex items-center gap-2 text-xs text-[#706E68] mb-1">
+            <Link href="/rnd/recipes" className="hover:text-[#1A1917]">
               Công Thức
             </Link>
             <span>/</span>
-            <Link href={`/rnd/recipes/${recipe.id}`} className="hover:text-[#1C1917] font-mono">
+            <Link href={`/rnd/recipes/${recipe.id}`} className="hover:text-[#1A1917] font-mono">
               {recipe.code}
             </Link>
             <span>/</span>
             <span className="text-[#B47820] font-medium">Biên Tập</span>
           </div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-[#1C1917]">Chỉnh Sửa Công Thức</h1>
+            <h1 className="text-2xl font-bold text-[#1A1917]">Chỉnh Sửa Công Thức</h1>
           </div>
         </div>
 
@@ -388,8 +388,8 @@ export default function EditRecipePage() {
       )}
 
       {/* 1. Basic Metadata */}
-      <div className="bg-white border border-[#E2DDD2] rounded-xl p-6 space-y-4 shadow-xs">
-        <h2 className="text-base font-bold text-[#1C1917] flex items-center gap-2 border-b border-[#E2DDD2] pb-3">
+      <div className="bg-white border border-[#E8E2D9] rounded-xl p-6 space-y-4 shadow-xs">
+        <h2 className="text-base font-bold text-[#1A1917] flex items-center gap-2 border-b border-[#E8E2D9] pb-3">
           <FileText className="w-4 h-4 text-[#B47820]" /> 1. Thông Tin Chung &amp; Định Mức Mẻ
         </h2>
 
@@ -435,13 +435,13 @@ export default function EditRecipePage() {
       </div>
 
       {/* 2. Ingredients Builder */}
-      <div className="bg-white border border-[#E2DDD2] rounded-xl p-6 space-y-4 shadow-xs">
-        <div className="flex items-center justify-between border-b border-[#E2DDD2] pb-3">
+      <div className="bg-white border border-[#E8E2D9] rounded-xl p-6 space-y-4 shadow-xs">
+        <div className="flex items-center justify-between border-b border-[#E8E2D9] pb-3">
           <div>
-            <h2 className="text-base font-bold text-[#1C1917] flex items-center gap-2">
+            <h2 className="text-base font-bold text-[#1A1917] flex items-center gap-2">
               <FlaskConical className="w-4 h-4 text-[#B47820]" /> 2. Thành Phần Nguyên Liệu ({ingredients.length})
             </h2>
-            <p className="text-xs text-[#78716C] mt-0.5">
+            <p className="text-xs text-[#706E68] mt-0.5">
               Thay đổi định lượng, đơn vị hoặc giai đoạn sử dụng nguyên liệu.
             </p>
           </div>
@@ -451,7 +451,7 @@ export default function EditRecipePage() {
         </div>
 
         {ingredients.length === 0 ? (
-          <div className="text-center p-8 border border-dashed border-[#E2DDD2] bg-[#FAF9F5] rounded-xl text-[#78716C]">
+          <div className="text-center p-8 border border-dashed border-[#E8E2D9] bg-[#FAF9F5] rounded-xl text-[#706E68]">
             <p className="text-sm">Chưa có nguyên liệu nào.</p>
             <Button
               type="button"
@@ -468,7 +468,7 @@ export default function EditRecipePage() {
             {ingredients.map((item, idx) => (
               <div
                 key={idx}
-                className="grid grid-cols-1 md:grid-cols-12 gap-3 p-3.5 bg-[#FAF9F5] border border-[#E2DDD2] rounded-xl items-end shadow-2xs hover:border-[#C5BFB1] transition"
+                className="grid grid-cols-1 md:grid-cols-12 gap-3 p-3.5 bg-[#FAF9F5] border border-[#E8E2D9] rounded-xl items-end shadow-2xs hover:border-[#C5BFB1] transition"
               >
                 <div className="md:col-span-4">
                   <Select
@@ -531,13 +531,13 @@ export default function EditRecipePage() {
       </div>
 
       {/* 3. Steps Builder with AI & Media features */}
-      <div className="bg-white border border-[#E2DDD2] rounded-xl p-6 space-y-5 shadow-xs">
-        <div className="flex items-center justify-between border-b border-[#E2DDD2] pb-3">
+      <div className="bg-white border border-[#E8E2D9] rounded-xl p-6 space-y-4 shadow-xs">
+        <div className="flex items-center justify-between border-b border-[#E8E2D9] pb-3">
           <div>
-            <h2 className="text-base font-bold text-[#1C1917] flex items-center gap-2">
+            <h2 className="text-base font-bold text-[#1A1917] flex items-center gap-2">
               <span className="text-[#B47820]">🪜</span> 3. Quy Trình Thao Tác &amp; Hỗ Trợ AI ({steps.length})
             </h2>
-            <p className="text-xs text-[#78716C] mt-0.5">
+            <p className="text-xs text-[#706E68] mt-0.5">
               Sắp xếp thứ tự bước, nhờ AI gợi ý hoàn thiện mô tả hoặc sinh hình ảnh concept thao tác.
             </p>
           </div>
@@ -547,7 +547,7 @@ export default function EditRecipePage() {
         </div>
 
         {steps.length === 0 ? (
-          <div className="text-center p-8 border border-dashed border-[#E2DDD2] bg-[#FAF9F5] rounded-xl text-[#78716C]">
+          <div className="text-center p-8 border border-dashed border-[#E8E2D9] bg-[#FAF9F5] rounded-xl text-[#706E68]">
             <p className="text-sm">Chưa có bước thao tác nào.</p>
             <Button
               type="button"
@@ -567,7 +567,7 @@ export default function EditRecipePage() {
               return (
                 <div
                   key={step.id}
-                  className="bg-[#FAF9F5] border border-[#E2DDD2] rounded-xl p-4.5 space-y-3.5 relative shadow-2xs hover:border-[#C5BFB1] transition"
+                  className="bg-[#FAF9F5] border border-[#E8E2D9] rounded-xl p-4.5 space-y-3.5 relative shadow-2xs hover:border-[#C5BFB1] transition"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 flex-1">
@@ -576,7 +576,7 @@ export default function EditRecipePage() {
                       </span>
                       <input
                         type="text"
-                        className="bg-white border border-[#E2DDD2] rounded-md px-3 py-1.5 text-sm font-semibold text-[#1C1917] w-full max-w-sm focus:outline-none focus:border-[#B47820] shadow-2xs transition"
+                        className="bg-white border border-[#E8E2D9] rounded-md px-3 py-1.5 text-sm font-semibold text-[#1A1917] w-full max-w-sm focus:outline-none focus:border-[#B47820] shadow-2xs transition"
                         value={step.title}
                         onChange={(e) => handleUpdateStep(idx, { title: e.target.value })}
                         placeholder="Tiêu đề bước..."
