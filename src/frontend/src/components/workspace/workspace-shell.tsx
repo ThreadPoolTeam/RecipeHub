@@ -16,11 +16,15 @@ import {
   FileText,
   FolderGit2,
   CheckSquare,
-  RotateCcw,
   LogOut,
   Menu,
   X,
-  ArrowLeft,
+  PanelLeft,
+  User,
+  ExternalLink,
+  ChevronRight,
+  ChevronUp,
+  HelpCircle,
 } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { isPathAllowedForUser } from '@/lib/demo/permissions';
@@ -34,9 +38,25 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
-  const [isResetting, setIsResetting] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const menuRef = React.useRef<HTMLDivElement>(null);
+
+  // Click outside to close user popover menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    if (userMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [userMenuOpen]);
 
   // Session & Access Guard
   useEffect(() => {
@@ -48,16 +68,6 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
     }
   }, [session, loading, pathname, router]);
 
-  const handleResetSystem = async () => {
-    if (!session) return;
-    setIsResetting(true);
-    try {
-      await repo.resetSystem(session);
-      window.location.reload();
-    } catch {
-      setIsResetting(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -85,147 +95,169 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
     return pathname.startsWith(path);
   };
 
-  const navLinkStyle = (active: boolean) =>
-    `flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-medium transition ${
-      active
-        ? 'bg-[#EAE5D9] text-[#1C1917] font-semibold border-l-2 border-[#B47820]'
-        : 'text-[#6B665E] hover:text-[#1C1917] hover:bg-[#EFEAE0]'
-    }`;
-  const renderNavItems = () => (
-    <div className="space-y-6">
+  const navLinkStyle = (active: boolean, isCollapsed = false) =>
+    isCollapsed
+      ? `w-10 h-10 flex items-center justify-center rounded-xl transition ${
+          active
+            ? 'bg-[#ECE6DA] text-[#1A1917] font-semibold shadow-xs'
+            : 'text-[#706E68] hover:text-[#1A1917] hover:bg-[#FAF9F5]'
+        }`
+      : `flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-medium transition ${
+          active
+            ? 'bg-[#ECE6DA] text-[#1A1917] font-semibold border-l-2 border-[#B47820]'
+            : 'text-[#706E68] hover:text-[#1A1917] hover:bg-[#F5F0E8]'
+        }`;
+  const renderNavItems = (isCollapsed = false) => (
+    <div className={isCollapsed ? 'space-y-2 flex flex-col items-center' : 'space-y-6'}>
       {/* R&D Role Nav */}
       {session?.role === 'rnd' && (
-        <div className="space-y-1">
-          <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-[#A8A29E]">
-            Không Gian R&amp;D
-          </div>
+        <div className={isCollapsed ? 'space-y-2' : 'space-y-1'}>
+          {!isCollapsed && (
+            <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-[#8C887F]">
+              Không Gian R&amp;D
+            </div>
+          )}
           <Link
             href="/rnd"
             onClick={() => setMobileSidebarOpen(false)}
-            className={navLinkStyle(isLinkActive('/rnd', true))}
+            className={navLinkStyle(isLinkActive('/rnd', true), isCollapsed)}
+            title="Tổng quan R&D"
           >
-            <LayoutDashboard className="w-4 h-4 text-[#B47820]" />
-            <span>Tổng quan R&amp;D</span>
+            <LayoutDashboard className="w-5 h-5 text-[#B47820]" />
+            {!isCollapsed && <span>Tổng quan R&amp;D</span>}
           </Link>
           <Link
             href="/rnd/recipes"
             onClick={() => setMobileSidebarOpen(false)}
-            className={navLinkStyle(isLinkActive('/rnd/recipes'))}
+            className={navLinkStyle(isLinkActive('/rnd/recipes'), isCollapsed)}
+            title="Công thức đồ uống"
           >
-            <BookOpen className="w-4 h-4 text-[#78716C]" />
-            <span>Công thức đồ uống</span>
+            <BookOpen className="w-5 h-5 text-[#706E68]" />
+            {!isCollapsed && <span>Công thức đồ uống</span>}
           </Link>
           <Link
             href="/rnd/ingredients"
             onClick={() => setMobileSidebarOpen(false)}
-            className={navLinkStyle(isLinkActive('/rnd/ingredients'))}
+            className={navLinkStyle(isLinkActive('/rnd/ingredients'), isCollapsed)}
+            title="Kho nguyên liệu"
           >
-            <FlaskConical className="w-4 h-4 text-[#78716C]" />
-            <span>Kho nguyên liệu</span>
+            <FlaskConical className="w-5 h-5 text-[#706E68]" />
+            {!isCollapsed && <span>Kho nguyên liệu</span>}
           </Link>
           <Link
             href="/rnd/media"
             onClick={() => setMobileSidebarOpen(false)}
-            className={navLinkStyle(isLinkActive('/rnd/media'))}
+            className={navLinkStyle(isLinkActive('/rnd/media'), isCollapsed)}
+            title="Tư liệu hình ảnh"
           >
-            <ImageIcon className="w-4 h-4 text-[#78716C]" />
-            <span>Tư liệu hình ảnh</span>
+            <ImageIcon className="w-5 h-5 text-[#706E68]" />
+            {!isCollapsed && <span>Tư liệu hình ảnh</span>}
           </Link>
         </div>
       )}
 
       {/* Viewer Role Nav */}
       {session?.role === 'viewer' && (
-        <div className="space-y-1">
-          <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-[#A8A29E]">
-            Vận Hành Cửa Hàng
-          </div>
+        <div className={isCollapsed ? 'space-y-2' : 'space-y-1'}>
+          {!isCollapsed && (
+            <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-[#8C887F]">
+              Vận Hành Cửa Hàng
+            </div>
+          )}
           <Link
             href="/viewer"
             onClick={() => setMobileSidebarOpen(false)}
-            className={navLinkStyle(isLinkActive('/viewer'))}
+            className={navLinkStyle(isLinkActive('/viewer'), isCollapsed)}
+            title="Tra cứu SOP đồ uống"
           >
-            <BookOpen className="w-4 h-4 text-[#B47820]" />
-            <span>Tra cứu SOP đồ uống</span>
+            <BookOpen className="w-5 h-5 text-[#B47820]" />
+            {!isCollapsed && <span>Tra cứu SOP đồ uống</span>}
           </Link>
         </div>
       )}
 
       {/* Admin Role Nav */}
       {session?.role === 'admin' && (
-        <div className="space-y-1">
-          <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-[#A8A29E]">
-            Quản Trị Hệ Thống
-          </div>
+        <div className={isCollapsed ? 'space-y-2' : 'space-y-1'}>
+          {!isCollapsed && (
+            <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-[#8C887F]">
+              Quản Trị Hệ Thống
+            </div>
+          )}
           <Link
             href="/admin"
             onClick={() => setMobileSidebarOpen(false)}
-            className={navLinkStyle(isLinkActive('/admin', true))}
+            className={navLinkStyle(isLinkActive('/admin', true), isCollapsed)}
+            title="Tổng quan Admin"
           >
-            <Settings className="w-4 h-4 text-[#B47820]" />
-            <span>Tổng quan Admin</span>
+            <Settings className="w-5 h-5 text-[#B47820]" />
+            {!isCollapsed && <span>Tổng quan Admin</span>}
           </Link>
           <Link
             href="/admin/users"
             onClick={() => setMobileSidebarOpen(false)}
-            className={navLinkStyle(isLinkActive('/admin/users'))}
+            className={navLinkStyle(isLinkActive('/admin/users'), isCollapsed)}
+            title="Tài khoản & Quyền"
           >
-            <Users className="w-4 h-4 text-[#78716C]" />
-            <span>Tài khoản &amp; Quyền</span>
+            <Users className="w-5 h-5 text-[#706E68]" />
+            {!isCollapsed && <span>Tài khoản &amp; Quyền</span>}
           </Link>
           <Link
             href="/admin/catalogue"
             onClick={() => setMobileSidebarOpen(false)}
-            className={navLinkStyle(isLinkActive('/admin/catalogue'))}
+            className={navLinkStyle(isLinkActive('/admin/catalogue'), isCollapsed)}
+            title="Danh mục đơn vị"
           >
-            <Package className="w-4 h-4 text-[#78716C]" />
-            <span>Danh mục đơn vị</span>
+            <Package className="w-5 h-5 text-[#706E68]" />
+            {!isCollapsed && <span>Danh mục đơn vị</span>}
           </Link>
           <Link
             href="/admin/ai-settings"
             onClick={() => setMobileSidebarOpen(false)}
-            className={navLinkStyle(isLinkActive('/admin/ai-settings'))}
+            className={navLinkStyle(isLinkActive('/admin/ai-settings'), isCollapsed)}
+            title="Cấu hình AI Demo"
           >
-            <Bot className="w-4 h-4 text-[#78716C]" />
-            <span>Cấu hình AI Demo</span>
+            <Bot className="w-5 h-5 text-[#706E68]" />
+            {!isCollapsed && <span>Cấu hình AI Demo</span>}
           </Link>
           <Link
             href="/admin/logs"
             onClick={() => setMobileSidebarOpen(false)}
-            className={navLinkStyle(isLinkActive('/admin/logs'))}
+            className={navLinkStyle(isLinkActive('/admin/logs'), isCollapsed)}
+            title="Nhật ký Audit Logs"
           >
-            <FileText className="w-4 h-4 text-[#78716C]" />
-            <span>Nhật ký Audit Logs</span>
+            <FileText className="w-5 h-5 text-[#706E68]" />
+            {!isCollapsed && <span>Nhật ký Audit Logs</span>}
           </Link>
           <Link
             href="/admin/media"
             onClick={() => setMobileSidebarOpen(false)}
-            className={navLinkStyle(isLinkActive('/admin/media'))}
+            className={navLinkStyle(isLinkActive('/admin/media'), isCollapsed)}
+            title="Quản lý Media"
           >
-            <FolderGit2 className="w-4 h-4 text-[#78716C]" />
-            <span>Quản lý Media</span>
+            <FolderGit2 className="w-5 h-5 text-[#706E68]" />
+            {!isCollapsed && <span>Quản lý Media</span>}
           </Link>
         </div>
       )}
 
       {/* Reviewer Capability Nav */}
       {session?.canApprove && (
-        <div className="space-y-1 pt-2 border-t border-[#E2DDD2]">
-          <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-[#B47820] flex items-center gap-1">
-            <CheckSquare className="w-3 h-3" />
-            <span>Phê Duyệt R&amp;D</span>
-          </div>
+        <div className={isCollapsed ? 'space-y-2 pt-2 border-t border-[#E8E2D9]' : 'space-y-1 pt-2 border-t border-[#E8E2D9]'}>
+          {!isCollapsed && (
+            <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-[#B47820] flex items-center gap-1">
+              <CheckSquare className="w-3 h-3" />
+              <span>Phê Duyệt R&amp;D</span>
+            </div>
+          )}
           <Link
             href="/approvals"
             onClick={() => setMobileSidebarOpen(false)}
-            className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-semibold transition ${
-              isLinkActive('/approvals')
-                ? 'bg-[#EAE5D9] text-[#1C1917] border-l-2 border-[#B47820]'
-                : 'text-[#6B665E] hover:text-[#1C1917] hover:bg-[#EFEAE0]'
-            }`}
+            className={navLinkStyle(isLinkActive('/approvals'), isCollapsed)}
+            title="Hàng chờ phê duyệt"
           >
-            <CheckSquare className="w-4 h-4 text-[#B47820]" />
-            <span>Hàng chờ phê duyệt</span>
+            <CheckSquare className="w-5 h-5 text-[#B47820]" />
+            {!isCollapsed && <span>Hàng chờ phê duyệt</span>}
           </Link>
         </div>
       )}
@@ -233,71 +265,175 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className="workspace-root min-h-screen bg-[#FAF9F5] text-[#1C1917] flex" onClick={touch}>
+    <div className="workspace-root min-h-screen bg-[#FAF9F5] text-[#1A1917] flex" onClick={touch}>
       {/* Desktop Fixed Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col fixed inset-y-0 left-0 z-30 bg-[#F5F2EB] border-r border-[#E2DDD2]">
+      <aside
+        className={`hidden md:flex flex-col fixed inset-y-0 left-0 z-30 bg-[#F5F0E8] border-r border-[#E8E2D9] transition-all duration-300 ease-in-out ${
+          sidebarCollapsed ? 'w-16' : 'w-64'
+        }`}
+      >
         {/* Brand Header */}
-        <div className="h-16 px-5 border-b border-[#E2DDD2] flex items-center justify-between">
-          <Link
-            href={
-              session?.role === 'rnd'
-                ? '/rnd'
-                : session?.role === 'viewer'
-                ? '/viewer'
-                : session?.role === 'admin'
-                ? '/admin'
-                : '/platform'
-            }
-            className="flex items-center gap-2.5 font-bold text-base tracking-tight text-[#1C1917] hover:opacity-90 transition"
+        <div className="h-16 px-3 border-b border-[#E8E2D9] flex items-center justify-between shrink-0">
+          {!sidebarCollapsed && (
+            <Link
+              href={
+                session?.role === 'rnd'
+                  ? '/rnd'
+                  : session?.role === 'viewer'
+                  ? '/viewer'
+                  : session?.role === 'admin'
+                  ? '/admin'
+                  : '/platform'
+              }
+              className="flex items-center gap-2.5 font-bold text-base tracking-tight text-[#1A1917] hover:opacity-90 transition overflow-hidden"
+            >
+              <Coffee className="w-5 h-5 text-[#B47820] shrink-0" />
+              <div className="flex flex-col truncate">
+                <span className="leading-tight font-extrabold truncate">RecipeHub</span>
+                <span className="text-[10px] text-[#706E68] font-normal truncate">Beverage R&amp;D System</span>
+              </div>
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className={`p-2 rounded-xl text-[#706E68] hover:text-[#1A1917] hover:bg-[#FAF9F5] active:scale-95 transition ${
+              sidebarCollapsed ? 'mx-auto' : ''
+            }`}
+            title={sidebarCollapsed ? 'Mở rộng thanh bên' : 'Thu gọn thanh bên'}
+            aria-label="Đóng mở thanh bên"
           >
-            <Coffee className="w-5 h-5 text-[#B47820]" />
-            <div className="flex flex-col">
-              <span className="leading-tight font-extrabold">RecipeHub</span>
-              <span className="text-[10px] text-[#78716C] font-normal">Beverage R&amp;D System</span>
-            </div>
-          </Link>
-          <span className="text-[10px] px-2 py-0.5 rounded bg-[#B47820]/15 text-[#B47820] font-semibold uppercase">
-            {session?.role || 'Guest'}
-          </span>
+            <PanelLeft className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Scrollable Navigation */}
-        <nav className="flex-1 px-3 py-5 overflow-y-auto">{renderNavItems()}</nav>
+        <nav className="flex-1 px-2 py-4 overflow-y-auto overflow-x-hidden">
+          {renderNavItems(sidebarCollapsed)}
+        </nav>
 
-        {/* User Card & Controls at Bottom */}
-        <div className="p-3 border-t border-[#E2DDD2] bg-[#EFECE4] space-y-2">
-          <div className="p-2.5 rounded-md bg-white border border-[#E2DDD2] flex items-center justify-between shadow-sm">
-            <div className="flex flex-col min-w-0 pr-2">
-              <span className="text-xs font-semibold text-[#1C1917] truncate">
-                {currentUser?.fullName || session?.fullName}
-              </span>
-              <span className="text-[10px] text-[#78716C] truncate">{session?.email}</span>
+        {/* User Card & Controls at Bottom (ChatGPT-style user item with popover menu) */}
+        <div ref={menuRef} className="p-2 border-t border-[#E8E2D9] bg-[#F0ECE4] relative shrink-0">
+          {/* Popover Menu (Image #4) */}
+          {userMenuOpen && (
+            <div
+              className={`absolute bottom-full mb-2 bg-white border border-[#E8E2D9] rounded-2xl shadow-xl p-1.5 space-y-1 z-50 w-64 animate-in fade-in slide-in-from-bottom-2 duration-150 ${
+                sidebarCollapsed ? 'left-2' : 'left-3 right-3'
+              }`}
+            >
+              {/* Header profile row with chevron > */}
+              <Link
+                href="/profile"
+                onClick={() => setUserMenuOpen(false)}
+                className="flex items-center justify-between p-2 rounded-xl hover:bg-[#FAF9F5] transition group cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-[#B47820] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+                    {currentUser?.fullName?.charAt(0) || session?.fullName?.charAt(0) || 'U'}
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-bold text-[#1A1917] truncate group-hover:text-[#B47820] transition">
+                      {currentUser?.fullName || session?.fullName}
+                    </span>
+                    <span className="text-[10px] text-[#706E68] truncate font-medium">
+                      {session?.role === 'rnd'
+                        ? (session?.canApprove ? 'Chuyên viên R&D • Tự duyệt SOP' : 'Chuyên viên R&D')
+                        : session?.role === 'viewer'
+                        ? 'Nhân viên Pha chế (Barista)'
+                        : 'Quản trị viên Hệ thống'}
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-[#706E68] group-hover:translate-x-0.5 group-hover:text-[#1A1917] transition shrink-0" />
+              </Link>
+
+              <div className="border-t border-[#E8E2D9] my-1" />
+
+              {/* 3 working buttons in 100% Vietnamese */}
+              <Link
+                href="/profile"
+                onClick={() => setUserMenuOpen(false)}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#1A1917] hover:bg-[#FAF9F5] transition"
+              >
+                <User className="w-4 h-4 text-[#706E68]" />
+                <span>Hồ sơ cá nhân</span>
+              </Link>
+
+              <Link
+                href="/settings"
+                onClick={() => setUserMenuOpen(false)}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#1A1917] hover:bg-[#FAF9F5] transition"
+              >
+                <Settings className="w-4 h-4 text-[#706E68]" />
+                <span>Cài đặt hệ thống</span>
+              </Link>
+
+              <Link
+                href="/help"
+                onClick={() => setUserMenuOpen(false)}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#1A1917] hover:bg-[#FAF9F5] transition"
+              >
+                <HelpCircle className="w-4 h-4 text-[#706E68]" />
+                <span>Trợ giúp &amp; Hướng dẫn</span>
+              </Link>
+
+              <div className="border-t border-[#E8E2D9] my-1" />
+
+              <button
+                type="button"
+                onClick={async () => {
+                  setUserMenuOpen(false);
+                  await logout();
+                  router.push('/login');
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-rose-600 hover:bg-rose-50 transition"
+              >
+                <LogOut className="w-4 h-4 text-rose-600" />
+                <span>Đăng xuất</span>
+              </button>
             </div>
-            {session && <RoleBadge role={session.role} canApprove={session.canApprove} />}
-          </div>
+          )}
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              className="flex-1 text-[11px] text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-              onClick={() => setIsResetDialogOpen(true)}
-              title="Làm mới cơ sở dữ liệu về bộ mẫu ban đầu"
+          {/* Trigger Button: In Collapsed mode, render ONLY avatar circle (Image #1) */}
+          {sidebarCollapsed ? (
+            <button
+              type="button"
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              className="w-10 h-10 rounded-full bg-[#B47820] text-white flex items-center justify-center font-bold text-xs mx-auto shadow-xs hover:scale-105 active:scale-95 transition cursor-pointer"
+              title={currentUser?.fullName || session?.fullName}
             >
-              <RotateCcw className="w-3 h-3 mr-1" /> Reset DB
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              className="flex-1 text-[11px]"
-              onClick={async () => {
-                await logout();
-                router.push('/login');
-              }}
+              {currentUser?.fullName?.charAt(0) || session?.fullName?.charAt(0) || 'U'}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              className="w-full p-2 rounded-xl hover:bg-white active:bg-white transition flex items-center justify-between text-left group border border-transparent hover:border-[#E8E2D9] shadow-xs"
             >
-              <LogOut className="w-3 h-3 mr-1" /> Đăng xuất
-            </Button>
-          </div>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-[#B47820] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                  {currentUser?.fullName?.charAt(0) || session?.fullName?.charAt(0) || 'U'}
+                </div>
+                <div className="flex flex-col min-w-0 pr-1">
+                  <span className="text-xs font-bold text-[#1A1917] truncate leading-tight">
+                    {currentUser?.fullName || session?.fullName}
+                  </span>
+                  <span className="text-[10px] text-[#706E68] truncate leading-tight mt-0.5">
+                    {session?.role === 'rnd'
+                      ? (session?.canApprove ? 'Chuyên viên R&D • Tự duyệt SOP' : 'Chuyên viên R&D')
+                      : session?.role === 'viewer'
+                      ? 'Nhân viên Pha chế (Barista)'
+                      : 'Quản trị viên Hệ thống'}
+                  </span>
+                </div>
+              </div>
+              <ChevronUp
+                className={`w-4 h-4 text-[#706E68] transition-transform duration-200 shrink-0 ${
+                  userMenuOpen ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+          )}
         </div>
       </aside>
 
@@ -308,22 +444,22 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             className="fixed inset-0 bg-black/80 backdrop-blur-sm"
             onClick={() => setMobileSidebarOpen(false)}
           />
-          <aside className="relative w-64 max-w-[80vw] bg-[#F5F2EB] border-r border-[#E2DDD2] flex flex-col z-10">
-            <div className="h-16 px-4 border-b border-[#E2DDD2] flex items-center justify-between">
-              <span className="font-bold text-sm text-[#1C1917] flex items-center gap-2">
+          <aside className="relative w-64 max-w-[80vw] bg-[#F5F0E8] border-r border-[#E8E2D9] flex flex-col z-10">
+            <div className="h-16 px-4 border-b border-[#E8E2D9] flex items-center justify-between">
+              <span className="font-bold text-sm text-[#1A1917] flex items-center gap-2">
                 <Coffee className="w-4 h-4 text-[#B47820]" />
                 <span>RecipeHub Menu</span>
               </span>
               <button
                 onClick={() => setMobileSidebarOpen(false)}
-                className="text-[#78716C] hover:text-[#1C1917] p-1 text-sm"
+                className="text-[#706E68] hover:text-[#1A1917] p-1 text-sm"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
             <nav className="flex-1 px-3 py-4 overflow-y-auto">{renderNavItems()}</nav>
-            <div className="p-3 border-t border-[#E2DDD2] bg-[#EFECE4] space-y-2">
-              <div className="text-xs text-[#1C1917] font-medium truncate">{session?.email}</div>
+            <div className="p-3 border-t border-[#E8E2D9] bg-[#F0ECE4] space-y-2">
+              <div className="text-xs text-[#1A1917] font-medium truncate">{session?.email}</div>
               <Button
                 variant="secondary"
                 size="sm"
@@ -341,72 +477,56 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1 md:pl-64 flex flex-col min-h-screen min-w-0">
+      <div
+        className={`flex-1 flex flex-col min-h-screen min-w-0 transition-all duration-300 ease-in-out ${
+          sidebarCollapsed ? 'md:pl-16' : 'md:pl-64'
+        }`}
+      >
         {/* Topbar */}
-        <header className="h-16 sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-[#E2DDD2] px-4 sm:px-6 flex items-center justify-between shadow-xs">
+        <header className="h-16 sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-[#E8E2D9] px-4 sm:px-6 flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-3">
-            {/* Mobile Hamburger Button */}
+            {/* Mobile Hamburger (only on mobile) */}
             <button
               onClick={() => setMobileSidebarOpen(true)}
-              className="md:hidden p-2 rounded text-[#78716C] hover:text-[#1C1917] hover:bg-[#F5F2EB] transition"
+              className="md:hidden p-2 rounded-xl text-[#706E68] hover:text-[#1A1917] hover:bg-[#F5F0E8] transition"
               aria-label="Mở menu"
             >
               <Menu className="w-5 h-5" />
             </button>
 
-            {/* Breadcrumb / Section Label */}
-            <div className="flex items-center gap-2 text-xs text-[#78716C]">
-              <span className="font-semibold text-[#1C1917]">
-                {pathname.startsWith('/rnd')
-                  ? 'Nghiên Cứu & Phát Triển (R&D)'
-                  : pathname.startsWith('/viewer')
-                  ? 'Tra Cứu SOP Cửa Hàng (Viewer)'
-                  : pathname.startsWith('/admin')
-                  ? 'Hệ Thống Quản Trị (Admin)'
-                  : pathname.startsWith('/approvals')
-                  ? 'Thẩm Định Phê Duyệt'
-                  : 'Không Gian Chung'}
-              </span>
-              <span>/</span>
-              <span className="text-[#A8A29E] font-mono text-[11px]">{pathname}</span>
-            </div>
+            {/* Clean Section Title */}
+            <h1 className="font-semibold text-sm sm:text-base text-[#1A1917]">
+              {pathname.startsWith('/rnd')
+                ? 'Nghiên Cứu & Phát Triển (R&D)'
+                : pathname.startsWith('/viewer')
+                ? 'Tra Cứu SOP Cửa Hàng (Viewer)'
+                : pathname.startsWith('/admin')
+                ? 'Hệ Thống Quản Trị (Admin)'
+                : pathname.startsWith('/approvals')
+                ? 'Thẩm Định Phê Duyệt'
+                : pathname.startsWith('/profile')
+                ? 'Hồ Sơ Chuyên Viên'
+                : pathname.startsWith('/settings')
+                ? 'Cài Đặt Hệ Thống'
+                : pathname.startsWith('/help')
+                ? 'Trợ Giúp & Hướng Dẫn'
+                : 'RecipeHub Platform'}
+            </h1>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="text-xs text-[#78716C] hover:text-[#B47820] transition flex items-center gap-1 font-medium"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Về Landing</span>
-            </Link>
-          </div>
+          {/* Right Header: Empty & Clean */}
+          <div className="flex items-center gap-2"></div>
         </header>
 
         {/* Main Child View */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">{children}</main>
 
         {/* Footer */}
-        <footer className="border-t border-[#E2DDD2] bg-[#F5F2EB] py-4 px-6 text-center text-xs text-[#78716C]">
+        <footer className="border-t border-[#E8E2D9] bg-[#F5F0E8] py-4 px-6 text-center text-xs text-[#706E68]">
           RecipeHub Coffee &amp; Beverage R&amp;D Platform © 2026 • IndexedDB Local Storage Mode
         </footer>
       </div>
 
-      {/* Reset DB Confirmation Dialog */}
-      <Dialog
-        isOpen={isResetDialogOpen}
-        onClose={() => setIsResetDialogOpen(false)}
-        title="Xác nhận làm mới dữ liệu hệ thống (Reset DB)"
-        description="Thao tác này sẽ xóa toàn bộ các thay đổi cục bộ trong trình duyệt và nạp lại bộ dữ liệu seed ban đầu."
-        confirmLabel="Tiến hành Reset"
-        confirmVariant="danger"
-        isConfirming={isResetting}
-        onConfirm={handleResetSystem}
-      >
-        <p className="text-sm text-zinc-300">
-          Tất cả công thức nháp, tài khoản vừa tạo và ảnh tải lên sẽ bị xóa. Dữ liệu sẽ trở về 4 tài khoản mặc định và bộ công thức mẫu tiêu chuẩn.
-        </p>
-      </Dialog>
     </div>
   );
 }
