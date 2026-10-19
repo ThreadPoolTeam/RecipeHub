@@ -70,7 +70,7 @@ export function TextInput({
   return (
     <div className={`space-y-1.5 ${className}`}>
       {label && (
-        <label htmlFor={inputId} className="block text-xs font-semibold uppercase tracking-wider text-[#1A1917]">
+        <label htmlFor={inputId} className="block text-xs font-semibold text-[#1A1917]">
           {label} {required && <span className="text-rose-500">*</span>}
         </label>
       )}
@@ -79,6 +79,7 @@ export function TextInput({
         className={`w-full bg-white border ${
           error ? 'border-rose-400 focus:ring-2 focus:ring-rose-200' : 'border-[#E8E2D9] focus:border-[#B47820] focus:ring-2 focus:ring-[#B47820]/15'
         } rounded-xl px-3.5 py-2 text-sm text-[#1A1917] placeholder:text-[#8C887F] shadow-xs transition-all duration-150 outline-none`}
+        {...props}
       />
       {error ? (
         <p className="text-xs text-rose-500">{error}</p>
@@ -107,7 +108,7 @@ export function TextArea({
   return (
     <div className={`space-y-1.5 ${className}`}>
       {label && (
-        <label htmlFor={inputId} className="block text-xs font-semibold uppercase tracking-wider text-[#1A1917]">
+        <label htmlFor={inputId} className="block text-xs font-semibold text-[#1A1917]">
           {label} {required && <span className="text-rose-500">*</span>}
         </label>
       )}
@@ -116,6 +117,7 @@ export function TextArea({
         className={`w-full bg-white border ${
           error ? 'border-rose-400 focus:ring-2 focus:ring-rose-200' : 'border-[#E8E2D9] focus:border-[#B47820] focus:ring-2 focus:ring-[#B47820]/15'
         } rounded-xl px-3.5 py-2.5 text-sm text-[#1A1917] placeholder:text-[#8C887F] shadow-xs transition-all duration-150 outline-none`}
+        {...props}
       />
       {error ? (
         <p className="text-xs text-rose-500">{error}</p>
@@ -193,7 +195,7 @@ export function Select({
   return (
     <div className={`space-y-1.5 ${className}`}>
       {label && (
-        <label htmlFor={inputId} className="block text-xs font-semibold uppercase tracking-wider text-[#1A1917]">
+        <label htmlFor={inputId} className="block text-xs font-semibold text-[#1A1917]">
           {label} {required && <span className="text-rose-500">*</span>}
         </label>
       )}
@@ -202,6 +204,7 @@ export function Select({
         className={`w-full bg-white border ${
           error ? 'border-rose-400 focus:ring-2 focus:ring-rose-200' : 'border-[#E8E2D9] focus:border-[#B47820] focus:ring-2 focus:ring-[#B47820]/15'
         } rounded-xl px-3.5 py-2 text-sm text-[#1A1917] shadow-xs transition-all duration-150 outline-none`}
+        {...props}
       >
         {options
           ? options.map((opt) => (
