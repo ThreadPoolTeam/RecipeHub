@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { BookOpen, Plus, Eye, Pencil, RotateCcw, Coffee } from 'lucide-react';
+import { BookOpen, Plus, Pencil, RotateCcw, Coffee } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { RecipeVersion, RecipeStatus } from '@/lib/demo/types';
 import { Button, TextInput, Select, SearchInput } from '@/components/workspace/fields';
@@ -37,13 +37,15 @@ function RecipeListContent() {
     repo
       .getRecipes(session, {
         page: 1,
-        pageSize: 500, // Load all recipes for responsive client-side filtering and creator extraction
+        pageSize: 100, // Load up to 100 recipes for responsive client-side filtering
       })
       .then((res) => {
         if (!isMounted) return;
         setRecipes(res.items);
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error('Failed to load recipes:', err);
+      })
       .finally(() => {
         if (isMounted) setLoading(false);
       });
@@ -104,9 +106,13 @@ function RecipeListContent() {
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="font-mono text-[11px] font-semibold px-1.5 py-0.5 rounded bg-[#F5F0E8] text-[#B47820] border border-[#E8E2D9]">
+              <Link
+                href={`/rnd/recipes/${item.id}`}
+                className="font-mono text-[11px] font-semibold px-1.5 py-0.5 rounded bg-[#F5F0E8] text-[#B47820] border border-[#E8E2D9] hover:bg-[#EAE3D6] transition"
+                title="Xem chi tiết công thức"
+              >
                 {item.code}
-              </span>
+              </Link>
               <span className="text-[#8C887F] font-mono text-xs">[{item.versionLabel}]</span>
               <Link
                 href={`/rnd/recipes/${item.id}`}
@@ -161,18 +167,14 @@ function RecipeListContent() {
       header: 'Thao tác',
       className: 'text-right',
       render: (item: RecipeVersion) => (
-        <div className="flex items-center justify-end gap-1.5">
-          {item.status === 'Draft' && (
-            <Link href={`/rnd/recipes/${item.id}/edit`}>
-              <Button size="sm" variant="secondary">
-                <Pencil className="w-3 h-3 mr-1" /> Sửa
-              </Button>
-            </Link>
-          )}
-          <Link href={`/rnd/recipes/${item.id}`}>
-            <Button size="sm" variant="ghost">
-              <Eye className="w-3.5 h-3.5 mr-1" /> Chi tiết
-            </Button>
+        <div className="flex items-center justify-end">
+          <Link
+            href={`/rnd/recipes/${item.id}/edit`}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-[#706E68] hover:text-[#B47820] hover:bg-[#F5F0E8] border border-transparent hover:border-[#E8E2D9] transition"
+            title="Chỉnh sửa công thức"
+            aria-label="Chỉnh sửa công thức"
+          >
+            <Pencil className="w-4 h-4" />
           </Link>
         </div>
       ),
