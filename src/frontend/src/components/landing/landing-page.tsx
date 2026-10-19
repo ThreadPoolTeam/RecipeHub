@@ -218,12 +218,8 @@ export function LandingPage({ manifest }: LandingPageProps) {
           <ScrollFrameStory manifest={manifest} />
         </div>
 
-        {/* 3. Decorative subtle gradient transition band from cinematic dark to editorial canvas */}
-        <div
-          ref={lightMarkerRef}
-          className="h-16 sm:h-24 w-full bg-gradient-to-b from-[#0C0C0E] to-[#FAF9F5] pointer-events-none"
-          aria-hidden="true"
-        />
+        {/* 3. Invisible marker for header tone detection (no gradient band) */}
+        <div ref={lightMarkerRef} className="h-0 w-full" aria-hidden="true" />
 
         {/* 4. Phân hệ Không gian làm việc (Workspaces Showcase) */}
         <section

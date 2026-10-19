@@ -141,7 +141,6 @@
   background-color: var(--noir-gold);
   box-shadow: 0 0 10px rgba(201, 168, 76, 0.5);
 }
-
 /* Reduced Motion Fallback */
 @media (prefers-reduced-motion: reduce) {
   .story-track {
