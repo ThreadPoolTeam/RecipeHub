@@ -15,7 +15,10 @@
       "launchBrowser": true,
       "applicationUrl": "http://localhost:5262",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ReverseProxy__Clusters__recipe-cluster__Destinations__destination1__Address": "http://localhost:5002",
+        "ReverseProxy__Clusters__content-cluster__Destinations__destination1__Address": "http://localhost:5256",
+        "ReverseProxy__Clusters__identity-cluster__Destinations__destination1__Address": "http://localhost:5281"
       }
     },
     "https": {
@@ -24,7 +27,10 @@
       "launchBrowser": true,
       "applicationUrl": "https://localhost:7005;http://localhost:5262",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ReverseProxy__Clusters__recipe-cluster__Destinations__destination1__Address": "http://localhost:5002",
+        "ReverseProxy__Clusters__content-cluster__Destinations__destination1__Address": "http://localhost:5256",
+        "ReverseProxy__Clusters__identity-cluster__Destinations__destination1__Address": "http://localhost:5281"
       }
     },
     "IIS Express": {
