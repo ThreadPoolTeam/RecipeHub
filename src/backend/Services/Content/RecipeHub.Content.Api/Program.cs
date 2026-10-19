@@ -21,17 +21,11 @@ builder.Services.AddExceptionHandler<ApplicationExceptionHandler>();
 builder.Services.AddContentApplication();
 builder.Services.AddContentInfrastructure(builder.Configuration);
 
-// Redis connection (with graceful local fallback)
 var redisConn = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
-try
-{
-    var redis = ConnectionMultiplexer.Connect(redisConn);
-    builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
-}
-catch
-{
-    // Redis optional during initial local startup
-}
+var redisOptions = ConfigurationOptions.Parse(redisConn);
+redisOptions.AbortOnConnectFail = false;
+builder.Services.AddSingleton<IConnectionMultiplexer>(
+    ConnectionMultiplexer.Connect(redisOptions));
 
 var app = builder.Build();
 

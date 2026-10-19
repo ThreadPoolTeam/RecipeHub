@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Check } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { User, Role } from '@/lib/demo/types';
-import { Button, TextInput, Select, Alert } from '@/components/workspace/fields';
+import { Button, TextInput, Select, Alert, SearchInput } from '@/components/workspace/fields';
 import { DataTable } from '@/components/workspace/data-table';
 import { RoleBadge } from '@/components/workspace/status-badge';
 import { Dialog } from '@/components/workspace/dialog';
@@ -195,10 +195,10 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E2DDD2]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E2D9]">
         <div>
-          <h1 className="text-2xl font-bold text-[#1C1917]">Quản lý Tài khoản &amp; Phân quyền Demo</h1>
-          <p className="text-[#78716C] text-xs mt-1">
+          <h1 className="text-2xl font-bold text-[#1A1917]">Quản lý Tài khoản &amp; Phân quyền Demo</h1>
+          <p className="text-[#706E68] text-xs mt-1">
             Thiết lập danh tính người dùng mô phỏng, phân bổ vai trò R&amp;D / Barista Viewer và cấp phép truy cập công thức.
           </p>
         </div>
@@ -220,12 +220,13 @@ export default function AdminUsersPage() {
       )}
 
       {/* Filter toolbar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-white border border-[#E2DDD2] rounded-xl shadow-xs">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-white border border-[#E8E2D9] rounded-2xl shadow-xs">
         <div className="sm:col-span-2">
-          <TextInput
+          <SearchInput
             placeholder="Tìm theo email hoặc họ tên..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onClear={() => setSearchTerm('')}
           />
         </div>
         <div>
@@ -254,10 +255,10 @@ export default function AdminUsersPage() {
             header: 'Họ tên & Email',
             render: (u) => (
               <div>
-                <div className="font-semibold text-zinc-100 flex items-center gap-2">
+                <div className="font-semibold text-[#1A1917] flex items-center gap-2">
                   {u.fullName}
                   {u.isLocked && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-950/80 text-rose-300 border border-rose-700">
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
                       BỊ KHÓA
                     </span>
                   )}
@@ -277,11 +278,11 @@ export default function AdminUsersPage() {
                 {u.role === 'viewer' ? (
                   <span className="text-xs text-zinc-400 italic">Không áp dụng (Viewer)</span>
                 ) : u.canApprove ? (
-                  <span className="inline-flex items-center gap-1 text-xs text-emerald-400 font-medium">
+                  <span className="inline-flex items-center gap-1 text-xs text-emerald-700 font-medium">
                     <Check className="w-3.5 h-3.5" /> Có quyền duyệt SOP
                   </span>
                 ) : (
-                  <span className="text-xs text-zinc-400">Chỉ soạn thảo / Đọc</span>
+                  <span className="text-xs text-[#706E68]">Chỉ soạn thảo / Đọc</span>
                 )}
               </div>
             ),
@@ -290,12 +291,12 @@ export default function AdminUsersPage() {
             header: 'Phạm vi công thức',
             render: (u) => {
               if (u.role !== 'viewer') {
-                return <span className="text-xs text-zinc-400">Toàn bộ công thức (theo vai trò)</span>;
+                return <span className="text-xs text-[#706E68]">Toàn bộ công thức (theo vai trò)</span>;
               }
               const count = u.allowedRecipeIds ? u.allowedRecipeIds.length : 0;
               return (
                 <div className="text-xs">
-                  <span className="font-mono text-[#DEBF64] font-semibold">{count}</span> công thức cho phép xem
+                  <span className="font-mono text-[#B47820] font-semibold">{count}</span> công thức cho phép xem
                 </div>
               );
             },
@@ -375,13 +376,13 @@ export default function AdminUsersPage() {
           />
 
           {/* Toggle canApprove */}
-          <div className="p-3 bg-[#FAF8F2] border border-[#E2DDD2] rounded-lg">
+          <div className="p-3 bg-[#FAF9F5] border border-[#E8E2D9] rounded-lg">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xs font-semibold text-[#1C1917]">Cấp quyền Phê duyệt SOP (canApprove)</div>
-                <div className="text-[11px] text-[#78716C]">
+                <div className="text-xs font-semibold text-[#1A1917]">Cấp quyền Phê duyệt SOP (canApprove)</div>
+                <div className="text-[11px] text-[#706E68]">
                   {newRole === 'viewer'
-                    ? 'Bị khóa: Viewer tuyệt đối không thể phê duyệt bản nháp R&D.'
+                    ? 'Bị khóa: Viewer không thể duyệt SOP.'
                     : 'Cho phép người dùng này duyệt hoặc từ chối các công thức ở trạng thái Chờ duyệt.'}
                 </div>
               </div>
@@ -397,15 +398,15 @@ export default function AdminUsersPage() {
 
           {/* Cho phép chọn recipeIds nếu là Viewer */}
           {newRole === 'viewer' && (
-            <div className="p-3 bg-[#FAF8F2] border border-[#E2DDD2] rounded-lg space-y-2">
-              <div className="text-xs font-semibold text-[#1C1917]">
+            <div className="p-3 bg-[#FAF9F5] border border-[#E8E2D9] rounded-lg space-y-2">
+              <div className="text-xs font-semibold text-[#1A1917]">
                 Phân quyền xem công thức (Viewer Scope)
               </div>
-              <p className="text-[11px] text-[#78716C]">
+              <p className="text-[11px] text-[#706E68]">
                 Chọn danh sách công thức đã phê duyệt mà Barista này được quyền tra cứu:
               </p>
               {recipes.length === 0 ? (
-                <div className="text-xs text-amber-400">Chưa có công thức Approved nào trong hệ thống.</div>
+                <div className="text-xs text-amber-700">Chưa có công thức Approved nào trong hệ thống.</div>
               ) : (
                 <div className="max-h-40 overflow-y-auto space-y-1.5 pr-2">
                   {recipes.map((rcp) => {
@@ -413,7 +414,7 @@ export default function AdminUsersPage() {
                     return (
                       <label
                         key={rcp.recipeId}
-                        className="flex items-center gap-2 p-1.5 rounded hover:bg-[#FAF8F2] text-xs text-[#1C1917] cursor-pointer"
+                        className="flex items-center gap-2 p-1.5 rounded hover:bg-[#FAF9F5] text-xs text-[#1A1917] cursor-pointer"
                       >
                         <input
                           type="checkbox"
@@ -475,11 +476,11 @@ export default function AdminUsersPage() {
             ]}
           />
 
-          <div className="p-3 bg-[#FAF8F2] border border-[#E2DDD2] rounded-lg">
+          <div className="p-3 bg-[#FAF9F5] border border-[#E8E2D9] rounded-lg">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xs font-semibold text-[#1C1917]">Quyền Phê duyệt (canApprove)</div>
-                <div className="text-[11px] text-[#78716C]">
+                <div className="text-xs font-semibold text-[#1A1917]">Quyền Phê duyệt (canApprove)</div>
+                <div className="text-[11px] text-[#706E68]">
                   {editRole === 'viewer'
                     ? 'Bị khóa: Viewer không thể có quyền Phê duyệt.'
                     : 'Quyền phê duyệt các bản nháp chờ duyệt trong quy trình R&D.'}
@@ -496,15 +497,15 @@ export default function AdminUsersPage() {
           </div>
 
           {editRole === 'viewer' && (
-            <div className="p-3 bg-[#FAF8F2] border border-[#E2DDD2] rounded-lg space-y-2">
-              <div className="text-xs font-semibold text-[#1C1917]">
+            <div className="p-3 bg-[#FAF9F5] border border-[#E8E2D9] rounded-lg space-y-2">
+              <div className="text-xs font-semibold text-[#1A1917]">
                 Phân quyền xem công thức (Viewer Scope)
               </div>
-              <p className="text-[11px] text-[#78716C]">
+              <p className="text-[11px] text-[#706E68]">
                 Chỉ định các công thức Barista này được phép mở và xem SOP:
               </p>
               {recipes.length === 0 ? (
-                <div className="text-xs text-amber-400">Chưa có công thức Approved nào.</div>
+                <div className="text-xs text-amber-700">Chưa có công thức Approved nào.</div>
               ) : (
                 <div className="max-h-40 overflow-y-auto space-y-1.5 pr-2">
                   {recipes.map((rcp) => {
@@ -512,7 +513,7 @@ export default function AdminUsersPage() {
                     return (
                       <label
                         key={rcp.recipeId}
-                        className="flex items-center gap-2 p-1.5 rounded hover:bg-[#FAF8F2] text-xs text-[#1C1917] cursor-pointer"
+                        className="flex items-center gap-2 p-1.5 rounded hover:bg-[#FAF9F5] text-xs text-[#1A1917] cursor-pointer"
                       >
                         <input
                           type="checkbox"

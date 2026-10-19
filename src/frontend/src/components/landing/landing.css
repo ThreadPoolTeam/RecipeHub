@@ -1,18 +1,16 @@
-/* RecipeHub Cinematic Landing Styles (NoirLuxe Theme) */
+/* RecipeHub Cinematic Landing & Warm Editorial Styles */
 
 .landing {
-  --noir-bg: #0C0C0E;
-  --noir-fg: #F2F0EB;
-  --noir-muted: #9E9A90;
-  --noir-gold: #C9A84C;
-  --noir-gold-hover: #DEBF64;
-  --noir-surface: #151518;
-  --noir-surface-card: #1C1C21;
-  --noir-border: rgba(242, 240, 235, 0.12);
-  --noir-border-light: rgba(242, 240, 235, 0.2);
+  --cinematic-bg: #0C0C0E;
+  --cinematic-fg: #F2F0EB;
+  --cinematic-muted: #9E9A90;
+  --cinematic-gold: #C9A84C;
+  --cinematic-gold-hover: #DEBF64;
+  --cinematic-surface: #151518;
+  --cinematic-border: rgba(242, 240, 235, 0.12);
 
-  background-color: var(--noir-bg);
-  color: var(--noir-fg);
+  background-color: var(--canvas, #FAF9F5);
+  color: var(--ink, #1A1917);
   font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow-x: clip;
   position: relative;
@@ -37,15 +35,14 @@
 .landing-subheading {
   font-size: clamp(1rem, 2vw, 1.35rem);
   line-height: 1.6;
-  color: var(--noir-muted);
+  color: var(--muted, #706E68);
 }
 
 .landing-body-text {
   font-size: clamp(0.95rem, 1.25vw, 1.125rem);
   line-height: 1.65;
-  color: var(--noir-muted);
+  color: var(--muted, #706E68);
 }
-
 /* Story Track & Sticky Canvas */
 .story-track {
   position: relative;
@@ -144,7 +141,6 @@
   background-color: var(--noir-gold);
   box-shadow: 0 0 10px rgba(201, 168, 76, 0.5);
 }
-
 /* Reduced Motion Fallback */
 @media (prefers-reduced-motion: reduce) {
   .story-track {

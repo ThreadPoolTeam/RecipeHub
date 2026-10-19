@@ -204,8 +204,8 @@ public sealed class RecipesController : ControllerBase
         Guid versionId,
         Guid stepId,
         Guid linkId,
-        [FromQuery] long expectedRowVersion,
-        CancellationToken cancellationToken)
+        [FromQuery] long expectedRowVersion = 0,
+        CancellationToken cancellationToken = default)
     {
         await _recipeService.RemoveStepMediaAsync(
             publicId, versionId, stepId, linkId, expectedRowVersion, RequestActor.GetUserId(HttpContext), cancellationToken);

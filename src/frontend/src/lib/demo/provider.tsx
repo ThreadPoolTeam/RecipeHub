@@ -2,14 +2,14 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { SessionInfo, User, DemoSettings } from './types';
-import { repo, DemoRepository } from './repository';
+import { BackendRepository, backendRepo as repo } from '@/lib/api/backend-repository';
 import { getStoredSession, touchSession, clearSession } from './session';
 
 interface DemoContextValue {
   session: SessionInfo | null;
   currentUser: User | null;
   settings: DemoSettings | null;
-  repo: DemoRepository;
+  repo: BackendRepository;
   loading: boolean;
   dataVersion: number;
   login: (email: string, password: string) => Promise<SessionInfo>;

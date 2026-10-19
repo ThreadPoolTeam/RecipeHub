@@ -37,7 +37,7 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   if (isLoading) {
     return (
-      <div className="w-full bg-white border border-[#E2DDD2] rounded-lg p-12 text-center text-[#78716C]">
+      <div className="w-full bg-white border border-[#E8E2D9] rounded-lg p-12 text-center text-[#706E68]">
         <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-[#B47820] mb-2"></div>
         <p className="text-xs">Đang tải dữ liệu...</p>
       </div>
@@ -46,21 +46,21 @@ export function DataTable<T>({
 
   if (data.length === 0) {
     return (
-      <div className="w-full bg-white border border-[#E2DDD2] rounded-lg p-12 text-center text-[#78716C] space-y-2">
-        <Inbox className="w-8 h-8 text-[#A8A29E] mx-auto" />
-        <h4 className="text-sm font-semibold text-[#1C1917]">{emptyTitle}</h4>
-        <p className="text-xs text-[#78716C] max-w-sm mx-auto">{emptyMessage}</p>
+      <div className="w-full bg-white border border-[#E8E2D9] rounded-lg p-12 text-center text-[#706E68] space-y-2">
+        <Inbox className="w-8 h-8 text-[#8C887F] mx-auto" />
+        <h4 className="text-sm font-semibold text-[#1A1917]">{emptyTitle}</h4>
+        <p className="text-xs text-[#706E68] max-w-sm mx-auto">{emptyMessage}</p>
         {emptyAction && <div className="pt-2">{emptyAction}</div>}
       </div>
     );
   }
 
   return (
-    <div className="w-full bg-white border border-[#E2DDD2] rounded-lg overflow-hidden flex flex-col shadow-sm">
+    <div className="w-full bg-white border border-[#E8E2D9] rounded-lg overflow-hidden flex flex-col shadow-xs">
       <div className="overflow-x-auto w-full">
         <table className="w-full text-left text-sm border-collapse min-w-[640px]">
           <thead>
-            <tr className="bg-[#FBF9F5] border-b border-[#E2DDD2] text-[#78716C] text-xs uppercase tracking-wider font-semibold">
+            <tr className="bg-[#F5F0E8] border-b border-[#E8E2D9] text-[#706E68] text-xs uppercase tracking-wider font-semibold">
               {columns.map((col, idx) => (
                 <th key={idx} className={`px-4 py-2.5 font-semibold ${col.className || ''}`}>
                   {col.header}
@@ -68,14 +68,14 @@ export function DataTable<T>({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#EFECE4]">
+          <tbody className="divide-y divide-[#E8E2D9]">
             {data.map((item, rowIdx) => (
               <tr
                 key={keyExtractor(item, rowIdx)}
-                className="hover:bg-[#FAF8F2] transition-colors"
+                className="hover:bg-[#FAF9F5] transition-colors"
               >
                 {columns.map((col, colIdx) => (
-                  <td key={colIdx} className={`px-4 py-2.5 text-[#1C1917] ${col.className || ''}`}>
+                  <td key={colIdx} className={`px-4 py-2.5 text-[#1A1917] ${col.className || ''}`}>
                     {col.render
                       ? col.render(item, rowIdx)
                       : col.accessor
@@ -90,10 +90,10 @@ export function DataTable<T>({
       </div>
 
       {pagination && pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-2.5 border-t border-[#E2DDD2] text-xs text-[#78716C] bg-[#FBF9F5]">
+        <div className="flex items-center justify-between px-4 py-2.5 border-t border-[#E8E2D9] text-xs text-[#706E68] bg-[#F5F0E8]">
           <div>
-            Tổng số: <strong className="text-[#1C1917]">{pagination.total}</strong> bản ghi | Trang{' '}
-            <strong className="text-[#1C1917]">{pagination.page}</strong> /{' '}
+            Tổng số: <strong className="text-[#1A1917]">{pagination.total}</strong> bản ghi | Trang{' '}
+            <strong className="text-[#1A1917]">{pagination.page}</strong> /{' '}
             {pagination.totalPages}
           </div>
           <div className="flex items-center gap-2">

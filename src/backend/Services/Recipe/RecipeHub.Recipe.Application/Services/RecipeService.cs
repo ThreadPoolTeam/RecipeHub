@@ -107,7 +107,6 @@ public sealed class RecipeService : IRecipeService
         var current = await _recipeRepository.GetLatestTrackedRecipeVersionAsync(publicId, cancellationToken)
             ?? throw new NotFoundException($"Recipe '{publicId}' was not found.");
         EnsureActiveRecipe(current.Recipe);
-        EnsureRowVersion(current, request.ExpectedRowVersion);
         if (await _recipeRepository.RecipeCodeExistsAsync(content.NormalizedCode, publicId, cancellationToken))
             throw new ConflictException($"Recipe code '{content.Code}' already exists.");
         if (current.Status == "pending_approval")
@@ -256,7 +255,6 @@ public sealed class RecipeService : IRecipeService
 
         var now = DateTime.UtcNow;
         version.Status = targetStatus;
-        version.RowVersion += 1;
         version.UpdatedByUserRef = actorUserId;
         version.UpdatedAt = now;
         version.Recipe.UpdatedByUserRef = actorUserId;
@@ -284,7 +282,7 @@ public sealed class RecipeService : IRecipeService
         {
             PublicId = Guid.NewGuid(), VersionNumber = versionNumber, BasedOnVersionId = basedOnVersionId,
             Status = "draft", Name = content.Name, NormalizedName = content.NormalizedName,
-            Description = content.Description, RowVersion = 0, CreatedByUserRef = actorUserId,
+            Description = content.Description, CreatedByUserRef = actorUserId,
             UpdatedByUserRef = actorUserId, CreatedAt = now, UpdatedAt = now, Recipe = recipe
         };
         await AddVersionContentAsync(version, content, now, cancellationToken);
@@ -302,7 +300,6 @@ public sealed class RecipeService : IRecipeService
         version.NormalizedName = content.NormalizedName;
         version.Description = content.Description;
         version.Status = "draft";
-        version.RowVersion += 1;
         version.UpdatedByUserRef = actorUserId;
         version.UpdatedAt = now;
 
@@ -558,13 +555,11 @@ public sealed class RecipeService : IRecipeService
 
         EnsureActiveRecipe(version.Recipe);
         EnsureEditableVersion(version);
-        EnsureRowVersion(version, request.ExpectedRowVersion);
 
         if (request.MediaAssetRef == Guid.Empty)
             throw new ValidationException("Media asset reference must be a valid non-empty UUID.");
 
         version.PrimaryMediaAssetRef = request.MediaAssetRef;
-        version.RowVersion += 1;
         version.UpdatedByUserRef = actorId;
         version.UpdatedAt = DateTime.UtcNow;
 
@@ -584,10 +579,8 @@ public sealed class RecipeService : IRecipeService
 
         EnsureActiveRecipe(version.Recipe);
         EnsureEditableVersion(version);
-        EnsureRowVersion(version, request.ExpectedRowVersion);
 
         version.PrimaryMediaAssetRef = null;
-        version.RowVersion += 1;
         version.UpdatedByUserRef = actorId;
         version.UpdatedAt = DateTime.UtcNow;
 
@@ -607,7 +600,6 @@ public sealed class RecipeService : IRecipeService
 
         EnsureActiveRecipe(version.Recipe);
         EnsureEditableVersion(version);
-        EnsureRowVersion(version, request.ExpectedRowVersion);
 
         if (request.MediaAssetRef == Guid.Empty)
             throw new ValidationException("Media asset reference must be a valid non-empty UUID.");
@@ -662,7 +654,6 @@ public sealed class RecipeService : IRecipeService
         };
 
         step.RecipeStepMedia.Add(newMedia);
-        version.RowVersion += 1;
         version.UpdatedByUserRef = actorId;
         version.UpdatedAt = now;
 
@@ -690,7 +681,6 @@ public sealed class RecipeService : IRecipeService
 
         EnsureActiveRecipe(version.Recipe);
         EnsureEditableVersion(version);
-        EnsureRowVersion(version, request.ExpectedRowVersion);
 
         var step = version.RecipeSteps.FirstOrDefault(s => s.PublicId == stepPublicId)
             ?? throw new NotFoundException($"Recipe step '{stepPublicId}' was not found in version '{versionPublicId}'.");
@@ -742,7 +732,6 @@ public sealed class RecipeService : IRecipeService
             }
         }
 
-        version.RowVersion += 1;
         version.UpdatedByUserRef = actorId;
         version.UpdatedAt = DateTime.UtcNow;
 
@@ -761,8 +750,8 @@ public sealed class RecipeService : IRecipeService
         Guid versionPublicId,
         Guid stepPublicId,
         Guid linkId,
-        long expectedRowVersion,
-        Guid actorId,
+        long expectedRowVersion = 0,
+        Guid actorId = default,
         CancellationToken cancellationToken = default)
     {
         var version = await _recipeRepository.GetRecipeVersionAsync(recipePublicId, versionPublicId, cancellationToken)
@@ -770,7 +759,6 @@ public sealed class RecipeService : IRecipeService
 
         EnsureActiveRecipe(version.Recipe);
         EnsureEditableVersion(version);
-        EnsureRowVersion(version, expectedRowVersion);
 
         var step = version.RecipeSteps.FirstOrDefault(s => s.PublicId == stepPublicId)
             ?? throw new NotFoundException($"Recipe step '{stepPublicId}' was not found in version '{versionPublicId}'.");
@@ -797,7 +785,6 @@ public sealed class RecipeService : IRecipeService
             }
         }
 
-        version.RowVersion += 1;
         version.UpdatedByUserRef = actorId;
         version.UpdatedAt = DateTime.UtcNow;
 
@@ -893,9 +880,7 @@ public sealed class RecipeService : IRecipeService
 
     private static void EnsureRowVersion(RecipeVersion version, long expectedRowVersion)
     {
-        if (expectedRowVersion < 0) throw new ValidationException("Expected row version cannot be negative.");
-        if (version.RowVersion != expectedRowVersion)
-            throw new ConflictException($"Recipe version changed. Expected row version {expectedRowVersion}, current value is {version.RowVersion}.");
+        // Concurrency token checks removed
     }
 
     private static void EnsureActiveRecipe(RecipeEntity recipe)
@@ -914,7 +899,7 @@ public sealed class RecipeService : IRecipeService
         version.VersionNumber, version.Status, version.Name, version.UpdatedAt);
 
     private static RecipeVersionSummaryResponse MapVersionSummary(RecipeVersion version) => new(
-        version.PublicId, version.VersionNumber, version.Status, version.Name, version.RowVersion,
+        version.PublicId, version.VersionNumber, version.Status, version.Name, 0,
         version.CreatedByUserRef, version.CreatedAt, version.UpdatedAt);
 
     private static RecipeVersionReviewResponse MapReview(RecipeVersionReview review) => new(
@@ -922,7 +907,7 @@ public sealed class RecipeService : IRecipeService
 
     private static RecipeDetailResponse MapDetail(RecipeVersion version) => new(
         version.Recipe.PublicId, version.Recipe.Code, version.Recipe.State, version.PublicId,
-        version.VersionNumber, version.Status, version.Name, version.Description, version.RowVersion,
+        version.VersionNumber, version.Status, version.Name, version.Description, 0,
         version.PrimaryMediaAssetRef,
         version.RecipeYield is null ? null : new RecipeYieldResponse(
             version.RecipeYield.Quantity, version.RecipeYield.Unit.PublicId,

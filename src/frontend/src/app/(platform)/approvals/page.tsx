@@ -8,7 +8,7 @@ import { useDemo } from '@/lib/demo/provider';
 import { RecipeVersion, RecipeStatus } from '@/lib/demo/types';
 import { StatusBadge } from '@/components/workspace/status-badge';
 import { DataTable } from '@/components/workspace/data-table';
-import { TextInput, Button } from '@/components/workspace/fields';
+import { TextInput, Button, SearchInput } from '@/components/workspace/fields';
 
 export default function ApprovalsPage() {
   const router = useRouter();
@@ -73,18 +73,18 @@ export default function ApprovalsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E2DDD2] pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E8E2D9] pb-4">
         <div>
           <div className="flex items-center gap-2">
             <CheckSquare className="w-5 h-5 text-[#B47820]" />
-            <h1 className="text-xl sm:text-2xl font-bold text-[#1C1917]">
+            <h1 className="text-xl sm:text-2xl font-bold text-[#1A1917]">
               Hàng Chờ Phê Duyệt R&amp;D
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
               {pendingCount} hồ sơ chờ duyệt
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-[#78716C] mt-1">
+          <p className="text-xs sm:text-sm text-[#706E68] mt-1">
             Thẩm định cảm quan sensory, định lượng nguyên liệu và tiêu chuẩn SOP trước khi phát hành chính thức.
           </p>
         </div>
@@ -96,30 +96,30 @@ export default function ApprovalsPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setStatusFilter('PendingApproval')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition active:scale-[0.98] ${
               statusFilter === 'PendingApproval'
-                ? 'bg-[#1C1917] text-white font-semibold'
-                : 'bg-white text-[#78716C] border border-[#E2DDD2] hover:bg-[#FAF8F2]'
+                ? 'bg-[#1A1917] text-white font-semibold shadow-xs'
+                : 'bg-white text-[#706E68] border border-[#E8E2D9] hover:bg-[#FAF9F5]'
             }`}
           >
-            Chờ Duyệt ({pendingCount})
+            Chờ duyệt ({pendingCount})
           </button>
           <button
             onClick={() => setStatusFilter('Approved')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition active:scale-[0.98] ${
               statusFilter === 'Approved'
-                ? 'bg-[#1C1917] text-white font-semibold'
-                : 'bg-white text-[#78716C] border border-[#E2DDD2] hover:bg-[#FAF8F2]'
+                ? 'bg-[#1A1917] text-white font-semibold shadow-xs'
+                : 'bg-white text-[#706E68] border border-[#E8E2D9] hover:bg-[#FAF9F5]'
             }`}
           >
-            Đã Phê Duyệt ({approvedCount})
+            Đã phê duyệt
           </button>
           <button
             onClick={() => setStatusFilter('all')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition active:scale-[0.98] ${
               statusFilter === 'all'
-                ? 'bg-[#1C1917] text-white font-semibold'
-                : 'bg-white text-[#78716C] border border-[#E2DDD2] hover:bg-[#FAF8F2]'
+                ? 'bg-[#1A1917] text-white font-semibold shadow-xs'
+                : 'bg-white text-[#706E68] border border-[#E8E2D9] hover:bg-[#FAF9F5]'
             }`}
           >
             Tất cả ({recipes.length})
@@ -128,10 +128,11 @@ export default function ApprovalsPage() {
 
         {/* Search */}
         <div className="w-full sm:w-72">
-          <TextInput
+          <SearchInput
             placeholder="Tìm theo mã hoặc tên công thức..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onClear={() => setSearchQuery('')}
           />
         </div>
       </div>
@@ -155,7 +156,7 @@ export default function ApprovalsPage() {
           {
             header: 'Mã Công Thức',
             render: (r) => (
-              <span className="font-mono font-bold text-amber-300 text-xs">
+              <span className="font-mono font-bold text-[#B47820] text-xs">
                 {r.code}
               </span>
             ),
@@ -166,11 +167,11 @@ export default function ApprovalsPage() {
               <div className="space-y-0.5">
                 <Link
                   href={`/approvals/${r.id}`}
-                  className="font-bold text-zinc-100 hover:text-[#C9A84C] transition"
+                  className="font-bold text-[#1A1917] hover:text-[#B47820] transition"
                 >
                   {r.name}
                 </Link>
-                <div className="text-[11px] text-zinc-500">
+                <div className="text-[11px] text-[#706E68]">
                   {r.targetYield} {r.yieldUnit} • {r.ingredients.length} nguyên liệu •{' '}
                   {r.steps.length} bước SOP
                 </div>
@@ -180,7 +181,7 @@ export default function ApprovalsPage() {
           {
             header: 'Phiên Bản',
             render: (r) => (
-              <span className="px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 text-xs font-mono">
+              <span className="px-2 py-0.5 rounded bg-[#F5F0E8] text-[#706E68] border border-[#E8E2D9] text-xs font-mono">
                 {r.versionLabel}
               </span>
             ),
@@ -196,14 +197,14 @@ export default function ApprovalsPage() {
               return (
                 <div className="space-y-0.5 text-xs">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-zinc-300">{r.creatorEmail}</span>
+                    <span className="text-[#1A1917]">{r.creatorEmail}</span>
                     {isOwn && (
-                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-950/60 text-amber-300 border border-amber-800/80">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#F5F0E8] text-[#B47820] border border-[#E8E2D9]">
                         Của bạn
                       </span>
                     )}
                   </div>
-                  <div className="text-[10px] text-zinc-500">
+                  <div className="text-[10px] text-[#706E68]">
                     {r.submittedAt
                       ? new Date(r.submittedAt).toLocaleString('vi-VN')
                       : new Date(r.createdAt).toLocaleString('vi-VN')}

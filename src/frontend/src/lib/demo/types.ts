@@ -42,6 +42,9 @@ export interface Ingredient {
   supplierNotes?: string;
   createdAt: string;
   updatedAt: string;
+  categoryId?: string;
+  defaultUnitId?: string;
+  warning?: string;
 }
 
 export interface RecipeIngredient {
@@ -70,6 +73,7 @@ export interface RecipeStep {
 
 export interface RecipeVersion {
   id: string; // version entity ID
+  versionId?: string;
   recipeId: string; // parent recipe identity (shared across v1, v2...)
   versionNumber: number; // 1, 2, 3...
   versionLabel: string; // 'v1.0', 'v2.0'...
@@ -80,6 +84,7 @@ export interface RecipeVersion {
   description?: string;
   targetYield: number; // default: 1
   yieldUnit: string; // e.g. 'ly (500ml)'
+  yieldUnitId?: string;
   sourceRecipeId?: string; // variant reference
   ingredients: RecipeIngredient[];
   steps: RecipeStep[];
@@ -104,6 +109,7 @@ export interface MediaAsset {
   tags?: string[];
   uploadedBy: string;
   createdAt: string;
+  deliveryUrl?: string;
 }
 
 export interface AiCandidate {

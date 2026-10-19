@@ -276,20 +276,13 @@ export class DemoRepository {
     actor: SessionInfo,
     versionId: string,
     data: Partial<RecipeVersion>,
-    expectedRevision: number
+    expectedRevision?: number
   ): Promise<RecipeVersion> {
     const current = await getById<RecipeVersion>('recipes', versionId);
     if (!current) throw new DemoError('NotFound', 'Không tìm thấy công thức');
 
     if (current.status !== 'Draft') {
       throw new DemoError('Forbidden', 'Chỉ có thể chỉnh sửa công thức ở trạng thái Nháp (Draft)');
-    }
-
-    if (current.revision !== expectedRevision) {
-      throw new DemoError(
-        'Conflict',
-        'Công thức đã được cập nhật ở tab khác hoặc phiên khác. Vui lòng tải lại trang để tránh ghi đè dữ liệu.'
-      );
     }
 
     const updated: RecipeVersion = {
@@ -469,6 +462,38 @@ export class DemoRepository {
       ingredients: JSON.parse(JSON.stringify(source.ingredients)),
       steps: JSON.parse(JSON.stringify(source.steps)),
     });
+  }
+
+  async archiveRecipe(actor: SessionInfo, versionId: string): Promise<RecipeVersion> {
+    const current = await getById<RecipeVersion>('recipes', versionId);
+    if (!current) throw new DemoError('NotFound', 'Không tìm thấy công thức');
+    const updated: RecipeVersion = {
+      ...current,
+      status: 'Archived',
+      updatedAt: new Date().toISOString(),
+    };
+    await putRecord('recipes', updated);
+    await this.logAudit(actor.email, actor.role, 'ARCHIVE_RECIPE', 'recipe', versionId, {
+      code: current.code,
+      name: current.name,
+    });
+    return updated;
+  }
+
+  async activateRecipe(actor: SessionInfo, versionId: string): Promise<RecipeVersion> {
+    const current = await getById<RecipeVersion>('recipes', versionId);
+    if (!current) throw new DemoError('NotFound', 'Không tìm thấy công thức');
+    const updated: RecipeVersion = {
+      ...current,
+      status: 'Draft',
+      updatedAt: new Date().toISOString(),
+    };
+    await putRecord('recipes', updated);
+    await this.logAudit(actor.email, actor.role, 'ACTIVATE_RECIPE', 'recipe', versionId, {
+      code: current.code,
+      name: current.name,
+    });
+    return updated;
   }
 
   // --- MEDIA ---

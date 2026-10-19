@@ -101,7 +101,6 @@ CREATE TABLE "recipe_db"."recipe_version" (
   "name" text NOT NULL,
   "normalized_name" text NOT NULL,
   "description" text,
-  "row_version" bigint NOT NULL DEFAULT 0,
   "primary_media_asset_ref" uuid,
   "created_by_user_ref" uuid NOT NULL,
   "updated_by_user_ref" uuid NOT NULL,
@@ -109,7 +108,6 @@ CREATE TABLE "recipe_db"."recipe_version" (
   "updated_at" timestamptz NOT NULL DEFAULT (now()),
   CONSTRAINT "recipe_version_number_check" CHECK (version_number > 0),
   CONSTRAINT "recipe_version_status_check" CHECK (status IN ('draft', 'pending_approval', 'returned', 'approved', 'cancelled')),
-  CONSTRAINT "recipe_version_row_version_check" CHECK (row_version >= 0),
   CONSTRAINT "recipe_version_based_on_check" CHECK (based_on_version_id IS NULL OR based_on_version_id <> id)
 );
 
@@ -288,7 +286,6 @@ COMMENT ON COLUMN "recipe_db"."recipe_version"."status" IS 'draft, pending_appro
 
 COMMENT ON COLUMN "recipe_db"."recipe_version"."normalized_name" IS 'Tên chuẩn hóa để tìm kiếm không phân biệt hoa thường.';
 
-COMMENT ON COLUMN "recipe_db"."recipe_version"."row_version" IS 'Concurrency token, tăng sau mỗi lần cập nhật.';
 
 COMMENT ON COLUMN "recipe_db"."recipe_version"."primary_media_asset_ref" IS 'MediaAsset public ID từ Content Service làm ảnh đại diện thành phẩm.';
 

@@ -166,37 +166,37 @@ export default function ViewerRecipeDetailPage() {
       <div className="flex items-center justify-between">
         <Link
           href="/viewer"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-[#78716C] hover:text-[#1C1917] transition"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-[#706E68] hover:text-[#1A1917] transition"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Quay lại danh mục công thức</span>
         </Link>
 
         {/* Read-only notification badge */}
-        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wide uppercase px-2.5 py-1 rounded bg-[#FAF8F2] text-[#78716C] border border-[#E2DDD2]">
-          <Lock className="w-3 h-3 text-[#78716C]" />
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wide uppercase px-2.5 py-1 rounded bg-[#FAF9F5] text-[#706E68] border border-[#E8E2D9]">
+          <Lock className="w-3 h-3 text-[#706E68]" />
           <span>Chế độ Chỉ Đọc (Read-Only SOP)</span>
         </span>
       </div>
 
       {/* Header Section */}
-      <div className="bg-white border border-[#E2DDD2] rounded-2xl p-6 sm:p-8 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-[#E2DDD2]">
+      <div className="bg-white border border-[#E8E2D9] rounded-2xl p-6 sm:p-8 shadow-xs">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-[#E8E2D9]">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2.5">
-              <span className="font-mono text-xs font-bold px-3 py-1 rounded bg-[#FAF8F2] border border-[#E2DDD2] text-[#B47820]">
+              <span className="font-mono text-xs font-bold px-3 py-1 rounded bg-[#F5F0E8] border border-[#E8E2D9] text-[#B47820]">
                 {recipe.code}
               </span>
-              <span className="text-xs px-2.5 py-1 rounded bg-[#FAF8F2] text-[#78716C] border border-[#E2DDD2] font-mono font-medium">
+              <span className="text-xs px-2.5 py-1 rounded bg-[#F5F0E8] text-[#706E68] border border-[#E8E2D9] font-mono font-medium">
                 Phiên bản {recipe.versionLabel}
               </span>
               <StatusBadge status={recipe.status} />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1C1917] mt-1">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1A1917] mt-1">
               {recipe.name}
             </h1>
             {recipe.description && (
-              <p className="text-sm text-[#78716C] max-w-2xl leading-relaxed">
+              <p className="text-sm text-[#706E68] max-w-2xl leading-relaxed">
                 {recipe.description}
               </p>
             )}
@@ -222,11 +222,11 @@ export default function ViewerRecipeDetailPage() {
                 </p>
               </div>
             ) : (
-              <div className="p-3 bg-[#FAF8F2] border border-[#E2DDD2] rounded-xl text-left lg:text-right max-w-xs">
-                <span className="block text-xs font-semibold text-[#1C1917] mb-0.5">
+              <div className="p-3 bg-[#FAF9F5] border border-[#E8E2D9] rounded-xl text-left lg:text-right max-w-xs">
+                <span className="block text-xs font-semibold text-[#1A1917] mb-0.5">
                   Chưa có ấn bản PDF
                 </span>
-                <span className="text-[11px] text-[#78716C]">
+                <span className="text-[11px] text-[#706E68]">
                   Bản PDF chính thức sẽ hiển thị tại đây khi Quản lý hoàn tất đóng dấu ban hành.
                 </span>
               </div>
@@ -235,21 +235,21 @@ export default function ViewerRecipeDetailPage() {
         </div>
 
         {/* Approval and Review Metadata */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 text-xs text-[#78716C]">
-          <div className="bg-[#FAF8F2] rounded-xl p-3.5 border border-[#E2DDD2]">
-            <span className="block text-[10px] uppercase font-semibold tracking-wider text-[#A8A29E] mb-1">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 text-xs text-[#706E68]">
+          <div className="bg-[#FAF9F5] rounded-xl p-3.5 border border-[#E8E2D9]">
+            <span className="block text-[10px] uppercase font-semibold tracking-wider text-[#8C887F] mb-1">
               Định mức thành phẩm
             </span>
-            <span className="text-sm font-semibold text-[#1C1917]">
+            <span className="text-sm font-semibold text-[#1A1917]">
               {recipe.targetYield} {recipe.yieldUnit}
             </span>
           </div>
 
-          <div className="bg-[#FAF8F2] rounded-xl p-3.5 border border-[#E2DDD2]">
-            <span className="block text-[10px] uppercase font-semibold tracking-wider text-[#A8A29E] mb-1">
+          <div className="bg-[#FAF9F5] rounded-xl p-3.5 border border-[#E8E2D9]">
+            <span className="block text-[10px] uppercase font-semibold tracking-wider text-[#8C887F] mb-1">
               Ngày phê duyệt
             </span>
-            <span className="text-sm font-medium text-[#1C1917]">
+            <span className="text-sm font-medium text-[#1A1917]">
               {recipe.reviewedAt
                 ? new Date(recipe.reviewedAt).toLocaleString('vi-VN', {
                     dateStyle: 'medium',
@@ -259,11 +259,11 @@ export default function ViewerRecipeDetailPage() {
             </span>
           </div>
 
-          <div className="bg-[#FAF8F2] rounded-xl p-3.5 border border-[#E2DDD2]">
-            <span className="block text-[10px] uppercase font-semibold tracking-wider text-[#A8A29E] mb-1">
+          <div className="bg-[#FAF9F5] rounded-xl p-3.5 border border-[#E8E2D9]">
+            <span className="block text-[10px] uppercase font-semibold tracking-wider text-[#8C887F] mb-1">
               Ghi chú của người kiểm duyệt
             </span>
-            <span className="text-xs text-[#78716C] italic line-clamp-2">
+            <span className="text-xs text-[#706E68] italic line-clamp-2">
               {recipe.reviewerComment || 'Không có ghi chú thêm.'}
             </span>
           </div>
@@ -271,23 +271,23 @@ export default function ViewerRecipeDetailPage() {
       </div>
 
       {/* Ingredients Section */}
-      <div className="bg-white border border-[#E2DDD2] rounded-2xl p-6 sm:p-8 shadow-xs">
+      <div className="bg-white border border-[#E8E2D9] rounded-2xl p-6 sm:p-8 shadow-xs">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2.5">
             <div className="w-1.5 h-4.5 bg-[#B47820] rounded-full" />
-            <h2 className="text-lg font-bold text-[#1C1917] tracking-tight">
+            <h2 className="text-lg font-bold text-[#1A1917] tracking-tight">
               Bảng Định Lượng Nguyên Liệu
             </h2>
           </div>
-          <span className="text-xs text-[#78716C]">
-            Tổng cộng: <strong className="text-[#1C1917]">{recipe.ingredients.length}</strong> nguyên liệu
+          <span className="text-xs text-[#706E68]">
+            Tổng cộng: <strong className="text-[#1A1917]">{recipe.ingredients.length}</strong> nguyên liệu
           </span>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-[#E2DDD2] bg-white">
+        <div className="overflow-x-auto rounded-xl border border-[#E8E2D9] bg-white">
           <table className="w-full text-left text-xs sm:text-sm">
             <thead>
-              <tr className="border-b border-[#E2DDD2] bg-[#FAF8F2] text-[#78716C]">
+              <tr className="border-b border-[#E8E2D9] bg-[#F5F0E8] text-[#706E68]">
                 <th className="py-3 px-4 font-semibold text-center w-12">STT</th>
                 <th className="py-3 px-4 font-semibold">Tên nguyên liệu</th>
                 <th className="py-3 px-4 font-semibold text-right">Định lượng</th>
@@ -295,27 +295,27 @@ export default function ViewerRecipeDetailPage() {
                 <th className="py-3 px-4 font-semibold">Ghi chú kỹ thuật</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E2DDD2] text-[#1C1917]">
+            <tbody className="divide-y divide-[#E8E2D9] text-[#1A1917]">
               {recipe.ingredients.map((item, idx) => {
                 const ingInfo = ingredientsMap[item.ingredientId];
                 return (
-                  <tr key={`${item.ingredientId}_${idx}`} className="hover:bg-[#FAF8F2] transition">
-                    <td className="py-3.5 px-4 text-center font-mono text-[#A8A29E] font-semibold">
+                  <tr key={`${item.ingredientId}_${idx}`} className="hover:bg-[#FAF9F5] transition">
+                    <td className="py-3.5 px-4 text-center font-mono text-[#8C887F] font-semibold">
                       {idx + 1}
                     </td>
-                    <td className="py-3.5 px-4 font-medium text-[#1C1917]">
+                    <td className="py-3.5 px-4 font-medium text-[#1A1917]">
                       <div>{ingInfo ? ingInfo.name : item.ingredientId}</div>
                       {ingInfo?.code && (
-                        <div className="text-[11px] font-mono text-[#A8A29E]">{ingInfo.code}</div>
+                        <div className="text-[11px] font-mono text-[#8C887F]">{ingInfo.code}</div>
                       )}
                     </td>
                     <td className="py-3.5 px-4 text-right font-mono font-bold text-[#B47820]">
                       {item.quantity}
                     </td>
-                    <td className="py-3.5 px-4 text-center text-[#78716C]">
+                    <td className="py-3.5 px-4 text-center text-[#706E68]">
                       {item.unit}
                     </td>
-                    <td className="py-3.5 px-4 text-xs text-[#78716C]">
+                    <td className="py-3.5 px-4 text-xs text-[#706E68]">
                       {item.notes || item.stageNote || '—'}
                     </td>
                   </tr>
@@ -327,16 +327,16 @@ export default function ViewerRecipeDetailPage() {
       </div>
 
       {/* Standard Operating Procedures (SOP) Section */}
-      <div className="bg-white border border-[#E2DDD2] rounded-2xl p-6 sm:p-8 shadow-xs">
+      <div className="bg-white border border-[#E8E2D9] rounded-2xl p-6 sm:p-8 shadow-xs">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
             <div className="w-1.5 h-4.5 bg-[#B47820] rounded-full" />
-            <h2 className="text-lg font-bold text-[#1C1917] tracking-tight">
+            <h2 className="text-lg font-bold text-[#1A1917] tracking-tight">
               Quy Trình Thao Tác Chuẩn (SOP)
             </h2>
           </div>
-          <span className="text-xs text-[#78716C]">
-            Số bước thực hiện: <strong className="text-[#1C1917]">{recipe.steps.length}</strong> bước
+          <span className="text-xs text-[#706E68]">
+            Số bước thực hiện: <strong className="text-[#1A1917]">{recipe.steps.length}</strong> bước
           </span>
         </div>
 
@@ -348,15 +348,15 @@ export default function ViewerRecipeDetailPage() {
             return (
               <div
                 key={step.id || step.stepNumber}
-                className="bg-[#FAF8F2] border border-[#E2DDD2] rounded-xl p-5 sm:p-6 transition hover:border-[#D6CFBE]"
+                className="bg-[#FAF9F5] border border-[#E8E2D9] rounded-xl p-5 sm:p-6 transition hover:border-[#C9A84C]"
               >
                 {/* Step header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-[#E2DDD2]">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-[#E8E2D9]">
                   <div className="flex items-center gap-3">
-                    <span className="w-7 h-7 rounded-full bg-[#FAF9F5] border border-[#E2DDD2] text-[#B47820] font-bold text-xs flex items-center justify-center shrink-0">
+                    <span className="w-7 h-7 rounded-full bg-white border border-[#E8E2D9] text-[#B47820] font-bold text-xs flex items-center justify-center shrink-0">
                       {step.stepNumber}
                     </span>
-                    <h3 className="font-semibold text-base text-[#1C1917]">
+                    <h3 className="font-semibold text-base text-[#1A1917]">
                       {step.title}
                     </h3>
                   </div>
@@ -364,20 +364,20 @@ export default function ViewerRecipeDetailPage() {
                   {/* Badges / Metrics */}
                   <div className="flex flex-wrap items-center gap-2">
                     {step.durationSeconds !== undefined && step.durationSeconds > 0 && (
-                      <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded bg-white border border-[#E2DDD2] text-[#1C1917]">
+                      <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded bg-white border border-[#E8E2D9] text-[#1A1917]">
                         <Clock className="w-3.5 h-3.5 text-[#B47820]" />
                         <span>{step.durationSeconds} giây</span>
                       </span>
                     )}
                     {step.temperatureCelsius !== undefined && (
-                      <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded bg-white border border-[#E2DDD2] text-[#1C1917]">
+                      <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded bg-white border border-[#E8E2D9] text-[#1A1917]">
                         <Thermometer className="w-3.5 h-3.5 text-rose-500" />
                         <span>{step.temperatureCelsius}°C</span>
                       </span>
                     )}
                     {step.equipment && (
-                      <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded bg-white border border-[#E2DDD2] text-[#1C1917]">
-                        <Wrench className="w-3.5 h-3.5 text-[#78716C]" />
+                      <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded bg-white border border-[#E8E2D9] text-[#1A1917]">
+                        <Wrench className="w-3.5 h-3.5 text-[#706E68]" />
                         <span>{step.equipment}</span>
                       </span>
                     )}
@@ -388,10 +388,10 @@ export default function ViewerRecipeDetailPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2 space-y-4">
                     <div>
-                      <h4 className="text-[11px] uppercase tracking-wider font-semibold text-[#A8A29E] mb-1">
+                      <h4 className="text-[11px] uppercase tracking-wider font-semibold text-[#8C887F] mb-1">
                         Hướng dẫn thao tác
                       </h4>
-                      <p className="text-sm text-[#1C1917] leading-relaxed whitespace-pre-line">
+                      <p className="text-sm text-[#1A1917] leading-relaxed whitespace-pre-line">
                         {step.instruction}
                       </p>
                     </div>
@@ -424,7 +424,7 @@ export default function ViewerRecipeDetailPage() {
                   <div className="lg:col-span-1">
                     {coverUrl ? (
                       <div className="space-y-2">
-                        <div className="relative rounded-lg overflow-hidden border border-[#E2DDD2] aspect-video bg-white">
+                        <div className="relative rounded-lg overflow-hidden border border-[#E8E2D9] aspect-video bg-white">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={coverUrl}
@@ -432,7 +432,7 @@ export default function ViewerRecipeDetailPage() {
                             className="w-full h-full object-cover"
                           />
                         </div>
-                        <div className="flex items-center justify-between text-[11px] text-[#78716C]">
+                        <div className="flex items-center justify-between text-[11px] text-[#706E68]">
                           <span>{coverMedia?.name || 'Ảnh minh họa thao tác'}</span>
                           {coverMedia?.source && (
                             <MediaSourceBadge source={coverMedia.source} />
@@ -440,8 +440,8 @@ export default function ViewerRecipeDetailPage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="border border-dashed border-[#E2DDD2] rounded-lg p-5 text-center text-[#A8A29E] h-full flex flex-col items-center justify-center min-h-[120px]">
-                        <FileText className="w-6 h-6 mb-1 text-[#D6CFBE]" />
+                      <div className="border border-dashed border-[#E8E2D9] rounded-lg p-5 text-center text-[#8C887F] h-full flex flex-col items-center justify-center min-h-[120px]">
+                        <FileText className="w-6 h-6 mb-1 text-[#8C887F]" />
                         <span className="text-xs">Không có ảnh đính kèm</span>
                       </div>
                     )}

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace RecipeHub.Recipe.Domain.Entities;
@@ -40,10 +40,6 @@ public partial class RecipeVersion
 
     public string? Description { get; set; }
 
-    /// <summary>
-    /// Concurrency token, tăng sau mỗi lần cập nhật.
-    /// </summary>
-    public long RowVersion { get; set; }
 
     public Guid CreatedByUserRef { get; set; }
 

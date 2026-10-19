@@ -13,10 +13,16 @@ import {
   X,
   Sparkles,
   Check,
+  Trash2,
+  Clock,
+  Thermometer,
+  CheckCircle2,
+  Utensils,
 } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { Ingredient, RecipeIngredient, RecipeStep } from '@/lib/demo/types';
 import { Button, TextInput, TextArea, Select, Alert } from '@/components/workspace/fields';
+import { UnitItem } from '@/lib/api/backend-repository';
 export default function NewRecipePage() {
   const router = useRouter();
   const { session, repo, touch } = useDemo();
@@ -26,7 +32,8 @@ export default function NewRecipePage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [targetYield, setTargetYield] = useState<number>(1);
-  const [yieldUnit, setYieldUnit] = useState('ly (500ml)');
+  const [yieldUnit, setYieldUnit] = useState('');
+  const [availableUnits, setAvailableUnits] = useState<UnitItem[]>([]);
 
   // Ingredients State
   const [availableIngredients, setAvailableIngredients] = useState<Ingredient[]>([]);
@@ -52,9 +59,17 @@ export default function NewRecipePage() {
   // Load available ingredients
   useEffect(() => {
     let isMounted = true;
-    repo.getIngredients('', '', true).then((items) => {
-      if (isMounted) setAvailableIngredients(items);
-    }).catch(() => {});
+    Promise.all([repo.getIngredients('', '', true), repo.getUnits()])
+      .then(([items, units]) => {
+        if (!isMounted) return;
+        const activeUnits = units.filter((unit) => unit.state === 'active');
+        setAvailableIngredients(items);
+        setAvailableUnits(activeUnits);
+        setYieldUnit((current) => current || activeUnits[0]?.code || '');
+      })
+      .catch((error: unknown) => {
+        if (isMounted) setErrorMsg(error instanceof Error ? error.message : 'Không thể tải danh mục Recipe Service.');
+      });
     return () => {
       isMounted = false;
     };
@@ -154,6 +169,10 @@ export default function NewRecipePage() {
       setErrorMsg('Vui lòng nhập tên công thức.');
       return;
     }
+    if (!yieldUnit) {
+      setErrorMsg('Recipe Service chưa có đơn vị thành phẩm khả dụng.');
+      return;
+    }
 
     // Validate quantities
     for (let i = 0; i < recipeIngredients.length; i++) {
@@ -178,7 +197,7 @@ export default function NewRecipePage() {
         name: cleanName,
         description: description.trim(),
         targetYield: Number(targetYield) || 1,
-        yieldUnit: yieldUnit.trim() || 'ly (500ml)',
+        yieldUnit,
         ingredients: recipeIngredients,
         steps: steps,
       });
@@ -196,20 +215,20 @@ export default function NewRecipePage() {
   return (
     <form onSubmit={handleSubmit} className="space-y-8 max-w-5xl mx-auto pb-12">
       {/* Top Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E8E2D9] pb-5">
         <div>
-          <div className="flex items-center gap-2 text-xs text-zinc-400 mb-1">
-            <Link href="/rnd/recipes" className="hover:text-zinc-200">
+          <div className="flex items-center gap-2 text-xs text-[#706E68] mb-1">
+            <Link href="/rnd/recipes" className="hover:text-[#1A1917]">
               Công Thức
             </Link>
             <span>/</span>
-            <span className="text-[#DEBF64]">Tạo Mới Bản Nháp</span>
+            <span className="text-[#B47820] font-medium">Tạo Mới Bản Nháp</span>
           </div>
-          <h1 className="text-2xl font-bold text-[#1C1917] flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-[#1A1917] flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-[#B47820]" />
             <span>Tạo Bản Nháp Công Thức R&amp;D</span>
           </h1>
-          <p className="text-sm text-zinc-400 mt-1">
+          <p className="text-sm text-[#706E68] mt-1">
             Khởi tạo phiên bản v1.0. Bạn có thể lưu nháp, thử nghiệm AI và hoàn thiện trước khi gửi thẩm định.
           </p>
         </div>
@@ -228,8 +247,8 @@ export default function NewRecipePage() {
       {errorMsg && <Alert type="error" message={errorMsg} />}
 
       {/* 1. Basic Metadata */}
-      <div className="bg-white border border-[#E2DDD2] rounded-xl p-6 space-y-5 shadow-xs">
-        <h2 className="text-base font-bold text-[#1C1917] flex items-center gap-2 border-b border-[#E2DDD2] pb-3">
+      <div className="bg-white border border-[#E8E2D9] rounded-xl p-6 space-y-5 shadow-xs">
+        <h2 className="text-base font-bold text-[#1A1917] flex items-center gap-2 border-b border-[#E8E2D9] pb-3">
           <FileText className="w-4 h-4 text-[#B47820]" /> 1. Thông Tin Cơ Bản &amp; Định Mức
         </h2>
 
@@ -267,23 +286,26 @@ export default function NewRecipePage() {
             onChange={(e) => setTargetYield(Math.max(1, Number(e.target.value) || 1))}
           />
 
-          <TextInput
+          <Select
             label="Đơn Vị Thành Phẩm *"
-            placeholder="VD: ly (500ml), bình (1.5L), mẻ..."
             value={yieldUnit}
             onChange={(e) => setYieldUnit(e.target.value)}
+            options={availableUnits.map((unit) => ({
+              value: unit.code,
+              label: `${unit.name} (${unit.code})`,
+            }))}
           />
         </div>
       </div>
 
       {/* 2. Ingredients Builder */}
-      <div className="bg-[#141418] border border-zinc-800 rounded-xl p-6 space-y-5">
-        <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
+      <div className="bg-white border border-[#E8E2D9] rounded-xl p-6 space-y-5 shadow-xs">
+        <div className="flex items-center justify-between border-b border-[#E8E2D9] pb-3">
           <div>
-            <h2 className="text-base font-bold text-[#1C1917] flex items-center gap-2">
+            <h2 className="text-base font-bold text-[#1A1917] flex items-center gap-2">
               <FlaskConical className="w-4 h-4 text-[#B47820]" /> 2. Thành Phần &amp; Định Lượng Nguyên Liệu ({recipeIngredients.length})
             </h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-[#706E68] mt-0.5">
               Chọn nguyên liệu từ kho chuẩn, nhập định lượng (&gt; 0) và phân tách giai đoạn nếu cần.
             </p>
           </div>
@@ -299,11 +321,11 @@ export default function NewRecipePage() {
         </div>
 
         {availableIngredients.length === 0 ? (
-          <div className="p-4 bg-zinc-900/60 rounded-lg text-xs text-zinc-400 border border-zinc-800">
-            Kho nguyên liệu đang trống. Hãy vào mục <Link href="/rnd/ingredients" className="text-[#C9A84C] underline">Kho Nguyên Liệu</Link> để tạo trước.
+          <div className="p-4 bg-[#FAF9F5] rounded-xl text-xs text-[#706E68] border border-[#E8E2D9]">
+            Kho nguyên liệu đang trống. Hãy vào mục <Link href="/rnd/ingredients" className="text-[#B47820] font-medium underline">Kho Nguyên Liệu</Link> để tạo trước.
           </div>
         ) : recipeIngredients.length === 0 ? (
-          <div className="text-center p-8 border border-dashed border-zinc-800 rounded-lg text-zinc-400 space-y-2">
+          <div className="text-center p-8 border border-dashed border-[#E8E2D9] bg-[#FAF9F5] rounded-xl text-[#706E68] space-y-2">
             <p className="text-sm">Chưa có nguyên liệu nào được thêm vào công thức này.</p>
             <Button type="button" variant="secondary" size="sm" onClick={handleAddIngredient}>
               + Thêm Nguyên Liệu Đầu Tiên
@@ -314,7 +336,7 @@ export default function NewRecipePage() {
             {recipeIngredients.map((item, idx) => (
               <div
                 key={idx}
-                className="grid grid-cols-1 md:grid-cols-12 gap-3 p-3.5 bg-zinc-900/60 border border-zinc-800 rounded-lg items-end"
+                className="grid grid-cols-1 md:grid-cols-12 gap-3 p-3.5 bg-[#FAF9F5] border border-[#E8E2D9] rounded-xl items-end shadow-2xs hover:border-[#C5BFB1] transition"
               >
                 <div className="md:col-span-4">
                   <Select
@@ -356,17 +378,15 @@ export default function NewRecipePage() {
                   />
                 </div>
 
-                <div className="md:col-span-1 flex justify-end">
-                  <Button
+                <div className="md:col-span-1 flex items-end">
+                  <button
                     type="button"
-                    variant="danger"
-                    size="sm"
-                    className="w-full"
                     onClick={() => handleRemoveIngredient(idx)}
                     title="Xóa nguyên liệu"
+                    className="w-full h-[38px] rounded-xl text-[#8C887F] hover:text-rose-600 hover:bg-rose-50 border border-[#E8E2D9] hover:border-rose-200 transition flex items-center justify-center"
                   >
-                    <X className="w-4 h-4" />
-                  </Button>
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -375,13 +395,13 @@ export default function NewRecipePage() {
       </div>
 
       {/* 3. Steps Builder */}
-      <div className="bg-[#141418] border border-zinc-800 rounded-xl p-6 space-y-5">
-        <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
+      <div className="bg-white border border-[#E8E2D9] rounded-xl p-6 space-y-5 shadow-xs">
+        <div className="flex items-center justify-between border-b border-[#E8E2D9] pb-3">
           <div>
-            <h2 className="text-base font-bold text-[#1C1917] flex items-center gap-2">
+            <h2 className="text-base font-bold text-[#1A1917] flex items-center gap-2">
               <ListOrdered className="w-4 h-4 text-[#B47820]" /> 3. Quy Trình Pha Chế &amp; Chuẩn Thao Tác SOP ({steps.length})
             </h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-[#706E68] mt-0.5">
               Mô tả chi tiết từng thao tác, thời gian khuấy/ủ, nhiệt độ và tiêu chí hoàn thành.
             </p>
           </div>
@@ -391,7 +411,7 @@ export default function NewRecipePage() {
         </div>
 
         {steps.length === 0 ? (
-          <div className="text-center p-8 border border-dashed border-zinc-800 rounded-lg text-zinc-400 space-y-2">
+          <div className="text-center p-8 border border-dashed border-[#E8E2D9] bg-[#FAF9F5] rounded-xl text-[#706E68] space-y-2">
             <p className="text-sm">Chưa có bước thao tác nào.</p>
             <Button type="button" variant="secondary" size="sm" onClick={handleAddStep}>
               + Tạo Bước Đầu Tiên
@@ -402,97 +422,134 @@ export default function NewRecipePage() {
             {steps.map((step, idx) => (
               <div
                 key={step.id}
-                className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4.5 space-y-3.5 relative"
+                className="bg-white border border-[#E8E2D9] rounded-2xl shadow-xs overflow-hidden transition-all duration-200 hover:shadow-sm hover:border-[#D5CEBF]"
               >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 flex-1">
-                    <span className="w-6 h-6 rounded-full bg-[#C9A84C]/20 text-[#DEBF64] flex items-center justify-center font-bold text-xs">
+                {/* Step Header Bar */}
+                <div className="bg-[#FAF9F5] border-b border-[#E8E2D9] px-4 py-3 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <span className="w-7 h-7 rounded-full bg-[#B47820] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
                       {idx + 1}
                     </span>
                     <input
                       type="text"
-                      className="bg-zinc-800/80 border border-zinc-700/60 rounded px-2.5 py-1 text-sm font-semibold text-zinc-100 w-full max-w-sm focus:outline-none focus:border-[#C9A84C]"
+                      className="bg-white border border-[#E8E2D9] rounded-xl px-3.5 py-1.5 text-sm font-semibold text-[#1A1917] w-full max-w-md focus:outline-none focus:border-[#B47820] focus:ring-2 focus:ring-[#B47820]/15 shadow-2xs transition placeholder:text-[#8C887F]"
                       value={step.title}
-                      placeholder="Tiêu đề bước..."
+                      placeholder="Tên bước (VD: Chiết xuất espresso, Đánh bọt sữa...)"
                       onChange={(e) => handleUpdateStep(idx, { title: e.target.value })}
                     />
                   </div>
 
-                  <div className="flex items-center gap-1.5">
-                    <Button
+                  {/* Reorder and Delete Controls */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
                       type="button"
-                      variant="ghost"
-                      size="sm"
                       disabled={idx === 0}
                       onClick={() => handleMoveStep(idx, 'up')}
                       title="Di chuyển lên"
+                      className="p-1.5 rounded-lg text-[#706E68] hover:text-[#1A1917] hover:bg-white border border-transparent hover:border-[#E8E2D9] disabled:opacity-30 disabled:pointer-events-none transition"
                     >
-                      <ArrowUp className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button
+                      <ArrowUp className="w-4 h-4" />
+                    </button>
+                    <button
                       type="button"
-                      variant="ghost"
-                      size="sm"
                       disabled={idx === steps.length - 1}
                       onClick={() => handleMoveStep(idx, 'down')}
                       title="Di chuyển xuống"
+                      className="p-1.5 rounded-lg text-[#706E68] hover:text-[#1A1917] hover:bg-white border border-transparent hover:border-[#E8E2D9] disabled:opacity-30 disabled:pointer-events-none transition"
                     >
-                      <ArrowDown className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button
+                      <ArrowDown className="w-4 h-4" />
+                    </button>
+                    <button
                       type="button"
-                      variant="danger"
-                      size="sm"
                       onClick={() => handleRemoveStep(idx)}
                       title="Xóa bước này"
+                      className="p-1.5 rounded-lg text-[#8C887F] hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition"
                     >
-                      <X className="w-4 h-4" />
-                    </Button>
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
 
-                <TextArea
-                  label="Hướng Dẫn Thao Tác Chi Tiết *"
-                  placeholder="Mô tả kỹ thuật ủ trà, đánh bọt, rót tầng hoặc lắc shaker..."
-                  value={step.instruction}
-                  onChange={(e) => handleUpdateStep(idx, { instruction: e.target.value })}
-                  rows={2}
-                />
+                {/* Step Body */}
+                <div className="p-4 space-y-4">
+                  {/* Step instruction */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-[#1A1917] flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-[#B47820]" />
+                      <span>Hướng dẫn thao tác chi tiết <span className="text-rose-500">*</span></span>
+                    </label>
+                    <textarea
+                      className="w-full bg-[#FAF9F5]/50 border border-[#E8E2D9] rounded-xl px-3.5 py-2.5 text-sm text-[#1A1917] placeholder:text-[#8C887F] focus:bg-white focus:border-[#B47820] focus:ring-2 focus:ring-[#B47820]/15 outline-none transition shadow-2xs"
+                      placeholder="Mô tả kỹ thuật ủ trà, đánh bọt, rót tầng hoặc lắc shaker..."
+                      value={step.instruction}
+                      onChange={(e) => handleUpdateStep(idx, { instruction: e.target.value })}
+                      rows={2}
+                    />
+                  </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-1">
-                  <TextInput
-                    label="Thời gian (giây)"
-                    type="number"
-                    placeholder="VD: 30"
-                    value={step.durationSeconds || ''}
-                    onChange={(e) =>
-                      handleUpdateStep(idx, { durationSeconds: Number(e.target.value) || undefined })
-                    }
-                  />
+                  {/* Step Attributes - Compact Grid with icons */}
+                  <div className="bg-[#FAF9F5] border border-[#E8E2D9] rounded-xl p-3.5">
+                    <div className="text-[11px] font-semibold text-[#706E68] uppercase tracking-wider mb-2.5">
+                      Thông số kỹ thuật
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      <div>
+                        <label className="text-xs font-medium text-[#706E68] flex items-center gap-1 mb-1">
+                          <Clock className="w-3.5 h-3.5 text-[#B47820]" /> Thời gian (giây)
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="VD: 30"
+                          value={step.durationSeconds || ''}
+                          onChange={(e) =>
+                            handleUpdateStep(idx, { durationSeconds: Number(e.target.value) || undefined })
+                          }
+                          className="w-full bg-white border border-[#E8E2D9] rounded-lg px-3 py-1.5 text-xs text-[#1A1917] placeholder:text-[#8C887F] focus:border-[#B47820] focus:ring-2 focus:ring-[#B47820]/15 outline-none transition shadow-2xs"
+                        />
+                      </div>
 
-                  <TextInput
-                    label="Nhiệt độ (°C)"
-                    type="number"
-                    placeholder="VD: 85"
-                    value={step.temperatureCelsius || ''}
-                    onChange={(e) =>
-                      handleUpdateStep(idx, { temperatureCelsius: Number(e.target.value) || undefined })
-                    }
-                  />
+                      <div>
+                        <label className="text-xs font-medium text-[#706E68] flex items-center gap-1 mb-1">
+                          <Thermometer className="w-3.5 h-3.5 text-[#B47820]" /> Nhiệt độ (°C)
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="VD: 85"
+                          value={step.temperatureCelsius || ''}
+                          onChange={(e) =>
+                            handleUpdateStep(idx, { temperatureCelsius: Number(e.target.value) || undefined })
+                          }
+                          className="w-full bg-white border border-[#E8E2D9] rounded-lg px-3 py-1.5 text-xs text-[#1A1917] placeholder:text-[#8C887F] focus:border-[#B47820] focus:ring-2 focus:ring-[#B47820]/15 outline-none transition shadow-2xs"
+                        />
+                      </div>
 
-                  <TextInput
-                    label="Dụng cụ cần dùng"
-                    placeholder="VD: Bình ủ, nhiệt kế"
-                    value={step.equipment || ''}
-                    onChange={(e) => handleUpdateStep(idx, { equipment: e.target.value })}
-                  />
+                      <div>
+                        <label className="text-xs font-medium text-[#706E68] flex items-center gap-1 mb-1">
+                          <Utensils className="w-3.5 h-3.5 text-[#B47820]" /> Dụng cụ cần dùng
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="VD: Bình ủ, nhiệt kế"
+                          value={step.equipment || ''}
+                          onChange={(e) => handleUpdateStep(idx, { equipment: e.target.value })}
+                          className="w-full bg-white border border-[#E8E2D9] rounded-lg px-3 py-1.5 text-xs text-[#1A1917] placeholder:text-[#8C887F] focus:border-[#B47820] focus:ring-2 focus:ring-[#B47820]/15 outline-none transition shadow-2xs"
+                        />
+                      </div>
 
-                  <TextInput
-                    label="Tiêu chí hoàn thành"
-                    placeholder="VD: Cốt trà sánh, thơm đậm"
-                    value={step.completionCriteria || ''}
-                    onChange={(e) => handleUpdateStep(idx, { completionCriteria: e.target.value })}
-                  />
+                      <div>
+                        <label className="text-xs font-medium text-[#706E68] flex items-center gap-1 mb-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#B47820]" /> Tiêu chí hoàn thành
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="VD: Cốt trà sánh, thơm đậm"
+                          value={step.completionCriteria || ''}
+                          onChange={(e) => handleUpdateStep(idx, { completionCriteria: e.target.value })}
+                          className="w-full bg-white border border-[#E8E2D9] rounded-lg px-3 py-1.5 text-xs text-[#1A1917] placeholder:text-[#8C887F] focus:border-[#B47820] focus:ring-2 focus:ring-[#B47820]/15 outline-none transition shadow-2xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -501,7 +558,7 @@ export default function NewRecipePage() {
       </div>
 
       {/* Action Footer */}
-      <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-800">
+      <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#E8E2D9]">
         <Link href="/rnd/recipes">
           <Button type="button" variant="secondary">
             Hủy Bỏ

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using RecipeHub.Recipe.Domain.Entities;
@@ -348,11 +348,6 @@ public partial class RecipeDbContext : DbContext
             entity.Property(e => e.PrimaryMediaAssetRef).HasColumnName("primary_media_asset_ref");
             entity.Property(e => e.PublicId).HasColumnName("public_id");
             entity.Property(e => e.RecipeId).HasColumnName("recipe_id");
-            entity.Property(e => e.RowVersion)
-                .IsConcurrencyToken()
-                .HasDefaultValue(0L)
-                .HasComment("Concurrency token, tăng sau mỗi lần cập nhật.")
-                .HasColumnName("row_version");
             entity.Property(e => e.Status)
                 .HasDefaultValueSql("'draft'::text")
                 .HasComment("draft, pending_approval, returned, approved hoặc cancelled.")

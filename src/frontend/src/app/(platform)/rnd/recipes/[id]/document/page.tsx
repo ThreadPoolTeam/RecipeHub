@@ -45,8 +45,8 @@ export default function RecipeDocumentPage() {
 
   if (loading) {
     return (
-      <div className="p-12 text-center text-zinc-400">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#C9A84C]" />
+      <div className="p-12 text-center text-[#706E68]">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#B47820]" />
         <p className="mt-3 text-sm">Đang nạp không gian biên tập tài liệu SOP...</p>
       </div>
     );
@@ -66,20 +66,20 @@ export default function RecipeDocumentPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E2DDD2] pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E8E2D9] pb-4">
         <div>
-          <div className="flex items-center gap-2 text-xs text-[#78716C] mb-1">
-            <Link href="/rnd/recipes" className="hover:text-[#1C1917]">
+          <div className="flex items-center gap-2 text-xs text-[#706E68] mb-1">
+            <Link href="/rnd/recipes" className="hover:text-[#1A1917]">
               Công Thức R&amp;D
             </Link>
             <span>/</span>
-            <Link href={`/rnd/recipes/${recipe.id}`} className="hover:text-[#1C1917] font-mono text-[#B47820]">
+            <Link href={`/rnd/recipes/${recipe.id}`} className="hover:text-[#1A1917] font-mono text-[#B47820]">
               {recipe.code}
             </Link>
             <span>/</span>
-            <span className="font-semibold text-[#1C1917]">Biên Tập Tài Liệu SOP</span>
+            <span className="font-semibold text-[#1A1917]">Biên Tập Tài Liệu SOP</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#1C1917] flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#1A1917] flex items-center gap-2">
             <FileText className="w-5 h-5 text-[#B47820]" /> Hồ Sơ &amp; Tài Liệu SOP: {recipe.name}
           </h1>
         </div>

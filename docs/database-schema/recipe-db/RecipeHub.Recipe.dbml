@@ -160,7 +160,6 @@ Table recipe_db.recipe_version {
   name text [not null]
   normalized_name text [not null, note: 'Tên chuẩn hóa để tìm kiếm không phân biệt hoa thường.']
   description text
-  row_version bigint [not null, default: 0, note: 'Concurrency token, tăng sau mỗi lần cập nhật.']
   primary_media_asset_ref uuid [note: 'MediaAsset public ID từ Content Service làm ảnh đại diện thành phẩm.']
   created_by_user_ref uuid [not null]
   updated_by_user_ref uuid [not null]
@@ -179,7 +178,6 @@ Table recipe_db.recipe_version {
   checks {
     `version_number > 0` [name: 'recipe_version_number_check']
     `status IN ('draft', 'pending_approval', 'returned', 'approved', 'cancelled')` [name: 'recipe_version_status_check']
-    `row_version >= 0` [name: 'recipe_version_row_version_check']
     `based_on_version_id IS NULL OR based_on_version_id <> id` [name: 'recipe_version_based_on_check']
   }
 

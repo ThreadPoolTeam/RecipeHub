@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { BookOpen, Search, Coffee, ArrowRight, Shield } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { RecipeVersion } from '@/lib/demo/types';
-import { TextInput, Alert } from '@/components/workspace/fields';
+import { TextInput, Alert, SearchInput } from '@/components/workspace/fields';
 import { StatusBadge } from '@/components/workspace/status-badge';
 export default function ViewerPage() {
   const { session, currentUser, repo, dataVersion } = useDemo();
@@ -50,23 +50,23 @@ export default function ViewerPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E2DDD2]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E2D9]">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
               Barista / Quầy Bar
             </span>
-            <span className="text-xs text-[#78716C]">
+            <span className="text-xs text-[#706E68]">
               Được cấp quyền:{' '}
-              <strong className="text-[#1C1917]">
+              <strong className="text-[#1A1917]">
                 {currentUser?.allowedRecipeIds?.length || 0} công thức
               </strong>
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#1C1917] flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#1A1917] flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-[#B47820]" /> Tra Cứu Quy Trình Pha Chế (SOP)
           </h1>
-          <p className="text-xs sm:text-sm text-[#78716C] mt-0.5">
+          <p className="text-xs sm:text-sm text-[#706E68] mt-0.5">
             Tra cứu nhanh thành phần, thao tác quầy bar và tài liệu kỹ thuật chuẩn.
           </p>
         </div>
@@ -80,12 +80,13 @@ export default function ViewerPage() {
       )}
 
       {/* Search Input */}
-      <div className="bg-white border border-[#E2DDD2] rounded-lg p-3 shadow-xs">
+      <div className="bg-white border border-[#E8E2D9] rounded-2xl p-3 shadow-xs">
         <div className="max-w-md">
-          <TextInput
+          <SearchInput
             placeholder="Tìm theo mã công thức (REC-...) hoặc tên món..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onClear={() => setSearchQuery('')}
             className="w-full"
           />
         </div>
@@ -95,15 +96,15 @@ export default function ViewerPage() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="w-6 h-6 border-2 border-[#B47820] border-t-transparent rounded-full animate-spin mb-2"></div>
-          <p className="text-xs text-[#78716C]">Đang tải danh sách công thức được cấp quyền...</p>
+          <p className="text-xs text-[#706E68]">Đang tải danh sách công thức được cấp quyền...</p>
         </div>
       ) : recipes.length === 0 ? (
-        <div className="bg-white border border-dashed border-[#E2DDD2] rounded-xl p-10 text-center max-w-xl mx-auto my-6 shadow-xs">
-          <Coffee className="w-10 h-10 mx-auto mb-3 text-[#A8A29E]" />
-          <h3 className="text-sm font-semibold text-[#1C1917] mb-1">
+        <div className="bg-white border border-dashed border-[#E8E2D9] rounded-xl p-10 text-center max-w-xl mx-auto my-6 shadow-xs">
+          <Coffee className="w-10 h-10 mx-auto mb-3 text-[#8C887F]" />
+          <h3 className="text-sm font-semibold text-[#1A1917] mb-1">
             Không tìm thấy công thức khả dụng
           </h3>
-          <p className="text-xs text-[#78716C] leading-relaxed max-w-md mx-auto">
+          <p className="text-xs text-[#706E68] leading-relaxed max-w-md mx-auto">
             {searchQuery.trim()
               ? `Không tìm thấy công thức nào phù hợp với từ khóa "${searchQuery.trim()}".`
               : 'Chưa có công thức nào được cấp quyền xem cho tài khoản của bạn. Vui lòng liên hệ Quản trị viên để được phân quyền.'}
@@ -115,52 +116,52 @@ export default function ViewerPage() {
             <Link
               key={recipe.id}
               href={`/viewer/recipes/${recipe.id}`}
-              className="group block bg-white hover:bg-[#FAF8F2] border border-[#E2DDD2] hover:border-[#B47820] rounded-lg p-4 transition shadow-xs hover:shadow-sm"
+              className="group block bg-white hover:bg-[#FAF9F5] border border-[#E8E2D9] hover:border-[#C9A84C] rounded-xl p-4 transition shadow-xs hover:shadow-sm"
             >
               <div className="flex items-start justify-between gap-3 mb-2">
-                <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-[#F5F2EB] border border-[#E2DDD2] text-[#B47820]">
+                <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-[#F5F0E8] border border-[#E8E2D9] text-[#B47820]">
                   {recipe.code}
                 </span>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-[#F5F2EB] text-[#78716C] font-mono border border-[#E2DDD2]">
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-[#F5F0E8] text-[#706E68] font-mono border border-[#E8E2D9]">
                     {recipe.versionLabel}
                   </span>
                   <StatusBadge status={recipe.status} />
                 </div>
               </div>
 
-              <h3 className="font-bold text-[#1C1917] group-hover:text-[#B47820] text-sm sm:text-base transition mb-1 line-clamp-1">
+              <h3 className="font-bold text-[#1A1917] group-hover:text-[#B47820] text-sm sm:text-base transition mb-1 line-clamp-1">
                 {recipe.name}
               </h3>
 
               {recipe.description && (
-                <p className="text-xs text-[#78716C] line-clamp-2 mb-3 leading-relaxed">
+                <p className="text-xs text-[#706E68] line-clamp-2 mb-3 leading-relaxed">
                   {recipe.description}
                 </p>
               )}
 
-              <div className="pt-2.5 border-t border-[#EFECE4] grid grid-cols-3 gap-2 text-center text-xs text-[#78716C]">
-                <div className="bg-[#FAF8F2] rounded p-1.5 border border-[#EFECE4]">
-                  <span className="block text-[10px] uppercase tracking-wider text-[#A8A29E]">
+              <div className="pt-2.5 border-t border-[#E8E2D9] grid grid-cols-3 gap-2 text-center text-xs text-[#706E68]">
+                <div className="bg-[#FAF9F5] rounded p-1.5 border border-[#E8E2D9]">
+                  <span className="block text-[10px] uppercase tracking-wider text-[#8C887F]">
                     Định lượng
                   </span>
-                  <span className="font-semibold text-[#1C1917] line-clamp-1">
+                  <span className="font-semibold text-[#1A1917] line-clamp-1">
                     {recipe.targetYield} {recipe.yieldUnit}
                   </span>
                 </div>
-                <div className="bg-[#FAF8F2] rounded p-1.5 border border-[#EFECE4]">
-                  <span className="block text-[10px] uppercase tracking-wider text-[#A8A29E]">
+                <div className="bg-[#FAF9F5] rounded p-1.5 border border-[#E8E2D9]">
+                  <span className="block text-[10px] uppercase tracking-wider text-[#8C887F]">
                     Nguyên liệu
                   </span>
-                  <span className="font-semibold text-[#1C1917]">
+                  <span className="font-semibold text-[#1A1917]">
                     {recipe.ingredients.length} loại
                   </span>
                 </div>
-                <div className="bg-[#FAF8F2] rounded p-1.5 border border-[#EFECE4]">
-                  <span className="block text-[10px] uppercase tracking-wider text-[#A8A29E]">
+                <div className="bg-[#FAF9F5] rounded p-1.5 border border-[#E8E2D9]">
+                  <span className="block text-[10px] uppercase tracking-wider text-[#8C887F]">
                     Thao tác
                   </span>
-                  <span className="font-semibold text-[#1C1917]">
+                  <span className="font-semibold text-[#1A1917]">
                     {recipe.steps.length} bước
                   </span>
                 </div>

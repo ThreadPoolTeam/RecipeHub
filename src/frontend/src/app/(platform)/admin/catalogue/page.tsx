@@ -3,16 +3,35 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useDemo } from '@/lib/demo/provider';
 import { Ingredient } from '@/lib/demo/types';
-import { Button, TextInput, Select, TextArea, Alert } from '@/components/workspace/fields';
+import { Button, TextInput, Select, TextArea, Alert, SearchInput } from '@/components/workspace/fields';
 import { DataTable } from '@/components/workspace/data-table';
 import { Dialog } from '@/components/workspace/dialog';
+import { CatalogItem, UnitItem } from '@/lib/api/backend-repository';
 
-const GROUPS = ['Trà', 'Sữa & Kem', 'Siro & Đường', 'Topping', 'Khác'];
-const UNITS = ['g', 'ml', 'shot', 'muỗng', 'gói'];
+type CatalogueEditor =
+  | { kind: 'ingredient-category'; item: CatalogItem | null }
+  | { kind: 'unit-category'; item: CatalogItem | null }
+  | { kind: 'unit'; item: UnitItem | null };
 
 export default function AdminCataloguePage() {
   const { session, repo, dataVersion, touch } = useDemo();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [groups, setGroups] = useState<string[]>([]);
+  const [units, setUnits] = useState<string[]>([]);
+  const [ingredientCategories, setIngredientCategories] = useState<CatalogItem[]>([]);
+  const [unitCategories, setUnitCategories] = useState<CatalogItem[]>([]);
+  const [unitItems, setUnitItems] = useState<UnitItem[]>([]);
+  const [referenceLoading, setReferenceLoading] = useState(true);
+  const [catalogueEditor, setCatalogueEditor] = useState<CatalogueEditor | null>(null);
+  const [catalogueCode, setCatalogueCode] = useState('');
+  const [catalogueName, setCatalogueName] = useState('');
+  const [catalogueDescription, setCatalogueDescription] = useState('');
+  const [unitCategoryId, setUnitCategoryId] = useState('');
+  const [unitIsBase, setUnitIsBase] = useState(false);
+  const [unitFactor, setUnitFactor] = useState(1);
+  const [unitOffset, setUnitOffset] = useState(0);
+  const [unitDecimalPlaces, setUnitDecimalPlaces] = useState(2);
+  const [catalogueSubmitting, setCatalogueSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -26,8 +45,8 @@ export default function AdminCataloguePage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newCode, setNewCode] = useState('');
   const [newName, setNewName] = useState('');
-  const [newGroup, setNewGroup] = useState(GROUPS[0]);
-  const [newUnit, setNewUnit] = useState(UNITS[0]);
+  const [newGroup, setNewGroup] = useState('');
+  const [newUnit, setNewUnit] = useState('');
   const [newCost, setNewCost] = useState(0);
   const [newNotes, setNewNotes] = useState('');
   const [newIsActive, setNewIsActive] = useState(true);
@@ -59,18 +78,162 @@ export default function AdminCataloguePage() {
     loadIngredients();
   }, [repo, dataVersion]);
 
+  useEffect(() => {
+    let isMounted = true;
+    setReferenceLoading(true);
+    Promise.all([repo.getIngredientCategories(), repo.getUnitCategories(), repo.getUnits()])
+      .then(([categories, availableUnitCategories, availableUnits]) => {
+        if (!isMounted) return;
+        const activeGroups = categories.filter((item) => item.state === 'active').map((item) => item.name);
+        const activeUnits = availableUnits.filter((item) => item.state === 'active').map((item) => item.code);
+        setIngredientCategories(categories);
+        setUnitCategories(availableUnitCategories);
+        setUnitItems(availableUnits);
+        setGroups(activeGroups);
+        setUnits(activeUnits);
+        setNewGroup((current) => current || activeGroups[0] || '');
+        setNewUnit((current) => current || activeUnits[0] || '');
+        setUnitCategoryId((current) =>
+          current || availableUnitCategories.find((item) => item.state === 'active')?.id || ''
+        );
+      })
+      .catch((error: unknown) => {
+        if (isMounted) setErrorMsg(error instanceof Error ? error.message : 'Không thể tải catalog Recipe Service');
+      })
+      .finally(() => {
+        if (isMounted) setReferenceLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [repo]);
+
+  const reloadReferenceData = async () => {
+    const [categories, availableUnitCategories, availableUnits] = await Promise.all([
+      repo.getIngredientCategories(),
+      repo.getUnitCategories(),
+      repo.getUnits(),
+    ]);
+    setIngredientCategories(categories);
+    setUnitCategories(availableUnitCategories);
+    setUnitItems(availableUnits);
+    setGroups(categories.filter((item) => item.state === 'active').map((item) => item.name));
+    setUnits(availableUnits.filter((item) => item.state === 'active').map((item) => item.code));
+  };
+
+  const openCatalogueEditor = (editor: CatalogueEditor) => {
+    setCatalogueEditor(editor);
+    setCatalogueCode(editor.item?.code ?? '');
+    setCatalogueName(editor.item?.name ?? '');
+    setCatalogueDescription(editor.item?.description ?? '');
+    if (editor.kind === 'unit') {
+      setUnitCategoryId(
+        editor.item?.categoryId ?? unitCategories.find((item) => item.state === 'active')?.id ?? ''
+      );
+      setUnitIsBase(editor.item?.isBase ?? false);
+      setUnitFactor(editor.item?.factorToBase ?? 1);
+      setUnitOffset(editor.item?.offsetToBase ?? 0);
+      setUnitDecimalPlaces(editor.item?.decimalPlaces ?? 2);
+    }
+    setErrorMsg(null);
+  };
+
+  const saveCatalogue = async () => {
+    if (!session || !catalogueEditor) return;
+    if (!catalogueCode.trim() || !catalogueName.trim()) {
+      setErrorMsg('Mã và tên danh mục không được để trống');
+      return;
+    }
+    if (catalogueEditor.kind === 'unit' && !unitCategoryId) {
+      setErrorMsg('Hãy tạo và chọn nhóm đơn vị trước');
+      return;
+    }
+
+    try {
+      setCatalogueSubmitting(true);
+      setErrorMsg(null);
+      const catalogData = {
+        code: catalogueCode.trim().toUpperCase(),
+        name: catalogueName.trim(),
+        description: catalogueDescription.trim(),
+      };
+      if (catalogueEditor.kind === 'ingredient-category') {
+        if (catalogueEditor.item) {
+          await repo.updateIngredientCategory(session, catalogueEditor.item.id, catalogData);
+        } else {
+          await repo.createIngredientCategory(session, catalogData);
+        }
+      } else if (catalogueEditor.kind === 'unit-category') {
+        if (catalogueEditor.item) {
+          await repo.updateUnitCategory(session, catalogueEditor.item.id, catalogData);
+        } else {
+          await repo.createUnitCategory(session, catalogData);
+        }
+      } else {
+        const unitData = {
+          code: catalogData.code,
+          name: catalogData.name,
+          categoryId: unitCategoryId,
+          isBase: unitIsBase,
+          factorToBase: unitFactor,
+          offsetToBase: unitOffset,
+          decimalPlaces: unitDecimalPlaces,
+        };
+        if (catalogueEditor.item) {
+          await repo.updateUnit(session, catalogueEditor.item.id, unitData);
+        } else {
+          await repo.createUnit(session, unitData);
+        }
+      }
+      await reloadReferenceData();
+      setSuccessMsg(`Đã lưu ${catalogueName.trim()} thành công`);
+      setCatalogueEditor(null);
+      touch();
+    } catch (error: unknown) {
+      setErrorMsg(error instanceof Error ? error.message : 'Không thể lưu danh mục');
+    } finally {
+      setCatalogueSubmitting(false);
+    }
+  };
+
+  const toggleCatalogueState = async (
+    kind: CatalogueEditor['kind'],
+    item: CatalogItem
+  ) => {
+    if (!session) return;
+    try {
+      setErrorMsg(null);
+      const active = item.state === 'active';
+      if (kind === 'ingredient-category') {
+        if (active) await repo.deactivateIngredientCategory(session, item.id);
+        else await repo.activateIngredientCategory(session, item.id);
+      } else if (kind === 'unit-category') {
+        if (active) await repo.deactivateUnitCategory(session, item.id);
+        else await repo.activateUnitCategory(session, item.id);
+      } else {
+        if (active) await repo.deactivateUnit(session, item.id);
+        else await repo.activateUnit(session, item.id);
+      }
+      await reloadReferenceData();
+      setSuccessMsg(`Đã ${active ? 'vô hiệu hóa' : 'kích hoạt'} ${item.name}`);
+      touch();
+    } catch (error: unknown) {
+      setErrorMsg(error instanceof Error ? error.message : 'Không thể đổi trạng thái danh mục');
+    }
+  };
+
   // Group & status metrics
   const stats = useMemo(() => {
     const total = ingredients.length;
     const active = ingredients.filter((i) => i.isActive).length;
     const inactive = total - active;
     const groupCount: Record<string, number> = {};
-    for (const g of GROUPS) groupCount[g] = 0;
+    for (const g of groups) groupCount[g] = 0;
     for (const item of ingredients) {
       groupCount[item.group] = (groupCount[item.group] || 0) + 1;
     }
     return { total, active, inactive, groupCount };
-  }, [ingredients]);
+  }, [ingredients, groups]);
 
   // Filtered ingredients
   const filteredList = useMemo(() => {
@@ -115,8 +278,8 @@ export default function AdminCataloguePage() {
       setIsCreateOpen(false);
       setNewCode('');
       setNewName('');
-      setNewGroup(GROUPS[0]);
-      setNewUnit(UNITS[0]);
+      setNewGroup(groups[0] ?? '');
+      setNewUnit(units[0] ?? '');
       setNewCost(0);
       setNewNotes('');
       setNewIsActive(true);
@@ -195,11 +358,11 @@ export default function AdminCataloguePage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E2D9]">
         <div>
-          <h1 className="text-2xl font-bold text-[#F2F0EB]">Danh mục Đơn vị & Nguyên liệu Toàn cục</h1>
-          <p className="text-zinc-400 text-xs mt-1">
-            Quy chuẩn danh mục nguyên vật liệu R&D BeverageLab, quản lý đơn vị đo lường và định mức chi phí.
+          <h1 className="text-2xl font-bold text-[#1A1917]">Danh mục Đơn vị &amp; Nguyên liệu Toàn cục</h1>
+          <p className="text-[#706E68] text-xs mt-1">
+            Quy chuẩn danh mục nguyên vật liệu R&amp;D BeverageLab, quản lý đơn vị đo lường và định mức chi phí.
           </p>
         </div>
         <Button variant="gold" onClick={() => setIsCreateOpen(true)}>
@@ -219,35 +382,231 @@ export default function AdminCataloguePage() {
         </Alert>
       )}
 
+      <section className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-[#F2F0EB]">Danh mục dùng trong công thức</h2>
+            <p className="text-xs text-zinc-400 mt-1">
+              Tạo nhóm nguyên liệu và đơn vị trước khi thêm nguyên liệu hoặc công thức.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-sm font-semibold text-[#F2F0EB]">Nhóm nguyên liệu</h3>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => openCatalogueEditor({ kind: 'ingredient-category', item: null })}
+              >
+                + Thêm nhóm nguyên liệu
+              </Button>
+            </div>
+            <DataTable<CatalogItem>
+              data={ingredientCategories}
+              keyExtractor={(item) => item.id}
+              isLoading={referenceLoading}
+              emptyTitle="Chưa có nhóm nguyên liệu"
+              emptyMessage="Tạo nhóm đầu tiên để sử dụng khi thêm nguyên liệu."
+              columns={[
+                {
+                  header: 'Mã & tên',
+                  render: (item) => (
+                    <div>
+                      <div className="font-mono text-xs font-semibold">{item.code}</div>
+                      <div className="text-xs text-[#78716C]">{item.name}</div>
+                    </div>
+                  ),
+                },
+                {
+                  header: 'Trạng thái',
+                  render: (item) => (item.state === 'active' ? 'Đang dùng' : 'Đã tắt'),
+                },
+                {
+                  header: 'Thao tác',
+                  className: 'text-right',
+                  render: (item) => (
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => openCatalogueEditor({ kind: 'ingredient-category', item })}
+                      >
+                        Sửa
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => toggleCatalogueState('ingredient-category', item)}
+                      >
+                        {item.state === 'active' ? 'Tắt' : 'Bật'}
+                      </Button>
+                    </div>
+                  ),
+                },
+              ]}
+            />
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-sm font-semibold text-[#F2F0EB]">Nhóm đơn vị</h3>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => openCatalogueEditor({ kind: 'unit-category', item: null })}
+              >
+                + Thêm nhóm đơn vị
+              </Button>
+            </div>
+            <DataTable<CatalogItem>
+              data={unitCategories}
+              keyExtractor={(item) => item.id}
+              isLoading={referenceLoading}
+              emptyTitle="Chưa có nhóm đơn vị"
+              emptyMessage="Ví dụ: Khối lượng, Thể tích, Số lượng."
+              columns={[
+                {
+                  header: 'Mã & tên',
+                  render: (item) => (
+                    <div>
+                      <div className="font-mono text-xs font-semibold">{item.code}</div>
+                      <div className="text-xs text-[#78716C]">{item.name}</div>
+                    </div>
+                  ),
+                },
+                {
+                  header: 'Trạng thái',
+                  render: (item) => (item.state === 'active' ? 'Đang dùng' : 'Đã tắt'),
+                },
+                {
+                  header: 'Thao tác',
+                  className: 'text-right',
+                  render: (item) => (
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => openCatalogueEditor({ kind: 'unit-category', item })}
+                      >
+                        Sửa
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => toggleCatalogueState('unit-category', item)}
+                      >
+                        {item.state === 'active' ? 'Tắt' : 'Bật'}
+                      </Button>
+                    </div>
+                  ),
+                },
+              ]}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold text-[#F2F0EB]">Đơn vị đo</h3>
+              <p className="text-xs text-zinc-400 mt-1">
+                Danh sách này dùng chung cho đơn vị chuẩn của nguyên liệu và đơn vị thành phẩm.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() =>
+                openCatalogueEditor(
+                  unitCategories.some((item) => item.state === 'active')
+                    ? { kind: 'unit', item: null }
+                    : { kind: 'unit-category', item: null }
+                )
+              }
+            >
+              {unitCategories.some((item) => item.state === 'active')
+                ? '+ Thêm đơn vị'
+                : '+ Tạo nhóm đơn vị trước'}
+            </Button>
+          </div>
+          <DataTable<UnitItem>
+            data={unitItems}
+            keyExtractor={(item) => item.id}
+            isLoading={referenceLoading}
+            emptyTitle="Chưa có đơn vị đo"
+            emptyMessage="Hãy tạo nhóm đơn vị trước, sau đó thêm g, kg, ml, lít hoặc phần."
+            columns={[
+              { header: 'Mã', accessor: 'code' },
+              { header: 'Tên', accessor: 'name' },
+              { header: 'Nhóm', accessor: 'categoryName' },
+              {
+                header: 'Quy đổi',
+                render: (item) => item.isBase ? 'Đơn vị gốc' : `× ${item.factorToBase}`,
+              },
+              {
+                header: 'Trạng thái',
+                render: (item) => (item.state === 'active' ? 'Đang dùng' : 'Đã tắt'),
+              },
+              {
+                header: 'Thao tác',
+                className: 'text-right',
+                render: (item) => (
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => openCatalogueEditor({ kind: 'unit', item })}
+                    >
+                      Sửa
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => toggleCatalogueState('unit', item)}
+                    >
+                      {item.state === 'active' ? 'Tắt' : 'Bật'}
+                    </Button>
+                  </div>
+                ),
+              },
+            ]}
+          />
+        </div>
+      </section>
+
       {/* Metrics Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
-        <div className="bg-[#18181C] border border-zinc-800 rounded-lg p-3">
-          <div className="text-[11px] text-zinc-400 uppercase font-semibold">Tổng nguyên liệu</div>
-          <div className="text-xl font-bold text-[#F2F0EB] mt-1">{stats.total}</div>
+        <div className="bg-white border border-[#E8E2D9] rounded-lg p-3 shadow-xs">
+          <div className="text-[11px] text-[#706E68] uppercase font-semibold">Tổng nguyên liệu</div>
+          <div className="text-xl font-bold text-[#1A1917] mt-1">{stats.total}</div>
         </div>
-        <div className="bg-[#18181C] border border-zinc-800 rounded-lg p-3">
-          <div className="text-[11px] text-zinc-400 uppercase font-semibold">Đang kích hoạt</div>
-          <div className="text-xl font-bold text-emerald-400 mt-1">{stats.active}</div>
+        <div className="bg-white border border-[#E8E2D9] rounded-lg p-3 shadow-xs">
+          <div className="text-[11px] text-[#706E68] uppercase font-semibold">Đang kích hoạt</div>
+          <div className="text-xl font-bold text-emerald-700 mt-1">{stats.active}</div>
         </div>
-        <div className="bg-[#18181C] border border-zinc-800 rounded-lg p-3">
-          <div className="text-[11px] text-zinc-400 uppercase font-semibold">Vô hiệu hóa</div>
-          <div className="text-xl font-bold text-zinc-500 mt-1">{stats.inactive}</div>
+        <div className="bg-white border border-[#E8E2D9] rounded-lg p-3 shadow-xs">
+          <div className="text-[11px] text-[#706E68] uppercase font-semibold">Vô hiệu hóa</div>
+          <div className="text-xl font-bold text-[#706E68] mt-1">{stats.inactive}</div>
         </div>
-        {GROUPS.map((g) => (
-          <div key={g} className="bg-[#18181C] border border-zinc-800 rounded-lg p-3">
-            <div className="text-[11px] text-zinc-400 uppercase font-semibold truncate">{g}</div>
-            <div className="text-xl font-bold text-[#DEBF64] mt-1">{stats.groupCount[g] || 0}</div>
+        {groups.map((g) => (
+          <div key={g} className="bg-white border border-[#E8E2D9] rounded-lg p-3 shadow-xs">
+            <div className="text-[11px] text-[#706E68] uppercase font-semibold truncate">{g}</div>
+            <div className="text-xl font-bold text-[#B47820] mt-1">{stats.groupCount[g] || 0}</div>
           </div>
         ))}
       </div>
 
       {/* Search & Filters */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-4 bg-[#18181C] border border-zinc-800 rounded-lg">
+      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-4 bg-white border border-[#E8E2D9] rounded-2xl shadow-xs">
         <div className="sm:col-span-2">
-          <TextInput
+          <SearchInput
             placeholder="Tìm theo tên nguyên liệu, mã code hoặc ghi chú..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onClear={() => setSearchTerm('')}
           />
         </div>
         <div>
@@ -256,7 +615,7 @@ export default function AdminCataloguePage() {
             onChange={(e) => setSelectedGroup(e.target.value)}
             options={[
               { label: 'Tất cả nhóm', value: 'all' },
-              ...GROUPS.map((g) => ({ label: `Nhóm: ${g}`, value: g })),
+              ...groups.map((g) => ({ label: `Nhóm: ${g}`, value: g })),
             ]}
           />
         </div>
@@ -286,13 +645,13 @@ export default function AdminCataloguePage() {
             render: (i) => (
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-[#DEBF64] bg-[#2A2415] px-1.5 py-0.5 rounded border border-[#C9A84C]/30">
+                  <span className="font-mono text-xs font-bold text-[#B47820] bg-[#FAF9F5] px-1.5 py-0.5 rounded border border-[#B47820]/30">
                     {i.code}
                   </span>
-                  <span className="font-semibold text-zinc-100">{i.name}</span>
+                  <span className="font-semibold text-[#1A1917]">{i.name}</span>
                 </div>
                 {i.supplierNotes && (
-                  <div className="text-[11px] text-zinc-400 mt-0.5 truncate max-w-md">
+                  <div className="text-[11px] text-[#706E68] mt-0.5 truncate max-w-md">
                     Ghi chú: {i.supplierNotes}
                   </div>
                 )}
@@ -302,7 +661,7 @@ export default function AdminCataloguePage() {
           {
             header: 'Nhóm (Group)',
             render: (i) => (
-              <span className="inline-block px-2 py-0.5 rounded text-xs bg-zinc-800 text-zinc-300 border border-zinc-700">
+              <span className="inline-block px-2 py-0.5 rounded text-xs bg-[#FAF9F5] text-[#1A1917] border border-[#E8E2D9]">
                 {i.group}
               </span>
             ),
@@ -310,13 +669,13 @@ export default function AdminCataloguePage() {
           {
             header: 'Đơn vị đo',
             render: (i) => (
-              <span className="font-mono text-xs text-zinc-300 font-semibold">{i.defaultUnit}</span>
+              <span className="font-mono text-xs text-[#1A1917] font-semibold">{i.defaultUnit}</span>
             ),
           },
           {
             header: 'Đơn giá định mức',
             render: (i) => (
-              <div className="font-mono text-xs text-zinc-300">
+              <div className="font-mono text-xs text-[#1A1917]">
                 {typeof i.costPerUnit === 'number' && i.costPerUnit > 0
                   ? `${i.costPerUnit.toLocaleString('vi-VN')} đ / ${i.defaultUnit}`
                   : '—'}
@@ -327,13 +686,13 @@ export default function AdminCataloguePage() {
             header: 'Trạng thái',
             render: (i) =>
               i.isActive ? (
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-emerald-950/60 text-emerald-300 border border-emerald-800">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
                   Kích hoạt
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-zinc-900 text-zinc-500 border border-zinc-800">
-                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-600" />
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-600 border border-zinc-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
                   Vô hiệu
                 </span>
               ),
@@ -358,6 +717,103 @@ export default function AdminCataloguePage() {
           },
         ]}
       />
+
+      <Dialog
+        isOpen={catalogueEditor !== null}
+        onClose={() => setCatalogueEditor(null)}
+        title={
+          catalogueEditor?.kind === 'ingredient-category'
+            ? `${catalogueEditor.item ? 'Chỉnh sửa' : 'Thêm'} nhóm nguyên liệu`
+            : catalogueEditor?.kind === 'unit-category'
+              ? `${catalogueEditor.item ? 'Chỉnh sửa' : 'Thêm'} nhóm đơn vị`
+              : `${catalogueEditor?.item ? 'Chỉnh sửa' : 'Thêm'} đơn vị đo`
+        }
+        description={
+          catalogueEditor?.kind === 'unit'
+            ? 'Đơn vị này dùng được cho cả nguyên liệu và thành phẩm.'
+            : 'Mã phải duy nhất và nên viết ngắn gọn.'
+        }
+        confirmLabel="Lưu danh mục"
+        confirmVariant="gold"
+        onConfirm={saveCatalogue}
+        isConfirming={catalogueSubmitting}
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <TextInput
+              label="Mã"
+              required
+              value={catalogueCode}
+              onChange={(event) => setCatalogueCode(event.target.value.toUpperCase())}
+              placeholder={catalogueEditor?.kind === 'unit' ? 'VD: ML' : 'VD: VOLUME'}
+            />
+            <TextInput
+              label="Tên"
+              required
+              value={catalogueName}
+              onChange={(event) => setCatalogueName(event.target.value)}
+              placeholder={catalogueEditor?.kind === 'unit' ? 'VD: Mililit' : 'VD: Thể tích'}
+            />
+          </div>
+
+          {catalogueEditor?.kind === 'unit' ? (
+            <>
+              <Select
+                label="Nhóm đơn vị"
+                required
+                value={unitCategoryId}
+                onChange={(event) => setUnitCategoryId(event.target.value)}
+                options={unitCategories
+                  .filter((item) => item.state === 'active' || item.id === unitCategoryId)
+                  .map((item) => ({ label: item.name, value: item.id }))}
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <TextInput
+                  label="Hệ số về đơn vị gốc"
+                  required
+                  type="number"
+                  min="0.00000001"
+                  step="any"
+                  value={unitFactor}
+                  onChange={(event) => setUnitFactor(Number(event.target.value))}
+                />
+                <TextInput
+                  label="Độ lệch"
+                  required
+                  type="number"
+                  step="any"
+                  value={unitOffset}
+                  onChange={(event) => setUnitOffset(Number(event.target.value))}
+                />
+                <TextInput
+                  label="Số chữ số lẻ"
+                  required
+                  type="number"
+                  min="0"
+                  max="8"
+                  value={unitDecimalPlaces}
+                  onChange={(event) => setUnitDecimalPlaces(Number(event.target.value))}
+                />
+              </div>
+              <label className="flex items-center gap-2 p-3 bg-[#FBF9F5] border border-[#E2DDD2] rounded-md">
+                <input
+                  type="checkbox"
+                  checked={unitIsBase}
+                  onChange={(event) => setUnitIsBase(event.target.checked)}
+                />
+                <span className="text-xs text-[#44403C]">Đây là đơn vị gốc của nhóm</span>
+              </label>
+            </>
+          ) : (
+            <TextArea
+              label="Mô tả"
+              value={catalogueDescription}
+              onChange={(event) => setCatalogueDescription(event.target.value)}
+              rows={3}
+            />
+          )}
+        </div>
+      </Dialog>
 
       {/* Modal Thêm mới */}
       <Dialog
@@ -394,13 +850,13 @@ export default function AdminCataloguePage() {
               label="Nhóm phân loại"
               value={newGroup}
               onChange={(e) => setNewGroup(e.target.value)}
-              options={GROUPS.map((g) => ({ label: g, value: g }))}
+              options={groups.map((g) => ({ label: g, value: g }))}
             />
             <Select
               label="Đơn vị tính chuẩn"
               value={newUnit}
               onChange={(e) => setNewUnit(e.target.value)}
-              options={UNITS.map((u) => ({ label: u, value: u }))}
+              options={units.map((u) => ({ label: u, value: u }))}
             />
             <TextInput
               label="Đơn giá (VNĐ)"
@@ -420,14 +876,14 @@ export default function AdminCataloguePage() {
             rows={2}
           />
 
-          <label className="flex items-center gap-2 p-3 bg-zinc-900 border border-zinc-800 rounded cursor-pointer">
+          <label className="flex items-center gap-2 p-3 bg-[#FAF9F5] border border-[#E8E2D9] rounded cursor-pointer">
             <input
               type="checkbox"
               checked={newIsActive}
               onChange={(e) => setNewIsActive(e.target.checked)}
-              className="w-4 h-4 accent-[#C9A84C]"
+              className="w-4 h-4 accent-[#B47820]"
             />
-            <span className="text-xs text-zinc-300 font-medium">Kích hoạt sử dụng ngay trong R&D Editor</span>
+            <span className="text-xs text-[#1A1917] font-medium">Kích hoạt sử dụng ngay trong R&amp;D Editor</span>
           </label>
         </div>
       </Dialog>
@@ -456,13 +912,13 @@ export default function AdminCataloguePage() {
               label="Nhóm phân loại"
               value={editGroup}
               onChange={(e) => setEditGroup(e.target.value)}
-              options={GROUPS.map((g) => ({ label: g, value: g }))}
+              options={groups.map((g) => ({ label: g, value: g }))}
             />
             <Select
               label="Đơn vị tính chuẩn"
               value={editUnit}
               onChange={(e) => setEditUnit(e.target.value)}
-              options={UNITS.map((u) => ({ label: u, value: u }))}
+              options={units.map((u) => ({ label: u, value: u }))}
             />
             <TextInput
               label="Đơn giá (VNĐ)"
@@ -476,18 +932,18 @@ export default function AdminCataloguePage() {
           <TextArea
             label="Ghi chú & Nhà cung cấp"
             value={editNotes}
-            onChange={(e) => setNewNotes(e.target.value)}
+            onChange={(e) => setEditNotes(e.target.value)}
             rows={2}
           />
 
-          <label className="flex items-center gap-2 p-3 bg-zinc-900 border border-zinc-800 rounded cursor-pointer">
+          <label className="flex items-center gap-2 p-3 bg-[#FAF9F5] border border-[#E8E2D9] rounded cursor-pointer">
             <input
               type="checkbox"
               checked={editIsActive}
               onChange={(e) => setEditIsActive(e.target.checked)}
-              className="w-4 h-4 accent-[#C9A84C]"
+              className="w-4 h-4 accent-[#B47820]"
             />
-            <span className="text-xs text-zinc-300 font-medium">Trạng thái kích hoạt (Active)</span>
+            <span className="text-xs text-[#1A1917] font-medium">Trạng thái kích hoạt (Active)</span>
           </label>
         </div>
       </Dialog>

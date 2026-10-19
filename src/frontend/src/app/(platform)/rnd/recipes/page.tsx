@@ -3,10 +3,10 @@
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { BookOpen, Plus, Eye, Pencil, RotateCcw, Coffee } from 'lucide-react';
+import { BookOpen, Plus, Pencil, RotateCcw, Coffee } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { RecipeVersion, RecipeStatus } from '@/lib/demo/types';
-import { Button, TextInput, Select } from '@/components/workspace/fields';
+import { Button, TextInput, Select, SearchInput } from '@/components/workspace/fields';
 import { StatusBadge } from '@/components/workspace/status-badge';
 import { DataTable } from '@/components/workspace/data-table';
 
@@ -37,13 +37,15 @@ function RecipeListContent() {
     repo
       .getRecipes(session, {
         page: 1,
-        pageSize: 500, // Load all recipes for responsive client-side filtering and creator extraction
+        pageSize: 100, // Load up to 100 recipes for responsive client-side filtering
       })
       .then((res) => {
         if (!isMounted) return;
         setRecipes(res.items);
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error('Failed to load recipes:', err);
+      })
       .finally(() => {
         if (isMounted) setLoading(false);
       });
@@ -99,24 +101,28 @@ function RecipeListContent() {
       header: 'Mã & Tên công thức',
       render: (item: RecipeVersion) => (
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-md bg-[#F5F2EB] border border-[#E2DDD2] flex items-center justify-center shrink-0 text-[#B47820]">
+          <div className="w-9 h-9 rounded-md bg-[#F5F0E8] border border-[#E8E2D9] flex items-center justify-center shrink-0 text-[#C9A84C]">
             <Coffee className="w-4 h-4" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="font-mono text-[11px] font-semibold px-1.5 py-0.5 rounded bg-[#F5F2EB] text-[#B47820] border border-[#E2DDD2]">
-                {item.code}
-              </span>
-              <span className="text-[#A8A29E] font-mono text-xs">[{item.versionLabel}]</span>
               <Link
                 href={`/rnd/recipes/${item.id}`}
-                className="font-semibold text-sm text-[#1C1917] hover:text-[#B47820] transition truncate"
+                className="font-mono text-[11px] font-semibold px-1.5 py-0.5 rounded bg-[#F5F0E8] text-[#B47820] border border-[#E8E2D9] hover:bg-[#EAE3D6] transition"
+                title="Xem chi tiết công thức"
+              >
+                {item.code}
+              </Link>
+              <span className="text-[#8C887F] font-mono text-xs">[{item.versionLabel}]</span>
+              <Link
+                href={`/rnd/recipes/${item.id}`}
+                className="font-semibold text-sm text-[#1A1917] hover:text-[#B47820] transition truncate"
               >
                 {item.name}
               </Link>
             </div>
             {item.description && (
-              <p className="text-xs text-[#78716C] mt-0.5 line-clamp-1 max-w-sm">{item.description}</p>
+              <p className="text-xs text-[#706E68] mt-0.5 line-clamp-1 max-w-sm">{item.description}</p>
             )}
           </div>
         </div>
@@ -129,14 +135,14 @@ function RecipeListContent() {
     {
       header: 'Định lượng & Quy trình',
       render: (item: RecipeVersion) => (
-        <div className="text-xs text-[#78716C] space-y-0.5">
+        <div className="text-xs text-[#706E68] space-y-0.5">
           <div>
-            <span className="text-[#A8A29E]">Nguyên liệu:</span>{' '}
-            <span className="text-[#1C1917] font-medium">{item.ingredients.length}</span>
+            <span className="text-[#8C887F]">Nguyên liệu:</span>{' '}
+            <span className="text-[#1A1917] font-medium">{item.ingredients.length}</span>
           </div>
           <div>
-            <span className="text-[#A8A29E]">SOP:</span>{' '}
-            <span className="text-[#1C1917] font-medium">{item.steps.length} bước</span>
+            <span className="text-[#8C887F]">SOP:</span>{' '}
+            <span className="text-[#1A1917] font-medium">{item.steps.length} bước</span>
           </div>
         </div>
       ),
@@ -144,7 +150,7 @@ function RecipeListContent() {
     {
       header: 'Người tạo',
       render: (item: RecipeVersion) => (
-        <span className="text-xs text-[#78716C] font-mono" title={item.creatorEmail}>
+        <span className="text-xs text-[#706E68] font-mono" title={item.creatorEmail}>
           {item.creatorEmail.split('@')[0]}
         </span>
       ),
@@ -152,7 +158,7 @@ function RecipeListContent() {
     {
       header: 'Cập nhật',
       render: (item: RecipeVersion) => (
-        <span className="text-xs text-[#78716C]">
+        <span className="text-xs text-[#706E68]">
           {new Date(item.updatedAt).toLocaleDateString('vi-VN')}
         </span>
       ),
@@ -161,18 +167,14 @@ function RecipeListContent() {
       header: 'Thao tác',
       className: 'text-right',
       render: (item: RecipeVersion) => (
-        <div className="flex items-center justify-end gap-1.5">
-          {item.status === 'Draft' && (
-            <Link href={`/rnd/recipes/${item.id}/edit`}>
-              <Button size="sm" variant="secondary">
-                <Pencil className="w-3 h-3 mr-1" /> Sửa
-              </Button>
-            </Link>
-          )}
-          <Link href={`/rnd/recipes/${item.id}`}>
-            <Button size="sm" variant="ghost">
-              <Eye className="w-3.5 h-3.5 mr-1" /> Chi tiết
-            </Button>
+        <div className="flex items-center justify-end">
+          <Link
+            href={`/rnd/recipes/${item.id}/edit`}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-[#706E68] hover:text-[#B47820] hover:bg-[#F5F0E8] border border-transparent hover:border-[#E8E2D9] transition"
+            title="Chỉnh sửa công thức"
+            aria-label="Chỉnh sửa công thức"
+          >
+            <Pencil className="w-4 h-4" />
           </Link>
         </div>
       ),
@@ -182,12 +184,12 @@ function RecipeListContent() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E2DDD2] pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E8E2D9] pb-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#1C1917] flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#1A1917] flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-[#B47820]" /> Công Thức Đồ Uống
           </h1>
-          <p className="text-xs sm:text-sm text-[#78716C] mt-0.5">
+          <p className="text-xs sm:text-sm text-[#706E68] mt-0.5">
             Quản lý vòng đời công thức: Nháp, Chờ duyệt, Đã duyệt, Lưu trữ.
           </p>
         </div>
@@ -201,13 +203,17 @@ function RecipeListContent() {
       </div>
 
       {/* Filter Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-white border border-[#E2DDD2] p-3 rounded-lg shadow-xs">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-white border border-[#E8E2D9] p-3 rounded-2xl shadow-xs">
         <div className="md:col-span-2">
-          <TextInput
+          <SearchInput
             placeholder="Tìm theo mã hoặc tên công thức..."
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
+              setPage(1);
+            }}
+            onClear={() => {
+              setSearchQuery('');
               setPage(1);
             }}
           />

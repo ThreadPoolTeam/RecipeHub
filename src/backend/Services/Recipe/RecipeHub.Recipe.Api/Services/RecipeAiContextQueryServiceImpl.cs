@@ -117,7 +117,7 @@ public sealed class RecipeAiContextQueryServiceImpl : RecipeAiContextQuery.Recip
             RecipeTitle = version.Name,
             RecipeDescription = version.Description ?? "",
             CategoryName = "",
-            RowVersion = version.RowVersion,
+            RowVersion = 0,
             VersionStatus = version.Status
         };
 

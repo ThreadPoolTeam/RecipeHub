@@ -61,10 +61,6 @@ public sealed class ImageDraftService : IImageDraftService
             }
         }
 
-        if (context.RowVersion != request.ExpectedRecipeRevision)
-        {
-            throw new ConflictException($"Expected recipe revision ({request.ExpectedRecipeRevision}) does not match current version revision ({context.RowVersion}).");
-        }
 
         var activeDraft = await _draftRepository.GetLatestActiveForTargetAsync(request.RecipeVersionId, request.RecipeStepId, ct);
         if (activeDraft != null && (activeDraft.State == AiImageDraft.StateQueued || activeDraft.State == AiImageDraft.StateProcessing))
@@ -228,10 +224,6 @@ public sealed class ImageDraftService : IImageDraftService
             throw new ValidationException(context.ErrorMessage ?? "Failed to acquire recipe AI context for regeneration.");
         }
 
-        if (context.RowVersion != request.ExpectedRecipeRevision)
-        {
-            throw new ConflictException($"Expected recipe revision ({request.ExpectedRecipeRevision}) does not match current version revision ({context.RowVersion}).");
-        }
 
         var newDraft = new AiImageDraft
         {

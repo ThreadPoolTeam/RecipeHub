@@ -15,21 +15,21 @@ export function Button({
   disabled,
   ...props
 }: ButtonProps) {
-  let baseStyle = 'inline-flex items-center justify-center font-medium rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm';
+  let baseStyle = 'inline-flex items-center justify-center font-medium rounded-full transition-all duration-150 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm tracking-tight';
 
-  let sizeStyle = 'px-3 py-1.5 text-xs';
-  if (size === 'md') sizeStyle = 'px-3.5 py-2 text-xs sm:text-sm';
-  if (size === 'lg') sizeStyle = 'px-5 py-2.5 text-sm sm:text-base';
+  let sizeStyle = 'px-3.5 py-1.5 text-xs';
+  if (size === 'md') sizeStyle = 'px-4 py-2 text-xs sm:text-sm';
+  if (size === 'lg') sizeStyle = 'px-6 py-2.5 text-sm sm:text-base';
 
-  let variantStyle = 'bg-white text-[#1C1917] hover:bg-[#F7F5EE] border border-[#E2DDD2] shadow-sm';
+  let variantStyle = 'bg-white text-[#1A1917] hover:bg-[#FAF9F5] border border-[#E8E2D9] hover:border-[#D8D0C5] shadow-xs';
   if (variant === 'gold') {
-    variantStyle = 'bg-[#B47820] text-white font-semibold hover:bg-[#9E6515] border border-[#B47820] shadow-sm';
+    variantStyle = 'bg-[#B47820] text-white font-medium hover:bg-[#9A6416] border border-[#B47820] shadow-xs hover:shadow';
   } else if (variant === 'primary') {
-    variantStyle = 'bg-[#1C1917] text-white font-medium hover:bg-[#292524] border border-[#1C1917] shadow-sm';
+    variantStyle = 'bg-[#1A1917] text-white font-medium hover:bg-[#2A2927] border border-[#1A1917] shadow-xs';
   } else if (variant === 'danger') {
-    variantStyle = 'bg-rose-600 text-white hover:bg-rose-700 border border-rose-600 shadow-sm';
+    variantStyle = 'bg-rose-600 text-white hover:bg-rose-700 border border-rose-600 shadow-xs';
   } else if (variant === 'ghost') {
-    variantStyle = 'bg-transparent text-[#6B665E] hover:text-[#1C1917] hover:bg-[#EFECE4] border border-transparent';
+    variantStyle = 'bg-transparent text-[#706E68] hover:text-[#1A1917] hover:bg-[#FAF9F5] border border-transparent';
   }
   return (
     <button
@@ -70,21 +70,21 @@ export function TextInput({
   return (
     <div className={`space-y-1.5 ${className}`}>
       {label && (
-        <label htmlFor={inputId} className="block text-xs font-semibold uppercase tracking-wider text-[#44403C]">
+        <label htmlFor={inputId} className="block text-xs font-semibold text-[#1A1917]">
           {label} {required && <span className="text-rose-500">*</span>}
         </label>
       )}
       <input
         id={inputId}
         className={`w-full bg-white border ${
-          error ? 'border-rose-400' : 'border-[#E2DDD2] focus:border-[#B47820]'
-        } rounded-md px-3 py-2 text-sm text-[#1C1917] placeholder:text-[#A8A29E] shadow-sm transition`}
+          error ? 'border-rose-400 focus:ring-2 focus:ring-rose-200' : 'border-[#E8E2D9] focus:border-[#B47820] focus:ring-2 focus:ring-[#B47820]/15'
+        } rounded-xl px-3.5 py-2 text-sm text-[#1A1917] placeholder:text-[#8C887F] shadow-xs transition-all duration-150 outline-none`}
         {...props}
       />
       {error ? (
-        <p className="text-xs text-rose-400">{error}</p>
+        <p className="text-xs text-rose-500">{error}</p>
       ) : helper ? (
-        <p className="text-xs text-zinc-400">{helper}</p>
+        <p className="text-xs text-[#706E68]">{helper}</p>
       ) : null}
     </div>
   );
@@ -108,22 +108,63 @@ export function TextArea({
   return (
     <div className={`space-y-1.5 ${className}`}>
       {label && (
-        <label htmlFor={inputId} className="block text-xs font-semibold uppercase tracking-wider text-[#44403C]">
+        <label htmlFor={inputId} className="block text-xs font-semibold text-[#1A1917]">
           {label} {required && <span className="text-rose-500">*</span>}
         </label>
       )}
       <textarea
         id={inputId}
         className={`w-full bg-white border ${
-          error ? 'border-rose-400' : 'border-[#E2DDD2] focus:border-[#B47820]'
-        } rounded-md px-3 py-2 text-sm text-[#1C1917] placeholder:text-[#A8A29E] shadow-sm transition`}
+          error ? 'border-rose-400 focus:ring-2 focus:ring-rose-200' : 'border-[#E8E2D9] focus:border-[#B47820] focus:ring-2 focus:ring-[#B47820]/15'
+        } rounded-xl px-3.5 py-2.5 text-sm text-[#1A1917] placeholder:text-[#8C887F] shadow-xs transition-all duration-150 outline-none`}
         {...props}
       />
       {error ? (
-        <p className="text-xs text-rose-400">{error}</p>
+        <p className="text-xs text-rose-500">{error}</p>
       ) : helper ? (
-        <p className="text-xs text-zinc-400">{helper}</p>
+        <p className="text-xs text-[#706E68]">{helper}</p>
       ) : null}
+    </div>
+  );
+}
+
+export function SearchInput({
+  value,
+  onChange,
+  placeholder = 'Tìm kiếm...',
+  onClear,
+  className = '',
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & {
+  onClear?: () => void;
+}) {
+  return (
+    <div className={`relative flex items-center ${className}`}>
+      <div className="absolute left-3.5 pointer-events-none text-[#706E68] flex items-center">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+      <input
+        type="search"
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className="w-full bg-white border border-[#E8E2D9] hover:border-[#D8D0C5] focus:border-[#B47820] focus:ring-2 focus:ring-[#B47820]/15 rounded-full pl-10 pr-9 py-2 text-xs sm:text-sm text-[#1A1917] placeholder:text-[#8C887F] shadow-xs transition-all duration-150 outline-none"
+        {...props}
+      />
+      {value && onClear && (
+        <button
+          type="button"
+          onClick={onClear}
+          className="absolute right-3 text-[#706E68] hover:text-[#1A1917] p-0.5 rounded-full hover:bg-[#FAF9F5] transition"
+          aria-label="Xóa tìm kiếm"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }
@@ -154,15 +195,15 @@ export function Select({
   return (
     <div className={`space-y-1.5 ${className}`}>
       {label && (
-        <label htmlFor={inputId} className="block text-xs font-semibold uppercase tracking-wider text-[#44403C]">
+        <label htmlFor={inputId} className="block text-xs font-semibold text-[#1A1917]">
           {label} {required && <span className="text-rose-500">*</span>}
         </label>
       )}
       <select
         id={inputId}
         className={`w-full bg-white border ${
-          error ? 'border-rose-400' : 'border-[#E2DDD2] focus:border-[#B47820]'
-        } rounded-md px-3 py-2 text-sm text-[#1C1917] shadow-sm transition`}
+          error ? 'border-rose-400 focus:ring-2 focus:ring-rose-200' : 'border-[#E8E2D9] focus:border-[#B47820] focus:ring-2 focus:ring-[#B47820]/15'
+        } rounded-xl px-3.5 py-2 text-sm text-[#1A1917] shadow-xs transition-all duration-150 outline-none`}
         {...props}
       >
         {options
@@ -174,9 +215,9 @@ export function Select({
           : children}
       </select>
       {error ? (
-        <p className="text-xs text-rose-400">{error}</p>
+        <p className="text-xs text-rose-500">{error}</p>
       ) : helper ? (
-        <p className="text-xs text-zinc-400">{helper}</p>
+        <p className="text-xs text-[#706E68]">{helper}</p>
       ) : null}
     </div>
   );
@@ -210,7 +251,7 @@ export function Alert({
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-2 right-2 text-zinc-400 hover:text-white text-xs p-1"
+          className="absolute top-2 right-2 text-zinc-500 hover:text-zinc-800 text-xs p-1"
           aria-label="Đóng thông báo"
         >
           ✕

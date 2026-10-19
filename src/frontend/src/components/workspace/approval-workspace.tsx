@@ -8,8 +8,6 @@ import {
   Clock,
   Thermometer,
   Wrench,
-  FileText,
-  CheckSquare,
   ArrowLeft,
 } from 'lucide-react';
 import { RecipeVersion, Ingredient } from '@/lib/demo/types';
@@ -17,7 +15,6 @@ import { useDemo } from '@/lib/demo/provider';
 import { canApproveRecipe } from '@/lib/demo/permissions';
 import { StatusBadge, MediaSourceBadge } from './status-badge';
 import { Button, TextArea, Alert } from './fields';
-import { DocumentWorkspace } from './document-workspace';
 
 interface ApprovalWorkspaceProps {
   recipeId: string;
@@ -29,7 +26,6 @@ export function ApprovalWorkspace({ recipeId }: ApprovalWorkspaceProps) {
 
   const [recipe, setRecipe] = useState<RecipeVersion | null>(null);
   const [ingredientsMap, setIngredientsMap] = useState<Map<string, Ingredient>>(new Map());
-  const [activeTab, setActiveTab] = useState<'review' | 'document'>('review');
   const [comment, setComment] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -63,8 +59,8 @@ export function ApprovalWorkspace({ recipeId }: ApprovalWorkspaceProps) {
 
   if (isLoading || !recipe) {
     return (
-      <div className="p-12 text-center text-zinc-400">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#C9A84C]"></div>
+      <div className="p-12 text-center text-[#706E68]">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#B47820]"></div>
         <p className="mt-3 text-xs">Đang tải hồ sơ thẩm định công thức...</p>
       </div>
     );
@@ -122,47 +118,22 @@ export function ApprovalWorkspace({ recipeId }: ApprovalWorkspaceProps) {
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E8E2D9] pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-zinc-800 text-amber-300">
+            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#F5F0E8] text-[#B47820] border border-[#E8E2D9]">
               {recipe.code}
             </span>
-            <span className="text-xs text-zinc-400">{recipe.versionLabel}</span>
+            <span className="text-xs text-[#706E68]">{recipe.versionLabel}</span>
             <StatusBadge status={recipe.status} />
           </div>
-          <h2 className="text-2xl font-extrabold text-[#F2F0EB] mt-1">{recipe.name}</h2>
-          <p className="text-xs text-zinc-400 mt-0.5">
-            Tác giả: <span className="text-zinc-200">{recipe.creatorEmail}</span> • Thời điểm gửi:{' '}
+          <h2 className="text-2xl font-extrabold text-[#1A1917] mt-1">{recipe.name}</h2>
+          <p className="text-xs text-[#706E68] mt-0.5">
+            Tác giả: <span className="text-[#1A1917] font-medium">{recipe.creatorEmail}</span> • Thời điểm gửi:{' '}
             {recipe.submittedAt ? new Date(recipe.submittedAt).toLocaleString('vi-VN') : 'Chưa gửi'}
           </p>
         </div>
 
-        {/* Tab switch */}
-        <div className="flex items-center gap-1.5 bg-[#FAF8F2] p-1 rounded-lg border border-[#E2DDD2] text-xs">
-          <button
-            onClick={() => setActiveTab('review')}
-            className={`px-3 py-1.5 rounded-md transition flex items-center gap-1.5 ${
-              activeTab === 'review'
-                ? 'bg-[#1C1917] text-white font-semibold'
-                : 'text-[#78716C] hover:text-[#1C1917]'
-            }`}
-          >
-            <CheckSquare className="w-3.5 h-3.5" />
-            <span>Thẩm Định Hồ Sơ</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('document')}
-            className={`px-3 py-1.5 rounded-md transition flex items-center gap-1.5 ${
-              activeTab === 'document'
-                ? 'bg-[#1C1917] text-white font-semibold'
-                : 'text-[#78716C] hover:text-[#1C1917]'
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5" />
-            <span>Tài Liệu &amp; Xuất PDF</span>
-          </button>
-        </div>
       </div>
       {errorMsg && (
         <Alert variant="error" title="Lỗi thao tác">
@@ -185,45 +156,42 @@ export function ApprovalWorkspace({ recipeId }: ApprovalWorkspaceProps) {
         </Alert>
       )}
 
-      {activeTab === 'document' ? (
-        <DocumentWorkspace recipe={recipe} />
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left 2 Cols: Formula & SOP Details */}
           <div className="lg:col-span-2 space-y-6">
             {/* Description & Yield */}
-            <div className="p-5 bg-[#141418] border border-zinc-800 rounded-lg space-y-3">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            <div className="p-5 bg-white border border-[#E8E2D9] rounded-xl space-y-3 shadow-xs">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-[#706E68]">
                 Mục tiêu sản lượng &amp; Giới thiệu
               </h4>
-              <div className="grid grid-cols-2 gap-4 text-xs bg-zinc-900/60 p-3 rounded border border-zinc-800">
+              <div className="grid grid-cols-2 gap-4 text-xs bg-[#FAF9F5] p-3 rounded-lg border border-[#E8E2D9]">
                 <div>
-                  <span className="text-zinc-500">Sản lượng chuẩn:</span>{' '}
-                  <span className="font-bold text-zinc-200">
+                  <span className="text-[#706E68]">Sản lượng chuẩn:</span>{' '}
+                  <span className="font-bold text-[#1A1917]">
                     {recipe.targetYield} {recipe.yieldUnit}
                   </span>
                 </div>
                 <div>
-                  <span className="text-zinc-500">Mã liên kết biến thể:</span>{' '}
-                  <span className="text-zinc-300">{recipe.sourceRecipeId || 'Công thức gốc (Master)'}</span>
+                  <span className="text-[#706E68]">Mã liên kết biến thể:</span>{' '}
+                  <span className="text-[#1A1917]">{recipe.sourceRecipeId || 'Công thức gốc (Master)'}</span>
                 </div>
               </div>
               {recipe.description && (
-                <p className="text-xs text-zinc-300 leading-relaxed italic">
+                <p className="text-xs text-[#706E68] leading-relaxed italic">
                   &ldquo;{recipe.description}&rdquo;
                 </p>
               )}
             </div>
 
             {/* Ingredients Table */}
-            <div className="p-5 bg-[#141418] border border-zinc-800 rounded-lg space-y-3">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            <div className="p-5 bg-white border border-[#E8E2D9] rounded-xl space-y-3 shadow-xs">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-[#706E68]">
                 1. Định lượng nguyên liệu ({recipe.ingredients.length} thành phần)
               </h4>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="border-b border-zinc-800 text-zinc-400">
+                    <tr className="border-b border-[#E8E2D9] text-[#706E68] font-semibold">
                       <th className="pb-2">STT</th>
                       <th className="pb-2">Tên nguyên liệu</th>
                       <th className="pb-2">Mã NL</th>
@@ -231,20 +199,20 @@ export function ApprovalWorkspace({ recipeId }: ApprovalWorkspaceProps) {
                       <th className="pb-2">Ghi chú</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-850">
+                  <tbody className="divide-y divide-[#E8E2D9]">
                     {recipe.ingredients.map((ing, idx) => {
                       const item = ingredientsMap.get(ing.ingredientId);
                       return (
-                        <tr key={idx} className="hover:bg-zinc-850/40">
-                          <td className="py-2.5 text-zinc-500">{idx + 1}</td>
-                          <td className="py-2.5 font-medium text-zinc-200">
+                        <tr key={idx} className="hover:bg-[#FAF9F5]">
+                          <td className="py-2.5 text-[#706E68]">{idx + 1}</td>
+                          <td className="py-2.5 font-medium text-[#1A1917]">
                             {item?.name || 'Nguyên liệu'}
                           </td>
-                          <td className="py-2.5 text-zinc-400 font-mono">{item?.code || '-'}</td>
-                          <td className="py-2.5 font-bold text-[#C9A84C]">
+                          <td className="py-2.5 text-[#706E68] font-mono">{item?.code || '-'}</td>
+                          <td className="py-2.5 font-bold text-[#B47820]">
                             {ing.quantity} {ing.unit}
                           </td>
-                          <td className="py-2.5 text-zinc-400">{ing.notes || ing.stageNote || '-'}</td>
+                          <td className="py-2.5 text-[#706E68]">{ing.notes || ing.stageNote || '-'}</td>
                         </tr>
                       );
                     })}
@@ -254,21 +222,21 @@ export function ApprovalWorkspace({ recipeId }: ApprovalWorkspaceProps) {
             </div>
 
             {/* Steps & SOP */}
-            <div className="p-5 bg-[#141418] border border-zinc-800 rounded-lg space-y-4">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            <div className="p-5 bg-white border border-[#E8E2D9] rounded-xl space-y-4 shadow-xs">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-[#706E68]">
                 2. Quy trình pha chế chuẩn ({recipe.steps.length} bước SOP)
               </h4>
               <div className="space-y-4">
                 {recipe.steps.map((step) => (
                   <div
                     key={step.id}
-                    className="p-4 bg-zinc-900/60 rounded border border-zinc-800 space-y-2 text-xs"
+                    className="p-4 bg-[#FAF9F5] rounded-lg border border-[#E8E2D9] space-y-2 text-xs"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-zinc-100">
+                      <span className="font-bold text-[#1A1917]">
                         Bước {step.stepNumber}: {step.title}
                       </span>
-                      <div className="flex items-center gap-3 text-[#78716C] text-[11px] font-mono">
+                      <div className="flex items-center gap-3 text-[#706E68] text-[11px] font-mono">
                         {step.durationSeconds && (
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3 text-[#B47820]" /> {step.durationSeconds}s
@@ -281,16 +249,16 @@ export function ApprovalWorkspace({ recipeId }: ApprovalWorkspaceProps) {
                         )}
                         {step.equipment && (
                           <span className="flex items-center gap-1">
-                            <Wrench className="w-3 h-3 text-[#78716C]" /> {step.equipment}
+                            <Wrench className="w-3 h-3 text-[#706E68]" /> {step.equipment}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <p className="text-zinc-300 leading-relaxed">{step.instruction}</p>
+                    <p className="text-[#1A1917] leading-relaxed">{step.instruction}</p>
 
                     {step.completionCriteria && (
-                      <div className="p-2 bg-emerald-950/30 rounded border border-emerald-900/40 text-emerald-300 text-[11px]">
+                      <div className="p-2 bg-emerald-50 rounded border border-emerald-200 text-emerald-800 text-[11px]">
                         <strong>Tiêu chí đạt:</strong> {step.completionCriteria}
                       </div>
                     )}
@@ -302,18 +270,18 @@ export function ApprovalWorkspace({ recipeId }: ApprovalWorkspaceProps) {
 
           {/* Right Col: Review Decision Panel */}
           <div className="space-y-4">
-            <div className="p-5 bg-[#141418] border border-zinc-800 rounded-lg space-y-4 sticky top-24">
-              <h4 className="text-sm font-bold uppercase tracking-wider text-[#F2F0EB]">
+            <div className="p-5 bg-white border border-[#E8E2D9] rounded-xl space-y-4 shadow-xs sticky top-24">
+              <h4 className="text-sm font-bold uppercase tracking-wider text-[#1A1917]">
                 Quyết Định Phê Duyệt
               </h4>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-[#706E68]">
                 Thẩm định công thức dựa trên chuẩn Sensory, độ an toàn vệ sinh và chi phí nguyên liệu.
               </p>
 
               {recipe.reviewerComment && (
-                <div className="p-3 bg-zinc-900 rounded border border-zinc-800 text-xs space-y-1">
-                  <span className="font-semibold text-zinc-300">Nhận xét thẩm định trước đó:</span>
-                  <p className="text-zinc-400 italic">&ldquo;{recipe.reviewerComment}&rdquo;</p>
+                <div className="p-3 bg-[#FAF9F5] rounded-lg border border-[#E8E2D9] text-xs space-y-1">
+                  <span className="font-semibold text-[#1A1917]">Nhận xét thẩm định trước đó:</span>
+                  <p className="text-[#706E68] italic">&ldquo;{recipe.reviewerComment}&rdquo;</p>
                 </div>
               )}
 
@@ -372,8 +340,7 @@ export function ApprovalWorkspace({ recipeId }: ApprovalWorkspaceProps) {
               )}
             </div>
           </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
