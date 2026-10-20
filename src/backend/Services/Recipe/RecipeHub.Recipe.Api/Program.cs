@@ -1,11 +1,19 @@
+using Microsoft.EntityFrameworkCore;
+using RecipeHub.BuildingBlocks.Security;
 using RecipeHub.BuildingBlocks.Events;
+using RecipeHub.Recipe.Api;
 using RecipeHub.Recipe.Api.Services;
+using RecipeHub.Recipe.Infrastructure;
+using RecipeHub.Recipe.Infrastructure.Persistence;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddGrpc();
 builder.Services.AddHealthChecks();
+builder.Services.AddProblemDetails();
+builder.Services.AddRecipeHubAuth(builder.Configuration);
+builder.Services.AddRecipeInfrastructure(builder.Configuration);
 
 // Redis connection (optional/graceful fallback)
 var redisConn = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
@@ -21,6 +29,18 @@ catch
 }
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
+app.UseAuthentication();
+app.UseAuthorization();
+
+if (app.Configuration.GetValue("Database:AutoMigrate", true))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var db = scope.ServiceProvider.GetRequiredService<RecipeDbContext>();
+    await db.Database.MigrateAsync();
+    await scope.ServiceProvider.GetRequiredService<RecipeDbSeeder>().SeedAsync();
+}
 
 app.MapGrpcService<ProbeServiceImpl>();
 
@@ -41,6 +61,8 @@ app.MapGet("/api/v1/recipes/info", () => Results.Ok(new
     status = "Ready",
     description = "Recipe and Formula R&D Service Skeleton"
 }));
+
+app.MapRecipeEndpoints();
 
 // Gated development-only deterministic heartbeat publish endpoint
 if (app.Environment.IsDevelopment())
@@ -80,3 +102,5 @@ if (app.Environment.IsDevelopment())
 }
 
 app.Run();
+
+public partial class Program;

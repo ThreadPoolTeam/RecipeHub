@@ -1,0 +1,131 @@
+@baseUrlIdentity = http://localhost:5001
+@baseUrlRecipe = http://localhost:5002
+
+### 1. Health Checks
+GET {{baseUrlIdentity}}/health/live
+
+###
+GET {{baseUrlRecipe}}/health/live
+
+### 2. Task 1.2: Login as Admin
+# @name loginAdmin
+POST {{baseUrlIdentity}}/api/v1/identity/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "RecipeHub123!"
+}
+
+### Store Token from Login Response
+@token = {{loginAdmin.response.body.accessToken}}
+@refreshToken = {{loginAdmin.response.body.refreshToken}}
+
+### 3. Task 1.2: Refresh Token
+POST {{baseUrlIdentity}}/api/v1/identity/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### 4. Task 1.3: List All Users (Requires Bearer Token)
+GET {{baseUrlIdentity}}/api/v1/identity/users?pageIndex=1&pageSize=10
+Authorization: Bearer {{token}}
+
+### 5. Task 1.3: Create New User (Admin Only)
+POST {{baseUrlIdentity}}/api/v1/identity/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "username": "pastry_chef",
+  "email": "pastry@recipehub.local",
+  "displayName": "Pastry Chef Alice",
+  "password": "Password123!",
+  "roles": ["RNDSTAFF"]
+}
+
+### 6. Task 1.6: Get Measurement Units
+GET {{baseUrlRecipe}}/api/v1/recipes/units
+Authorization: Bearer {{token}}
+
+### 7. Task 1.6: Convert Units (e.g. 1500g to kg)
+POST {{baseUrlRecipe}}/api/v1/recipes/units/convert
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "value": 1500,
+  "sourceUnit": "g",
+  "targetUnit": "kg"
+}
+
+### 8. Task 1.6: Create Master Ingredient
+POST {{baseUrlRecipe}}/api/v1/recipes/ingredients
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "code": "ING-FLOUR-001",
+  "name": "Bột mì số 11 (All-Purpose Flour)",
+  "category": "Flour & Grains",
+  "defaultUnitCode": "g",
+  "description": "High quality wheat flour for bread and pastries",
+  "storageInstructions": "Store in dry, cool place",
+  "allergensOrWarnings": "Gluten"
+}
+
+### 9. Task 1.6: List Ingredients
+GET {{baseUrlRecipe}}/api/v1/recipes/ingredients?pageIndex=1&pageSize=10
+Authorization: Bearer {{token}}
+
+### 10. Task 1.8: Scale Recipe Yield
+POST {{baseUrlRecipe}}/api/v1/recipes/calculate/scale
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "standardYield": 4,
+  "targetYield": 10,
+  "ingredients": [
+    {
+      "ingredientId": "00000000-0000-0000-0000-000000000001",
+      "quantity": 200,
+      "unitCode": "g"
+    },
+    {
+      "ingredientId": "00000000-0000-0000-0000-000000000002",
+      "quantity": 50,
+      "unitCode": "ml"
+    }
+  ]
+}
+
+### 11. Task 1.8: Calculate Dimension Totals
+POST {{baseUrlRecipe}}/api/v1/recipes/calculate/totals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+[
+  {
+    "ingredientId": "00000000-0000-0000-0000-000000000001",
+    "quantity": 500,
+    "unitCode": "g"
+  },
+  {
+    "ingredientId": "00000000-0000-0000-0000-000000000002",
+    "quantity": 2,
+    "unitCode": "kg"
+  }
+]
+
+### 12. Task 1.2: Logout
+POST {{baseUrlIdentity}}/api/v1/identity/auth/logout
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}",
+  "revokeAllSessions": false
+}

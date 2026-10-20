@@ -1,25 +1,32 @@
-var builder = WebApplication.CreateBuilder(args);
+using Microsoft.EntityFrameworkCore;
+using RecipeHub.BuildingBlocks.Security;
+using RecipeHub.Identity.Api;
+using RecipeHub.Identity.Infrastructure;
+using RecipeHub.Identity.Infrastructure.Persistence;
 
+var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHealthChecks();
+builder.Services.AddProblemDetails();
+builder.Services.AddRecipeHubAuth(builder.Configuration);
+builder.Services.AddIdentityInfrastructure(builder.Configuration);
 
 var app = builder.Build();
+app.UseExceptionHandler();
+app.UseAuthentication();
+app.UseAuthorization();
 
-app.MapGet("/", () => Results.Ok(new
+if (app.Configuration.GetValue("Database:AutoMigrate", true))
 {
-    service = "RecipeHub.Identity.Api",
-    status = "Healthy",
-    timestampUtc = DateTime.UtcNow
-}));
+    await using var scope = app.Services.CreateAsyncScope();
+    var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+    await db.Database.MigrateAsync();
+    await scope.ServiceProvider.GetRequiredService<IdentityDbSeeder>().SeedAsync();
+}
 
+app.MapGet("/", () => Results.Ok(new { service = "RecipeHub.Identity.Api", status = "Healthy", timestampUtc = DateTime.UtcNow }));
 app.MapGet("/health/live", () => Results.Ok(new { status = "Live" }));
 app.MapGet("/health/ready", () => Results.Ok(new { status = "Ready" }));
-
-app.MapGet("/api/v1/identity/info", () => Results.Ok(new
-{
-    service = "RecipeHub.Identity.Api",
-    version = "1.0.0",
-    status = "Ready",
-    description = "Identity and Access Management Service Skeleton"
-}));
-
+app.MapIdentityEndpoints();
 app.Run();
+
+public partial class Program;
