@@ -9,9 +9,13 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\BuildingBlocks\RecipeHub.BuildingBlocks\RecipeHub.BuildingBlocks.csproj" />
+    <ProjectReference Include="..\..\Services\Content\RecipeHub.Content.Infrastructure\RecipeHub.Content.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Services\Content\RecipeHub.Content.Application\RecipeHub.Content.Application.csproj" />
+    <ProjectReference Include="..\..\Services\Content\RecipeHub.Content.Domain\RecipeHub.Content.Domain.csproj" />
   </ItemGroup>
 </Project>

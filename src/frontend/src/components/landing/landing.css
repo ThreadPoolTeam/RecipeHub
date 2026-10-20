@@ -1,0 +1,167 @@
+/* RecipeHub Cinematic Landing & Warm Editorial Styles */
+
+.landing {
+  --cinematic-bg: #0C0C0E;
+  --cinematic-fg: #F2F0EB;
+  --cinematic-muted: #9E9A90;
+  --cinematic-gold: #C9A84C;
+  --cinematic-gold-hover: #DEBF64;
+  --cinematic-surface: #151518;
+  --cinematic-border: rgba(242, 240, 235, 0.12);
+
+  background-color: var(--canvas, #FAF9F5);
+  color: var(--ink, #1A1917);
+  font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow-x: clip;
+  position: relative;
+  min-height: 100vh;
+}
+
+/* Typography Clamps */
+.landing-heading-hero {
+  font-size: clamp(2rem, 5.5vw, 4.75rem);
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  font-weight: 700;
+}
+
+.landing-heading-chapter {
+  font-size: clamp(1.85rem, 4.5vw, 3.75rem);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
+.landing-subheading {
+  font-size: clamp(1rem, 2vw, 1.35rem);
+  line-height: 1.6;
+  color: var(--muted, #706E68);
+}
+
+.landing-body-text {
+  font-size: clamp(0.95rem, 1.25vw, 1.125rem);
+  line-height: 1.65;
+  color: var(--muted, #706E68);
+}
+/* Story Track & Sticky Canvas */
+.story-track {
+  position: relative;
+  width: 100%;
+  height: 520svh; /* Scroll runway for cinematic progression */
+}
+
+.story-sticky-stage {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  height: 100svh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.story-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.story-canvas-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(12, 12, 14, 0.35) 0%, rgba(12, 12, 14, 0.75) 100%);
+  pointer-events: none;
+}
+
+/* Narrative Text Layer */
+.story-narrative-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 20;
+}
+
+.story-chapter-card {
+  position: absolute;
+  max-width: 48rem;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+/* Line reveal effect */
+.reveal-line-wrap {
+  overflow: hidden;
+  display: block;
+}
+
+.reveal-line-inner {
+  display: block;
+  transform: translateY(0);
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
+}
+
+/* Progress indicator on the side */
+.story-progress-indicator {
+  position: fixed;
+  right: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  pointer-events: auto;
+}
+
+.story-progress-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background-color: rgba(242, 240, 235, 0.25);
+  transition: all 0.3s ease;
+}
+
+.story-progress-dot.active {
+  height: 24px;
+  background-color: var(--noir-gold);
+  box-shadow: 0 0 10px rgba(201, 168, 76, 0.5);
+}
+/* Reduced Motion Fallback */
+@media (prefers-reduced-motion: reduce) {
+  .story-track {
+    height: auto !important;
+  }
+
+  .story-sticky-stage {
+    position: relative !important;
+    height: auto !important;
+    display: none !important;
+  }
+
+  .reduced-motion-story {
+    display: block !important;
+  }
+
+  .story-progress-indicator {
+    display: none !important;
+  }
+}
+
+.reduced-motion-story {
+  display: none;
+}

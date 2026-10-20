@@ -1,4 +1,4 @@
-namespace RecipeHub.Recipe.Domain.Entities;
+namespace RecipeHub.Recipe.Domain.CatalogEntities;
 
 public sealed class Unit
 {

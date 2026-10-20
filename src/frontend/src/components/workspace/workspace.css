@@ -1,0 +1,64 @@
+/* Scoped styling for RecipeHub Workspace & Auth */
+
+.workspace-root,
+.auth-root {
+  --bg-main: var(--canvas, #FAF9F5);
+  --bg-surface: var(--surface, #FFFFFF);
+  --bg-surface-elevated: var(--surface-soft, #F5F0E8);
+  --bg-surface-hover: var(--surface-hover, #ECE6DA);
+  
+  --text-main: var(--ink, #1A1917);
+  --text-muted: var(--muted, #706E68);
+  --text-dim: var(--muted-soft, #8C887F);
+  
+  --border-subtle: #F0ECE4;
+  --border-base: var(--border, #E8E2D9);
+  --border-hover: var(--border-strong, #D5CEBF);
+  
+  --accent-gold: var(--accent, #B47820);
+  --accent-gold-hover: var(--accent-hover, #9E6714);
+  --accent-gold-bg: rgba(180, 120, 32, 0.1);
+
+  --action-primary: var(--action, #B47820);
+  --action-primary-hover: var(--action-hover, #9E6714);
+  
+  --status-draft: var(--status-draft-fg, #9A3412);
+  --status-pending: var(--status-pending-fg, #1E40AF);
+  --status-approved: var(--status-approved-fg, #166534);
+  --status-archived: var(--status-archived-fg, #475569);
+  --status-danger: var(--status-returned-fg, #991B1B);
+
+  font-family: 'Google Sans', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  min-height: 100vh;
+}
+
+/* Custom scrollbars inside workspace */
+.workspace-root ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.workspace-root ::-webkit-scrollbar-track {
+  background: var(--bg-surface);
+}
+
+.workspace-root ::-webkit-scrollbar-thumb {
+  background: rgba(112, 110, 104, 0.25);
+  border-radius: 3px;
+}
+
+.workspace-root ::-webkit-scrollbar-thumb:hover {
+  background: rgba(112, 110, 104, 0.45);
+}
+/* Focus outlines */
+.workspace-root input:focus-visible,
+.workspace-root select:focus-visible,
+.workspace-root textarea:focus-visible,
+.workspace-root button:focus-visible,
+.auth-root input:focus-visible,
+.auth-root button:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 1px;
+}

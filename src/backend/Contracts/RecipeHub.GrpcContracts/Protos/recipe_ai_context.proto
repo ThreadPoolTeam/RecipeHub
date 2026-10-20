@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+option csharp_namespace = "RecipeHub.GrpcContracts.Content";
+
+package recipehub.contracts.v1;
+
+// Service nội bộ: Content gọi Recipe để lấy ngữ cảnh công thức và kiểm tra quyền trước khi tạo job AI
+service RecipeAiContextQuery {
+  rpc GetRecipeAiContext (GetRecipeAiContextRequest) returns (GetRecipeAiContextResponse);
+  rpc GetMediaAssetUsages (GetMediaAssetUsagesRequest) returns (GetMediaAssetUsagesResponse);
+}
+
+message GetRecipeAiContextRequest {
+  string recipe_version_id = 1; // UUID phiên bản công thức
+  string recipe_step_id = 2;    // UUID bước (tùy chọn: để trống nếu target_kind là final_product)
+  string target_kind = 3;       // "final_product" hoặc "step_instruction"
+  
+  // Ghi chú về R1 (Auth Gate):
+  // Danh tính người gọi và quyền hạn được truyền qua metadata header gRPC (Authorization / X-Authenticated-Actor)
+  // thay vì tin cậy trường do client tự khai. Trường dưới đây chỉ dùng lưu vết audit tham chiếu nội bộ.
+  string audit_actor_ref = 4;
+}
+
+message RecipeIngredientContext {
+  string ingredient_name = 1;
+  double amount = 2;
+  string unit_name = 3;
+}
+
+message GetRecipeAiContextResponse {
+  bool is_success = 1;
+  string error_code = 2; // NOT_FOUND, FORBIDDEN, VERSION_LOCKED, STEP_NOT_FOUND, INVALID_STATE
+  string error_message = 3;
+  
+  string recipe_id = 4;
+  string recipe_version_id = 5;
+  string recipe_title = 6;
+  string recipe_description = 7;
+  string category_name = 8;
+  int64 row_version = 9;
+  string version_status = 10;
+  
+  // Ngữ cảnh bước (nếu target_kind == "step_instruction")
+  string recipe_step_id = 11;
+  int32 step_order = 12;
+  string step_instruction = 13;
+  string step_notes = 14;
+  
+  repeated RecipeIngredientContext ingredients = 15;
+}
+
+message GetMediaAssetUsagesRequest {
+  string media_asset_id = 1; // UUID của MediaAsset cần tra cứu
+}
+
+message MediaAssetUsageItemDto {
+  string recipe_id = 1;
+  string recipe_version_id = 2;
+  string recipe_title = 3;
+  string recipe_step_id = 4;
+  int32 step_order = 5;
+  string usage_kind = 6; // "primary_image" hoặc "step_media"
+  string linked_at_utc = 7;
+}
+
+message GetMediaAssetUsagesResponse {
+  bool is_success = 1;
+  string error_message = 2;
+  repeated MediaAssetUsageItemDto usages = 3;
+}

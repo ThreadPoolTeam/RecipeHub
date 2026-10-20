@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using RecipeHub.BuildingBlocks.Security;
 using RecipeHub.Recipe.Application.Contracts;
-using RecipeHub.Recipe.Domain.Entities;
+using RecipeHub.Recipe.Domain.CatalogEntities;
 
 namespace RecipeHub.Recipe.Api;
 

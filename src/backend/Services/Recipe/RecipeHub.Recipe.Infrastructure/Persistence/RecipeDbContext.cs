@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using RecipeHub.Recipe.Domain.Entities;
+using RecipeHub.Recipe.Domain.CatalogEntities;
 
 namespace RecipeHub.Recipe.Infrastructure.Persistence;
 

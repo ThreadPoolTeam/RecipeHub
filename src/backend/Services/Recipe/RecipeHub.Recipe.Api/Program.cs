@@ -1,22 +1,43 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using RecipeHub.BuildingBlocks.Security;
 using RecipeHub.BuildingBlocks.Events;
 using RecipeHub.Recipe.Api;
 using RecipeHub.Recipe.Api.Services;
+using RecipeHub.Recipe.Api.Swagger;
+using RecipeHub.Recipe.Application;
 using RecipeHub.Recipe.Infrastructure;
 using RecipeHub.Recipe.Infrastructure.Persistence;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.WebHost.ConfigureKestrel(options =>
+{
+    // Port 5002: HTTP/1.1 for REST API & Swagger UI
+    options.ListenAnyIP(5002, o => o.Protocols = HttpProtocols.Http1);
+
+    // Port 5012: HTTP/2 for gRPC
+    options.ListenAnyIP(5012, o => o.Protocols = HttpProtocols.Http2);
+});
+
 builder.Services.AddGrpc();
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new() { Title = "RecipeHub.Recipe.Api", Version = "v1" });
+    c.OperationFilter<SwaggerXUserIdHeaderFilter>();
+});
 builder.Services.AddHealthChecks();
 builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ApplicationExceptionHandler>();
 builder.Services.AddRecipeHubAuth(builder.Configuration);
+builder.Services.AddRecipeApplication();
 builder.Services.AddRecipeInfrastructure(builder.Configuration);
 
 // Redis connection (optional/graceful fallback)
-var redisConn = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
+var redisConn = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6380";
 IConnectionMultiplexer? redis = null;
 try
 {
@@ -29,6 +50,15 @@ catch
 }
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "RecipeHub Recipe API v1");
+    });
+}
 
 app.UseExceptionHandler();
 app.UseAuthentication();
@@ -43,6 +73,8 @@ if (app.Configuration.GetValue("Database:AutoMigrate", true))
 }
 
 app.MapGrpcService<ProbeServiceImpl>();
+app.MapGrpcService<RecipeAiContextQueryServiceImpl>();
+app.MapControllers();
 
 app.MapGet("/", () => Results.Ok(new
 {
@@ -59,7 +91,7 @@ app.MapGet("/api/v1/recipes/info", () => Results.Ok(new
     service = "RecipeHub.Recipe.Api",
     version = "1.0.0",
     status = "Ready",
-    description = "Recipe and Formula R&D Service Skeleton"
+    description = "Recipe and Formula R&D Service"
 }));
 
 app.MapRecipeEndpoints();
@@ -71,7 +103,7 @@ if (app.Environment.IsDevelopment())
     {
         try
         {
-            var targetRedisConn = config.GetConnectionString("Redis") ?? "localhost:6379";
+            var targetRedisConn = config.GetConnectionString("Redis") ?? "localhost:6380";
             var multiplexer = await ConnectionMultiplexer.ConnectAsync(targetRedisConn);
             var db = multiplexer.GetDatabase();
 

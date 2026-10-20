@@ -1,7 +1,7 @@
 using RecipeHub.Recipe.Application.Contracts;
 using RecipeHub.Recipe.Application.Services;
-using RecipeHub.Recipe.Domain.Entities;
-using RecipeUnit = RecipeHub.Recipe.Domain.Entities.Unit;
+using RecipeHub.Recipe.Domain.CatalogEntities;
+using RecipeUnit = RecipeHub.Recipe.Domain.CatalogEntities.Unit;
 using Xunit;
 
 namespace RecipeHub.Recipe.Tests;

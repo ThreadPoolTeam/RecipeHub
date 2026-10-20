@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using RecipeHub.Recipe.Application.Contracts;
-using RecipeHub.Recipe.Domain.Entities;
+using RecipeHub.Recipe.Domain.CatalogEntities;
 using RecipeHub.Recipe.Infrastructure.Persistence;
-using RecipeUnit = RecipeHub.Recipe.Domain.Entities.Unit;
+using RecipeUnit = RecipeHub.Recipe.Domain.CatalogEntities.Unit;
 
 namespace RecipeHub.Recipe.Infrastructure.Services;
 
