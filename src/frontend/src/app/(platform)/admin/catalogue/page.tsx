@@ -27,9 +27,6 @@ export default function AdminCataloguePage() {
   const [catalogueName, setCatalogueName] = useState('');
   const [catalogueDescription, setCatalogueDescription] = useState('');
   const [unitCategoryId, setUnitCategoryId] = useState('');
-  const [unitIsBase, setUnitIsBase] = useState(false);
-  const [unitFactor, setUnitFactor] = useState(1);
-  const [unitOffset, setUnitOffset] = useState(0);
   const [unitDecimalPlaces, setUnitDecimalPlaces] = useState(2);
   const [catalogueSubmitting, setCatalogueSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -130,9 +127,6 @@ export default function AdminCataloguePage() {
       setUnitCategoryId(
         editor.item?.categoryId ?? unitCategories.find((item) => item.state === 'active')?.id ?? ''
       );
-      setUnitIsBase(editor.item?.isBase ?? false);
-      setUnitFactor(editor.item?.factorToBase ?? 1);
-      setUnitOffset(editor.item?.offsetToBase ?? 0);
       setUnitDecimalPlaces(editor.item?.decimalPlaces ?? 2);
     }
     setErrorMsg(null);
@@ -174,9 +168,6 @@ export default function AdminCataloguePage() {
           code: catalogData.code,
           name: catalogData.name,
           categoryId: unitCategoryId,
-          isBase: unitIsBase,
-          factorToBase: unitFactor,
-          offsetToBase: unitOffset,
           decimalPlaces: unitDecimalPlaces,
         };
         if (catalogueEditor.item) {
@@ -248,7 +239,7 @@ export default function AdminCataloguePage() {
         !q ||
         ing.name.toLowerCase().includes(q) ||
         ing.code.toLowerCase().includes(q) ||
-        (ing.supplierNotes && ing.supplierNotes.toLowerCase().includes(q));
+        (ing.note && ing.note.toLowerCase().includes(q));
       return matchGroup && matchStatus && matchSearch;
     });
   }, [ingredients, selectedGroup, statusFilter, searchTerm]);
@@ -270,7 +261,7 @@ export default function AdminCataloguePage() {
         group: newGroup,
         defaultUnit: newUnit,
         costPerUnit: Number(newCost) || 0,
-        supplierNotes: newNotes.trim(),
+        note: newNotes.trim(),
         isActive: newIsActive,
       });
 
@@ -299,7 +290,7 @@ export default function AdminCataloguePage() {
     setEditGroup(ing.group);
     setEditUnit(ing.defaultUnit);
     setEditCost(ing.costPerUnit || 0);
-    setEditNotes(ing.supplierNotes || '');
+    setEditNotes(ing.note || '');
     setEditIsActive(ing.isActive);
     setErrorMsg(null);
   };
@@ -320,7 +311,7 @@ export default function AdminCataloguePage() {
         group: editGroup,
         defaultUnit: editUnit,
         costPerUnit: Number(editCost) || 0,
-        supplierNotes: editNotes.trim(),
+        note: editNotes.trim(),
         isActive: editIsActive,
       });
 
@@ -542,10 +533,7 @@ export default function AdminCataloguePage() {
               { header: 'Mã', accessor: 'code' },
               { header: 'Tên', accessor: 'name' },
               { header: 'Nhóm', accessor: 'categoryName' },
-              {
-                header: 'Quy đổi',
-                render: (item) => item.isBase ? 'Đơn vị gốc' : `× ${item.factorToBase}`,
-              },
+              { header: 'Số chữ số lẻ', accessor: 'decimalPlaces' },
               {
                 header: 'Trạng thái',
                 render: (item) => (item.state === 'active' ? 'Đang dùng' : 'Đã tắt'),
@@ -650,9 +638,9 @@ export default function AdminCataloguePage() {
                   </span>
                   <span className="font-semibold text-[#1A1917]">{i.name}</span>
                 </div>
-                {i.supplierNotes && (
+                {i.note && (
                   <div className="text-[11px] text-[#706E68] mt-0.5 truncate max-w-md">
-                    Ghi chú: {i.supplierNotes}
+                    Ghi chú: {i.note}
                   </div>
                 )}
               </div>
@@ -767,42 +755,15 @@ export default function AdminCataloguePage() {
                   .filter((item) => item.state === 'active' || item.id === unitCategoryId)
                   .map((item) => ({ label: item.name, value: item.id }))}
               />
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <TextInput
-                  label="Hệ số về đơn vị gốc"
-                  required
-                  type="number"
-                  min="0.00000001"
-                  step="any"
-                  value={unitFactor}
-                  onChange={(event) => setUnitFactor(Number(event.target.value))}
-                />
-                <TextInput
-                  label="Độ lệch"
-                  required
-                  type="number"
-                  step="any"
-                  value={unitOffset}
-                  onChange={(event) => setUnitOffset(Number(event.target.value))}
-                />
-                <TextInput
-                  label="Số chữ số lẻ"
-                  required
-                  type="number"
-                  min="0"
-                  max="8"
-                  value={unitDecimalPlaces}
-                  onChange={(event) => setUnitDecimalPlaces(Number(event.target.value))}
-                />
-              </div>
-              <label className="flex items-center gap-2 p-3 bg-[#FBF9F5] border border-[#E2DDD2] rounded-md">
-                <input
-                  type="checkbox"
-                  checked={unitIsBase}
-                  onChange={(event) => setUnitIsBase(event.target.checked)}
-                />
-                <span className="text-xs text-[#44403C]">Đây là đơn vị gốc của nhóm</span>
-              </label>
+              <TextInput
+                label="Số chữ số lẻ"
+                required
+                type="number"
+                min="0"
+                max="8"
+                value={unitDecimalPlaces}
+                onChange={(event) => setUnitDecimalPlaces(Number(event.target.value))}
+              />
             </>
           ) : (
             <TextArea

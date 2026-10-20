@@ -13,14 +13,6 @@ export function isPathAllowedForUser(
     return { allowed: true };
   }
 
-  // /approvals requires canApprove
-  if (pathname.startsWith('/approvals')) {
-    if (session.canApprove) {
-      return { allowed: true };
-    }
-    return { allowed: false, redirectUrl: '/forbidden' };
-  }
-
   // /rnd routes require rnd role
   if (pathname.startsWith('/rnd')) {
     if (session.role === 'rnd') {
@@ -76,19 +68,11 @@ export function canEditRecipe(user: User | SessionInfo, recipe: RecipeVersion): 
   return recipe.status === 'Draft';
 }
 
-export function canSubmitRecipe(user: User | SessionInfo, recipe: RecipeVersion): boolean {
+export function canPublishRecipe(user: User | SessionInfo, recipe: RecipeVersion): boolean {
   if (user.role !== 'rnd') return false;
   if (recipe.status !== 'Draft') return false;
   if (!recipe.ingredients || recipe.ingredients.length === 0) return false;
   if (!recipe.steps || recipe.steps.length === 0) return false;
-  return true;
-}
-
-export function canApproveRecipe(user: User | SessionInfo, recipe: RecipeVersion): boolean {
-  if (!user.canApprove) return false;
-  if (recipe.status !== 'PendingApproval') return false;
-  // Demo invariant: Reviewer cannot approve recipe they authored
-  if (recipe.creatorEmail === user.email) return false;
   return true;
 }
 
@@ -97,7 +81,7 @@ export function canViewRecipe(user: User, recipe: RecipeVersion): boolean {
     return true;
   }
   if (user.role === 'viewer') {
-    return recipe.status === 'Approved' && (user.allowedRecipeIds || []).includes(recipe.recipeId);
+    return recipe.status === 'Published' && (user.allowedRecipeIds || []).includes(recipe.recipeId);
   }
   return false;
 }

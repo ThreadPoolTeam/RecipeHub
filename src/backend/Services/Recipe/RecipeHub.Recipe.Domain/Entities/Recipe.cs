@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace RecipeHub.Recipe.Domain.Entities;
 
 /// <summary>
-/// Không hard-delete Recipe. Dùng state = archived để giữ toàn bộ lịch sử.
+/// Stable recipe identity. Content belongs to immutable published versions or the current draft.
 /// </summary>
 public partial class Recipe
 {
@@ -26,16 +26,6 @@ public partial class Recipe
     public string NormalizedCode { get; set; } = null!;
 
     /// <summary>
-    /// active hoặc archived.
-    /// </summary>
-    public string State { get; set; } = null!;
-
-    /// <summary>
-    /// Công thức nguồn khi tạo biến thể.
-    /// </summary>
-    public long? SourceRecipeId { get; set; }
-
-    /// <summary>
     /// User public_id từ Identity Service.
     /// </summary>
     public Guid CreatedByUserRef { get; set; }
@@ -51,9 +41,5 @@ public partial class Recipe
 
     public DateTime? ArchivedAt { get; set; }
 
-    public virtual ICollection<Recipe> InverseSourceRecipe { get; set; } = new List<Recipe>();
-
     public virtual ICollection<RecipeVersion> RecipeVersions { get; set; } = new List<RecipeVersion>();
-
-    public virtual Recipe? SourceRecipe { get; set; }
 }

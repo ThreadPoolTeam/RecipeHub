@@ -44,7 +44,7 @@ export default function EditRecipePage() {
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [targetYield, setTargetYield] = useState<number>(1);
+  const [targetYield, setTargetYield] = useState('');
   const [yieldUnit, setYieldUnit] = useState('');
   const [availableUnits, setAvailableUnits] = useState<UnitItem[]>([]);
 
@@ -93,8 +93,8 @@ export default function EditRecipePage() {
         setCode(rec.code);
         setName(rec.name);
         setDescription(rec.description || '');
-        setTargetYield(rec.targetYield || 1);
-        setYieldUnit(rec.yieldUnit || units[0]?.code || '');
+        setTargetYield(rec.targetYield === null ? '' : String(rec.targetYield));
+        setYieldUnit(rec.yieldUnit ?? '');
         setAvailableUnits(units.filter((unit) => unit.state === 'active'));
         setIngredients(rec.ingredients || []);
         setSteps(rec.steps || []);
@@ -299,8 +299,15 @@ export default function EditRecipePage() {
       setErrorMsg('Vui lòng nhập đầy đủ mã và tên công thức.');
       return;
     }
-    if (!yieldUnit) {
-      setErrorMsg('Recipe Service chưa có đơn vị thành phẩm khả dụng.');
+    const hasYieldQuantity = targetYield.trim().length > 0;
+    const hasYieldUnit = yieldUnit.trim().length > 0;
+    if (hasYieldQuantity !== hasYieldUnit) {
+      setErrorMsg('Sản lượng và đơn vị thành phẩm phải được nhập cùng nhau hoặc cùng để trống.');
+      return;
+    }
+    const parsedYield = hasYieldQuantity ? Number(targetYield) : null;
+    if (parsedYield !== null && (!Number.isFinite(parsedYield) || parsedYield <= 0)) {
+      setErrorMsg('Sản lượng mục tiêu phải là số lớn hơn 0.');
       return;
     }
 
@@ -313,8 +320,8 @@ export default function EditRecipePage() {
           code: cleanCode,
           name: cleanName,
           description: description.trim(),
-          targetYield: Number(targetYield) || 1,
-          yieldUnit,
+          targetYield: parsedYield,
+          yieldUnit: hasYieldUnit ? yieldUnit : null,
           ingredients: ingredients,
           steps: steps,
         },
@@ -403,7 +410,10 @@ export default function EditRecipePage() {
             label="Mã Công Thức *"
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
-            helper="Chữ hoa, duy nhất trên toàn hệ thống"
+            disabled={recipe.status === 'Published' || recipe.versionNumber > 1}
+            helper={recipe.status === 'Published' || recipe.versionNumber > 1
+              ? 'Mã được giữ cố định sau lần phát hành đầu tiên.'
+              : 'Chữ hoa, duy nhất trên toàn hệ thống'}
           />
           <TextInput
             label="Tên Công Thức *"
@@ -421,20 +431,23 @@ export default function EditRecipePage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <TextInput
-            label="Sản Lượng Mục Tiêu *"
+            label="Sản Lượng Mục Tiêu"
             type="number"
             min={1}
             value={targetYield}
-            onChange={(e) => setTargetYield(Math.max(1, Number(e.target.value) || 1))}
+            onChange={(e) => setTargetYield(e.target.value)}
           />
           <Select
-            label="Đơn Vị Thành Phẩm *"
+            label="Đơn Vị Thành Phẩm"
             value={yieldUnit}
             onChange={(e) => setYieldUnit(e.target.value)}
-            options={availableUnits.map((unit) => ({
-              value: unit.code,
-              label: `${unit.name} (${unit.code})`,
-            }))}
+            options={[
+              { value: '', label: 'Chưa thiết lập' },
+              ...availableUnits.map((unit) => ({
+                value: unit.code,
+                label: `${unit.name} (${unit.code})`,
+              })),
+            ]}
           />
         </div>
       </div>
@@ -779,7 +792,7 @@ export default function EditRecipePage() {
           if (!isGeneratingAiImage) handleDiscardCandidate();
         }}
         title="✨ Tạo Ảnh Minh Họa Concept Bằng AI"
-        description="Mô phỏng ảnh thao tác cho bước SOP. Ảnh sẽ được đánh dấu AI Concept với hạn dùng 30 phút trước khi thẩm định."
+        description="Mô phỏng ảnh thao tác cho bước SOP. Ảnh được đánh dấu AI Concept và có hạn dùng 30 phút trước khi chấp nhận."
         confirmLabel="Chấp Nhận & Gắn Ảnh Này"
         confirmVariant="gold"
         isConfirming={isGeneratingAiImage}

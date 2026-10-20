@@ -99,8 +99,8 @@ export function DocumentWorkspace({ recipe, readOnly = false }: DocumentWorkspac
 
   const handlePublishOfficialPdf = async () => {
     if (!session || !draft) return;
-    if (recipe.status !== 'Approved') {
-      setErrorMsg('Chỉ công thức đã Phê Duyệt (Approved) mới được phép xuất bản tài liệu chính thức!');
+    if (recipe.status !== 'Published') {
+      setErrorMsg('Chỉ công thức đã phát hành mới được phép xuất bản tài liệu chính thức.');
       return;
     }
 
@@ -186,11 +186,11 @@ export function DocumentWorkspace({ recipe, readOnly = false }: DocumentWorkspac
             <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
             <span>Chưa có ấn bản tài liệu chính thức được phát hành cho phiên bản này.</span>
           </div>
-          {recipe.status === 'Approved' ? (
+          {recipe.status === 'Published' ? (
             <span className="text-emerald-700 font-medium">Sẵn sàng để xuất bản chính thức</span>
           ) : (
             <span className="text-amber-700 font-medium">
-              Cần duyệt công thức trước khi xuất bản chính thức
+              Cần phát hành công thức trước khi xuất bản chính thức
             </span>
           )}
         </div>
@@ -350,14 +350,14 @@ export function DocumentWorkspace({ recipe, readOnly = false }: DocumentWorkspac
                 <span className="font-semibold text-[#1A1917]">2. Xuất Bản Phát Hành Chính Thức</span>
                 <p className="text-[#706E68]">
                   Bản sạch không có watermark. Chỉ kích hoạt khi công thức đạt trạng thái{' '}
-                  <strong className="text-emerald-700">Đã Phê Duyệt (Approved)</strong>.
+                  <strong className="text-emerald-700">Đã Phát Hành (Published)</strong>.
                 </p>
                 <div className="pt-2">
                   <Button
                     variant="gold"
                     size="sm"
                     className="w-full"
-                    disabled={recipe.status !== 'Approved' || readOnly}
+                    disabled={recipe.status !== 'Published' || readOnly}
                     isLoading={isPublishingOfficial}
                     onClick={handlePublishOfficialPdf}
                   >

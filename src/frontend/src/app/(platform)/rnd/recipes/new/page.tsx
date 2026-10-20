@@ -229,7 +229,7 @@ export default function NewRecipePage() {
             <span>Tạo Bản Nháp Công Thức R&amp;D</span>
           </h1>
           <p className="text-sm text-[#706E68] mt-1">
-            Khởi tạo phiên bản v1.0. Bạn có thể lưu nháp, thử nghiệm AI và hoàn thiện trước khi gửi thẩm định.
+            Khởi tạo công thức nháp. Bạn có thể thử nghiệm AI và hoàn thiện trước khi phát hành.
           </p>
         </div>
         <div className="flex items-center gap-3">

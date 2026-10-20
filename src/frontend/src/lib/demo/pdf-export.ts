@@ -176,8 +176,11 @@ export async function generateRecipePdf(
   currentY -= 20;
 
   // Metadata Row
-  const statusLabel = recipe.status === 'Approved' ? 'ĐÃ PHÊ DUYỆT' : 'BẢN THỬ NGHIỆM';
-  const metaText = `Trạng thái: ${statusLabel}  |  Sản lượng: ${recipe.targetYield} ${recipe.yieldUnit}  |  Tác giả: ${recipe.creatorEmail}`;
+  const statusLabel = recipe.status === 'Published' ? 'ĐÃ PHÁT HÀNH' : 'BẢN NHÁP';
+  const yieldLabel = recipe.targetYield !== null && recipe.yieldUnit
+    ? `${recipe.targetYield} ${recipe.yieldUnit}`
+    : 'Chưa thiết lập';
+  const metaText = `Trạng thái: ${statusLabel}  |  Sản lượng: ${yieldLabel}  |  Tác giả: ${recipe.creatorEmail}`;
   page.drawText(metaText, {
     x: margin,
     y: currentY,
@@ -186,17 +189,6 @@ export async function generateRecipePdf(
     color: rgb(0.35, 0.35, 0.35),
   });
   currentY -= 15;
-
-  if (recipe.reviewerComment) {
-    page.drawText(`Nhận xét phê duyệt: "${recipe.reviewerComment}"`, {
-      x: margin,
-      y: currentY,
-      size: 8.5,
-      font: fontRegular,
-      color: rgb(0.2, 0.45, 0.25),
-    });
-    currentY -= 15;
-  }
 
   // Cover Image (from draft override or first step cover)
   const coverMediaId = draft.coverMediaIdOverride || recipe.steps[0]?.coverMediaAssetId;

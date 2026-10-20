@@ -110,7 +110,9 @@ export class DemoRepository {
       defaultUnit: data.defaultUnit || 'ml',
       isActive: data.isActive ?? true,
       costPerUnit: data.costPerUnit || 0,
-      supplierNotes: data.supplierNotes || '',
+      description: data.description || '',
+      note: data.note || '',
+      imageAssetId: data.imageAssetId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -161,7 +163,7 @@ export class DemoRepository {
     if (actor.role === 'viewer') {
       const user = await getById<User>('users', actor.userId);
       const allowed = new Set(user?.allowedRecipeIds || []);
-      list = list.filter((r) => r.status === 'Approved' && allowed.has(r.recipeId));
+      list = list.filter((r) => r.status === 'Published' && allowed.has(r.recipeId));
     }
 
     if (filter.status && filter.status !== 'all') {
@@ -206,7 +208,7 @@ export class DemoRepository {
     if (actor.role === 'viewer') {
       const user = await getById<User>('users', actor.userId);
       const allowed = new Set(user?.allowedRecipeIds || []);
-      if (recipe.status !== 'Approved' || !allowed.has(recipe.recipeId)) {
+      if (recipe.status !== 'Published' || !allowed.has(recipe.recipeId)) {
         throw new DemoError('Forbidden', 'Bạn không có quyền truy cập công thức này');
       }
     }
@@ -220,9 +222,9 @@ export class DemoRepository {
       code: string;
       name: string;
       description?: string;
-      targetYield?: number;
-      yieldUnit?: string;
-      sourceRecipeId?: string;
+      targetYield?: number | null;
+      yieldUnit?: string | null;
+      primaryMediaAssetId?: string;
       ingredients: RecipeVersion['ingredients'];
       steps: RecipeVersion['steps'];
     }
@@ -248,14 +250,13 @@ export class DemoRepository {
       recipeId,
       versionNumber: 1,
       versionLabel: 'v1.0',
-      revision: 1,
       status: 'Draft',
       name: data.name.trim(),
       code: data.code.trim().toUpperCase(),
       description: data.description || '',
-      targetYield: data.targetYield || 1,
-      yieldUnit: data.yieldUnit || 'ly (500ml)',
-      sourceRecipeId: data.sourceRecipeId,
+      targetYield: data.targetYield ?? null,
+      yieldUnit: data.yieldUnit ?? null,
+      primaryMediaAssetId: data.primaryMediaAssetId,
       ingredients: data.ingredients || [],
       steps: data.steps || [],
       creatorId: actor.userId,
@@ -276,7 +277,7 @@ export class DemoRepository {
     actor: SessionInfo,
     versionId: string,
     data: Partial<RecipeVersion>,
-    expectedRevision?: number
+    _expectedRevision: number
   ): Promise<RecipeVersion> {
     const current = await getById<RecipeVersion>('recipes', versionId);
     if (!current) throw new DemoError('NotFound', 'Không tìm thấy công thức');
@@ -292,7 +293,6 @@ export class DemoRepository {
       recipeId: current.recipeId,
       versionNumber: current.versionNumber,
       versionLabel: current.versionLabel,
-      revision: current.revision + 1,
       code: data.code ? data.code.trim().toUpperCase() : current.code,
       name: data.name ? data.name.trim() : current.name,
       updatedAt: new Date().toISOString(),
@@ -301,17 +301,16 @@ export class DemoRepository {
     await putRecord('recipes', updated);
     await this.logAudit(actor.email, actor.role, 'SAVE_DRAFT', 'recipe', versionId, {
       code: updated.code,
-      revision: updated.revision,
     });
     return updated;
   }
 
-  async submitRecipeForApproval(actor: SessionInfo, versionId: string): Promise<RecipeVersion> {
+  async publishRecipe(actor: SessionInfo, versionId: string): Promise<RecipeVersion> {
     const current = await getById<RecipeVersion>('recipes', versionId);
     if (!current) throw new DemoError('NotFound', 'Không tìm thấy công thức');
 
     if (current.status !== 'Draft') {
-      throw new DemoError('Conflict', 'Chỉ công thức trạng thái Nháp mới có thể gửi phê duyệt');
+      throw new DemoError('Conflict', 'Chỉ công thức trạng thái Nháp mới có thể phát hành');
     }
 
     if (!current.ingredients || current.ingredients.length === 0) {
@@ -324,126 +323,20 @@ export class DemoRepository {
 
     const updated: RecipeVersion = {
       ...current,
-      status: 'PendingApproval',
-      revision: current.revision + 1,
-      submittedAt: new Date().toISOString(),
+      status: 'Published',
+      publishedAt: new Date().toISOString(),
+      publishedByUserId: actor.userId,
       updatedAt: new Date().toISOString(),
     };
 
     await putRecord('recipes', updated);
-    await this.logAudit(actor.email, actor.role, 'SUBMIT_RECIPE', 'recipe', versionId, {
+    await this.logAudit(actor.email, actor.role, 'PUBLISH_RECIPE', 'recipe', versionId, {
       code: updated.code,
     });
     return updated;
   }
 
-  async approveRecipe(actor: SessionInfo, versionId: string, comment = ''): Promise<RecipeVersion> {
-    if (!actor.canApprove) {
-      throw new DemoError('Forbidden', 'Bạn không có quyền phê duyệt công thức (canApprove required)');
-    }
-
-    const current = await getById<RecipeVersion>('recipes', versionId);
-    if (!current) throw new DemoError('NotFound', 'Không tìm thấy công thức');
-
-    if (current.status !== 'PendingApproval') {
-      throw new DemoError('Conflict', 'Chỉ công thức đang Chờ duyệt mới có thể phê duyệt');
-    }
-
-    if (current.creatorEmail === actor.email) {
-      throw new DemoError('Forbidden', 'Người tạo công thức không được tự phê duyệt chính mình');
-    }
-
-    const updated: RecipeVersion = {
-      ...current,
-      status: 'Approved',
-      revision: current.revision + 1,
-      reviewedAt: new Date().toISOString(),
-      reviewerId: actor.userId,
-      reviewerComment: comment.trim(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    await putRecord('recipes', updated);
-    await this.logAudit(actor.email, actor.role, 'APPROVE_RECIPE', 'recipe', versionId, {
-      code: updated.code,
-      comment: updated.reviewerComment,
-    });
-    return updated;
-  }
-
-  async returnRecipe(actor: SessionInfo, versionId: string, reason: string): Promise<RecipeVersion> {
-    if (!actor.canApprove) {
-      throw new DemoError('Forbidden', 'Bạn không có quyền từ chối/trả về công thức');
-    }
-
-    if (!reason.trim()) {
-      throw new DemoError('Validation', 'Bắt buộc phải nhập lý do khi yêu cầu chỉnh sửa/trả về');
-    }
-
-    const current = await getById<RecipeVersion>('recipes', versionId);
-    if (!current) throw new DemoError('NotFound', 'Không tìm thấy công thức');
-
-    if (current.status !== 'PendingApproval') {
-      throw new DemoError('Conflict', 'Chỉ công thức đang Chờ duyệt mới có thể trả về');
-    }
-
-    const updated: RecipeVersion = {
-      ...current,
-      status: 'Draft',
-      revision: current.revision + 1,
-      reviewerComment: reason.trim(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    await putRecord('recipes', updated);
-    await this.logAudit(actor.email, actor.role, 'RETURN_RECIPE', 'recipe', versionId, {
-      code: updated.code,
-      reason: updated.reviewerComment,
-    });
-    return updated;
-  }
-
-  async createNextVersion(actor: SessionInfo, approvedVersionId: string): Promise<RecipeVersion> {
-    if (actor.role !== 'rnd') {
-      throw new DemoError('Forbidden', 'Chỉ chuyên viên R&D mới có quyền tạo phiên bản mới');
-    }
-
-    const approved = await getById<RecipeVersion>('recipes', approvedVersionId);
-    if (!approved || approved.status !== 'Approved') {
-      throw new DemoError('Conflict', 'Chỉ có thể tạo phiên bản mới từ công thức đã Đã duyệt (Approved)');
-    }
-
-    const all = await getAll<RecipeVersion>('recipes');
-    const existingVersions = all.filter((r) => r.recipeId === approved.recipeId);
-    const nextNumber = Math.max(...existingVersions.map((r) => r.versionNumber), 1) + 1;
-
-    const newVersionId = `ver_${approved.recipeId}_v${nextNumber}`;
-    const newVersion: RecipeVersion = {
-      ...approved,
-      id: newVersionId,
-      versionNumber: nextNumber,
-      versionLabel: `v${nextNumber}.0`,
-      revision: 1,
-      status: 'Draft',
-      submittedAt: undefined,
-      reviewedAt: undefined,
-      reviewerId: undefined,
-      reviewerComment: undefined,
-      creatorId: actor.userId,
-      creatorEmail: actor.email,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    await putRecord('recipes', newVersion);
-    await this.logAudit(actor.email, actor.role, 'CREATE_NEW_VERSION', 'recipe', newVersionId, {
-      code: newVersion.code,
-      versionLabel: newVersion.versionLabel,
-    });
-    return newVersion;
-  }
-
-  async createRecipeVariant(
+  async copyRecipe(
     actor: SessionInfo,
     sourceVersionId: string,
     newCode: string,
@@ -455,10 +348,10 @@ export class DemoRepository {
     return this.createRecipe(actor, {
       code: newCode,
       name: newName,
-      description: `Biến thể tạo từ ${source.code} (${source.name})`,
+      description: source.description,
       targetYield: source.targetYield,
       yieldUnit: source.yieldUnit,
-      sourceRecipeId: source.recipeId,
+      primaryMediaAssetId: source.primaryMediaAssetId,
       ingredients: JSON.parse(JSON.stringify(source.ingredients)),
       steps: JSON.parse(JSON.stringify(source.steps)),
     });
@@ -761,8 +654,8 @@ export class DemoRepository {
     pdfBlob: Blob
   ): Promise<PublishedDocument> {
     const recipe = await getById<RecipeVersion>('recipes', sourceVersionId);
-    if (!recipe || recipe.status !== 'Approved') {
-      throw new DemoError('Conflict', 'Chỉ công thức đã Phê Duyệt (Approved) mới có thể xuất bản tài liệu chính thức');
+    if (!recipe || recipe.status !== 'Published') {
+      throw new DemoError('Conflict', 'Chỉ công thức đã phát hành mới có thể xuất bản tài liệu chính thức');
     }
 
     const draft = await this.getDocumentDraft(sourceVersionId);
@@ -811,16 +704,11 @@ export class DemoRepository {
       throw new DemoError('Conflict', 'Email này đã tồn tại trong hệ thống');
     }
 
-    if (data.role === 'viewer' && data.canApprove) {
-      throw new DemoError('Validation', 'Không thể cấp quyền Phê duyệt (canApprove) cho vai trò Viewer');
-    }
-
     const newUser: User = {
       id: `user_${Date.now()}`,
       email: data.email.trim().toLowerCase(),
       fullName: data.fullName.trim(),
       role: data.role,
-      canApprove: data.canApprove || false,
       isLocked: data.isLocked || false,
       allowedRecipeIds: data.allowedRecipeIds || [],
       createdAt: new Date().toISOString(),
@@ -839,10 +727,6 @@ export class DemoRepository {
 
     const user = await getById<User>('users', id);
     if (!user) throw new DemoError('NotFound', 'Không tìm thấy người dùng');
-
-    if (data.role === 'viewer' && data.canApprove) {
-      throw new DemoError('Validation', 'Không thể cấp quyền Phê duyệt cho vai trò Viewer');
-    }
 
     const updated: User = {
       ...user,

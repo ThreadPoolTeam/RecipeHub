@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace RecipeHub.Recipe.Domain.Entities;
 
 /// <summary>
-/// PostgreSQL migration cần partial unique index trên recipe_id WHERE status IN (draft, pending_approval, returned). Service phải chặn update/delete phiên bản approved và tự tăng row_version.
+/// A recipe has at most one draft. Published versions are immutable.
 /// </summary>
 public partial class RecipeVersion
 {
@@ -17,17 +17,12 @@ public partial class RecipeVersion
     public Guid? PrimaryMediaAssetRef { get; set; }
 
     /// <summary>
-    /// Phiên bản nguồn khi revision hoặc clone.
-    /// </summary>
-    public long? BasedOnVersionId { get; set; }
-
-    /// <summary>
     /// Số phiên bản tăng dần trong từng Recipe.
     /// </summary>
     public int VersionNumber { get; set; }
 
     /// <summary>
-    /// draft, pending_approval, returned, approved hoặc cancelled.
+    /// draft hoặc published.
     /// </summary>
     public string Status { get; set; } = null!;
 
@@ -49,17 +44,15 @@ public partial class RecipeVersion
 
     public DateTime UpdatedAt { get; set; }
 
-    public virtual RecipeVersion? BasedOnVersion { get; set; }
+    public DateTime? PublishedAt { get; set; }
 
-    public virtual ICollection<RecipeVersion> InverseBasedOnVersion { get; set; } = new List<RecipeVersion>();
+    public Guid? PublishedByUserRef { get; set; }
 
     public virtual Recipe Recipe { get; set; } = null!;
 
     public virtual ICollection<RecipeIngredient> RecipeIngredients { get; set; } = new List<RecipeIngredient>();
 
     public virtual ICollection<RecipeStep> RecipeSteps { get; set; } = new List<RecipeStep>();
-
-    public virtual ICollection<RecipeVersionReview> RecipeVersionReviews { get; set; } = new List<RecipeVersionReview>();
 
     public virtual RecipeYield? RecipeYield { get; set; }
 }

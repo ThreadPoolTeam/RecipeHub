@@ -93,122 +93,25 @@ public sealed class RecipesController : ControllerBase
         CancellationToken cancellationToken) => Ok(await _recipeService.ActivateAsync(
             publicId, RequestActor.GetUserId(HttpContext), cancellationToken));
 
-    [HttpPost("{publicId:guid}/clone")]
-    public async Task<ActionResult<RecipeDetailResponse>> Clone(
+    [HttpPost("{publicId:guid}/copy")]
+    public async Task<ActionResult<RecipeDetailResponse>> Copy(
         Guid publicId,
-        [FromBody] CloneRecipeRequest request,
+        [FromBody] CopyRecipeRequest request,
         CancellationToken cancellationToken)
     {
-        var recipe = await _recipeService.CloneAsync(
+        var recipe = await _recipeService.CopyAsync(
             publicId, request, RequestActor.GetUserId(HttpContext), cancellationToken);
         return CreatedAtAction(nameof(GetById), new { publicId = recipe.Id }, recipe);
     }
 
-    [HttpPost("{publicId:guid}/versions/{versionId:guid}/submit")]
-    public async Task<ActionResult<RecipeVersionReviewResponse>> Submit(
+    [HttpPost("{publicId:guid}/versions/{versionId:guid}/publish")]
+    public async Task<ActionResult<RecipeDetailResponse>> Publish(
         Guid publicId,
         Guid versionId,
-        [FromBody] ReviewRecipeVersionRequest request,
         CancellationToken cancellationToken)
     {
-        var review = await _recipeService.SubmitAsync(
-            publicId, versionId, request, RequestActor.GetUserId(HttpContext), cancellationToken);
-        return Ok(review);
-    }
-
-    [HttpGet("{publicId:guid}/versions/{versionId:guid}/reviews")]
-    public async Task<ActionResult<IReadOnlyList<RecipeVersionReviewResponse>>> GetReviews(
-        Guid publicId,
-        Guid versionId,
-        CancellationToken cancellationToken) => Ok(await _recipeService.GetReviewsAsync(
-            publicId, versionId, cancellationToken));
-
-    [HttpPost("{publicId:guid}/versions/{versionId:guid}/approve")]
-    public async Task<ActionResult<RecipeVersionReviewResponse>> Approve(
-        Guid publicId,
-        Guid versionId,
-        [FromBody] ReviewRecipeVersionRequest request,
-        CancellationToken cancellationToken)
-    {
-        var review = await _recipeService.ApproveAsync(
-            publicId, versionId, request, RequestActor.GetUserId(HttpContext), cancellationToken);
-        return Ok(review);
-    }
-
-    [HttpPost("{publicId:guid}/versions/{versionId:guid}/return")]
-    public async Task<ActionResult<RecipeVersionReviewResponse>> Return(
-        Guid publicId,
-        Guid versionId,
-        [FromBody] ReviewRecipeVersionRequest request,
-        CancellationToken cancellationToken)
-    {
-        var review = await _recipeService.ReturnAsync(
-            publicId, versionId, request, RequestActor.GetUserId(HttpContext), cancellationToken);
-        return Ok(review);
-    }
-
-    [HttpPut("{publicId:guid}/versions/{versionId:guid}/primary-image")]
-    public async Task<ActionResult<RecipeDetailResponse>> SetPrimaryImage(
-        Guid publicId,
-        Guid versionId,
-        [FromBody] SetPrimaryImageRequest request,
-        CancellationToken cancellationToken)
-    {
-        var response = await _recipeService.SetPrimaryImageAsync(
-            publicId, versionId, request, RequestActor.GetUserId(HttpContext), cancellationToken);
-        return Ok(response);
-    }
-
-    [HttpDelete("{publicId:guid}/versions/{versionId:guid}/primary-image")]
-    public async Task<IActionResult> RemovePrimaryImage(
-        Guid publicId,
-        Guid versionId,
-        [FromBody] RemovePrimaryImageRequest request,
-        CancellationToken cancellationToken)
-    {
-        await _recipeService.RemovePrimaryImageAsync(
-            publicId, versionId, request, RequestActor.GetUserId(HttpContext), cancellationToken);
-        return NoContent();
-    }
-
-    [HttpPost("{publicId:guid}/versions/{versionId:guid}/steps/{stepId:guid}/media")]
-    public async Task<ActionResult<RecipeStepMediaDetailResponse>> AddStepMedia(
-        Guid publicId,
-        Guid versionId,
-        Guid stepId,
-        [FromBody] CreateRecipeStepMediaRequest request,
-        CancellationToken cancellationToken)
-    {
-        var response = await _recipeService.AddStepMediaAsync(
-            publicId, versionId, stepId, request, RequestActor.GetUserId(HttpContext), cancellationToken);
-        return Created($"/api/v1/recipes/{publicId}/versions/{versionId}/steps/{stepId}/media/{response.LinkId}", response);
-    }
-
-    [HttpPatch("{publicId:guid}/versions/{versionId:guid}/steps/{stepId:guid}/media/{linkId:guid}")]
-    public async Task<ActionResult<RecipeStepMediaDetailResponse>> UpdateStepMedia(
-        Guid publicId,
-        Guid versionId,
-        Guid stepId,
-        Guid linkId,
-        [FromBody] UpdateRecipeStepMediaRequest request,
-        CancellationToken cancellationToken)
-    {
-        var response = await _recipeService.UpdateStepMediaAsync(
-            publicId, versionId, stepId, linkId, request, RequestActor.GetUserId(HttpContext), cancellationToken);
-        return Ok(response);
-    }
-
-    [HttpDelete("{publicId:guid}/versions/{versionId:guid}/steps/{stepId:guid}/media/{linkId:guid}")]
-    public async Task<IActionResult> RemoveStepMedia(
-        Guid publicId,
-        Guid versionId,
-        Guid stepId,
-        Guid linkId,
-        [FromQuery] long expectedRowVersion = 0,
-        CancellationToken cancellationToken = default)
-    {
-        await _recipeService.RemoveStepMediaAsync(
-            publicId, versionId, stepId, linkId, expectedRowVersion, RequestActor.GetUserId(HttpContext), cancellationToken);
-        return NoContent();
+        var recipe = await _recipeService.PublishAsync(
+            publicId, versionId, RequestActor.GetUserId(HttpContext), cancellationToken);
+        return Ok(recipe);
     }
 }

@@ -34,7 +34,7 @@ export default function AdminPage() {
           repo.getIngredients('', 'all', false),
           repo.getAuditLogs(),
           repo.getMedia(),
-          repo.getRecipes({ role: 'admin', userId: 'admin', email: 'admin@recipehub.demo', fullName: 'Administrator', canApprove: true, lastActiveAt: Date.now() }),
+          repo.getRecipes({ role: 'admin', userId: 'admin', email: 'admin@recipehub.demo', fullName: 'Administrator', lastActiveAt: Date.now() }),
         ]);
 
         if (mounted) {
@@ -63,7 +63,7 @@ export default function AdminPage() {
   const cards = [
     {
       title: 'Quản lý người dùng',
-      desc: 'Phân quyền tài khoản Demo (Admin, R&D, Viewer), thiết lập quyền phê duyệt và giới hạn công thức.',
+      desc: 'Phân quyền tài khoản Demo (Admin, R&D, Viewer) và giới hạn công thức được phép tra cứu.',
       href: '/admin/users',
       icon: Users,
       count: `${stats.userCount} người dùng`,
@@ -87,7 +87,7 @@ export default function AdminPage() {
     },
     {
       title: 'Nhật ký kiểm toán (Audit Trail)',
-      desc: 'Truy vết toàn diện mọi hành động: tạo/sửa công thức, phê duyệt SOP, khóa tài khoản, xuất bản tài liệu.',
+      desc: 'Truy vết toàn diện mọi hành động: tạo, sửa, phát hành công thức, khóa tài khoản và xuất bản tài liệu.',
       href: '/admin/logs',
       icon: ShieldCheck,
       count: `${stats.auditCount} sự kiện ghi nhận`,

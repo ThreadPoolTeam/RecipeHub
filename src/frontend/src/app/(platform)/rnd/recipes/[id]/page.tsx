@@ -8,12 +8,11 @@ import {
   Thermometer,
   FileText,
   CheckCircle2,
-  AlertTriangle,
   ArrowLeft,
   Pencil,
   Send,
   RefreshCw,
-  GitFork,
+  Copy,
   Archive,
   FileDown,
 } from 'lucide-react';
@@ -37,18 +36,16 @@ export default function RecipeDetailPage() {
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   // Action Loading
-  const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
-  const [isCreatingNextVer, setIsCreatingNextVer] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
   const [isArchiveConfirmOpen, setIsArchiveConfirmOpen] = useState(false);
 
-  // Variant Dialog state
-  const [isVariantDialogOpen, setIsVariantDialogOpen] = useState(false);
-  const [variantCode, setVariantCode] = useState('');
-  const [variantName, setVariantName] = useState('');
-  const [variantSubmitting, setVariantSubmitting] = useState(false);
-  const [variantError, setVariantError] = useState<string | null>(null);
+  const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
+  const [copyCode, setCopyCode] = useState('');
+  const [copyName, setCopyName] = useState('');
+  const [copySubmitting, setCopySubmitting] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
 
   // Load Recipe Data
   useEffect(() => {
@@ -92,77 +89,66 @@ export default function RecipeDetailPage() {
     };
   }, [session, repo, id, dataVersion]);
 
-  // Action: Submit for approval
-  const handleSubmitApproval = async () => {
+  const handlePublish = async () => {
     if (!session || !recipe) return;
+    if (recipe.targetYield === null || !recipe.yieldUnit) {
+      setErrorMsg('Hãy thiết lập sản lượng và đơn vị thành phẩm trước khi phát hành.');
+      return;
+    }
     if (recipe.ingredients.length === 0 || recipe.steps.length === 0) {
-      setErrorMsg('Công thức cần có ít nhất 1 nguyên liệu và 1 bước quy trình để gửi duyệt.');
+      setErrorMsg('Công thức cần có ít nhất 1 nguyên liệu và 1 bước quy trình để phát hành.');
+      return;
+    }
+    if (recipe.steps.some((step) => !step.title.trim() || !step.instruction.trim())) {
+      setErrorMsg('Mỗi bước cần có tên và nội dung thao tác trước khi phát hành.');
       return;
     }
 
     try {
-      setIsSubmittingApproval(true);
+      setIsPublishing(true);
       setErrorMsg(null);
-      const updated = await repo.submitRecipeForApproval(session, recipe.id);
+      const updated = await repo.publishRecipe(session, recipe.id);
       setRecipe(updated);
       touch();
-      setActionSuccess('Đã gửi công thức lên hàng đợi phê duyệt thành công!');
+      setActionSuccess('Đã phát hành công thức thành công.');
     } catch (err: unknown) {
       const e = err as Error;
-      setErrorMsg(e.message || 'Lỗi khi gửi phê duyệt.');
+      setErrorMsg(e.message || 'Không thể phát hành công thức.');
     } finally {
-      setIsSubmittingApproval(false);
+      setIsPublishing(false);
     }
   };
 
-  // Action: Create Next Version (v2.0, v3.0...)
-  const handleCreateNextVersion = async () => {
-    if (!session || !recipe) return;
-    try {
-      setIsCreatingNextVer(true);
-      setErrorMsg(null);
-      const newVer = await repo.createNextVersion(session, recipe.id);
-      touch();
-      router.push(`/rnd/recipes/${newVer.id}/edit`);
-    } catch (err: unknown) {
-      const e = err as Error;
-      setErrorMsg(e.message || 'Không thể tạo phiên bản mới.');
-    } finally {
-      setIsCreatingNextVer(false);
-    }
-  };
-
-  // Action: Create Variant
-  const handleOpenVariantDialog = () => {
+  const handleOpenCopyDialog = () => {
     if (!recipe) return;
-    setVariantCode(`${recipe.code}-VAR`);
-    setVariantName(`${recipe.name} (Biến thể)`);
-    setVariantError(null);
-    setIsVariantDialogOpen(true);
+    setCopyCode(`${recipe.code}-COPY`);
+    setCopyName(`${recipe.name} (Bản sao)`);
+    setCopyError(null);
+    setIsCopyDialogOpen(true);
   };
 
-  const handleConfirmVariant = async () => {
+  const handleConfirmCopy = async () => {
     if (!session || !recipe) return;
-    const cleanCode = variantCode.trim().toUpperCase();
-    const cleanName = variantName.trim();
+    const cleanCode = copyCode.trim().toUpperCase();
+    const cleanName = copyName.trim();
 
     if (!cleanCode || !cleanName) {
-      setVariantError('Vui lòng nhập đầy đủ mã và tên cho biến thể.');
+      setCopyError('Vui lòng nhập đầy đủ mã và tên cho bản sao.');
       return;
     }
 
     try {
-      setVariantSubmitting(true);
-      setVariantError(null);
-      const variant = await repo.createRecipeVariant(session, recipe.id, cleanCode, cleanName);
+      setCopySubmitting(true);
+      setCopyError(null);
+      const copiedRecipe = await repo.copyRecipe(session, recipe.id, cleanCode, cleanName);
       touch();
-      setIsVariantDialogOpen(false);
-      router.push(`/rnd/recipes/${variant.id}`);
+      setIsCopyDialogOpen(false);
+      router.push(`/rnd/recipes/${copiedRecipe.id}`);
     } catch (err: unknown) {
       const e = err as Error;
-      setVariantError(e.message || 'Không thể tạo biến thể.');
+      setCopyError(e.message || 'Không thể sao chép công thức.');
     } finally {
-      setVariantSubmitting(false);
+      setCopySubmitting(false);
     }
   };
 
@@ -248,39 +234,28 @@ export default function RecipeDetailPage() {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
-          {recipe.status === 'Draft' && (
-            <>
-              <Link href={`/rnd/recipes/${recipe.id}/edit`}>
-                <Button variant="secondary" size="sm">
-                  <Pencil className="w-3.5 h-3.5 mr-1" /> Chỉnh sửa
-                </Button>
-              </Link>
-              <Button
-                variant="gold"
-                size="sm"
-                isLoading={isSubmittingApproval}
-                onClick={handleSubmitApproval}
-                title="Gửi bản nháp lên cấp quản lý phê duyệt"
-              >
-                <Send className="w-3.5 h-3.5 mr-1" /> Gửi duyệt
+          {recipe.status !== 'Archived' && (
+            <Link href={`/rnd/recipes/${recipe.id}/edit`}>
+              <Button variant="secondary" size="sm">
+                <Pencil className="w-3.5 h-3.5 mr-1" /> Chỉnh sửa
               </Button>
-            </>
+            </Link>
           )}
 
-          {recipe.status === 'Approved' && (
+          {recipe.status === 'Draft' && (
             <Button
               variant="gold"
               size="sm"
-              isLoading={isCreatingNextVer}
-              onClick={handleCreateNextVersion}
-              title="Tạo phiên bản nâng cấp tiếp theo"
+              isLoading={isPublishing}
+              onClick={handlePublish}
+              title="Phát hành công thức để sử dụng"
             >
-              <RefreshCw className="w-3.5 h-3.5 mr-1" /> Tạo bản mới
+              <Send className="w-3.5 h-3.5 mr-1" /> Phát hành
             </Button>
           )}
 
-          <Button variant="secondary" size="sm" onClick={handleOpenVariantDialog} title="Nhân bản công thức làm biến thể">
-            <GitFork className="w-3.5 h-3.5 mr-1 text-[#706E68]" /> Tạo biến thể
+          <Button variant="secondary" size="sm" onClick={handleOpenCopyDialog} title="Tạo một công thức độc lập từ dữ liệu hiện tại">
+            <Copy className="w-3.5 h-3.5 mr-1 text-[#706E68]" /> Sao chép
           </Button>
 
           <Link href={`/rnd/recipes/${recipe.id}/document`}>
@@ -343,22 +318,6 @@ export default function RecipeDetailPage() {
         </div>
       )}
 
-      {/* Reviewer Comment Box (Amber Highlight for Returned/Draft feedback) */}
-      {recipe.reviewerComment && (
-        <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-1">
-          <div className="flex items-center gap-2 text-amber-900 font-semibold text-sm">
-            <AlertTriangle className="w-4 h-4 text-amber-600" /> Ý kiến thẩm định từ người phê duyệt
-          </div>
-          <p className="text-sm text-amber-800 font-mono whitespace-pre-wrap pl-6">
-            &quot;{recipe.reviewerComment}&quot;
-          </p>
-          {recipe.reviewedAt && (
-            <div className="text-[11px] text-amber-700/80 pl-6 pt-0.5">
-              Phản hồi lúc: {new Date(recipe.reviewedAt).toLocaleString('vi-VN')}
-            </div>
-          )}
-        </div>
-      )}
       <div className="bg-white border border-[#E8E2D9] rounded-xl p-5 space-y-3 shadow-xs">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-[#706E68]">
           Thông số kỹ thuật
@@ -371,7 +330,7 @@ export default function RecipeDetailPage() {
           <div>
             <span className="text-xs text-[#8C887F] block">Sản lượng chuẩn</span>
             <span className="font-semibold text-[#1A1917]">
-              {recipe.targetYield} {recipe.yieldUnit}
+              {recipe.targetYield !== null && recipe.yieldUnit ? `${recipe.targetYield} ${recipe.yieldUnit}` : 'Chưa thiết lập'}
             </span>
           </div>
           <div>
@@ -379,8 +338,10 @@ export default function RecipeDetailPage() {
             <span className="font-mono text-[#706E68] text-xs">{recipe.creatorEmail}</span>
           </div>
           <div>
-            <span className="text-xs text-[#8C887F] block">Lần sửa đổi</span>
-            <span className="font-mono text-[#706E68] text-xs">rev #{recipe.revision}</span>
+            <span className="text-xs text-[#8C887F] block">Thời điểm phát hành</span>
+            <span className="font-mono text-[#706E68] text-xs">
+              {recipe.publishedAt ? new Date(recipe.publishedAt).toLocaleString('vi-VN') : 'Chưa phát hành'}
+            </span>
           </div>
         </div>
 
@@ -396,7 +357,7 @@ export default function RecipeDetailPage() {
         <h2 className="text-xs font-semibold uppercase tracking-wider text-[#706E68] flex items-center justify-between">
           <span>Định lượng nguyên liệu ({recipe.ingredients.length})</span>
           <span className="text-xs font-normal normal-case text-[#8C887F]">
-            Định mức: {recipe.targetYield} {recipe.yieldUnit}
+            Định mức: {recipe.targetYield !== null && recipe.yieldUnit ? `${recipe.targetYield} ${recipe.yieldUnit}` : 'Chưa thiết lập'}
           </span>
         </h2>
 
@@ -529,33 +490,33 @@ export default function RecipeDetailPage() {
         )}
       </div>
 
-      {/* Create Variant Dialog */}
+      {/* Copy Recipe Dialog */}
       <Dialog
-        isOpen={isVariantDialogOpen}
+        isOpen={isCopyDialogOpen}
         onClose={() => {
-          if (!variantSubmitting) setIsVariantDialogOpen(false);
+          if (!copySubmitting) setIsCopyDialogOpen(false);
         }}
-        title={`Tạo Biến Thể Mới Từ ${recipe.code}`}
-        description="Biến thể sẽ kế thừa toàn bộ nguyên liệu và các bước hiện tại nhưng tạo mã và phiên bản độc lập để thử nghiệm nhánh sản phẩm mới."
-        confirmLabel="Tạo Biến Thể"
+        title={`Sao Chép Công Thức ${recipe.code}`}
+        description="Bản sao kế thừa dữ liệu hiện tại nhưng là một công thức độc lập với mã và tên riêng."
+        confirmLabel="Tạo Bản Sao"
         confirmVariant="gold"
-        isConfirming={variantSubmitting}
-        onConfirm={handleConfirmVariant}
+        isConfirming={copySubmitting}
+        onConfirm={handleConfirmCopy}
       >
         <div className="space-y-4 py-2">
-          {variantError && <Alert type="error" message={variantError} />}
+          {copyError && <Alert type="error" message={copyError} />}
           <TextInput
-            label="Mã Biến Thể Mới *"
-            value={variantCode}
-            onChange={(e) => setVariantCode(e.target.value.toUpperCase())}
-            placeholder="VD: REC-OLO-VAR-HOT"
+            label="Mã Công Thức Mới *"
+            value={copyCode}
+            onChange={(e) => setCopyCode(e.target.value.toUpperCase())}
+            placeholder="VD: REC-OLO-COPY"
             helper="Mã viết hoa, không trùng lặp"
           />
           <TextInput
-            label="Tên Biến Thể *"
-            value={variantName}
-            onChange={(e) => setVariantName(e.target.value)}
-            placeholder="VD: Trà Ô Long Sữa Nóng (Biến Thể Mùa Đông)"
+            label="Tên Công Thức Mới *"
+            value={copyName}
+            onChange={(e) => setCopyName(e.target.value)}
+            placeholder="VD: Trà Ô Long Sữa Nóng"
           />
         </div>
       </Dialog>

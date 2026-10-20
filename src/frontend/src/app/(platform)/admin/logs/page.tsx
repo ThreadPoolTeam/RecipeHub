@@ -114,7 +114,7 @@ export default function AdminAuditLogsPage() {
           </div>
           <h1 className="text-2xl font-bold text-[#1A1917]">Nhật ký Truy vết Hoạt động (Audit Logs)</h1>
           <p className="text-[#706E68] text-xs mt-1">
-            Ghi nhận toàn bộ thao tác đăng nhập, chỉnh sửa công thức, phê duyệt SOP và thay đổi thiết lập hệ thống.
+            Ghi nhận toàn bộ thao tác đăng nhập, chỉnh sửa, phát hành công thức và thay đổi thiết lập hệ thống.
           </p>
         </div>
         <div className="text-xs text-[#706E68] font-mono">

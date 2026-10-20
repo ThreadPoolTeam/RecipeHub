@@ -20,6 +20,5 @@ public interface IRecipeRepository
     Task<RecipeEntity?> GetRecipeAsync(Guid publicId, CancellationToken cancellationToken);
     Task<bool> RecipeCodeExistsAsync(string normalizedCode, Guid? excludedPublicId, CancellationToken cancellationToken);
     Task AddRecipeAsync(RecipeEntity recipe, CancellationToken cancellationToken);
-    Task AddVersionReviewAsync(RecipeVersionReview review, CancellationToken cancellationToken);
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { Check } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { User, Role } from '@/lib/demo/types';
 import { Button, TextInput, Select, Alert, SearchInput } from '@/components/workspace/fields';
@@ -26,7 +25,6 @@ export default function AdminUsersPage() {
   const [newEmail, setNewEmail] = useState('');
   const [newFullName, setNewFullName] = useState('');
   const [newRole, setNewRole] = useState<Role>('rnd');
-  const [newCanApprove, setNewCanApprove] = useState(false);
   const [newAllowedRecipes, setNewAllowedRecipes] = useState<string[]>([]);
   const [createSubmitting, setCreateSubmitting] = useState(false);
 
@@ -34,7 +32,6 @@ export default function AdminUsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editFullName, setEditFullName] = useState('');
   const [editRole, setEditRole] = useState<Role>('rnd');
-  const [editCanApprove, setEditCanApprove] = useState(false);
   const [editAllowedRecipes, setEditAllowedRecipes] = useState<string[]>([]);
   const [editSubmitting, setEditSubmitting] = useState(false);
 
@@ -47,7 +44,7 @@ export default function AdminUsersPage() {
       const [userList, recipeResult] = await Promise.all([
         repo.getUsers(),
         session
-          ? repo.getRecipes(session, { status: 'Approved', pageSize: 100 })
+          ? repo.getRecipes(session, { status: 'Published', pageSize: 100 })
           : Promise.resolve({ items: [], total: 0 }),
       ]);
       setUsers(userList);
@@ -82,11 +79,6 @@ export default function AdminUsersPage() {
       setErrorMsg('Vui lòng điền đầy đủ Email và Họ tên');
       return;
     }
-    if (newRole === 'viewer' && newCanApprove) {
-      setErrorMsg('Quy tắc nghiệp vụ: Vai trò Viewer không thể có quyền Phê duyệt (canApprove)');
-      return;
-    }
-
     try {
       setCreateSubmitting(true);
       setErrorMsg(null);
@@ -94,7 +86,6 @@ export default function AdminUsersPage() {
         email: newEmail.trim().toLowerCase(),
         fullName: newFullName.trim(),
         role: newRole,
-        canApprove: newRole === 'viewer' ? false : newCanApprove,
         isLocked: false,
         allowedRecipeIds: newRole === 'viewer' ? newAllowedRecipes : [],
       });
@@ -104,7 +95,6 @@ export default function AdminUsersPage() {
       setNewEmail('');
       setNewFullName('');
       setNewRole('rnd');
-      setNewCanApprove(false);
       setNewAllowedRecipes([]);
       touch();
       await loadData();
@@ -120,7 +110,6 @@ export default function AdminUsersPage() {
     setEditingUser(u);
     setEditFullName(u.fullName);
     setEditRole(u.role);
-    setEditCanApprove(u.canApprove);
     setEditAllowedRecipes(u.allowedRecipeIds || []);
     setErrorMsg(null);
   };
@@ -132,18 +121,12 @@ export default function AdminUsersPage() {
       setErrorMsg('Họ tên không được để trống');
       return;
     }
-    if (editRole === 'viewer' && editCanApprove) {
-      setErrorMsg('Không thể cấp quyền Phê duyệt cho vai trò Viewer');
-      return;
-    }
-
     try {
       setEditSubmitting(true);
       setErrorMsg(null);
       await repo.updateUser(session, editingUser.id, {
         fullName: editFullName.trim(),
         role: editRole,
-        canApprove: editRole === 'viewer' ? false : editCanApprove,
         allowedRecipeIds: editRole === 'viewer' ? editAllowedRecipes : [],
       });
       setSuccessMsg(`Đã cập nhật thông tin tài khoản: ${editingUser.email}`);
@@ -269,23 +252,7 @@ export default function AdminUsersPage() {
           },
           {
             header: 'Vai trò (Role)',
-            render: (u) => <RoleBadge role={u.role} canApprove={u.canApprove} />,
-          },
-          {
-            header: 'Quyền phê duyệt',
-            render: (u) => (
-              <div>
-                {u.role === 'viewer' ? (
-                  <span className="text-xs text-zinc-400 italic">Không áp dụng (Viewer)</span>
-                ) : u.canApprove ? (
-                  <span className="inline-flex items-center gap-1 text-xs text-emerald-700 font-medium">
-                    <Check className="w-3.5 h-3.5" /> Có quyền duyệt SOP
-                  </span>
-                ) : (
-                  <span className="text-xs text-[#706E68]">Chỉ soạn thảo / Đọc</span>
-                )}
-              </div>
-            ),
+            render: (u) => <RoleBadge role={u.role} />,
           },
           {
             header: 'Phạm vi công thức',
@@ -364,9 +331,6 @@ export default function AdminUsersPage() {
             onChange={(e) => {
               const r = e.target.value as Role;
               setNewRole(r);
-              if (r === 'viewer') {
-                setNewCanApprove(false);
-              }
             }}
             options={[
               { label: 'R&D Specialist (Nghiên cứu & phát triển công thức)', value: 'rnd' },
@@ -375,27 +339,6 @@ export default function AdminUsersPage() {
             ]}
           />
 
-          {/* Toggle canApprove */}
-          <div className="p-3 bg-[#FAF9F5] border border-[#E8E2D9] rounded-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-xs font-semibold text-[#1A1917]">Cấp quyền Phê duyệt SOP (canApprove)</div>
-                <div className="text-[11px] text-[#706E68]">
-                  {newRole === 'viewer'
-                    ? 'Bị khóa: Viewer không thể duyệt SOP.'
-                    : 'Cho phép người dùng này duyệt hoặc từ chối các công thức ở trạng thái Chờ duyệt.'}
-                </div>
-              </div>
-              <input
-                type="checkbox"
-                disabled={newRole === 'viewer'}
-                checked={newCanApprove}
-                onChange={(e) => setNewCanApprove(e.target.checked)}
-                className="w-4 h-4 accent-[#C9A84C] cursor-pointer disabled:opacity-40"
-              />
-            </div>
-          </div>
-
           {/* Cho phép chọn recipeIds nếu là Viewer */}
           {newRole === 'viewer' && (
             <div className="p-3 bg-[#FAF9F5] border border-[#E8E2D9] rounded-lg space-y-2">
@@ -403,10 +346,10 @@ export default function AdminUsersPage() {
                 Phân quyền xem công thức (Viewer Scope)
               </div>
               <p className="text-[11px] text-[#706E68]">
-                Chọn danh sách công thức đã phê duyệt mà Barista này được quyền tra cứu:
+                Chọn danh sách công thức đã phát hành mà Barista này được quyền tra cứu:
               </p>
               {recipes.length === 0 ? (
-                <div className="text-xs text-amber-700">Chưa có công thức Approved nào trong hệ thống.</div>
+                <div className="text-xs text-amber-700">Chưa có công thức đã phát hành nào trong hệ thống.</div>
               ) : (
                 <div className="max-h-40 overflow-y-auto space-y-1.5 pr-2">
                   {recipes.map((rcp) => {
@@ -465,9 +408,6 @@ export default function AdminUsersPage() {
             onChange={(e) => {
               const r = e.target.value as Role;
               setEditRole(r);
-              if (r === 'viewer') {
-                setEditCanApprove(false);
-              }
             }}
             options={[
               { label: 'R&D Specialist', value: 'rnd' },
@@ -475,26 +415,6 @@ export default function AdminUsersPage() {
               { label: 'System Admin', value: 'admin' },
             ]}
           />
-
-          <div className="p-3 bg-[#FAF9F5] border border-[#E8E2D9] rounded-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-xs font-semibold text-[#1A1917]">Quyền Phê duyệt (canApprove)</div>
-                <div className="text-[11px] text-[#706E68]">
-                  {editRole === 'viewer'
-                    ? 'Bị khóa: Viewer không thể có quyền Phê duyệt.'
-                    : 'Quyền phê duyệt các bản nháp chờ duyệt trong quy trình R&D.'}
-                </div>
-              </div>
-              <input
-                type="checkbox"
-                disabled={editRole === 'viewer'}
-                checked={editCanApprove}
-                onChange={(e) => setEditCanApprove(e.target.checked)}
-                className="w-4 h-4 accent-[#C9A84C] cursor-pointer disabled:opacity-40"
-              />
-            </div>
-          </div>
 
           {editRole === 'viewer' && (
             <div className="p-3 bg-[#FAF9F5] border border-[#E8E2D9] rounded-lg space-y-2">
@@ -505,7 +425,7 @@ export default function AdminUsersPage() {
                 Chỉ định các công thức Barista này được phép mở và xem SOP:
               </p>
               {recipes.length === 0 ? (
-                <div className="text-xs text-amber-700">Chưa có công thức Approved nào.</div>
+                <div className="text-xs text-amber-700">Chưa có công thức đã phát hành nào.</div>
               ) : (
                 <div className="max-h-40 overflow-y-auto space-y-1.5 pr-2">
                   {recipes.map((rcp) => {

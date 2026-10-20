@@ -40,7 +40,9 @@ public sealed class RecipeRepository : IRecipeRepository
         if (!string.IsNullOrWhiteSpace(state))
         {
             var normalizedState = state.Trim().ToLowerInvariant();
-            versions = versions.Where(item => item.Recipe.State == normalizedState);
+            versions = normalizedState == "archived"
+                ? versions.Where(item => item.Recipe.ArchivedAt != null)
+                : versions.Where(item => item.Recipe.ArchivedAt == null);
         }
 
         if (!string.IsNullOrWhiteSpace(versionStatus))
@@ -84,7 +86,6 @@ public sealed class RecipeRepository : IRecipeRepository
         Guid versionPublicId,
         CancellationToken cancellationToken) =>
         IncludeVersionGraph(_dbContext.RecipeVersions)
-            .Include(item => item.RecipeVersionReviews)
             .SingleOrDefaultAsync(item =>
                 item.Recipe.PublicId == recipePublicId && item.PublicId == versionPublicId,
                 cancellationToken);
@@ -111,11 +112,6 @@ public sealed class RecipeRepository : IRecipeRepository
 
     public async Task AddRecipeAsync(RecipeEntity recipe, CancellationToken cancellationToken) =>
         await _dbContext.Recipes.AddAsync(recipe, cancellationToken);
-
-    public async Task AddVersionReviewAsync(
-        RecipeVersionReview review,
-        CancellationToken cancellationToken) =>
-        await _dbContext.RecipeVersionReviews.AddAsync(review, cancellationToken);
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken) =>
         await _dbContext.SaveChangesAsync(cancellationToken);

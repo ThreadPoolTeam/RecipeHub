@@ -29,16 +29,11 @@ export interface CatalogItem {
 export interface UnitItem extends CatalogItem {
   categoryId: string;
   categoryName: string;
-  isBase: boolean;
-  factorToBase: number;
-  offsetToBase: number;
   decimalPlaces: number;
 }
 
 interface DraftContext {
-  recipeId: string;
   versionId: string;
-  revision: number;
 }
 
 function record(value: unknown, label: string): JsonRecord {
@@ -84,12 +79,9 @@ function mapStatus(versionStatus: string, recipeState: string): RecipeStatus {
   if (recipeState.toLowerCase() === 'archived') return 'Archived';
   switch (versionStatus.toLowerCase()) {
     case 'draft':
-    case 'returned':
       return 'Draft';
-    case 'pending_approval':
-      return 'PendingApproval';
-    case 'approved':
-      return 'Approved';
+    case 'published':
+      return 'Published';
     default:
       throw new TypeError(`Trạng thái công thức không được hỗ trợ: ${versionStatus}`);
   }
@@ -112,9 +104,6 @@ function mapUnit(value: unknown, label: string): UnitItem {
     ...mapCatalog(item, label),
     categoryId: text(item.categoryId, `${label}.categoryId`),
     categoryName: text(item.categoryName, `${label}.categoryName`),
-    isBase: booleanValue(item.isBase, `${label}.isBase`),
-    factorToBase: numberValue(item.factorToBase, `${label}.factorToBase`),
-    offsetToBase: numberValue(item.offsetToBase, `${label}.offsetToBase`),
     decimalPlaces: numberValue(item.decimalPlaces, `${label}.decimalPlaces`),
   };
 }
@@ -128,7 +117,9 @@ function mapIngredient(value: unknown, label: string): Ingredient {
     group: text(item.categoryName, `${label}.categoryName`),
     defaultUnit: text(item.defaultUnitCode, `${label}.defaultUnitCode`),
     isActive: text(item.state, `${label}.state`).toLowerCase() === 'active',
-    supplierNotes: optionalText(item.note, `${label}.note`) ?? optionalText(item.description, `${label}.description`),
+    description: optionalText(item.description, `${label}.description`),
+    note: optionalText(item.note, `${label}.note`),
+    imageAssetId: optionalText(item.imageAssetRef, `${label}.imageAssetRef`),
     createdAt: text(item.createdAt, `${label}.createdAt`),
     updatedAt: text(item.updatedAt, `${label}.updatedAt`),
     categoryId: text(item.categoryId, `${label}.categoryId`),
@@ -160,7 +151,7 @@ function mapRecipeStep(value: unknown, label: string): RecipeStep {
     };
   });
   return {
-    id: text(item.publicId, `${label}.publicId`),
+    id: text(item.id, `${label}.id`),
     stepNumber: numberValue(item.sortOrder, `${label}.sortOrder`),
     title: text(item.title, `${label}.title`),
     instruction: text(item.description, `${label}.description`),
@@ -187,14 +178,14 @@ function mapRecipeDetail(value: unknown): RecipeVersion {
     versionId: text(item.versionId, 'recipe.versionId'),
     versionNumber,
     versionLabel: `v${versionNumber}.0`,
-    revision: 0,
     status: mapStatus(text(item.versionStatus, 'recipe.versionStatus'), text(item.state, 'recipe.state')),
     name: text(item.name, 'recipe.name'),
     code: text(item.code, 'recipe.code'),
     description: optionalText(item.description, 'recipe.description'),
-    targetYield: yieldItem ? numberValue(yieldItem.quantity, 'recipe.yield.quantity') : 1,
-    yieldUnit: yieldItem ? text(yieldItem.unitCode, 'recipe.yield.unitCode') : '',
+    targetYield: yieldItem ? numberValue(yieldItem.quantity, 'recipe.yield.quantity') : null,
+    yieldUnit: yieldItem ? text(yieldItem.unitCode, 'recipe.yield.unitCode') : null,
     yieldUnitId: yieldItem ? text(yieldItem.unitId, 'recipe.yield.unitId') : undefined,
+    primaryMediaAssetId: optionalText(item.primaryMediaAssetRef, 'recipe.primaryMediaAssetRef'),
     ingredients: array(item.ingredients, 'recipe.ingredients').map((entry, index) =>
       mapRecipeIngredient(entry, `recipe.ingredients[${index}]`)
     ),
@@ -203,6 +194,8 @@ function mapRecipeDetail(value: unknown): RecipeVersion {
     ),
     creatorId: '',
     creatorEmail: '',
+    publishedAt: optionalText(item.publishedAt, 'recipe.publishedAt'),
+    publishedByUserId: optionalText(item.publishedByUserRef, 'recipe.publishedByUserRef'),
     createdAt: text(item.createdAt, 'recipe.createdAt'),
     updatedAt: text(item.updatedAt, 'recipe.updatedAt'),
   };
@@ -218,12 +211,11 @@ function mapRecipeSummary(value: unknown): RecipeVersion {
     versionId: text(item.versionId, 'recipe summary.versionId'),
     versionNumber,
     versionLabel: `v${versionNumber}.0`,
-    revision: 0,
     status: mapStatus(text(item.versionStatus, 'recipe summary.versionStatus'), text(item.state, 'recipe summary.state')),
     name: text(item.name, 'recipe summary.name'),
     code: text(item.code, 'recipe summary.code'),
-    targetYield: 0,
-    yieldUnit: '',
+    targetYield: null,
+    yieldUnit: null,
     ingredients: [],
     steps: [],
     creatorId: '',
@@ -264,9 +256,7 @@ export class BackendRepository extends DemoRepository {
 
   private rememberDraftContext(recipe: RecipeVersion): void {
     const context = {
-      recipeId: recipe.id,
       versionId: recipe.versionId ?? '',
-      revision: recipe.revision,
     };
     this.draftContexts.set(recipe.id, context);
     recipe.steps.forEach((step) => this.draftContexts.set(step.id, context));
@@ -280,7 +270,6 @@ export class BackendRepository extends DemoRepository {
       'rd@recipehub.demo': '00000000-0000-0000-0000-000000000101',
       'viewer@recipehub.demo': '00000000-0000-0000-0000-000000000102',
       'admin@recipehub.demo': '00000000-0000-0000-0000-000000000103',
-      'reviewer@recipehub.demo': '00000000-0000-0000-0000-000000000104',
     };
     const mapped = knownActors[actor.email.toLowerCase()];
     if (!mapped) throw new Error(`Tài khoản ${actor.email} chưa có UUID để gọi backend.`);
@@ -402,9 +391,6 @@ export class BackendRepository extends DemoRepository {
       code: string;
       name: string;
       categoryId: string;
-      isBase: boolean;
-      factorToBase: number;
-      offsetToBase: number;
       decimalPlaces: number;
     }
   ): Promise<UnitItem> {
@@ -423,9 +409,6 @@ export class BackendRepository extends DemoRepository {
       code: string;
       name: string;
       categoryId: string;
-      isBase: boolean;
-      factorToBase: number;
-      offsetToBase: number;
       decimalPlaces: number;
     }
   ): Promise<UnitItem> {
@@ -493,13 +476,16 @@ export class BackendRepository extends DemoRepository {
         name: data.name,
         categoryId: data.categoryId ?? await this.resolveCategoryId(data.group),
         defaultUnitId: data.defaultUnitId ?? await this.resolveUnitId(data.defaultUnit),
-        description: data.supplierNotes ?? null,
+        description: data.description ?? null,
         warning: data.warning ?? null,
-        note: data.supplierNotes ?? null,
-        imageAssetRef: null,
+        note: data.note ?? null,
+        imageAssetRef: data.imageAssetId ?? null,
       }),
     });
-    return mapIngredient(response, 'ingredient');
+    const created = mapIngredient(response, 'ingredient');
+    if (data.isActive) return created;
+    await requestJson(`api/v1/recipes/ingredients/${created.id}`, this.actorId(actor), { method: 'DELETE' });
+    return { ...created, isActive: false };
   }
 
   override async updateIngredient(
@@ -519,10 +505,10 @@ export class BackendRepository extends DemoRepository {
         name: data.name ?? current.name,
         categoryId: data.categoryId ?? await this.resolveCategoryId(data.group ?? current.group),
         defaultUnitId: data.defaultUnitId ?? await this.resolveUnitId(data.defaultUnit ?? current.defaultUnit),
-        description: data.supplierNotes ?? current.supplierNotes ?? null,
+        description: data.description ?? current.description ?? null,
         warning: data.warning ?? current.warning ?? null,
-        note: data.supplierNotes ?? current.supplierNotes ?? null,
-        imageAssetRef: null,
+        note: data.note ?? current.note ?? null,
+        imageAssetRef: data.imageAssetId ?? current.imageAssetId ?? null,
       }),
     });
     let updated = mapIngredient(response, 'ingredient');
@@ -546,7 +532,8 @@ export class BackendRepository extends DemoRepository {
     if (effectiveFilter.query?.trim()) params.set('query', effectiveFilter.query.trim());
     if (effectiveFilter.status && effectiveFilter.status !== 'all') {
       if (effectiveFilter.status === 'Archived') params.set('state', 'archived');
-      else params.set('versionStatus', effectiveFilter.status === 'PendingApproval' ? 'pending_approval' : effectiveFilter.status.toLowerCase());
+      else if (effectiveFilter.status === 'Published') params.set('versionStatus', 'published');
+      else params.set('versionStatus', effectiveFilter.status.toLowerCase());
     }
     const response = record(
       await requestJson(`api/v1/recipes?${params.toString()}`, this.actorId(actor), { method: 'GET' }),
@@ -577,26 +564,22 @@ export class BackendRepository extends DemoRepository {
       code: string;
       name: string;
       description?: string;
-      targetYield?: number;
-      yieldUnit?: string;
-      sourceRecipeId?: string;
+      targetYield?: number | null;
+      yieldUnit?: string | null;
+      primaryMediaAssetId?: string;
       ingredients: RecipeIngredient[];
       steps: RecipeStep[];
-    },
-    expectedRowVersion: number | null
+    }
   ): Promise<JsonRecord> {
     const ingredients = await Promise.all(data.ingredients.map(async (item) => ({
       ingredientId: item.ingredientId,
       unitId: await this.resolveUnitId(item.unit),
       quantity: item.quantity,
-      sortOrder: item.order,
       stageName: item.stageNote ?? null,
-      duplicateReason: null,
       note: item.notes ?? null,
     })));
     const steps = data.steps.map((step) => ({
-      publicId: /^[0-9a-f-]{36}$/i.test(step.id) ? step.id : null,
-      sortOrder: step.stepNumber,
+      id: /^[0-9a-f-]{36}$/i.test(step.id) ? step.id : null,
       title: step.title,
       description: step.instruction,
       durationSeconds: step.durationSeconds ?? null,
@@ -604,26 +587,28 @@ export class BackendRepository extends DemoRepository {
       equipment: step.equipment ?? null,
       safetyNote: step.notes ?? null,
       completionCriteria: step.completionCriteria ?? null,
-      media: (step.mediaAssetIds ?? []).map((mediaAssetRef, index) => ({
+      media: (step.mediaAssetIds ?? []).map((mediaAssetRef) => ({
         mediaAssetRef,
-        sortOrder: index + 1,
         isPrimary: mediaAssetRef === step.coverMediaAssetId,
         caption: step.mediaCaptions?.[mediaAssetRef] ?? null,
-        expectedRowVersion: 0,
       })),
     }));
+    const hasYieldQuantity = data.targetYield !== null && data.targetYield !== undefined;
+    const hasYieldUnit = data.yieldUnit !== null && data.yieldUnit !== undefined && data.yieldUnit.trim().length > 0;
+    if (hasYieldQuantity !== hasYieldUnit) {
+      throw new TypeError('Sản lượng và đơn vị sản lượng phải được nhập cùng nhau hoặc cùng để trống.');
+    }
     const payload: JsonRecord = {
       code: data.code,
       name: data.name,
       description: data.description ?? null,
-      yieldQuantity: data.targetYield ?? 1,
-      yieldUnitId: await this.resolveUnitId(data.yieldUnit ?? ''),
+      primaryMediaAssetRef: data.primaryMediaAssetId ?? null,
+      yieldQuantity: hasYieldQuantity ? data.targetYield : null,
+      yieldUnitId: hasYieldUnit ? await this.resolveUnitId(data.yieldUnit as string) : null,
       yieldNote: null,
-      sourceRecipeId: data.sourceRecipeId ?? null,
       ingredients,
       steps,
     };
-    if (expectedRowVersion !== null) payload.expectedRowVersion = expectedRowVersion;
     return payload;
   }
 
@@ -633,16 +618,16 @@ export class BackendRepository extends DemoRepository {
       code: string;
       name: string;
       description?: string;
-      targetYield?: number;
-      yieldUnit?: string;
-      sourceRecipeId?: string;
+      targetYield?: number | null;
+      yieldUnit?: string | null;
+      primaryMediaAssetId?: string;
       ingredients: RecipeIngredient[];
       steps: RecipeStep[];
     }
   ): Promise<RecipeVersion> {
     const recipe = mapRecipeDetail(await requestJson('api/v1/recipes', this.actorId(actor), {
       method: 'POST',
-      body: JSON.stringify(await this.recipePayload(data, null)),
+      body: JSON.stringify(await this.recipePayload(data)),
     }));
     this.rememberDraftContext(recipe);
     return recipe;
@@ -652,64 +637,52 @@ export class BackendRepository extends DemoRepository {
     actor: SessionInfo,
     recipeId: string,
     data: Partial<RecipeVersion>,
-    expectedRevision: number
+    _expectedRevision: number
   ): Promise<RecipeVersion> {
     const current = await this.getRecipeVersion(actor, recipeId);
+    const targetYield = Object.prototype.hasOwnProperty.call(data, 'targetYield')
+      ? data.targetYield ?? null
+      : current.targetYield;
+    const yieldUnit = Object.prototype.hasOwnProperty.call(data, 'yieldUnit')
+      ? data.yieldUnit ?? null
+      : current.yieldUnit;
+    const primaryMediaAssetId = Object.prototype.hasOwnProperty.call(data, 'primaryMediaAssetId')
+      ? data.primaryMediaAssetId
+      : current.primaryMediaAssetId;
     const recipe = mapRecipeDetail(await requestJson(`api/v1/recipes/${recipeId}`, this.actorId(actor), {
       method: 'PUT',
       body: JSON.stringify(await this.recipePayload({
         code: data.code ?? current.code,
         name: data.name ?? current.name,
         description: data.description ?? current.description,
-        targetYield: data.targetYield ?? current.targetYield,
-        yieldUnit: data.yieldUnit ?? current.yieldUnit,
-        sourceRecipeId: data.sourceRecipeId ?? current.sourceRecipeId,
+        targetYield,
+        yieldUnit,
+        primaryMediaAssetId,
         ingredients: data.ingredients ?? current.ingredients,
         steps: data.steps ?? current.steps,
-      }, expectedRevision)),
+      })),
     }));
     this.rememberDraftContext(recipe);
     return recipe;
   }
 
-  private async reviewAction(
-    actor: SessionInfo,
-    recipeId: string,
-    action: 'submit' | 'approve' | 'return',
-    comment: string
-  ): Promise<RecipeVersion> {
+  async publishRecipe(actor: SessionInfo, recipeId: string): Promise<RecipeVersion> {
     const current = await this.getRecipeVersion(actor, recipeId);
-    await requestJson(`api/v1/recipes/${recipeId}/versions/${current.versionId}/${action}`, this.actorId(actor), {
-      method: 'POST',
-      body: JSON.stringify({ comment: comment || null }),
-    });
-    return this.getRecipeVersion(actor, recipeId);
+    const response = await requestJson(
+      `api/v1/recipes/${recipeId}/versions/${current.versionId}/publish`,
+      this.actorId(actor),
+      { method: 'POST' }
+    );
+    return mapRecipeDetail(response);
   }
 
-  override async submitRecipeForApproval(actor: SessionInfo, recipeId: string): Promise<RecipeVersion> {
-    return this.reviewAction(actor, recipeId, 'submit', '');
-  }
-
-  override async approveRecipe(actor: SessionInfo, recipeId: string, comment: string): Promise<RecipeVersion> {
-    return this.reviewAction(actor, recipeId, 'approve', comment);
-  }
-
-  override async returnRecipe(actor: SessionInfo, recipeId: string, reason: string): Promise<RecipeVersion> {
-    return this.reviewAction(actor, recipeId, 'return', reason);
-  }
-
-  override async createNextVersion(actor: SessionInfo, recipeId: string): Promise<RecipeVersion> {
-    const current = await this.getRecipeVersion(actor, recipeId);
-    return this.saveRecipeDraft(actor, recipeId, current, current.revision);
-  }
-
-  override async createRecipeVariant(
+  async copyRecipe(
     actor: SessionInfo,
     recipeId: string,
     newCode: string,
     newName: string
   ): Promise<RecipeVersion> {
-    return mapRecipeDetail(await requestJson(`api/v1/recipes/${recipeId}/clone`, this.actorId(actor), {
+    return mapRecipeDetail(await requestJson(`api/v1/recipes/${recipeId}/copy`, this.actorId(actor), {
       method: 'POST',
       body: JSON.stringify({ code: newCode, name: newName }),
     }));
@@ -869,18 +842,19 @@ export class BackendRepository extends DemoRepository {
       await requestJson(`api/v1/content/image-drafts/${candidateId}/accept`, this.actorId(actor), { method: 'POST' }),
       'accepted image draft'
     );
-    const context = this.draftContexts.get(stepId);
-    if (!context) throw new Error('Không xác định được recipe version của bước đang chọn.');
-    await requestJson(`api/v1/recipes/${recipeId}/versions/${context.versionId}/steps/${stepId}/media`, this.actorId(actor), {
-      method: 'POST',
-      body: JSON.stringify({
-        mediaAssetRef: text(accepted.mediaAssetId, 'accepted image draft.mediaAssetId'),
-        sortOrder: 1,
-        isPrimary: true,
-        caption: null,
-        expectedRowVersion: 0,
-      }),
-    });
+    const mediaAssetId = text(accepted.mediaAssetId, 'accepted image draft.mediaAssetId');
+    const current = await this.getRecipeVersion(actor, recipeId);
+    if (!current.steps.some((step) => step.id === stepId)) {
+      throw new Error(`Không tìm thấy bước '${stepId}' trong công thức '${recipeId}'.`);
+    }
+    const steps = current.steps.map((step) => step.id === stepId
+      ? {
+          ...step,
+          mediaAssetIds: [...(step.mediaAssetIds ?? []).filter((id) => id !== mediaAssetId), mediaAssetId],
+          coverMediaAssetId: mediaAssetId,
+        }
+      : step);
+    await this.saveRecipeDraft(actor, recipeId, { steps }, 0);
   }
 
   override async discardAiCandidate(actor: SessionInfo, candidateId: string): Promise<void> {

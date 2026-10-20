@@ -229,8 +229,7 @@ function RecipeListContent() {
             options={[
               { value: 'all', label: 'Tất cả trạng thái' },
               { value: 'Draft', label: 'Bản Nháp (Draft)' },
-              { value: 'PendingApproval', label: 'Chờ Duyệt (Pending)' },
-              { value: 'Approved', label: 'Đã Duyệt (Approved)' },
+              { value: 'Published', label: 'Đã Phát Hành (Published)' },
               { value: 'Archived', label: 'Lưu Trữ (Archived)' },
             ]}
           />

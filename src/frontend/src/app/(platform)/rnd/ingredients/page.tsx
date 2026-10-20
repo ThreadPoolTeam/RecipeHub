@@ -70,7 +70,7 @@ export default function RndIngredientsPage() {
         const matches =
           item.name.toLowerCase().includes(q) ||
           item.code.toLowerCase().includes(q) ||
-          (item.supplierNotes && item.supplierNotes.toLowerCase().includes(q));
+          (item.note && item.note.toLowerCase().includes(q));
         if (!matches) return false;
       }
 
@@ -135,9 +135,9 @@ export default function RndIngredientsPage() {
               {item.name}
             </Link>
           </div>
-          {item.supplierNotes && (
+          {item.note && (
             <p className="text-xs text-[#706E68] mt-0.5 line-clamp-1 italic">
-              NCC: {item.supplierNotes}
+              Ghi chú: {item.note}
             </p>
           )}
         </div>
