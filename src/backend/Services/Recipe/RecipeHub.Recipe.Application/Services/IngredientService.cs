@@ -1,3 +1,4 @@
+using System.Globalization;
 using RecipeHub.Recipe.Application.DTOs;
 using RecipeHub.Recipe.Application.Interfaces;
 using RecipeHub.Recipe.Domain.Entities;
@@ -9,7 +10,6 @@ public sealed class IngredientService : IIngredientService
     private readonly IIngredientRepository _ingredientRepository;
     private readonly IIngredientCategoryRepository _categoryRepository;
     private readonly IUnitRepository _unitRepository;
-
     public IngredientService(
         IIngredientRepository ingredientRepository,
         IIngredientCategoryRepository categoryRepository,
@@ -18,6 +18,29 @@ public sealed class IngredientService : IIngredientService
         _ingredientRepository = ingredientRepository;
         _categoryRepository = categoryRepository;
         _unitRepository = unitRepository;
+    }
+
+    public async Task<GeneratedIngredientCodeResponse> GenerateCodeAsync(
+        GenerateIngredientCodeRequest request,
+        CancellationToken cancellationToken)
+    {
+        var category = await _categoryRepository.GetByPublicIdAsync(request.CategoryId, cancellationToken)
+            ?? throw new NotFoundException($"Ingredient category '{request.CategoryId}' was not found.");
+        if (!string.Equals(category.State, "active", StringComparison.OrdinalIgnoreCase))
+            throw new ValidationException("The selected ingredient category is inactive.");
+
+        var prefix = "ING-" + category.Code.ToUpperInvariant();
+        var max = await _ingredientRepository.GetMaxCodeNumberAsync(prefix, cancellationToken);
+        var nextNumber = max + 1;
+        while (true)
+        {
+            var code = prefix + "-" + nextNumber.ToString("D3", CultureInfo.InvariantCulture);
+            if (!await _ingredientRepository.CodeExistsAsync(code, null, cancellationToken))
+            {
+                return new GeneratedIngredientCodeResponse(code);
+            }
+            nextNumber++;
+        }
     }
 
     public async Task<IReadOnlyList<IngredientResponse>> SearchAsync(

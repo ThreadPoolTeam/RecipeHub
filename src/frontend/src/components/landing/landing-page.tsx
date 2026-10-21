@@ -481,10 +481,10 @@ export function LandingPage({ manifest }: LandingPageProps) {
                     <ShieldCheck className="w-6 h-6" />
                   </div>
                   <h3 className="text-xl font-bold text-[#1A1917]">
-                    Kiểm soát Phê duyệt &amp; Phân quyền
+                    Phát hành &amp; Phân quyền
                   </h3>
                   <p className="text-sm text-[#706E68] leading-relaxed">
-                    Quy trình thẩm định công thức 2 lớp từ chuyên viên R&amp;D đến cấp quản lý xét duyệt, kiểm soát chặt chẽ quyền truy cập và thao tác.
+                    Chuyên viên R&amp;D hoàn thiện rồi phát hành công thức trực tiếp; quyền truy cập SOP vẫn được kiểm soát theo vai trò.
                   </p>
                 </div>
                 <div className="pt-4 border-t border-[#E8E2D9] text-xs font-semibold text-[#B47820]">

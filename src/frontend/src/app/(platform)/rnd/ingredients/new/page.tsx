@@ -1,41 +1,89 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, FlaskConical, Save } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { Button, TextInput, Select, Alert } from '@/components/workspace/fields';
-
-const INGREDIENT_GROUPS = [
-  'Trà',
-  'Cà phê',
-  'Sữa & Kem',
-  'Siro & Đường',
-  'Topping',
-  'Trái cây & Thảo mộc',
-  'Khác',
-];
-
-const UNIT_OPTIONS = ['g', 'ml', 'shot', 'muỗng', 'gói', 'lát', 'quả'];
+import { CodeInput } from '@/components/workspace/code-input';
+import { CatalogItem, UnitItem } from '@/lib/api/backend-repository';
 
 export default function NewIngredientPage() {
   const router = useRouter();
   const { session, repo, touch } = useDemo();
 
   const [code, setCode] = useState('');
+  const [generatingCode, setGeneratingCode] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [generatedCode, setGeneratedCode] = useState<{ code: string; categoryId: string } | null>(null);
   const [name, setName] = useState('');
-  const [group, setGroup] = useState(INGREDIENT_GROUPS[0]);
-  const [defaultUnit, setDefaultUnit] = useState(UNIT_OPTIONS[0]);
+  const [categories, setCategories] = useState<CatalogItem[]>([]);
+  const [units, setUnits] = useState<UnitItem[]>([]);
+  const [categoryId, setCategoryId] = useState('');
+  const [defaultUnitId, setDefaultUnitId] = useState('');
+  const [catalogueLoading, setCatalogueLoading] = useState(true);
   const [isActive, setIsActive] = useState(true);
-  const [supplierNotes, setSupplierNotes] = useState('');
+  const [note, setNote] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    let isMounted = true;
+    setCatalogueLoading(true);
+    Promise.all([repo.getIngredientCategories(), repo.getUnits()])
+      .then(([categoryItems, unitItems]) => {
+        if (!isMounted) return;
+        const activeCategories = categoryItems.filter((item) => item.state === 'active');
+        const activeUnits = unitItems.filter((item) => item.state === 'active');
+        setCategories(activeCategories);
+        setUnits(activeUnits);
+        setCategoryId(activeCategories[0]?.id ?? '');
+        setDefaultUnitId(activeUnits[0]?.id ?? '');
+      })
+      .catch((loadError: unknown) => {
+        if (!isMounted) return;
+        setError(loadError instanceof Error ? loadError.message : 'Không thể tải danh mục từ Recipe Service.');
+      })
+      .finally(() => {
+        if (isMounted) setCatalogueLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [repo]);
+
+  const canGenerateCode = categories.some((item) => item.id === categoryId && item.state === 'active');
+
+  const handleCategoryChange = (nextCategoryId: string) => {
+    if (generatingCode || submitting || nextCategoryId === categoryId) return;
+    if (generatedCode && code === generatedCode.code && nextCategoryId !== generatedCode.categoryId) {
+      setCode('');
+    }
+    setGeneratedCode(null);
+    setCategoryId(nextCategoryId);
+  };
+
+  const handleGenerateCode = async () => {
+    if (!session || !canGenerateCode || generatingCode || submitting || catalogueLoading) return;
+    setGeneratingCode(true);
+    setCodeError(null);
+    try {
+      const nextCode = await repo.generateIngredientCode(session, categoryId);
+      setCode(nextCode);
+      setGeneratedCode({ code: nextCode, categoryId });
+      touch();
+    } catch (error: unknown) {
+      setCodeError(error instanceof Error ? error.message : 'Không thể tạo mã nguyên liệu.');
+    } finally {
+      setGeneratingCode(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!session) return;
+    if (!session || generatingCode || submitting) return;
     setError(null);
 
     const cleanCode = code.trim().toUpperCase();
@@ -47,6 +95,24 @@ export default function NewIngredientPage() {
     }
     if (!cleanName) {
       setError('Vui lòng nhập tên nguyên liệu.');
+      return;
+    }
+    if (!categoryId) {
+      setError('Chưa có nhóm nguyên liệu đang hoạt động. Hãy tạo nhóm trong trang Admin trước.');
+      return;
+    }
+    if (!defaultUnitId) {
+      setError('Chưa có đơn vị đang hoạt động. Hãy tạo đơn vị trong trang Admin trước.');
+      return;
+    }
+    const selectedCategory = categories.find((item) => item.id === categoryId);
+    if (!selectedCategory) {
+      setError(`Nhóm nguyên liệu '${categoryId}' không còn tồn tại trong danh mục đang hoạt động.`);
+      return;
+    }
+    const selectedUnit = units.find((item) => item.id === defaultUnitId);
+    if (!selectedUnit) {
+      setError(`Đơn vị '${defaultUnitId}' không còn tồn tại trong danh mục đang hoạt động.`);
       return;
     }
 
@@ -65,11 +131,13 @@ export default function NewIngredientPage() {
       await repo.createIngredient(session, {
         code: cleanCode,
         name: cleanName,
-        group,
-        defaultUnit,
+        group: selectedCategory.name,
+        defaultUnit: selectedUnit.code,
         isActive,
         costPerUnit: 0,
-        supplierNotes: supplierNotes.trim(),
+        note: note.trim(),
+        categoryId,
+        defaultUnitId,
       });
 
       touch();
@@ -121,12 +189,23 @@ export default function NewIngredientPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <TextInput
-            label="Mã Nguyên Liệu *"
-            placeholder="VD: ING-TRA-01"
+          <CodeInput
+            label="Mã Nguyên Liệu"
+            placeholder="VD: ING-TRA-001"
             value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            helper="Mã viết hoa, không trùng lặp"
+            onChange={(e) => {
+              setCode(e.target.value.toUpperCase());
+              setGeneratedCode(null);
+            }}
+            onGenerate={handleGenerateCode}
+            generateLabel="Tạo mã nguyên liệu"
+            generating={generatingCode}
+            generateDisabled={!session || catalogueLoading || !canGenerateCode}
+            disabled={submitting}
+            helper={canGenerateCode
+              ? 'Nhập mã riêng hoặc tạo mã theo nhóm đã chọn. Đổi nhóm sẽ xóa mã vừa tạo nếu chưa sửa tay.'
+              : 'Chọn nhóm nguyên liệu đang hoạt động để tạo mã; vẫn có thể nhập mã riêng.'}
+            error={codeError}
             required
           />
 
@@ -142,16 +221,20 @@ export default function NewIngredientPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Select
             label="Nhóm Phân Loại *"
-            value={group}
-            onChange={(e) => setGroup(e.target.value)}
-            options={INGREDIENT_GROUPS.map((g) => ({ value: g, label: g }))}
+            value={categoryId}
+            onChange={(e) => handleCategoryChange(e.target.value)}
+            options={categories.map((item) => ({ value: item.id, label: item.name }))}
+            disabled={catalogueLoading || categories.length === 0 || generatingCode || submitting}
+            helper={categories.length === 0 && !catalogueLoading ? 'Hãy tạo nhóm nguyên liệu trong trang Admin.' : undefined}
           />
 
           <Select
             label="Đơn Vị Tính Tiêu Chuẩn *"
-            value={defaultUnit}
-            onChange={(e) => setDefaultUnit(e.target.value)}
-            options={UNIT_OPTIONS.map((u) => ({ value: u, label: u }))}
+            value={defaultUnitId}
+            onChange={(e) => setDefaultUnitId(e.target.value)}
+            options={units.map((item) => ({ value: item.id, label: `${item.code} — ${item.name}` }))}
+            disabled={catalogueLoading || units.length === 0}
+            helper={units.length === 0 && !catalogueLoading ? 'Hãy tạo đơn vị trong trang Admin.' : undefined}
           />
         </div>
 
@@ -159,8 +242,8 @@ export default function NewIngredientPage() {
           <TextInput
             label="Ghi Chú Nhà Cung Cấp / Bảo Quản"
             placeholder="VD: Công ty TNHH Trà Việt - bảo quản nơi khô ráo, kín khí..."
-            value={supplierNotes}
-            onChange={(e) => setSupplierNotes(e.target.value)}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
           />
 
           <label className="flex items-center gap-3 cursor-pointer pt-2">
@@ -188,7 +271,11 @@ export default function NewIngredientPage() {
               Hủy Bỏ
             </Button>
           </Link>
-          <Button variant="gold" type="submit" disabled={submitting}>
+          <Button
+            variant="gold"
+            type="submit"
+            disabled={submitting || generatingCode || catalogueLoading || categories.length === 0 || units.length === 0}
+          >
             <Save className="w-4 h-4 mr-1.5" />
             {submitting ? 'Đang lưu...' : 'Lưu Nguyên Liệu'}
           </Button>

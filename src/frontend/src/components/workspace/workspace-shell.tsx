@@ -15,7 +15,6 @@ import {
   Bot,
   FileText,
   FolderGit2,
-  CheckSquare,
   LogOut,
   Menu,
   X,
@@ -241,26 +240,6 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* Reviewer Capability Nav */}
-      {session?.canApprove && (
-        <div className={isCollapsed ? 'space-y-2 pt-2 border-t border-[#E8E2D9]' : 'space-y-1 pt-2 border-t border-[#E8E2D9]'}>
-          {!isCollapsed && (
-            <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-[#B47820] flex items-center gap-1">
-              <CheckSquare className="w-3 h-3" />
-              <span>Phê Duyệt R&amp;D</span>
-            </div>
-          )}
-          <Link
-            href="/approvals"
-            onClick={() => setMobileSidebarOpen(false)}
-            className={navLinkStyle(isLinkActive('/approvals'), isCollapsed)}
-            title="Hàng chờ phê duyệt"
-          >
-            <CheckSquare className="w-5 h-5 text-[#B47820]" />
-            {!isCollapsed && <span>Hàng chờ phê duyệt</span>}
-          </Link>
-        </div>
-      )}
     </div>
   );
 
@@ -337,7 +316,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
                     </span>
                     <span className="text-[10px] text-[#706E68] truncate font-medium">
                       {session?.role === 'rnd'
-                        ? (session?.canApprove ? 'Chuyên viên R&D • Tự duyệt SOP' : 'Chuyên viên R&D')
+                        ? 'Chuyên viên R&D'
                         : session?.role === 'viewer'
                         ? 'Nhân viên Pha chế (Barista)'
                         : 'Quản trị viên Hệ thống'}
@@ -420,7 +399,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
                   </span>
                   <span className="text-[10px] text-[#706E68] truncate leading-tight mt-0.5">
                     {session?.role === 'rnd'
-                      ? (session?.canApprove ? 'Chuyên viên R&D • Tự duyệt SOP' : 'Chuyên viên R&D')
+                      ? 'Chuyên viên R&D'
                       : session?.role === 'viewer'
                       ? 'Nhân viên Pha chế (Barista)'
                       : 'Quản trị viên Hệ thống'}
@@ -502,8 +481,6 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
                 ? 'Tra Cứu SOP Cửa Hàng (Viewer)'
                 : pathname.startsWith('/admin')
                 ? 'Hệ Thống Quản Trị (Admin)'
-                : pathname.startsWith('/approvals')
-                ? 'Thẩm Định Phê Duyệt'
                 : pathname.startsWith('/profile')
                 ? 'Hồ Sơ Chuyên Viên'
                 : pathname.startsWith('/settings')
@@ -523,7 +500,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
 
         {/* Footer */}
         <footer className="border-t border-[#E8E2D9] bg-[#F5F0E8] py-4 px-6 text-center text-xs text-[#706E68]">
-          RecipeHub Coffee &amp; Beverage R&amp;D Platform © 2026 • IndexedDB Local Storage Mode
+          RecipeHub Coffee &amp; Beverage R&amp;D Platform © 2026 • Recipe API Mode
         </footer>
       </div>
 

@@ -148,7 +148,7 @@ export default function RndDashboardPage() {
               <FileText className="w-4 h-4 text-[#B47820]" /> Bản nháp đang phát triển
             </h2>
             <p className="text-xs text-[#706E68] mt-0.5">
-              Các công thức đang thử nghiệm, chưa gửi phê duyệt.
+              Các công thức đang được soạn thảo và thử nghiệm.
             </p>
           </div>
           <Link href="/rnd/recipes?status=Draft">
@@ -166,7 +166,7 @@ export default function RndDashboardPage() {
           <div className="w-full bg-white border border-[#E8E2D9] rounded-lg p-10 text-center text-[#706E68] space-y-2">
             <Coffee className="w-8 h-8 text-[#8C887F] mx-auto" />
             <p className="text-sm font-semibold text-[#1A1917]">Không có bản nháp nào đang dở dang</p>
-            <p className="text-xs text-[#706E68]">Mọi công thức đều đã được gửi phê duyệt hoặc lưu trữ.</p>
+            <p className="text-xs text-[#706E68]">Không còn công thức nháp đang xử lý.</p>
             <div className="pt-2">
               <Link href="/rnd/recipes/new">
                 <Button variant="gold" size="sm">

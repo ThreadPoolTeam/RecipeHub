@@ -35,7 +35,6 @@ export function saveSession(user: User): SessionInfo {
     email: user.email,
     fullName: user.fullName,
     role: user.role,
-    canApprove: user.canApprove,
     lastActiveAt: Date.now(),
   };
 

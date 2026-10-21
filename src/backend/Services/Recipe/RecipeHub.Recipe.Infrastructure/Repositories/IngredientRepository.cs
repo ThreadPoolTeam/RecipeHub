@@ -60,6 +60,25 @@ public sealed class IngredientRepository : IIngredientRepository
         _dbContext.Ingredients.AnyAsync(
             item => item.NormalizedCode == normalizedCode && item.PublicId != excludedPublicId,
             cancellationToken);
+    public async Task<int> GetMaxCodeNumberAsync(string prefix, CancellationToken cancellationToken)
+    {
+        var targetPrefix = prefix + "-";
+        var codes = await _dbContext.Ingredients.AsNoTracking()
+            .Where(item => item.Code.StartsWith(targetPrefix))
+            .Select(item => item.Code)
+            .ToListAsync(cancellationToken);
+
+        var max = 0;
+        foreach (var code in codes)
+        {
+            var suffix = code.Substring(targetPrefix.Length);
+            if (int.TryParse(suffix, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var num) && num > max)
+            {
+                max = num;
+            }
+        }
+        return max;
+    }
 
     public async Task AddAsync(Ingredient ingredient, CancellationToken cancellationToken) =>
         await _dbContext.Ingredients.AddAsync(ingredient, cancellationToken);

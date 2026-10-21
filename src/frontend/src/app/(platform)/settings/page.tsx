@@ -22,7 +22,7 @@ export default function SettingsPage() {
       <div className="pb-4 border-b border-[#E8E2D9]">
         <h1 className="text-2xl font-bold text-[#1A1917]">Cài đặt Tài khoản &amp; Hệ thống</h1>
         <p className="text-xs text-[#706E68] mt-1">
-          Tùy chỉnh giao diện làm việc, thông báo phê duyệt SOP và cấu hình phiên làm việc R&amp;D.
+          Tùy chỉnh giao diện, thông báo phát hành SOP và cấu hình phiên làm việc R&amp;D.
         </p>
       </div>
 
@@ -56,13 +56,13 @@ export default function SettingsPage() {
       <div className="p-5 bg-white border border-[#E8E2D9] rounded-2xl shadow-xs space-y-4">
         <div className="flex items-center gap-2 text-sm font-bold text-[#1A1917]">
           <Bell className="w-4 h-4 text-[#B47820]" />
-          <span>Thông báo &amp; Phê duyệt</span>
+          <span>Thông báo công thức</span>
         </div>
         <div className="space-y-3">
           <label className="flex items-center justify-between p-3 bg-[#FAF9F5] rounded-xl border border-[#E8E2D9] cursor-pointer">
             <div>
-              <div className="text-xs font-semibold text-[#1A1917]">Thông báo khi có công thức gửi thẩm định</div>
-              <div className="text-[11px] text-[#706E68]">Nhận cảnh báo trực tiếp trên giao diện khi phiên bản SOP chuyển trạng thái.</div>
+              <div className="text-xs font-semibold text-[#1A1917]">Thông báo khi công thức được phát hành</div>
+              <div className="text-[11px] text-[#706E68]">Nhận cảnh báo trực tiếp trên giao diện khi SOP chuyển sang trạng thái phát hành.</div>
             </div>
             <input
               type="checkbox"
@@ -107,10 +107,8 @@ export default function SettingsPage() {
             <span className="font-bold text-[#B47820] uppercase">{session?.role} Specialist</span>
           </div>
           <div className="p-3 bg-[#FAF9F5] rounded-xl border border-[#E8E2D9]">
-            <span className="text-[#706E68]">Quyền duyệt SOP:</span>{' '}
-            <span className="font-semibold text-emerald-700">
-              {session?.canApprove ? 'Được phép tự duyệt' : 'Chỉ soạn thảo / Đọc'}
-            </span>
+            <span className="text-[#706E68]">Phạm vi công thức:</span>{' '}
+            <span className="font-semibold text-emerald-700">Theo vai trò {session?.role}</span>
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 export type Role = 'rnd' | 'viewer' | 'admin';
 
-export type RecipeStatus = 'Draft' | 'PendingApproval' | 'Approved' | 'Archived';
+export type RecipeStatus = 'Draft' | 'Published' | 'Archived';
 
 export type MediaSource = 'Real' | 'AiIllustration';
 
@@ -15,7 +15,6 @@ export interface User {
   email: string;
   fullName: string;
   role: Role;
-  canApprove: boolean;
   isLocked: boolean;
   allowedRecipeIds: string[]; // For Viewer role: list of approved recipe IDs granted
   avatarUrl?: string;
@@ -27,7 +26,6 @@ export interface SessionInfo {
   email: string;
   fullName: string;
   role: Role;
-  canApprove: boolean;
   lastActiveAt: number; // timestamp in ms
 }
 
@@ -39,7 +37,9 @@ export interface Ingredient {
   defaultUnit: string; // 'g' | 'ml' | 'shot' | 'muỗng' | 'gói'
   isActive: boolean;
   costPerUnit?: number;
-  supplierNotes?: string;
+  description?: string;
+  note?: string;
+  imageAssetId?: string;
   createdAt: string;
   updatedAt: string;
   categoryId?: string;
@@ -77,23 +77,20 @@ export interface RecipeVersion {
   recipeId: string; // parent recipe identity (shared across v1, v2...)
   versionNumber: number; // 1, 2, 3...
   versionLabel: string; // 'v1.0', 'v2.0'...
-  revision: number; // optimistic concurrency counter
   status: RecipeStatus;
   name: string;
   code: string; // e.g. 'REC-OLO-01'
   description?: string;
-  targetYield: number; // default: 1
-  yieldUnit: string; // e.g. 'ly (500ml)'
+  targetYield: number | null;
+  yieldUnit: string | null;
   yieldUnitId?: string;
-  sourceRecipeId?: string; // variant reference
+  primaryMediaAssetId?: string;
   ingredients: RecipeIngredient[];
   steps: RecipeStep[];
   creatorId: string;
   creatorEmail: string;
-  submittedAt?: string;
-  reviewedAt?: string;
-  reviewerId?: string;
-  reviewerComment?: string;
+  publishedAt?: string;
+  publishedByUserId?: string;
   createdAt: string;
   updatedAt: string;
 }

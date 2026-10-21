@@ -27,8 +27,6 @@ public partial class RecipeDbContext : DbContext
 
     public virtual DbSet<RecipeVersion> RecipeVersions { get; set; }
 
-    public virtual DbSet<RecipeVersionReview> RecipeVersionReviews { get; set; }
-
     public virtual DbSet<RecipeYield> RecipeYields { get; set; }
 
     public virtual DbSet<Unit> Units { get; set; }
@@ -132,7 +130,7 @@ public partial class RecipeDbContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("recipe_pkey");
 
-            entity.ToTable("recipe", "recipe_db", tb => tb.HasComment("Không hard-delete Recipe. Dùng state = archived để giữ toàn bộ lịch sử."));
+            entity.ToTable("recipe", "recipe_db", tb => tb.HasComment("Không hard-delete Recipe. archived_at đánh dấu công thức đã lưu trữ."));
 
             entity.HasIndex(e => e.CreatedByUserRef, "recipe_created_by_idx");
 
@@ -140,9 +138,7 @@ public partial class RecipeDbContext : DbContext
 
             entity.HasIndex(e => e.PublicId, "recipe_public_id_key").IsUnique();
 
-            entity.HasIndex(e => e.SourceRecipeId, "recipe_source_idx");
-
-            entity.HasIndex(e => e.State, "recipe_state_idx");
+            entity.HasIndex(e => e.ArchivedAt, "recipe_archived_at_idx");
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.ArchivedAt).HasColumnName("archived_at");
@@ -161,13 +157,6 @@ public partial class RecipeDbContext : DbContext
             entity.Property(e => e.PublicId)
                 .HasComment("ID công khai dùng giữa các service.")
                 .HasColumnName("public_id");
-            entity.Property(e => e.SourceRecipeId)
-                .HasComment("Công thức nguồn khi tạo biến thể.")
-                .HasColumnName("source_recipe_id");
-            entity.Property(e => e.State)
-                .HasDefaultValueSql("'active'::text")
-                .HasComment("active hoặc archived.")
-                .HasColumnName("state");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("now()")
                 .HasColumnName("updated_at");
@@ -175,21 +164,17 @@ public partial class RecipeDbContext : DbContext
                 .HasComment("User public_id từ Identity Service.")
                 .HasColumnName("updated_by_user_ref");
 
-            entity.HasOne(d => d.SourceRecipe).WithMany(p => p.InverseSourceRecipe)
-                .HasForeignKey(d => d.SourceRecipeId)
-                .OnDelete(DeleteBehavior.SetNull)
-                .HasConstraintName("recipe_source");
         });
 
         modelBuilder.Entity<RecipeIngredient>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("recipe_ingredient_pkey");
 
-            entity.ToTable("recipe_ingredient", "recipe_db", tb => tb.HasComment("Service cảnh báo nguyên liệu trùng và yêu cầu duplicate_reason khi người dùng xác nhận tách giai đoạn."));
+            entity.ToTable("recipe_ingredient", "recipe_db", tb => tb.HasComment("Một nguyên liệu có thể xuất hiện ở nhiều công đoạn khác nhau."));
 
             entity.HasIndex(e => e.IngredientId, "recipe_ingredient_ingredient_idx");
 
-            entity.HasIndex(e => new { e.RecipeVersionId, e.SortOrder }, "recipe_ingredient_order_uidx").IsUnique();
+            entity.HasIndex(e => new { e.RecipeVersionId, e.SortOrder }, "recipe_ingredient_order_idx");
 
             entity.HasIndex(e => e.UnitId, "recipe_ingredient_unit_idx");
 
@@ -197,9 +182,6 @@ public partial class RecipeDbContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("now()")
                 .HasColumnName("created_at");
-            entity.Property(e => e.DuplicateReason)
-                .HasComment("Lý do tách dòng khi trùng nguyên liệu.")
-                .HasColumnName("duplicate_reason");
             entity.Property(e => e.IngredientCodeSnapshot).HasColumnName("ingredient_code_snapshot");
             entity.Property(e => e.IngredientId).HasColumnName("ingredient_id");
             entity.Property(e => e.IngredientNameSnapshot).HasColumnName("ingredient_name_snapshot");
@@ -241,7 +223,7 @@ public partial class RecipeDbContext : DbContext
 
             entity.ToTable("recipe_step", "recipe_db");
 
-            entity.HasIndex(e => new { e.RecipeVersionId, e.SortOrder }, "recipe_step_order_uidx").IsUnique();
+            entity.HasIndex(e => new { e.RecipeVersionId, e.SortOrder }, "recipe_step_order_idx");
 
             entity.HasIndex(e => e.PublicId, "recipe_step_public_id_key").IsUnique();
 
@@ -278,7 +260,7 @@ public partial class RecipeDbContext : DbContext
 
             entity.HasIndex(e => new { e.RecipeStepId, e.MediaAssetRef }, "recipe_step_media_asset_uidx").IsUnique();
 
-            entity.HasIndex(e => new { e.RecipeStepId, e.SortOrder }, "recipe_step_media_order_uidx").IsUnique();
+            entity.HasIndex(e => new { e.RecipeStepId, e.SortOrder }, "recipe_step_media_order_idx");
 
             entity.HasIndex(e => e.MediaAssetRef, "recipe_step_media_reference_idx");
 
@@ -312,13 +294,19 @@ public partial class RecipeDbContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("recipe_version_pkey");
 
-            entity.ToTable("recipe_version", "recipe_db", tb => tb.HasComment("PostgreSQL migration cần partial unique index trên recipe_id WHERE status IN (draft, pending_approval, returned). Service phải chặn update/delete phiên bản approved và tự tăng row_version."));
+            entity.ToTable("recipe_version", "recipe_db", tb =>
+            {
+                tb.HasComment("Một Recipe chỉ có tối đa một draft; published versions là bất biến.");
+                tb.HasCheckConstraint("recipe_version_status_check", "status IN ('draft', 'published')");
+                tb.HasCheckConstraint(
+                    "recipe_version_publication_check",
+                    "(status = 'draft' AND published_at IS NULL AND published_by_user_ref IS NULL) OR " +
+                    "(status = 'published' AND published_at IS NOT NULL AND published_by_user_ref IS NOT NULL)");
+            });
 
             entity.HasIndex(e => e.RecipeId, "recipe_one_active_version_uidx")
                 .IsUnique()
-                .HasFilter("(status = ANY (ARRAY['draft'::text, 'pending_approval'::text, 'returned'::text]))");
-
-            entity.HasIndex(e => e.BasedOnVersionId, "recipe_version_based_on_idx");
+                .HasFilter("(status = 'draft'::text)");
 
             entity.HasIndex(e => e.CreatedByUserRef, "recipe_version_created_by_idx");
 
@@ -333,9 +321,6 @@ public partial class RecipeDbContext : DbContext
             entity.HasIndex(e => e.UpdatedAt, "recipe_version_updated_at_idx");
 
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.BasedOnVersionId)
-                .HasComment("Phiên bản nguồn khi revision hoặc clone.")
-                .HasColumnName("based_on_version_id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("now()")
                 .HasColumnName("created_at");
@@ -350,20 +335,17 @@ public partial class RecipeDbContext : DbContext
             entity.Property(e => e.RecipeId).HasColumnName("recipe_id");
             entity.Property(e => e.Status)
                 .HasDefaultValueSql("'draft'::text")
-                .HasComment("draft, pending_approval, returned, approved hoặc cancelled.")
+                .HasComment("draft hoặc published.")
                 .HasColumnName("status");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("now()")
                 .HasColumnName("updated_at");
             entity.Property(e => e.UpdatedByUserRef).HasColumnName("updated_by_user_ref");
+            entity.Property(e => e.PublishedAt).HasColumnName("published_at");
+            entity.Property(e => e.PublishedByUserRef).HasColumnName("published_by_user_ref");
             entity.Property(e => e.VersionNumber)
                 .HasComment("Số phiên bản tăng dần trong từng Recipe.")
                 .HasColumnName("version_number");
-
-            entity.HasOne(d => d.BasedOnVersion).WithMany(p => p.InverseBasedOnVersion)
-                .HasForeignKey(d => d.BasedOnVersionId)
-                .OnDelete(DeleteBehavior.SetNull)
-                .HasConstraintName("recipe_version_source");
 
             entity.HasOne(d => d.Recipe).WithMany(p => p.RecipeVersions)
                 .HasForeignKey(d => d.RecipeId)
@@ -371,39 +353,11 @@ public partial class RecipeDbContext : DbContext
                 .HasConstraintName("recipe_version_recipe");
         });
 
-        modelBuilder.Entity<RecipeVersionReview>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("recipe_version_review_pkey");
-
-            entity.ToTable("recipe_version_review", "recipe_db");
-
-            entity.HasIndex(e => e.PerformedByUserRef, "recipe_version_review_actor_idx");
-
-            entity.HasIndex(e => new { e.RecipeVersionId, e.PerformedAt }, "recipe_version_review_history_idx");
-
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Action)
-                .HasComment("submitted, approved, returned hoặc cancelled.")
-                .HasColumnName("action");
-            entity.Property(e => e.Comment)
-                .HasComment("Bắt buộc ở tầng nghiệp vụ khi trả về.")
-                .HasColumnName("comment");
-            entity.Property(e => e.PerformedAt)
-                .HasDefaultValueSql("now()")
-                .HasColumnName("performed_at");
-            entity.Property(e => e.PerformedByUserRef).HasColumnName("performed_by_user_ref");
-            entity.Property(e => e.RecipeVersionId).HasColumnName("recipe_version_id");
-
-            entity.HasOne(d => d.RecipeVersion).WithMany(p => p.RecipeVersionReviews)
-                .HasForeignKey(d => d.RecipeVersionId)
-                .HasConstraintName("recipe_review_version");
-        });
-
         modelBuilder.Entity<RecipeYield>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("recipe_yield_pkey");
 
-            entity.ToTable("recipe_yield", "recipe_db", tb => tb.HasComment("Ví dụ quantity = 1.5 và unit_id trỏ tới L nghĩa là công thức tạo ra 1.5 lít thành phẩm. Nghiệp vụ yêu cầu mỗi recipe_version có một bản ghi trước khi gửi duyệt; dữ liệu dùng để hiển thị sản lượng và scale định lượng nguyên liệu."));
+            entity.ToTable("recipe_yield", "recipe_db", tb => tb.HasComment("Sản lượng của một phiên bản công thức; bắt buộc khi publish."));
 
             entity.HasIndex(e => e.RecipeVersionId, "recipe_yield_recipe_version_id_key").IsUnique();
 
@@ -444,11 +398,7 @@ public partial class RecipeDbContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("unit_pkey");
 
-            entity.ToTable("unit", "recipe_db", tb => tb.HasComment("Service không cho sửa category_id, factor_to_base hoặc offset_to_base sau khi Unit đã được sử dụng."));
-
-            entity.HasIndex(e => e.CategoryId, "unit_category_one_base_uidx")
-                .IsUnique()
-                .HasFilter("(is_base = true)");
+            entity.ToTable("unit", "recipe_db", tb => tb.HasComment("Đơn vị hiển thị thuộc một nhóm; MVP không tự động quy đổi đơn vị."));
 
             entity.HasIndex(e => new { e.CategoryId, e.State }, "unit_category_usage_state_idx");
 
@@ -467,21 +417,8 @@ public partial class RecipeDbContext : DbContext
                 .HasDefaultValue((short)2)
                 .HasComment("Số chữ số thập phân khi làm tròn.")
                 .HasColumnName("decimal_places");
-            entity.Property(e => e.FactorToBase)
-                .HasPrecision(18, 8)
-                .HasDefaultValueSql("1")
-                .HasComment("base_value = value * factor_to_base + offset_to_base.")
-                .HasColumnName("factor_to_base");
-            entity.Property(e => e.IsBase)
-                .HasDefaultValue(false)
-                .HasComment("Đơn vị gốc của category, ví dụ g cho mass hoặc ml cho volume.")
-                .HasColumnName("is_base");
             entity.Property(e => e.Name).HasColumnName("name");
             entity.Property(e => e.NormalizedCode).HasColumnName("normalized_code");
-            entity.Property(e => e.OffsetToBase)
-                .HasPrecision(18, 8)
-                .HasComment("Dùng cho đơn vị nhiệt độ; các loại khác thường bằng 0.")
-                .HasColumnName("offset_to_base");
             entity.Property(e => e.PublicId).HasColumnName("public_id");
             entity.Property(e => e.State)
                 .HasDefaultValueSql("'active'::text")
@@ -501,7 +438,7 @@ public partial class RecipeDbContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("unit_category_pkey");
 
-            entity.ToTable("unit_category", "recipe_db", tb => tb.HasComment("Nhóm đơn vị tương thích. Chỉ các Unit cùng category mới được cộng hoặc quy đổi với nhau."));
+            entity.ToTable("unit_category", "recipe_db", tb => tb.HasComment("Nhóm phân loại đơn vị hiển thị; MVP không tự động quy đổi đơn vị."));
 
             entity.HasIndex(e => e.NormalizedCode, "unit_category_normalized_code_key").IsUnique();
 

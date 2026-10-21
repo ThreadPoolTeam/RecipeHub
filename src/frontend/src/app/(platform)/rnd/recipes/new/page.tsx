@@ -22,6 +22,7 @@ import {
 import { useDemo } from '@/lib/demo/provider';
 import { Ingredient, RecipeIngredient, RecipeStep } from '@/lib/demo/types';
 import { Button, TextInput, TextArea, Select, Alert } from '@/components/workspace/fields';
+import { CodeInput } from '@/components/workspace/code-input';
 import { UnitItem } from '@/lib/api/backend-repository';
 export default function NewRecipePage() {
   const router = useRouter();
@@ -29,6 +30,8 @@ export default function NewRecipePage() {
 
   // Basic Info
   const [code, setCode] = useState('');
+  const [generatingCode, setGeneratingCode] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [targetYield, setTargetYield] = useState<number>(1);
@@ -152,10 +155,25 @@ export default function NewRecipePage() {
     setSteps(updated.map((s, idx) => ({ ...s, stepNumber: idx + 1 })));
   };
 
+  const handleGenerateCode = async () => {
+    if (!session || generatingCode || submitting) return;
+    setGeneratingCode(true);
+    setCodeError(null);
+    try {
+      const generatedCode = await repo.generateRecipeCode(session);
+      setCode(generatedCode);
+      touch();
+    } catch (error: unknown) {
+      setCodeError(error instanceof Error ? error.message : 'Không thể tạo mã công thức.');
+    } finally {
+      setGeneratingCode(false);
+    }
+  };
+
   // Submit Handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!session) return;
+    if (!session || generatingCode || submitting) return;
     setErrorMsg(null);
 
     const cleanCode = code.trim().toUpperCase();
@@ -229,7 +247,7 @@ export default function NewRecipePage() {
             <span>Tạo Bản Nháp Công Thức R&amp;D</span>
           </h1>
           <p className="text-sm text-[#706E68] mt-1">
-            Khởi tạo phiên bản v1.0. Bạn có thể lưu nháp, thử nghiệm AI và hoàn thiện trước khi gửi thẩm định.
+            Khởi tạo công thức nháp. Bạn có thể thử nghiệm AI và hoàn thiện trước khi phát hành.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -238,7 +256,7 @@ export default function NewRecipePage() {
               Hủy Bỏ
             </Button>
           </Link>
-          <Button type="submit" variant="gold" isLoading={submitting}>
+          <Button type="submit" variant="gold" isLoading={submitting} disabled={generatingCode}>
             Hoàn Tất & Lưu Bản Nháp
           </Button>
         </div>
@@ -253,12 +271,19 @@ export default function NewRecipePage() {
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <TextInput
-            label="Mã Công Thức *"
-            placeholder="VD: REC-OLO-01"
+          <CodeInput
+            label="Mã Công Thức"
+            placeholder="VD: REC-001"
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
-            helper="Mã định danh viết hoa duy nhất (VD: REC-MAT-02)"
+            onGenerate={handleGenerateCode}
+            generateLabel="Tạo mã công thức"
+            generating={generatingCode}
+            generateDisabled={!session}
+            disabled={submitting}
+            helper="Nhập mã riêng hoặc tạo mã REC-001, REC-002… Mã đã cấp có thể bị bỏ qua nếu không lưu."
+            error={codeError}
+            required
           />
 
           <TextInput
@@ -564,7 +589,7 @@ export default function NewRecipePage() {
             Hủy Bỏ
           </Button>
         </Link>
-        <Button type="submit" variant="gold" size="lg" isLoading={submitting}>
+        <Button type="submit" variant="gold" size="lg" isLoading={submitting} disabled={generatingCode}>
           Lưu Bản Nháp & Chuyển Đến Chi Tiết
         </Button>
       </div>

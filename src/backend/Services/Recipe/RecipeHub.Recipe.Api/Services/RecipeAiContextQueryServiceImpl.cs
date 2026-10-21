@@ -52,7 +52,7 @@ public sealed class RecipeAiContextQueryServiceImpl : RecipeAiContextQuery.Recip
             };
         }
 
-        if (string.Equals(version.Recipe.State, "archived", StringComparison.OrdinalIgnoreCase))
+        if (version.Recipe.ArchivedAt.HasValue)
         {
             return new GetRecipeAiContextResponse
             {
@@ -62,23 +62,13 @@ public sealed class RecipeAiContextQueryServiceImpl : RecipeAiContextQuery.Recip
             };
         }
 
-        if (string.Equals(version.Status, "cancelled", StringComparison.OrdinalIgnoreCase))
-        {
-            return new GetRecipeAiContextResponse
-            {
-                IsSuccess = false,
-                ErrorCode = "INVALID_STATE",
-                ErrorMessage = "Cancelled recipe version cannot generate AI content."
-            };
-        }
-
-        if (string.Equals(version.Status, "approved", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(version.Status, "published", StringComparison.OrdinalIgnoreCase))
         {
             return new GetRecipeAiContextResponse
             {
                 IsSuccess = false,
                 ErrorCode = "VERSION_LOCKED",
-                ErrorMessage = "Approved recipe version is locked and cannot generate AI content."
+                ErrorMessage = "Published recipe version is immutable and cannot generate new AI content."
             };
         }
 

@@ -1,3 +1,4 @@
+using System.Globalization;
 using RecipeHub.Recipe.Application.DTOs;
 using RecipeHub.Recipe.Application.Interfaces;
 using RecipeHub.Recipe.Domain.Entities;
@@ -10,7 +11,6 @@ public sealed class RecipeService : IRecipeService
     private readonly IRecipeRepository _recipeRepository;
     private readonly IIngredientRepository _ingredientRepository;
     private readonly IUnitRepository _unitRepository;
-
     public RecipeService(
         IRecipeRepository recipeRepository,
         IIngredientRepository ingredientRepository,
@@ -21,38 +21,43 @@ public sealed class RecipeService : IRecipeService
         _unitRepository = unitRepository;
     }
 
+    public async Task<GeneratedRecipeCodeResponse> GenerateCodeAsync(CancellationToken cancellationToken)
+    {
+        var max = await _recipeRepository.GetMaxCodeNumberAsync("REC", cancellationToken);
+        var nextNumber = max + 1;
+        while (true)
+        {
+            var code = "REC-" + nextNumber.ToString("D3", CultureInfo.InvariantCulture);
+            if (!await _recipeRepository.RecipeCodeExistsAsync(code, null, cancellationToken))
+            {
+                return new GeneratedRecipeCodeResponse(code);
+            }
+            nextNumber++;
+        }
+    }
+
     public async Task<PagedResponse<RecipeSummaryResponse>> SearchAsync(
-        string? query,
-        string? state,
-        string? versionStatus,
-        Guid? createdByUserId,
-        int page,
-        int pageSize,
-        CancellationToken cancellationToken)
+        string? query, string? state, string? versionStatus, Guid? createdByUserId,
+        int page, int pageSize, CancellationToken cancellationToken)
     {
         if (page < 1) throw new ValidationException("Page must be greater than zero.");
         if (pageSize is < 1 or > 100) throw new ValidationException("Page size must be between 1 and 100.");
         ValidateOptionalState(state, ["active", "archived"], "recipe state");
-        ValidateOptionalState(versionStatus, ["draft", "pending_approval", "returned", "approved", "cancelled"], "version status");
+        ValidateOptionalState(versionStatus, ["draft", "published"], "version status");
         var result = await _recipeRepository.SearchLatestVersionsAsync(
             query, state, versionStatus, createdByUserId, page, pageSize, cancellationToken);
-        return new PagedResponse<RecipeSummaryResponse>(
-            result.Items.Select(MapSummary).ToArray(), page, pageSize, result.TotalCount);
+        return new PagedResponse<RecipeSummaryResponse>(result.Items.Select(MapSummary).ToArray(), page, pageSize, result.TotalCount);
     }
 
     public async Task<RecipeDetailResponse> GetAsync(Guid publicId, CancellationToken cancellationToken) =>
         MapDetail(await _recipeRepository.GetLatestRecipeVersionAsync(publicId, cancellationToken)
             ?? throw new NotFoundException($"Recipe '{publicId}' was not found."));
 
-    public async Task<RecipeDetailResponse> GetVersionAsync(
-        Guid publicId,
-        Guid versionId,
-        CancellationToken cancellationToken) =>
+    public async Task<RecipeDetailResponse> GetVersionAsync(Guid publicId, Guid versionId, CancellationToken cancellationToken) =>
         MapDetail(await GetVersionEntityAsync(publicId, versionId, cancellationToken));
 
     public async Task<IReadOnlyList<RecipeVersionSummaryResponse>> GetVersionHistoryAsync(
-        Guid publicId,
-        CancellationToken cancellationToken)
+        Guid publicId, CancellationToken cancellationToken)
     {
         var versions = await _recipeRepository.GetVersionHistoryAsync(publicId, cancellationToken);
         if (versions.Count == 0) throw new NotFoundException($"Recipe '{publicId}' was not found.");
@@ -60,35 +65,21 @@ public sealed class RecipeService : IRecipeService
     }
 
     public async Task<RecipeDetailResponse> CreateAsync(
-        CreateRecipeRequest request,
-        Guid actorUserId,
-        CancellationToken cancellationToken)
+        CreateRecipeRequest request, Guid actorUserId, CancellationToken cancellationToken)
     {
-        var steps = request.Steps?.Select(s => (UpdateRecipeStepRequest)s).ToArray();
-        var content = ValidateContent(
-            request.Code, request.Name, request.Description, request.YieldQuantity, request.YieldUnitId,
-            request.YieldNote, request.Ingredients, steps);
+        var content = ValidateDraftContent(
+            request.Code, request.Name, request.Description, request.PrimaryMediaAssetRef, request.YieldQuantity, request.YieldUnitId,
+            request.YieldNote, request.Ingredients, request.Steps?.Select(step => (UpdateRecipeStepRequest)step).ToArray());
         if (await _recipeRepository.RecipeCodeExistsAsync(content.NormalizedCode, null, cancellationToken))
             throw new ConflictException($"Recipe code '{content.Code}' already exists.");
-
-        RecipeEntity? source = null;
-        if (request.SourceRecipeId.HasValue)
-        {
-            if (request.SourceRecipeId.Value == Guid.Empty)
-                throw new ValidationException("Source recipe ID must be a valid non-empty UUID when provided.");
-            source = await _recipeRepository.GetRecipeAsync(request.SourceRecipeId.Value, cancellationToken)
-                ?? throw new NotFoundException($"Source recipe '{request.SourceRecipeId}' was not found.");
-        }
 
         var now = DateTime.UtcNow;
         var recipe = new RecipeEntity
         {
             PublicId = Guid.NewGuid(), Code = content.Code, NormalizedCode = content.NormalizedCode,
-            State = "active", SourceRecipeId = source?.Id, CreatedByUserRef = actorUserId,
-            UpdatedByUserRef = actorUserId, CreatedAt = now, UpdatedAt = now
+            CreatedByUserRef = actorUserId, UpdatedByUserRef = actorUserId, CreatedAt = now, UpdatedAt = now
         };
-        var version = await CreateVersionAsync(
-            recipe, 1, null, content, actorUserId, now, cancellationToken);
+        var version = await CreateVersionAsync(recipe, 1, content, actorUserId, now, cancellationToken);
         recipe.RecipeVersions.Add(version);
         await _recipeRepository.AddRecipeAsync(recipe, cancellationToken);
         await _recipeRepository.SaveChangesAsync(cancellationToken);
@@ -96,23 +87,19 @@ public sealed class RecipeService : IRecipeService
     }
 
     public async Task<RecipeDetailResponse> UpdateAsync(
-        Guid publicId,
-        UpdateRecipeRequest request,
-        Guid actorUserId,
-        CancellationToken cancellationToken)
+        Guid publicId, UpdateRecipeRequest request, Guid actorUserId, CancellationToken cancellationToken)
     {
-        var content = ValidateContent(
-            request.Code, request.Name, request.Description, request.YieldQuantity, request.YieldUnitId,
+        var content = ValidateDraftContent(
+            request.Code, request.Name, request.Description, request.PrimaryMediaAssetRef, request.YieldQuantity, request.YieldUnitId,
             request.YieldNote, request.Ingredients, request.Steps);
         var current = await _recipeRepository.GetLatestTrackedRecipeVersionAsync(publicId, cancellationToken)
             ?? throw new NotFoundException($"Recipe '{publicId}' was not found.");
         EnsureActiveRecipe(current.Recipe);
         if (await _recipeRepository.RecipeCodeExistsAsync(content.NormalizedCode, publicId, cancellationToken))
             throw new ConflictException($"Recipe code '{content.Code}' already exists.");
-        if (current.Status == "pending_approval")
-            throw new ConflictException("A pending approval version cannot be edited. Return it first.");
-        if (current.Status == "cancelled")
-            throw new ConflictException("A cancelled version cannot be edited.");
+        if (!string.Equals(current.Recipe.Code, content.Code, StringComparison.OrdinalIgnoreCase) &&
+            (current.Status == "published" || current.VersionNumber > 1))
+            throw new ConflictException("Recipe code cannot be changed after the first publication. Create a copy with a new code instead.");
 
         var now = DateTime.UtcNow;
         current.Recipe.Code = content.Code;
@@ -120,31 +107,49 @@ public sealed class RecipeService : IRecipeService
         current.Recipe.UpdatedByUserRef = actorUserId;
         current.Recipe.UpdatedAt = now;
 
-        RecipeVersion updated;
-        if (current.Status == "approved")
+        RecipeVersion draft;
+        if (current.Status == "published")
         {
-            updated = await CreateVersionAsync(
-                current.Recipe, current.VersionNumber + 1, current.Id, content,
-                actorUserId, now, cancellationToken);
-            current.Recipe.RecipeVersions.Add(updated);
+            draft = await CreateVersionAsync(current.Recipe, current.VersionNumber + 1, content, actorUserId, now, cancellationToken);
+            current.Recipe.RecipeVersions.Add(draft);
         }
         else
         {
             await ReplaceVersionContentAsync(current, content, actorUserId, now, cancellationToken);
-            updated = current;
+            draft = current;
         }
 
         await _recipeRepository.SaveChangesAsync(cancellationToken);
-        return MapDetail(updated);
+        return MapDetail(draft);
+    }
+
+    public async Task<RecipeDetailResponse> PublishAsync(
+        Guid publicId, Guid versionId, Guid actorUserId, CancellationToken cancellationToken)
+    {
+        var version = await GetVersionEntityAsync(publicId, versionId, cancellationToken);
+        EnsureActiveRecipe(version.Recipe);
+        if (version.Status != "draft")
+            throw new ConflictException($"Only a draft can be published; current status is '{version.Status}'.");
+        ValidateForPublication(version);
+
+        var now = DateTime.UtcNow;
+        version.Status = "published";
+        version.PublishedAt = now;
+        version.PublishedByUserRef = actorUserId;
+        version.UpdatedAt = now;
+        version.UpdatedByUserRef = actorUserId;
+        version.Recipe.UpdatedAt = now;
+        version.Recipe.UpdatedByUserRef = actorUserId;
+        await _recipeRepository.SaveChangesAsync(cancellationToken);
+        return MapDetail(version);
     }
 
     public async Task ArchiveAsync(Guid publicId, Guid actorUserId, CancellationToken cancellationToken)
     {
         var recipe = await _recipeRepository.GetRecipeAsync(publicId, cancellationToken)
             ?? throw new NotFoundException($"Recipe '{publicId}' was not found.");
-        if (recipe.State == "archived") return;
+        if (recipe.ArchivedAt.HasValue) return;
         var now = DateTime.UtcNow;
-        recipe.State = "archived";
         recipe.ArchivedAt = now;
         recipe.UpdatedByUserRef = actorUserId;
         recipe.UpdatedAt = now;
@@ -152,13 +157,10 @@ public sealed class RecipeService : IRecipeService
     }
 
     public async Task<RecipeDetailResponse> ActivateAsync(
-        Guid publicId,
-        Guid actorUserId,
-        CancellationToken cancellationToken)
+        Guid publicId, Guid actorUserId, CancellationToken cancellationToken)
     {
         var version = await _recipeRepository.GetLatestTrackedRecipeVersionAsync(publicId, cancellationToken)
             ?? throw new NotFoundException($"Recipe '{publicId}' was not found.");
-        version.Recipe.State = "active";
         version.Recipe.ArchivedAt = null;
         version.Recipe.UpdatedByUserRef = actorUserId;
         version.Recipe.UpdatedAt = DateTime.UtcNow;
@@ -166,726 +168,223 @@ public sealed class RecipeService : IRecipeService
         return MapDetail(version);
     }
 
-    public async Task<RecipeDetailResponse> CloneAsync(
-        Guid publicId,
-        CloneRecipeRequest request,
-        Guid actorUserId,
-        CancellationToken cancellationToken)
+    public async Task<RecipeDetailResponse> CopyAsync(
+        Guid publicId, CopyRecipeRequest request, Guid actorUserId, CancellationToken cancellationToken)
     {
         var source = await _recipeRepository.GetLatestRecipeVersionAsync(publicId, cancellationToken)
             ?? throw new NotFoundException($"Recipe '{publicId}' was not found.");
         var createRequest = new CreateRecipeRequest(
-            request.Code,
-            string.IsNullOrWhiteSpace(request.Name) ? source.Name : request.Name,
-            source.Description,
-            source.RecipeYield?.Quantity ?? throw new ConflictException("The source recipe has no yield."),
-            source.RecipeYield.Unit.PublicId,
-            source.RecipeYield.Note,
-            publicId,
+            request.Code, string.IsNullOrWhiteSpace(request.Name) ? source.Name : request.Name,
+            source.Description, source.PrimaryMediaAssetRef, source.RecipeYield?.Quantity, source.RecipeYield?.Unit.PublicId, source.RecipeYield?.Note,
             source.RecipeIngredients.OrderBy(item => item.SortOrder).Select(item =>
-                new CreateRecipeIngredientRequest(
-                    item.Ingredient.PublicId, item.Unit.PublicId, item.Quantity, item.SortOrder,
-                    item.StageName, item.DuplicateReason, item.Note)).ToArray(),
+                new CreateRecipeIngredientRequest(item.Ingredient.PublicId, item.Unit.PublicId, item.Quantity, item.StageName, item.Note)).ToArray(),
             source.RecipeSteps.OrderBy(item => item.SortOrder).Select(step =>
                 new CreateRecipeStepRequest(
-                    step.SortOrder, step.Title, step.Description, step.DurationSeconds,
-                    step.TemperatureCelsius, step.Equipment, step.SafetyNote, step.CompletionCriteria,
+                    step.Title, step.Description, step.DurationSeconds, step.TemperatureCelsius,
+                    step.Equipment, step.SafetyNote, step.CompletionCriteria,
                     step.RecipeStepMedia.OrderBy(media => media.SortOrder).Select(media =>
-                        new CreateRecipeStepMediaRequest(
-                            media.MediaAssetRef, media.SortOrder, media.IsPrimary, media.Caption)).ToArray())).ToArray());
+                        new CreateRecipeStepMediaRequest(media.MediaAssetRef, media.IsPrimary, media.Caption)).ToArray(), null)).ToArray());
         return await CreateAsync(createRequest, actorUserId, cancellationToken);
     }
 
-    public Task<RecipeVersionReviewResponse> SubmitAsync(
-        Guid publicId,
-        Guid versionId,
-        ReviewRecipeVersionRequest request,
-        Guid actorUserId,
-        CancellationToken cancellationToken) =>
-        ChangeStatusAsync(publicId, versionId, ["draft", "returned"], "pending_approval", "submitted",
-            request.Comment, false, actorUserId, cancellationToken);
-
-    public Task<RecipeVersionReviewResponse> ApproveAsync(
-        Guid publicId,
-        Guid versionId,
-        ReviewRecipeVersionRequest request,
-        Guid actorUserId,
-        CancellationToken cancellationToken) =>
-        ChangeStatusAsync(publicId, versionId, ["pending_approval"], "approved", "approved",
-            request.Comment, false, actorUserId, cancellationToken);
-
-    public Task<RecipeVersionReviewResponse> ReturnAsync(
-        Guid publicId,
-        Guid versionId,
-        ReviewRecipeVersionRequest request,
-        Guid actorUserId,
-        CancellationToken cancellationToken) =>
-        ChangeStatusAsync(publicId, versionId, ["pending_approval"], "returned", "returned",
-            request.Comment, true, actorUserId, cancellationToken);
-
-    public async Task<IReadOnlyList<RecipeVersionReviewResponse>> GetReviewsAsync(
-        Guid publicId,
-        Guid versionId,
-        CancellationToken cancellationToken)
-    {
-        var version = await GetVersionEntityAsync(publicId, versionId, cancellationToken);
-        return version.RecipeVersionReviews.OrderBy(item => item.PerformedAt).Select(MapReview).ToArray();
-    }
-
-    private async Task<RecipeVersionReviewResponse> ChangeStatusAsync(
-        Guid publicId,
-        Guid versionId,
-        IReadOnlyCollection<string> allowedStatuses,
-        string targetStatus,
-        string action,
-        string? comment,
-        bool commentRequired,
-        Guid actorUserId,
-        CancellationToken cancellationToken)
-    {
-        var version = await GetVersionEntityAsync(publicId, versionId, cancellationToken);
-        EnsureActiveRecipe(version.Recipe);
-        if (!allowedStatuses.Contains(version.Status))
-            throw new ConflictException($"Version status '{version.Status}' cannot transition to '{targetStatus}'.");
-        if (commentRequired && string.IsNullOrWhiteSpace(comment))
-            throw new ValidationException("A comment is required when returning a recipe version.");
-        if (targetStatus == "pending_approval" &&
-            (version.RecipeYield is null || version.RecipeIngredients.Count == 0 || version.RecipeSteps.Count == 0))
-            throw new ValidationException("A recipe requires a yield, at least one ingredient, and at least one step before submission.");
-
-        var now = DateTime.UtcNow;
-        version.Status = targetStatus;
-        version.UpdatedByUserRef = actorUserId;
-        version.UpdatedAt = now;
-        version.Recipe.UpdatedByUserRef = actorUserId;
-        version.Recipe.UpdatedAt = now;
-        var review = new RecipeVersionReview
-        {
-            RecipeVersionId = version.Id, Action = action, Comment = TrimOptional(comment),
-            PerformedByUserRef = actorUserId, PerformedAt = now, RecipeVersion = version
-        };
-        await _recipeRepository.AddVersionReviewAsync(review, cancellationToken);
-        await _recipeRepository.SaveChangesAsync(cancellationToken);
-        return MapReview(review);
-    }
-
     private async Task<RecipeVersion> CreateVersionAsync(
-        RecipeEntity recipe,
-        int versionNumber,
-        long? basedOnVersionId,
-        ValidatedRecipeContent content,
-        Guid actorUserId,
-        DateTime now,
-        CancellationToken cancellationToken)
+        RecipeEntity recipe, int versionNumber, ValidatedRecipeContent content,
+        Guid actorUserId, DateTime now, CancellationToken cancellationToken)
     {
         var version = new RecipeVersion
         {
-            PublicId = Guid.NewGuid(), VersionNumber = versionNumber, BasedOnVersionId = basedOnVersionId,
-            Status = "draft", Name = content.Name, NormalizedName = content.NormalizedName,
-            Description = content.Description, CreatedByUserRef = actorUserId,
-            UpdatedByUserRef = actorUserId, CreatedAt = now, UpdatedAt = now, Recipe = recipe
+            PublicId = Guid.NewGuid(), VersionNumber = versionNumber, Status = "draft",
+            Name = content.Name, NormalizedName = content.NormalizedName, Description = content.Description,
+            PrimaryMediaAssetRef = content.PrimaryMediaAssetRef,
+            CreatedByUserRef = actorUserId, UpdatedByUserRef = actorUserId,
+            CreatedAt = now, UpdatedAt = now, Recipe = recipe
         };
         await AddVersionContentAsync(version, content, now, cancellationToken);
         return version;
     }
 
     private async Task ReplaceVersionContentAsync(
-        RecipeVersion version,
-        ValidatedRecipeContent content,
-        Guid actorUserId,
-        DateTime now,
-        CancellationToken cancellationToken)
+        RecipeVersion version, ValidatedRecipeContent content, Guid actorUserId,
+        DateTime now, CancellationToken cancellationToken)
     {
         version.Name = content.Name;
         version.NormalizedName = content.NormalizedName;
         version.Description = content.Description;
-        version.Status = "draft";
+        version.PrimaryMediaAssetRef = content.PrimaryMediaAssetRef;
         version.UpdatedByUserRef = actorUserId;
         version.UpdatedAt = now;
-
-        var yieldUnit = await GetActiveUnitAsync(content.YieldUnitId, "Yield unit", cancellationToken);
-        version.RecipeYield ??= new RecipeYield { RecipeVersion = version, CreatedAt = now };
-        version.RecipeYield.Quantity = content.YieldQuantity;
-        version.RecipeYield.UnitId = yieldUnit.Id;
-        version.RecipeYield.Unit = yieldUnit;
-        version.RecipeYield.Note = content.YieldNote;
-        version.RecipeYield.UpdatedAt = now;
+        await SetYieldAsync(version, content, now, cancellationToken);
 
         version.RecipeIngredients.Clear();
-        foreach (var item in content.Ingredients)
+        await AddIngredientsAsync(version, content.Ingredients, now, cancellationToken);
+
+        var existingSteps = version.RecipeSteps.ToDictionary(step => step.PublicId);
+        var requestedIds = content.Steps.Where(step => step.Id.HasValue).Select(step => step.Id!.Value).ToHashSet();
+        foreach (var removed in version.RecipeSteps.Where(step => !requestedIds.Contains(step.PublicId)).ToArray())
+            version.RecipeSteps.Remove(removed);
+
+        for (var index = 0; index < content.Steps.Count; index++)
         {
-            var ingredient = await _ingredientRepository.GetByPublicIdAsync(item.IngredientId, cancellationToken)
-                ?? throw new NotFoundException($"Ingredient '{item.IngredientId}' was not found.");
-            if (!IsActive(ingredient.State))
-                throw new ValidationException($"Ingredient '{item.IngredientId}' is inactive and cannot be selected.");
-            var unit = await GetActiveUnitAsync(item.UnitId, "Ingredient unit", cancellationToken);
-            version.RecipeIngredients.Add(new RecipeIngredient
+            var request = content.Steps[index];
+            RecipeStep step;
+            if (request.Id.HasValue)
             {
-                IngredientId = ingredient.Id, UnitId = unit.Id, Quantity = item.Quantity,
-                SortOrder = item.SortOrder, StageName = TrimOptional(item.StageName),
-                DuplicateReason = TrimOptional(item.DuplicateReason), Note = TrimOptional(item.Note),
-                IngredientCodeSnapshot = ingredient.Code, IngredientNameSnapshot = ingredient.Name,
-                IngredientWarningSnapshot = ingredient.Warning, CreatedAt = now, UpdatedAt = now,
-                RecipeVersion = version, Ingredient = ingredient, Unit = unit
-            });
-        }
-
-        // Identity-Preserving Step Update:
-        // 1. Validation: Reject duplicate PublicIds in request
-        var duplicateStepIds = content.Steps
-            .Where(s => s.PublicId.HasValue && s.PublicId.Value != Guid.Empty)
-            .GroupBy(s => s.PublicId!.Value)
-            .Where(g => g.Count() > 1)
-            .Select(g => g.Key)
-            .ToList();
-        if (duplicateStepIds.Count > 0)
-        {
-            throw new ValidationException($"Duplicate step PublicId detected in request: {string.Join(", ", duplicateStepIds)}");
-        }
-
-        // 2. Validation: Any step with PublicId must exist in current version
-        var existingStepMap = version.RecipeSteps.ToDictionary(s => s.PublicId);
-        foreach (var stepDto in content.Steps)
-        {
-            if (stepDto.PublicId.HasValue && stepDto.PublicId.Value != Guid.Empty)
-            {
-                if (!existingStepMap.ContainsKey(stepDto.PublicId.Value))
-                {
-                    throw new NotFoundException($"Recipe step '{stepDto.PublicId.Value}' was not found in version '{version.PublicId}'.");
-                }
-            }
-        }
-
-        // 2. Identify deleted steps
-        var requestedPublicIds = content.Steps
-            .Where(s => s.PublicId.HasValue && s.PublicId.Value != Guid.Empty)
-            .Select(s => s.PublicId!.Value)
-            .ToHashSet();
-
-        var stepsToRemove = version.RecipeSteps
-            .Where(s => !requestedPublicIds.Contains(s.PublicId))
-            .ToList();
-
-        foreach (var step in stepsToRemove)
-        {
-            version.RecipeSteps.Remove(step);
-        }
-
-        // 3. Two-phase Sort Order Update: Phase 1 (Temporary Displace)
-        int tempStepIndex = 1;
-        foreach (var step in version.RecipeSteps)
-        {
-            step.SortOrder = 10000 + tempStepIndex++;
-            int tempMediaIndex = 1;
-            foreach (var media in step.RecipeStepMedia)
-            {
-                media.SortOrder = 10000 + tempMediaIndex++;
-            }
-        }
-        await _recipeRepository.SaveChangesAsync(cancellationToken);
-
-        // 4. Phase 2 (Final Assign)
-        foreach (var stepDto in content.Steps)
-        {
-            if (stepDto.PublicId.HasValue && stepDto.PublicId.Value != Guid.Empty &&
-                existingStepMap.TryGetValue(stepDto.PublicId.Value, out var existingStep))
-            {
-                existingStep.SortOrder = stepDto.SortOrder;
-                existingStep.Title = RequireText(stepDto.Title, "Step title");
-                existingStep.Description = RequireText(stepDto.Description, "Step description");
-                existingStep.DurationSeconds = stepDto.DurationSeconds;
-                existingStep.TemperatureCelsius = stepDto.TemperatureCelsius;
-                existingStep.Equipment = TrimOptional(stepDto.Equipment);
-                existingStep.SafetyNote = TrimOptional(stepDto.SafetyNote);
-                existingStep.CompletionCriteria = TrimOptional(stepDto.CompletionCriteria);
-                existingStep.UpdatedAt = now;
-
-                if (stepDto.Media != null)
-                {
-                    var existingMediaMap = existingStep.RecipeStepMedia.ToDictionary(m => m.MediaAssetRef);
-                    var requestedMediaRefs = stepDto.Media.Select(m => m.MediaAssetRef).ToHashSet();
-
-                    var mediaToRemove = existingStep.RecipeStepMedia
-                        .Where(m => !requestedMediaRefs.Contains(m.MediaAssetRef))
-                        .ToList();
-                    foreach (var m in mediaToRemove)
-                    {
-                        existingStep.RecipeStepMedia.Remove(m);
-                    }
-
-                    foreach (var mediaDto in stepDto.Media)
-                    {
-                        if (existingMediaMap.TryGetValue(mediaDto.MediaAssetRef, out var existingMedia))
-                        {
-                            existingMedia.SortOrder = mediaDto.SortOrder;
-                            existingMedia.IsPrimary = mediaDto.IsPrimary;
-                            existingMedia.Caption = TrimOptional(mediaDto.Caption);
-                        }
-                        else
-                        {
-                            existingStep.RecipeStepMedia.Add(new RecipeStepMedia
-                            {
-                                PublicId = Guid.NewGuid(),
-                                MediaAssetRef = mediaDto.MediaAssetRef,
-                                SortOrder = mediaDto.SortOrder,
-                                IsPrimary = mediaDto.IsPrimary,
-                                Caption = TrimOptional(mediaDto.Caption),
-                                CreatedAt = now,
-                                RecipeStep = existingStep
-                            });
-                        }
-                    }
-                }
+                if (!existingSteps.TryGetValue(request.Id.Value, out var existingStep))
+                    throw new NotFoundException($"Recipe step '{request.Id.Value}' was not found in version '{version.PublicId}'.");
+                step = existingStep;
             }
             else
             {
-                if (stepDto.PublicId.HasValue && stepDto.PublicId.Value != Guid.Empty)
-                {
-                    throw new NotFoundException($"Recipe step '{stepDto.PublicId.Value}' was not found in version '{version.PublicId}'.");
-                }
-
-                var newStep = new RecipeStep
-                {
-                    PublicId = Guid.NewGuid(),
-                    SortOrder = stepDto.SortOrder,
-                    Title = RequireText(stepDto.Title, "Step title"),
-                    Description = RequireText(stepDto.Description, "Step description"),
-                    DurationSeconds = stepDto.DurationSeconds,
-                    TemperatureCelsius = stepDto.TemperatureCelsius,
-                    Equipment = TrimOptional(stepDto.Equipment),
-                    SafetyNote = TrimOptional(stepDto.SafetyNote),
-                    CompletionCriteria = TrimOptional(stepDto.CompletionCriteria),
-                    CreatedAt = now,
-                    UpdatedAt = now,
-                    RecipeVersion = version
-                };
-
-                if (stepDto.Media != null)
-                {
-                    foreach (var mediaDto in stepDto.Media)
-                    {
-                        newStep.RecipeStepMedia.Add(new RecipeStepMedia
-                        {
-                            PublicId = Guid.NewGuid(),
-                            MediaAssetRef = mediaDto.MediaAssetRef,
-                            SortOrder = mediaDto.SortOrder,
-                            IsPrimary = mediaDto.IsPrimary,
-                            Caption = TrimOptional(mediaDto.Caption),
-                            CreatedAt = now,
-                            RecipeStep = newStep
-                        });
-                    }
-                }
-
-                version.RecipeSteps.Add(newStep);
+                step = new RecipeStep { PublicId = Guid.NewGuid(), CreatedAt = now, RecipeVersion = version };
+                version.RecipeSteps.Add(step);
             }
+            MapStep(step, request, index + 1, now);
         }
     }
 
     private async Task AddVersionContentAsync(
-        RecipeVersion version,
-        ValidatedRecipeContent content,
-        DateTime now,
-        CancellationToken cancellationToken)
+        RecipeVersion version, ValidatedRecipeContent content, DateTime now, CancellationToken cancellationToken)
     {
-        var yieldUnit = await GetActiveUnitAsync(content.YieldUnitId, "Yield unit", cancellationToken);
+        await SetYieldAsync(version, content, now, cancellationToken);
+        await AddIngredientsAsync(version, content.Ingredients, now, cancellationToken);
+        for (var index = 0; index < content.Steps.Count; index++)
+        {
+            var step = new RecipeStep { PublicId = Guid.NewGuid(), CreatedAt = now, RecipeVersion = version };
+            MapStep(step, content.Steps[index], index + 1, now);
+            version.RecipeSteps.Add(step);
+        }
+    }
+
+    private async Task SetYieldAsync(
+        RecipeVersion version, ValidatedRecipeContent content, DateTime now, CancellationToken cancellationToken)
+    {
+        if (!content.YieldQuantity.HasValue || !content.YieldUnitId.HasValue)
+        {
+            version.RecipeYield = null;
+            return;
+        }
+        var unit = await GetActiveUnitAsync(content.YieldUnitId.Value, "Yield unit", cancellationToken);
         version.RecipeYield ??= new RecipeYield { RecipeVersion = version, CreatedAt = now };
-        version.RecipeYield.Quantity = content.YieldQuantity;
-        version.RecipeYield.UnitId = yieldUnit.Id;
-        version.RecipeYield.Unit = yieldUnit;
+        version.RecipeYield.Quantity = content.YieldQuantity.Value;
+        version.RecipeYield.UnitId = unit.Id;
+        version.RecipeYield.Unit = unit;
         version.RecipeYield.Note = content.YieldNote;
         version.RecipeYield.UpdatedAt = now;
+    }
 
-        foreach (var item in content.Ingredients)
+    private async Task AddIngredientsAsync(
+        RecipeVersion version, IReadOnlyList<CreateRecipeIngredientRequest> ingredients,
+        DateTime now, CancellationToken cancellationToken)
+    {
+        for (var index = 0; index < ingredients.Count; index++)
         {
-            var ingredient = await _ingredientRepository.GetByPublicIdAsync(item.IngredientId, cancellationToken)
-                ?? throw new NotFoundException($"Ingredient '{item.IngredientId}' was not found.");
+            var request = ingredients[index];
+            var ingredient = await _ingredientRepository.GetByPublicIdAsync(request.IngredientId, cancellationToken)
+                ?? throw new NotFoundException($"Ingredient '{request.IngredientId}' was not found.");
             if (!IsActive(ingredient.State))
-                throw new ValidationException($"Ingredient '{item.IngredientId}' is inactive and cannot be selected.");
-            var unit = await GetActiveUnitAsync(item.UnitId, "Ingredient unit", cancellationToken);
+                throw new ValidationException($"Ingredient '{request.IngredientId}' is inactive and cannot be selected.");
+            var unit = await GetActiveUnitAsync(request.UnitId, "Ingredient unit", cancellationToken);
             version.RecipeIngredients.Add(new RecipeIngredient
             {
-                IngredientId = ingredient.Id, UnitId = unit.Id, Quantity = item.Quantity,
-                SortOrder = item.SortOrder, StageName = TrimOptional(item.StageName),
-                DuplicateReason = TrimOptional(item.DuplicateReason), Note = TrimOptional(item.Note),
+                IngredientId = ingredient.Id, UnitId = unit.Id, Quantity = request.Quantity, SortOrder = index + 1,
+                StageName = TrimOptional(request.StageName), Note = TrimOptional(request.Note),
                 IngredientCodeSnapshot = ingredient.Code, IngredientNameSnapshot = ingredient.Name,
                 IngredientWarningSnapshot = ingredient.Warning, CreatedAt = now, UpdatedAt = now,
                 RecipeVersion = version, Ingredient = ingredient, Unit = unit
             });
         }
+    }
 
-        foreach (var item in content.Steps)
+    private static void MapStep(RecipeStep step, UpdateRecipeStepRequest request, int sortOrder, DateTime now)
+    {
+        step.SortOrder = sortOrder;
+        step.Title = request.Title?.Trim() ?? string.Empty;
+        step.Description = request.Description?.Trim() ?? string.Empty;
+        step.DurationSeconds = request.DurationSeconds;
+        step.TemperatureCelsius = request.TemperatureCelsius;
+        step.Equipment = TrimOptional(request.Equipment);
+        step.SafetyNote = TrimOptional(request.SafetyNote);
+        step.CompletionCriteria = TrimOptional(request.CompletionCriteria);
+        step.UpdatedAt = now;
+        step.RecipeStepMedia.Clear();
+        var mediaItems = request.Media ?? [];
+        for (var index = 0; index < mediaItems.Count; index++)
         {
-            var step = new RecipeStep
+            var media = mediaItems[index];
+            step.RecipeStepMedia.Add(new RecipeStepMedia
             {
-                PublicId = Guid.NewGuid(),
-                SortOrder = item.SortOrder, Title = RequireText(item.Title, "Step title"),
-                Description = RequireText(item.Description, "Step description"),
-                DurationSeconds = item.DurationSeconds, TemperatureCelsius = item.TemperatureCelsius,
-                Equipment = TrimOptional(item.Equipment), SafetyNote = TrimOptional(item.SafetyNote),
-                CompletionCriteria = TrimOptional(item.CompletionCriteria), CreatedAt = now,
-                UpdatedAt = now, RecipeVersion = version
-            };
-            if (item.Media != null)
-            {
-                foreach (var media in item.Media)
-                {
-                    step.RecipeStepMedia.Add(new RecipeStepMedia
-                    {
-                        PublicId = Guid.NewGuid(),
-                        MediaAssetRef = media.MediaAssetRef, SortOrder = media.SortOrder,
-                        IsPrimary = media.IsPrimary, Caption = TrimOptional(media.Caption),
-                        CreatedAt = now, RecipeStep = step
-                    });
-                }
-            }
-            version.RecipeSteps.Add(step);
+                PublicId = Guid.NewGuid(), MediaAssetRef = media.MediaAssetRef, SortOrder = index + 1,
+                IsPrimary = media.IsPrimary, Caption = TrimOptional(media.Caption), CreatedAt = now, RecipeStep = step
+            });
         }
     }
 
-    public async Task<RecipeDetailResponse> SetPrimaryImageAsync(
-        Guid recipePublicId,
-        Guid versionPublicId,
-        SetPrimaryImageRequest request,
-        Guid actorId,
-        CancellationToken cancellationToken = default)
-    {
-        var version = await _recipeRepository.GetRecipeVersionAsync(recipePublicId, versionPublicId, cancellationToken)
-            ?? throw new NotFoundException($"Recipe version '{versionPublicId}' was not found in recipe '{recipePublicId}'.");
-
-        EnsureActiveRecipe(version.Recipe);
-        EnsureEditableVersion(version);
-
-        if (request.MediaAssetRef == Guid.Empty)
-            throw new ValidationException("Media asset reference must be a valid non-empty UUID.");
-
-        version.PrimaryMediaAssetRef = request.MediaAssetRef;
-        version.UpdatedByUserRef = actorId;
-        version.UpdatedAt = DateTime.UtcNow;
-
-        await _recipeRepository.SaveChangesAsync(cancellationToken);
-        return MapDetail(version);
-    }
-
-    public async Task RemovePrimaryImageAsync(
-        Guid recipePublicId,
-        Guid versionPublicId,
-        RemovePrimaryImageRequest request,
-        Guid actorId,
-        CancellationToken cancellationToken = default)
-    {
-        var version = await _recipeRepository.GetRecipeVersionAsync(recipePublicId, versionPublicId, cancellationToken)
-            ?? throw new NotFoundException($"Recipe version '{versionPublicId}' was not found in recipe '{recipePublicId}'.");
-
-        EnsureActiveRecipe(version.Recipe);
-        EnsureEditableVersion(version);
-
-        version.PrimaryMediaAssetRef = null;
-        version.UpdatedByUserRef = actorId;
-        version.UpdatedAt = DateTime.UtcNow;
-
-        await _recipeRepository.SaveChangesAsync(cancellationToken);
-    }
-
-    public async Task<RecipeStepMediaDetailResponse> AddStepMediaAsync(
-        Guid recipePublicId,
-        Guid versionPublicId,
-        Guid stepPublicId,
-        CreateRecipeStepMediaRequest request,
-        Guid actorId,
-        CancellationToken cancellationToken = default)
-    {
-        var version = await _recipeRepository.GetRecipeVersionAsync(recipePublicId, versionPublicId, cancellationToken)
-            ?? throw new NotFoundException($"Recipe version '{versionPublicId}' was not found in recipe '{recipePublicId}'.");
-
-        EnsureActiveRecipe(version.Recipe);
-        EnsureEditableVersion(version);
-
-        if (request.MediaAssetRef == Guid.Empty)
-            throw new ValidationException("Media asset reference must be a valid non-empty UUID.");
-        if (request.SortOrder <= 0)
-            throw new ValidationException("Media sort order must be greater than zero.");
-
-        var step = version.RecipeSteps.FirstOrDefault(s => s.PublicId == stepPublicId)
-            ?? throw new NotFoundException($"Recipe step '{stepPublicId}' was not found in version '{versionPublicId}'.");
-
-        if (step.RecipeStepMedia.Any(m => m.MediaAssetRef == request.MediaAssetRef))
-            throw new ConflictException("Media asset is already attached to this step.");
-
-        var now = DateTime.UtcNow;
-
-        if (request.IsPrimary)
-        {
-            foreach (var existing in step.RecipeStepMedia.Where(m => m.IsPrimary))
-            {
-                existing.IsPrimary = false;
-            }
-        }
-
-        var existingWithSameOrder = step.RecipeStepMedia.FirstOrDefault(m => m.SortOrder == request.SortOrder);
-        if (existingWithSameOrder != null)
-        {
-            var sortedExisting = step.RecipeStepMedia.OrderBy(m => m.SortOrder).ToList();
-            int tempIdx = 1;
-            foreach (var m in step.RecipeStepMedia)
-            {
-                m.SortOrder = 10000 + tempIdx++;
-            }
-            await _recipeRepository.SaveChangesAsync(cancellationToken);
-
-            int order = 1;
-            foreach (var m in sortedExisting)
-            {
-                if (order == request.SortOrder) order++;
-                m.SortOrder = order++;
-            }
-        }
-
-        var newMedia = new RecipeStepMedia
-        {
-            PublicId = Guid.NewGuid(),
-            RecipeStep = step,
-            RecipeStepId = step.Id,
-            MediaAssetRef = request.MediaAssetRef,
-            SortOrder = request.SortOrder,
-            IsPrimary = request.IsPrimary,
-            Caption = TrimOptional(request.Caption),
-            CreatedAt = now
-        };
-
-        step.RecipeStepMedia.Add(newMedia);
-        version.UpdatedByUserRef = actorId;
-        version.UpdatedAt = now;
-
-        await _recipeRepository.SaveChangesAsync(cancellationToken);
-
-        return new RecipeStepMediaDetailResponse(
-            newMedia.PublicId,
-            newMedia.MediaAssetRef,
-            newMedia.SortOrder,
-            newMedia.IsPrimary,
-            newMedia.Caption);
-    }
-
-    public async Task<RecipeStepMediaDetailResponse> UpdateStepMediaAsync(
-        Guid recipePublicId,
-        Guid versionPublicId,
-        Guid stepPublicId,
-        Guid linkId,
-        UpdateRecipeStepMediaRequest request,
-        Guid actorId,
-        CancellationToken cancellationToken = default)
-    {
-        var version = await _recipeRepository.GetRecipeVersionAsync(recipePublicId, versionPublicId, cancellationToken)
-            ?? throw new NotFoundException($"Recipe version '{versionPublicId}' was not found in recipe '{recipePublicId}'.");
-
-        EnsureActiveRecipe(version.Recipe);
-        EnsureEditableVersion(version);
-
-        var step = version.RecipeSteps.FirstOrDefault(s => s.PublicId == stepPublicId)
-            ?? throw new NotFoundException($"Recipe step '{stepPublicId}' was not found in version '{versionPublicId}'.");
-
-        var media = step.RecipeStepMedia.FirstOrDefault(m => m.PublicId == linkId)
-            ?? throw new NotFoundException($"Media link '{linkId}' was not found in step '{stepPublicId}'.");
-
-        if (request.Caption != null)
-        {
-            media.Caption = TrimOptional(request.Caption);
-        }
-
-        if (request.IsPrimary.HasValue)
-        {
-            if (request.IsPrimary.Value)
-            {
-                foreach (var other in step.RecipeStepMedia.Where(m => m.Id != media.Id && m.IsPrimary))
-                {
-                    other.IsPrimary = false;
-                }
-                media.IsPrimary = true;
-            }
-            else
-            {
-                media.IsPrimary = false;
-            }
-        }
-
-        if (request.SortOrder.HasValue && request.SortOrder.Value != media.SortOrder)
-        {
-            if (request.SortOrder.Value <= 0)
-                throw new ValidationException("Media sort order must be greater than zero.");
-
-            var targetOrder = request.SortOrder.Value;
-            var others = step.RecipeStepMedia.Where(m => m.Id != media.Id).OrderBy(m => m.SortOrder).ToList();
-            int tempIdx = 1;
-            foreach (var m in step.RecipeStepMedia)
-            {
-                m.SortOrder = 10000 + tempIdx++;
-            }
-            await _recipeRepository.SaveChangesAsync(cancellationToken);
-
-            media.SortOrder = targetOrder;
-            int currentOrder = 1;
-            foreach (var other in others)
-            {
-                if (currentOrder == targetOrder) currentOrder++;
-                other.SortOrder = currentOrder++;
-            }
-        }
-
-        version.UpdatedByUserRef = actorId;
-        version.UpdatedAt = DateTime.UtcNow;
-
-        await _recipeRepository.SaveChangesAsync(cancellationToken);
-
-        return new RecipeStepMediaDetailResponse(
-            media.PublicId,
-            media.MediaAssetRef,
-            media.SortOrder,
-            media.IsPrimary,
-            media.Caption);
-    }
-
-    public async Task RemoveStepMediaAsync(
-        Guid recipePublicId,
-        Guid versionPublicId,
-        Guid stepPublicId,
-        Guid linkId,
-        long expectedRowVersion = 0,
-        Guid actorId = default,
-        CancellationToken cancellationToken = default)
-    {
-        var version = await _recipeRepository.GetRecipeVersionAsync(recipePublicId, versionPublicId, cancellationToken)
-            ?? throw new NotFoundException($"Recipe version '{versionPublicId}' was not found in recipe '{recipePublicId}'.");
-
-        EnsureActiveRecipe(version.Recipe);
-        EnsureEditableVersion(version);
-
-        var step = version.RecipeSteps.FirstOrDefault(s => s.PublicId == stepPublicId)
-            ?? throw new NotFoundException($"Recipe step '{stepPublicId}' was not found in version '{versionPublicId}'.");
-
-        var media = step.RecipeStepMedia.FirstOrDefault(m => m.PublicId == linkId)
-            ?? throw new NotFoundException($"Media link '{linkId}' was not found in step '{stepPublicId}'.");
-
-        step.RecipeStepMedia.Remove(media);
-
-        if (step.RecipeStepMedia.Count > 0)
-        {
-            var remaining = step.RecipeStepMedia.OrderBy(m => m.SortOrder).ToList();
-            int tempIdx = 1;
-            foreach (var m in step.RecipeStepMedia)
-            {
-                m.SortOrder = 10000 + tempIdx++;
-            }
-            await _recipeRepository.SaveChangesAsync(cancellationToken);
-
-            int finalIdx = 1;
-            foreach (var m in remaining)
-            {
-                m.SortOrder = finalIdx++;
-            }
-        }
-
-        version.UpdatedByUserRef = actorId;
-        version.UpdatedAt = DateTime.UtcNow;
-
-        await _recipeRepository.SaveChangesAsync(cancellationToken);
-    }
-
-    private static void EnsureEditableVersion(RecipeVersion version)
-    {
-        if (version.Status == "pending_approval")
-            throw new ConflictException("A pending approval version cannot be edited. Return it first.");
-        if (version.Status == "cancelled")
-            throw new ConflictException("A cancelled version cannot be edited.");
-        if (version.Status == "approved")
-            throw new ConflictException("An approved version cannot be edited.");
-    }
-
-    private async Task<Unit> GetActiveUnitAsync(
-        Guid publicId,
-        string fieldName,
-        CancellationToken cancellationToken)
-    {
-        var unit = await _unitRepository.GetByPublicIdAsync(publicId, cancellationToken)
-            ?? throw new NotFoundException($"{fieldName} '{publicId}' was not found.");
-        if (!IsActive(unit.State))
-            throw new ValidationException($"{fieldName} '{publicId}' is inactive and cannot be selected.");
-        return unit;
-    }
-
-    private async Task<RecipeVersion> GetVersionEntityAsync(
-        Guid publicId,
-        Guid versionId,
-        CancellationToken cancellationToken) =>
-        await _recipeRepository.GetRecipeVersionAsync(publicId, versionId, cancellationToken)
-        ?? throw new NotFoundException($"Recipe version '{versionId}' was not found in recipe '{publicId}'.");
-
-    private static ValidatedRecipeContent ValidateContent(
-        string? code,
-        string? name,
-        string? description,
-        decimal yieldQuantity,
-        Guid yieldUnitId,
-        string? yieldNote,
-        IReadOnlyList<CreateRecipeIngredientRequest>? ingredients,
+    private static ValidatedRecipeContent ValidateDraftContent(
+        string? code, string? name, string? description, Guid? primaryMediaAssetRef,
+        decimal? yieldQuantity, Guid? yieldUnitId,
+        string? yieldNote, IReadOnlyList<CreateRecipeIngredientRequest>? ingredients,
         IReadOnlyList<UpdateRecipeStepRequest>? steps)
     {
         var validCode = RequireText(code, "Recipe code");
         var validName = RequireText(name, "Recipe name");
+        if (primaryMediaAssetRef == Guid.Empty)
+            throw new ValidationException("Primary media asset reference must be a valid non-empty UUID.");
+        if (yieldQuantity.HasValue != yieldUnitId.HasValue)
+            throw new ValidationException("Yield quantity and yield unit must be provided together.");
         if (yieldQuantity <= 0) throw new ValidationException("Yield quantity must be greater than zero.");
         if (yieldUnitId == Guid.Empty) throw new ValidationException("Yield unit ID must be a valid non-empty UUID.");
-        var validIngredients = ingredients ?? throw new ValidationException("Ingredients are required.");
-        var validSteps = steps ?? throw new ValidationException("Steps are required.");
-        if (validIngredients.Count == 0) throw new ValidationException("At least one ingredient is required.");
-        if (validSteps.Count == 0) throw new ValidationException("At least one step is required.");
+
+        var validIngredients = ingredients ?? [];
+        var validSteps = steps ?? [];
         if (validIngredients.Any(item => item.IngredientId == Guid.Empty || item.UnitId == Guid.Empty))
             throw new ValidationException("Ingredient and unit IDs must be valid non-empty UUIDs.");
         if (validIngredients.Any(item => item.Quantity <= 0))
             throw new ValidationException("Ingredient quantity must be greater than zero.");
-        ValidateUniquePositiveOrders(validIngredients.Select(item => item.SortOrder), "Ingredient");
-        ValidateUniquePositiveOrders(validSteps.Select(item => item.SortOrder), "Step");
-        if (validSteps.Any(step => string.IsNullOrWhiteSpace(step.Title) || string.IsNullOrWhiteSpace(step.Description)))
-            throw new ValidationException("Step title and description are required.");
         if (validSteps.Any(step => step.DurationSeconds < 0))
             throw new ValidationException("Step duration cannot be negative.");
-        if (validSteps.Any(step => step.Media is null))
-            throw new ValidationException("Step media collections are required.");
+        if (validSteps.Where(step => step.Id.HasValue).Select(step => step.Id).Distinct().Count() != validSteps.Count(step => step.Id.HasValue))
+            throw new ValidationException("Recipe step IDs must be unique.");
+
         foreach (var step in validSteps)
         {
-            var mediaItems = step.Media!;
+            var mediaItems = step.Media ?? [];
             if (mediaItems.Any(media => media.MediaAssetRef == Guid.Empty))
                 throw new ValidationException("Media asset reference must be a valid non-empty UUID.");
-            ValidateUniquePositiveOrders(mediaItems.Select(media => media.SortOrder), "Media");
             if (mediaItems.Count(media => media.IsPrimary) > 1)
                 throw new ValidationException("A step can have at most one primary media item.");
             if (mediaItems.Select(media => media.MediaAssetRef).Distinct().Count() != mediaItems.Count)
                 throw new ValidationException("A media asset cannot be repeated within the same step.");
         }
-        if (validIngredients.GroupBy(item => item.IngredientId)
-            .Any(group => group.Count() > 1 && group.Any(item => string.IsNullOrWhiteSpace(item.DuplicateReason))))
-            throw new ValidationException("Repeated ingredients require a duplicate reason on every repeated line.");
+
         return new ValidatedRecipeContent(
             validCode, Normalize(validCode), validName, Normalize(validName), TrimOptional(description),
-            yieldQuantity, yieldUnitId, TrimOptional(yieldNote), validIngredients, validSteps);
+            primaryMediaAssetRef, yieldQuantity, yieldUnitId, TrimOptional(yieldNote), validIngredients, validSteps);
     }
 
-    private static void ValidateUniquePositiveOrders(IEnumerable<int> orders, string fieldName)
+    private static void ValidateForPublication(RecipeVersion version)
     {
-        var values = orders.ToArray();
-        if (values.Any(value => value <= 0))
-            throw new ValidationException($"{fieldName} sort order must be greater than zero.");
-        if (values.Distinct().Count() != values.Length)
-            throw new ValidationException($"{fieldName} sort orders must be unique.");
+        if (version.RecipeYield is null) throw new ValidationException("A yield is required before publication.");
+        if (version.RecipeIngredients.Count == 0) throw new ValidationException("At least one ingredient is required before publication.");
+        if (version.RecipeSteps.Count == 0) throw new ValidationException("At least one step is required before publication.");
+        if (version.RecipeSteps.Any(step => string.IsNullOrWhiteSpace(step.Title) || string.IsNullOrWhiteSpace(step.Description)))
+            throw new ValidationException("Every step requires a title and description before publication.");
     }
 
-    private static void EnsureRowVersion(RecipeVersion version, long expectedRowVersion)
+    private async Task<Unit> GetActiveUnitAsync(Guid publicId, string fieldName, CancellationToken cancellationToken)
     {
-        // Concurrency token checks removed
+        var unit = await _unitRepository.GetByPublicIdAsync(publicId, cancellationToken)
+            ?? throw new NotFoundException($"{fieldName} '{publicId}' was not found.");
+        if (!IsActive(unit.State)) throw new ValidationException($"{fieldName} '{publicId}' is inactive and cannot be selected.");
+        return unit;
     }
+
+    private async Task<RecipeVersion> GetVersionEntityAsync(Guid publicId, Guid versionId, CancellationToken cancellationToken) =>
+        await _recipeRepository.GetRecipeVersionAsync(publicId, versionId, cancellationToken)
+        ?? throw new NotFoundException($"Recipe version '{versionId}' was not found in recipe '{publicId}'.");
 
     private static void EnsureActiveRecipe(RecipeEntity recipe)
     {
-        if (!IsActive(recipe.State)) throw new ConflictException("An archived recipe cannot be changed.");
+        if (recipe.ArchivedAt.HasValue) throw new ConflictException("An archived recipe cannot be changed.");
     }
 
     private static void ValidateOptionalState(string? value, IReadOnlyCollection<string> allowed, string fieldName)
@@ -895,56 +394,38 @@ public sealed class RecipeService : IRecipeService
     }
 
     private static RecipeSummaryResponse MapSummary(RecipeVersion version) => new(
-        version.Recipe.PublicId, version.Recipe.Code, version.Recipe.State, version.PublicId,
+        version.Recipe.PublicId, version.Recipe.Code, GetRecipeState(version.Recipe), version.PublicId,
         version.VersionNumber, version.Status, version.Name, version.UpdatedAt);
 
     private static RecipeVersionSummaryResponse MapVersionSummary(RecipeVersion version) => new(
-        version.PublicId, version.VersionNumber, version.Status, version.Name, 0,
-        version.CreatedByUserRef, version.CreatedAt, version.UpdatedAt);
-
-    private static RecipeVersionReviewResponse MapReview(RecipeVersionReview review) => new(
-        review.Id, review.Action, review.Comment, review.PerformedByUserRef, review.PerformedAt);
+        version.PublicId, version.VersionNumber, version.Status, version.Name, version.CreatedByUserRef,
+        version.CreatedAt, version.UpdatedAt, version.PublishedAt, version.PublishedByUserRef);
 
     private static RecipeDetailResponse MapDetail(RecipeVersion version) => new(
-        version.Recipe.PublicId, version.Recipe.Code, version.Recipe.State, version.PublicId,
-        version.VersionNumber, version.Status, version.Name, version.Description, 0,
-        version.PrimaryMediaAssetRef,
+        version.Recipe.PublicId, version.Recipe.Code, GetRecipeState(version.Recipe), version.PublicId,
+        version.VersionNumber, version.Status, version.Name, version.Description, version.PrimaryMediaAssetRef,
         version.RecipeYield is null ? null : new RecipeYieldResponse(
-            version.RecipeYield.Quantity, version.RecipeYield.Unit.PublicId,
-            version.RecipeYield.Unit.Code, version.RecipeYield.Note),
+            version.RecipeYield.Quantity, version.RecipeYield.Unit.PublicId, version.RecipeYield.Unit.Code, version.RecipeYield.Note),
         version.RecipeIngredients.OrderBy(item => item.SortOrder).Select(item => new RecipeIngredientResponse(
-            item.Id, item.Ingredient.PublicId, item.IngredientCodeSnapshot, item.IngredientNameSnapshot,
-            item.Quantity, item.Unit.PublicId, item.Unit.Code, item.SortOrder, item.StageName,
-            item.DuplicateReason, item.Note, item.IngredientWarningSnapshot)).ToArray(),
+            item.Ingredient.PublicId, item.IngredientCodeSnapshot, item.IngredientNameSnapshot, item.Quantity,
+            item.Unit.PublicId, item.Unit.Code, item.SortOrder, item.StageName, item.Note, item.IngredientWarningSnapshot)).ToArray(),
         version.RecipeSteps.OrderBy(step => step.SortOrder).Select(step => new RecipeStepResponse(
-            step.Id, step.PublicId, step.SortOrder, step.Title, step.Description, step.DurationSeconds,
+            step.PublicId, step.SortOrder, step.Title, step.Description, step.DurationSeconds,
             step.TemperatureCelsius, step.Equipment, step.SafetyNote, step.CompletionCriteria,
             step.RecipeStepMedia.OrderBy(media => media.SortOrder).Select(media => new RecipeStepMediaResponse(
                 media.PublicId, media.MediaAssetRef, media.SortOrder, media.IsPrimary, media.Caption)).ToArray())).ToArray(),
-        version.CreatedAt, version.UpdatedAt);
+        version.CreatedAt, version.UpdatedAt, version.PublishedAt, version.PublishedByUserRef);
 
+    private static string GetRecipeState(RecipeEntity recipe) => recipe.ArchivedAt.HasValue ? "archived" : "active";
     private static string RequireText(string? value, string fieldName) =>
-        string.IsNullOrWhiteSpace(value)
-            ? throw new ValidationException($"{fieldName} is required.")
-            : value.Trim();
-
+        string.IsNullOrWhiteSpace(value) ? throw new ValidationException($"{fieldName} is required.") : value.Trim();
     private static string Normalize(string value) => value.ToUpperInvariant();
-
-    private static bool IsActive(string? state) =>
-        string.Equals(state, "active", StringComparison.OrdinalIgnoreCase);
-
-    private static string? TrimOptional(string? value) =>
-        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    private static bool IsActive(string? state) => string.Equals(state, "active", StringComparison.OrdinalIgnoreCase);
+    private static string? TrimOptional(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private sealed record ValidatedRecipeContent(
-        string Code,
-        string NormalizedCode,
-        string Name,
-        string NormalizedName,
-        string? Description,
-        decimal YieldQuantity,
-        Guid YieldUnitId,
-        string? YieldNote,
-        IReadOnlyList<CreateRecipeIngredientRequest> Ingredients,
-        IReadOnlyList<UpdateRecipeStepRequest> Steps);
+        string Code, string NormalizedCode, string Name, string NormalizedName, string? Description,
+        Guid? PrimaryMediaAssetRef,
+        decimal? YieldQuantity, Guid? YieldUnitId, string? YieldNote,
+        IReadOnlyList<CreateRecipeIngredientRequest> Ingredients, IReadOnlyList<UpdateRecipeStepRequest> Steps);
 }

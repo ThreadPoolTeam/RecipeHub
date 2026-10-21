@@ -132,7 +132,7 @@ export default function ViewerRecipeDetailPage() {
         </div>
         <h2 className="text-lg font-bold text-[#1C1917] mb-2">Truy Cập Bị Từ Chối (403 Forbidden)</h2>
         <p className="text-sm text-[#78716C] leading-relaxed mb-6">
-          Bạn không có quyền truy cập hoặc xem quy trình pha chế của công thức này. Chỉ các công thức đã được phê duyệt và được Quản trị viên phân quyền vào tài khoản mới có thể hiển thị.
+          Bạn không có quyền truy cập hoặc xem quy trình pha chế của công thức này. Chỉ công thức đã phát hành và được Quản trị viên phân quyền vào tài khoản mới có thể hiển thị.
         </p>
         <div className="flex justify-center gap-3">
           <Link href="/viewer">
@@ -234,24 +234,24 @@ export default function ViewerRecipeDetailPage() {
           </div>
         </div>
 
-        {/* Approval and Review Metadata */}
+        {/* Publication Metadata */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 text-xs text-[#706E68]">
           <div className="bg-[#FAF9F5] rounded-xl p-3.5 border border-[#E8E2D9]">
             <span className="block text-[10px] uppercase font-semibold tracking-wider text-[#8C887F] mb-1">
               Định mức thành phẩm
             </span>
             <span className="text-sm font-semibold text-[#1A1917]">
-              {recipe.targetYield} {recipe.yieldUnit}
+              {recipe.targetYield !== null && recipe.yieldUnit ? `${recipe.targetYield} ${recipe.yieldUnit}` : 'Chưa thiết lập'}
             </span>
           </div>
 
           <div className="bg-[#FAF9F5] rounded-xl p-3.5 border border-[#E8E2D9]">
             <span className="block text-[10px] uppercase font-semibold tracking-wider text-[#8C887F] mb-1">
-              Ngày phê duyệt
+              Ngày phát hành
             </span>
             <span className="text-sm font-medium text-[#1A1917]">
-              {recipe.reviewedAt
-                ? new Date(recipe.reviewedAt).toLocaleString('vi-VN', {
+              {recipe.publishedAt
+                ? new Date(recipe.publishedAt).toLocaleString('vi-VN', {
                     dateStyle: 'medium',
                     timeStyle: 'short',
                   })
@@ -261,10 +261,10 @@ export default function ViewerRecipeDetailPage() {
 
           <div className="bg-[#FAF9F5] rounded-xl p-3.5 border border-[#E8E2D9]">
             <span className="block text-[10px] uppercase font-semibold tracking-wider text-[#8C887F] mb-1">
-              Ghi chú của người kiểm duyệt
+              Trạng thái sử dụng
             </span>
             <span className="text-xs text-[#706E68] italic line-clamp-2">
-              {recipe.reviewerComment || 'Không có ghi chú thêm.'}
+              Công thức đã được phát hành để tra cứu tại quầy.
             </span>
           </div>
         </div>
