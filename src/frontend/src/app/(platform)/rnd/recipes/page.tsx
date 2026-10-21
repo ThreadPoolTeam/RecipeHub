@@ -3,12 +3,14 @@
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { BookOpen, Plus, Pencil, RotateCcw, Coffee } from 'lucide-react';
+import { BookOpen, Plus, Pencil, RotateCcw, Coffee, History } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { RecipeVersion, RecipeStatus } from '@/lib/demo/types';
 import { Button, TextInput, Select, SearchInput } from '@/components/workspace/fields';
 import { StatusBadge } from '@/components/workspace/status-badge';
 import { DataTable } from '@/components/workspace/data-table';
+import { VersionHistoryDrawer } from '@/components/workspace/version-history-drawer';
+import { getStoredAiDrafts } from '@/lib/ai-draft-storage';
 
 function RecipeListContent() {
   const { session, repo, dataVersion } = useDemo();
@@ -16,8 +18,32 @@ function RecipeListContent() {
   const initialStatusParam = searchParams.get('status') as RecipeStatus | null;
 
   const [recipes, setRecipes] = useState<RecipeVersion[]>([]);
+  const [mediaMap, setMediaMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
+  // Version History Drawer State
+  const [selectedRecipeForHistory, setSelectedRecipeForHistory] = useState<RecipeVersion | null>(null);
+  const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
+  const [drawerVersions, setDrawerVersions] = useState<RecipeVersion[]>([]);
+  const [isLoadingDrawerVersions, setIsLoadingDrawerVersions] = useState(false);
+
+  const handleOpenHistoryDrawer = async (item: RecipeVersion) => {
+    setSelectedRecipeForHistory(item);
+    setIsHistoryDrawerOpen(true);
+    setDrawerVersions([item]);
+    setIsLoadingDrawerVersions(true);
+    try {
+      const recipeKey = item.recipeId || item.id;
+      const list = await repo.getRecipeVersions(session!, recipeKey);
+      if (list.length > 0) {
+        setDrawerVersions(list);
+      }
+    } catch (err) {
+      console.error('Failed to load recipe versions:', err);
+    } finally {
+      setIsLoadingDrawerVersions(false);
+    }
+  };
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<RecipeStatus | 'all'>(
@@ -34,17 +60,33 @@ function RecipeListContent() {
     let isMounted = true;
     setLoading(true);
 
-    repo
-      .getRecipes(session, {
+    Promise.allSettled([
+      repo.getRecipes(session, {
         page: 1,
         pageSize: 100, // Load up to 100 recipes for responsive client-side filtering
-      })
-      .then((res) => {
+      }),
+      repo.getMedia(),
+    ])
+      .then(([resResult, mediaResult]) => {
         if (!isMounted) return;
-        setRecipes(res.items);
+        if (resResult.status === 'fulfilled') {
+          setRecipes(resResult.value.items);
+        }
+
+        const mDict: Record<string, string> = {};
+        if (mediaResult.status === 'fulfilled') {
+          mediaResult.value.forEach((m) => {
+            if (m.blob && m.blob.size > 0) {
+              mDict[m.id] = URL.createObjectURL(m.blob);
+            } else if (m.deliveryUrl) {
+              mDict[m.id] = m.deliveryUrl;
+            }
+          });
+        }
+        setMediaMap(mDict);
       })
       .catch((err) => {
-        console.error('Failed to load recipes:', err);
+        console.error('Failed to load recipes or media:', err);
       })
       .finally(() => {
         if (isMounted) setLoading(false);
@@ -64,9 +106,36 @@ function RecipeListContent() {
     ];
   }, [recipes]);
 
+  // Group all versions by recipeId
+  const recipeVersionsGroup = useMemo(() => {
+    const map: Record<string, RecipeVersion[]> = {};
+    recipes.forEach((r) => {
+      const key = r.recipeId || r.code;
+      if (!map[key]) map[key] = [];
+      map[key].push(r);
+    });
+    Object.values(map).forEach((list) => {
+      list.sort((a, b) => b.versionNumber - a.versionNumber);
+    });
+    return map;
+  }, [recipes]);
+
+  // Distinct recipes: take the latest version of each recipe identity
+  const distinctRecipes = useMemo(() => {
+    const seen = new Set<string>();
+    const result: RecipeVersion[] = [];
+    for (const r of recipes) {
+      const key = r.recipeId || r.code;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      result.push(r);
+    }
+    return result;
+  }, [recipes]);
+
   // Filtered recipes
   const filteredRecipes = useMemo(() => {
-    return recipes.filter((recipe) => {
+    return distinctRecipes.filter((recipe) => {
       if (searchQuery.trim()) {
         const q = searchQuery.trim().toLowerCase();
         const matches =
@@ -86,8 +155,7 @@ function RecipeListContent() {
 
       return true;
     });
-  }, [recipes, searchQuery, statusFilter, creatorFilter]);
-
+  }, [distinctRecipes, searchQuery, statusFilter, creatorFilter]);
   // Pagination slices
   const totalItems = filteredRecipes.length;
   const totalPages = Math.ceil(totalItems / pageSize) || 1;
@@ -99,34 +167,85 @@ function RecipeListContent() {
   const columns = [
     {
       header: 'Mã & Tên công thức',
-      render: (item: RecipeVersion) => (
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-md bg-[#F5F0E8] border border-[#E8E2D9] flex items-center justify-center shrink-0 text-[#C9A84C]">
-            <Coffee className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <Link
-                href={`/rnd/recipes/${item.id}`}
-                className="font-mono text-[11px] font-semibold px-1.5 py-0.5 rounded bg-[#F5F0E8] text-[#B47820] border border-[#E8E2D9] hover:bg-[#EAE3D6] transition"
-                title="Xem chi tiết công thức"
-              >
-                {item.code}
-              </Link>
-              <span className="text-[#8C887F] font-mono text-xs">[{item.versionLabel}]</span>
-              <Link
-                href={`/rnd/recipes/${item.id}`}
-                className="font-semibold text-sm text-[#1A1917] hover:text-[#B47820] transition truncate"
-              >
-                {item.name}
-              </Link>
+      render: (item: RecipeVersion) => {
+        let coverUrl: string | null = null;
+        if (item.primaryMediaAssetId) {
+          coverUrl = mediaMap[item.primaryMediaAssetId] || null;
+          if (!coverUrl && typeof window !== 'undefined') {
+            coverUrl = localStorage.getItem(`recipehub_media_url_${item.primaryMediaAssetId}`) || null;
+          }
+          if (!coverUrl) {
+            coverUrl = `/api/backend/api/v1/content/image-drafts/${item.primaryMediaAssetId}/image`;
+          }
+        }
+        if (!coverUrl) {
+          const versionId = item.versionId || item.id;
+          const localDrafts = getStoredAiDrafts(versionId, 'final_product');
+          if (localDrafts.length > 0) {
+            coverUrl = localDrafts[0].previewUrl;
+          }
+        }
+
+        const versionsOfThisRecipe = recipeVersionsGroup[item.recipeId || item.code] || [item];
+        const hasOlderVersions = (item.versionNumber && item.versionNumber > 1) || versionsOfThisRecipe.length > 1;
+        const olderCount = Math.max(
+          item.versionNumber ? item.versionNumber - 1 : 0,
+          versionsOfThisRecipe.length - 1
+        );
+        return (
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-xl bg-[#F5F0E8] border border-[#E8E2D9] overflow-hidden flex items-center justify-center shrink-0 shadow-2xs relative">
+              {coverUrl ? (
+                <img
+                  src={coverUrl}
+                  alt={item.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    const icon = e.currentTarget.parentElement?.querySelector('.fallback-coffee');
+                    if (icon) (icon as HTMLElement).style.display = 'block';
+                  }}
+                />
+              ) : null}
+              <Coffee
+                className={`w-6 h-6 text-[#B47820] fallback-coffee ${coverUrl ? 'hidden' : 'block'}`}
+              />
             </div>
-            {item.description && (
-              <p className="text-xs text-[#706E68] mt-0.5 line-clamp-1 max-w-sm">{item.description}</p>
-            )}
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Link
+                  href={`/rnd/recipes/${item.id}`}
+                  className="font-mono text-[11px] font-semibold px-1.5 py-0.5 rounded bg-[#F5F0E8] text-[#B47820] border border-[#E8E2D9] hover:bg-[#EAE3D6] transition"
+                  title="Xem chi tiết công thức"
+                >
+                  {item.code}
+                </Link>
+                <span className="text-[#8C887F] font-mono text-xs">[{item.versionLabel}]</span>
+                <Link
+                  href={`/rnd/recipes/${item.id}`}
+                  className="font-semibold text-sm text-[#1A1917] hover:text-[#B47820] transition truncate"
+                >
+                  {item.name}
+                </Link>
+
+                {hasOlderVersions && (
+                  <button
+                    type="button"
+                    onClick={() => handleOpenHistoryDrawer(item)}
+                    className="inline-flex items-center gap-1 font-mono text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition cursor-pointer"
+                    title="Xem lịch sử các phiên bản của công thức này"
+                  >
+                    <History className="w-2.5 h-2.5" /> +{olderCount} bản cũ
+                  </button>
+                )}
+              </div>
+              {item.description && (
+                <p className="text-xs text-[#706E68] mt-0.5 line-clamp-1 max-w-sm">{item.description}</p>
+              )}
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       header: 'Trạng thái',
@@ -228,9 +347,9 @@ function RecipeListContent() {
             }}
             options={[
               { value: 'all', label: 'Tất cả trạng thái' },
-              { value: 'Draft', label: 'Bản Nháp (Draft)' },
-              { value: 'Published', label: 'Đã Phát Hành (Published)' },
-              { value: 'Archived', label: 'Lưu Trữ (Archived)' },
+              { value: 'Draft', label: 'Bản nháp' },
+              { value: 'Published', label: 'Đã phát hành' },
+              { value: 'Archived', label: 'Lưu trữ' },
             ]}
           />
         </div>
@@ -281,6 +400,18 @@ function RecipeListContent() {
           total: totalItems,
           onPageChange: setPage,
         }}
+      />
+
+      {/* Version History Drawer */}
+      <VersionHistoryDrawer
+        isOpen={isHistoryDrawerOpen}
+        onClose={() => {
+          setIsHistoryDrawerOpen(false);
+          setSelectedRecipeForHistory(null);
+        }}
+        recipe={selectedRecipeForHistory}
+        versions={drawerVersions}
+        currentVersionId={selectedRecipeForHistory?.id}
       />
     </div>
   );

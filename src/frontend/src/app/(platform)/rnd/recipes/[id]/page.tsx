@@ -15,12 +15,17 @@ import {
   Copy,
   Archive,
   FileDown,
+  History,
+  ChevronDown,
+  Check,
 } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { RecipeVersion, Ingredient, MediaAsset } from '@/lib/demo/types';
 import { Button, TextInput, Alert } from '@/components/workspace/fields';
 import { StatusBadge } from '@/components/workspace/status-badge';
 import { Dialog } from '@/components/workspace/dialog';
+import { VersionHistoryDrawer } from '@/components/workspace/version-history-drawer';
+import { getStoredAiDrafts } from '@/lib/ai-draft-storage';
 
 export default function RecipeDetailPage() {
   const params = useParams();
@@ -35,6 +40,10 @@ export default function RecipeDetailPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
+  // Version History State
+  const [versions, setVersions] = useState<RecipeVersion[]>([]);
+  const [isVersionDropdownOpen, setIsVersionDropdownOpen] = useState(false);
+  const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
   // Action Loading
   const [isPublishing, setIsPublishing] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
@@ -57,11 +66,12 @@ export default function RecipeDetailPage() {
       repo.getRecipeVersion(session, id),
       repo.getIngredients(),
       repo.getMedia(),
+      repo.getRecipeVersions(session, id),
     ])
-      .then(([rec, allIngs, mediaList]) => {
+      .then(([rec, allIngs, mediaList, versionList]) => {
         if (!isMounted) return;
         setRecipe(rec);
-
+        setVersions(versionList.length > 0 ? versionList : [rec]);
         const ingDict: Record<string, Ingredient> = {};
         allIngs.forEach((ing) => {
           ingDict[ing.id] = ing;
@@ -70,7 +80,11 @@ export default function RecipeDetailPage() {
 
         const urlDict: Record<string, string> = {};
         mediaList.forEach((m) => {
-          urlDict[m.id] = URL.createObjectURL(m.blob);
+          if (m.blob && m.blob.size > 0) {
+            urlDict[m.id] = URL.createObjectURL(m.blob);
+          } else if (m.deliveryUrl) {
+            urlDict[m.id] = m.deliveryUrl;
+          }
         });
         setMediaMap(urlDict);
       })
@@ -162,7 +176,7 @@ export default function RecipeDetailPage() {
       setRecipe(updated);
       touch();
       setIsArchiveConfirmOpen(false);
-      setActionSuccess('Đã chuyển công thức vào kho lưu trữ (Archived) thành công!');
+      setActionSuccess('Đã chuyển công thức vào kho lưu trữ thành công!');
     } catch (err: unknown) {
       const e = err as Error;
       setErrorMsg(e.message || 'Lỗi khi lưu trữ công thức.');
@@ -225,13 +239,64 @@ export default function RecipeDetailPage() {
           </div>
           <div className="flex items-center gap-2.5 flex-wrap">
             <h1 className="text-xl sm:text-2xl font-bold text-[#1A1917]">{recipe.name}</h1>
-            <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#F5F0E8] text-[#B47820] font-semibold border border-[#E8E2D9]">
-              {recipe.versionLabel}
-            </span>
+            {versions.length > 1 ? (
+              <div className="relative inline-block">
+                <button
+                  type="button"
+                  onClick={() => setIsVersionDropdownOpen(!isVersionDropdownOpen)}
+                  className="inline-flex items-center gap-1 font-mono text-xs px-2.5 py-1 rounded-lg bg-[#F5F0E8] hover:bg-[#EAE3D6] text-[#B47820] font-bold border border-[#E8E2D9] transition cursor-pointer shadow-2xs"
+                  title="Chuyển đổi phiên bản công thức"
+                >
+                  <span>{recipe.versionLabel}</span>
+                  <ChevronDown
+                    className={`w-3 h-3 text-[#B47820] transition-transform ${
+                      isVersionDropdownOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                {isVersionDropdownOpen && (
+                  <div className="absolute left-0 mt-1.5 w-60 bg-white border border-[#E8E2D9] rounded-xl shadow-xl p-1.5 z-30 space-y-1 animate-fade-in">
+                    <div className="text-[10px] uppercase font-bold text-[#8C887F] px-2 py-1">
+                      Phiên bản công thức
+                    </div>
+                    {versions.map((v) => {
+                      const isCurrent = (v.versionId || v.id) === (recipe.versionId || recipe.id);
+                      return (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => {
+                            setRecipe(v);
+                            setIsVersionDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer text-left ${
+                            isCurrent
+                              ? 'bg-[#F5F0E8] text-[#B47820] font-bold'
+                              : 'text-[#1A1917] hover:bg-[#FAF9F5]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono">{v.versionLabel}</span>
+                            <span className="text-[11px] text-[#706E68]">
+                              {v.status === 'Draft' ? 'Bản nháp' : v.status === 'Published' ? 'Đã phát hành' : 'Lưu trữ'}
+                            </span>
+                          </div>
+                          {isCurrent && <Check className="w-3.5 h-3.5 text-[#B47820]" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#F5F0E8] text-[#B47820] font-semibold border border-[#E8E2D9]">
+                {recipe.versionLabel}
+              </span>
+            )}
             <StatusBadge status={recipe.status} />
           </div>
         </div>
-
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
           {recipe.status !== 'Archived' && (
@@ -257,13 +322,20 @@ export default function RecipeDetailPage() {
           <Button variant="secondary" size="sm" onClick={handleOpenCopyDialog} title="Tạo một công thức độc lập từ dữ liệu hiện tại">
             <Copy className="w-3.5 h-3.5 mr-1 text-[#706E68]" /> Sao chép
           </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setIsHistoryDrawerOpen(true)}
+            title="Xem lịch sử các phiên bản"
+          >
+            <History className="w-3.5 h-3.5 mr-1 text-[#B47820]" /> Lịch sử ({versions.length})
+          </Button>
 
           <Link href={`/rnd/recipes/${recipe.id}/document`}>
             <Button variant="secondary" size="sm">
               <FileDown className="w-3.5 h-3.5 mr-1 text-[#B47820]" /> Xuất SOP
             </Button>
           </Link>
-
           {recipe.status === 'Archived' ? (
             <Button
               variant="gold"
@@ -310,13 +382,49 @@ export default function RecipeDetailPage() {
         <div className="p-4 bg-zinc-100 border border-zinc-300 rounded-lg flex flex-wrap items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-2 text-zinc-700 text-sm">
             <Archive className="w-4 h-4 text-zinc-500" />
-            <span>Công thức này đang ở trạng thái <strong>Lưu trữ (Archived)</strong> và đang bị khóa chỉnh sửa.</span>
+            <span>Công thức này đang ở trạng thái <strong>Lưu trữ</strong> và đang bị khóa chỉnh sửa.</span>
           </div>
           <Button variant="gold" size="sm" isLoading={isActivating} onClick={handleActivateRecipe}>
             Khôi phục hoạt động
           </Button>
         </div>
       )}
+
+      {/* Hero Cover Image (if available) */}
+      {(() => {
+        let coverUrl: string | null = null;
+        if (recipe.primaryMediaAssetId) {
+          coverUrl = mediaMap[recipe.primaryMediaAssetId] || null;
+          if (!coverUrl && typeof window !== 'undefined') {
+            coverUrl = localStorage.getItem(`recipehub_media_url_${recipe.primaryMediaAssetId}`) || null;
+          }
+          if (!coverUrl) {
+            coverUrl = `/api/backend/api/v1/content/image-drafts/${recipe.primaryMediaAssetId}/image`;
+          }
+        }
+        if (!coverUrl) {
+          const versionId = recipe.versionId || recipe.id;
+          const localDrafts = getStoredAiDrafts(versionId, 'final_product');
+          if (localDrafts.length > 0) {
+            coverUrl = localDrafts[0].previewUrl;
+          }
+        }
+
+        if (!coverUrl) return null;
+
+        return (
+          <div className="rounded-2xl overflow-hidden border border-[#E8E2D9] max-h-72 bg-[#FAF9F5] shadow-xs relative">
+            <img
+              src={coverUrl}
+              alt={recipe.name}
+              className="w-full h-64 object-cover"
+              onError={(e) => {
+                e.currentTarget.parentElement?.remove();
+              }}
+            />
+          </div>
+        );
+      })()}
 
       <div className="bg-white border border-[#E8E2D9] rounded-xl p-5 space-y-3 shadow-xs">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-[#706E68]">
@@ -528,11 +636,25 @@ export default function RecipeDetailPage() {
           if (!isArchiving) setIsArchiveConfirmOpen(false);
         }}
         title={`Lưu Trữ Công Thức ${recipe.code}?`}
-        description="Công thức sẽ được đưa vào kho lưu trữ (Archived) và bị khóa. Bạn vẫn có thể tìm kiếm trong bộ lọc Lưu Trữ và khôi phục lại bất kỳ lúc nào."
+        description="Công thức sẽ được đưa vào kho lưu trữ và bị khóa. Bạn vẫn có thể tìm kiếm trong bộ lọc Lưu Trữ và khôi phục lại bất kỳ lúc nào."
         confirmLabel="Xác Nhận Lưu Trữ"
         confirmVariant="danger"
         isConfirming={isArchiving}
         onConfirm={handleArchiveRecipe}
+      />
+
+      {/* Version History Drawer */}
+      <VersionHistoryDrawer
+        isOpen={isHistoryDrawerOpen}
+        onClose={() => setIsHistoryDrawerOpen(false)}
+        recipe={recipe}
+        versions={versions}
+        currentVersionId={recipe.versionId || recipe.id}
+        ingredientsMap={ingredientsMap}
+        onSelectVersion={(selectedVersion) => {
+          setRecipe(selectedVersion);
+          setIsHistoryDrawerOpen(false);
+        }}
       />
     </div>
   );
