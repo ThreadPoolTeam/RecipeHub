@@ -212,8 +212,18 @@ export class DemoRepository {
         throw new DemoError('Forbidden', 'Bạn không có quyền truy cập công thức này');
       }
     }
-
     return recipe;
+  }
+
+  async getRecipeVersions(actor: SessionInfo, recipeId: string): Promise<RecipeVersion[]> {
+    const all = await getAll<RecipeVersion>('recipes');
+    const target = all.find((r) => r.id === recipeId || r.recipeId === recipeId || r.code === recipeId);
+    if (!target) return [];
+    const recipeKey = target.recipeId || target.code;
+    const matches = all.filter(
+      (r) => (r.recipeId && r.recipeId === recipeKey) || r.code === target.code || r.id === recipeId
+    );
+    return matches.sort((a, b) => b.versionNumber - a.versionNumber);
   }
 
   async createRecipe(
@@ -283,7 +293,7 @@ export class DemoRepository {
     if (!current) throw new DemoError('NotFound', 'Không tìm thấy công thức');
 
     if (current.status !== 'Draft') {
-      throw new DemoError('Forbidden', 'Chỉ có thể chỉnh sửa công thức ở trạng thái Nháp (Draft)');
+      throw new DemoError('Forbidden', 'Chỉ có thể chỉnh sửa công thức ở trạng thái Bản nháp');
     }
 
     const updated: RecipeVersion = {
@@ -544,9 +554,13 @@ export class DemoRepository {
 
   async generateAiImageCandidate(
     actor: SessionInfo,
-    stepId: string,
-    prompt: string
+    stepId: string | null | undefined,
+    prompt: string,
+    targetKind: 'final_product' | 'step_instruction' = 'step_instruction',
+    recipeVersionId?: string,
+    onProgress?: (info: { attempt: number; state: string; message: string }) => void
   ): Promise<AiCandidate> {
+    onProgress?.({ attempt: 1, state: 'processing', message: 'Đang khởi tạo ảnh mô phỏng...' });
     const settings = await this.getSettings();
     if (!settings.aiImageEnabled) {
       throw new DemoError('AiUnavailable', 'Tính năng sinh ảnh AI đang bị tắt trong hệ thống.');
@@ -567,14 +581,16 @@ export class DemoRepository {
       mockBlob,
       `ai_cand_${Date.now()}.svg`,
       'AiIllustration',
-      ['ai-candidate', stepId]
+      ['ai-candidate', stepId || recipeVersionId || 'hero']
     );
 
     const candidate: AiCandidate = {
       id: `aicand_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      stepId,
+      stepId: stepId ?? '',
+      targetKind,
       prompt,
       mediaAssetId: asset.id,
+      previewUrl: asset.deliveryUrl,
       state: 'Generated',
       expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       createdAt: new Date().toISOString(),
@@ -588,8 +604,8 @@ export class DemoRepository {
     actor: SessionInfo,
     candidateId: string,
     recipeVersionId: string,
-    stepId: string
-  ): Promise<void> {
+    stepId?: string | null
+  ): Promise<string> {
     const cand = await getById<AiCandidate>('aiCandidates', candidateId);
     if (!cand) throw new DemoError('NotFound', 'Không tìm thấy candidate AI');
 
@@ -602,21 +618,25 @@ export class DemoRepository {
     cand.state = 'Accepted';
     await putRecord('aiCandidates', cand);
 
-    // Attach to recipe step
+    // Attach to recipe
     const recipe = await getById<RecipeVersion>('recipes', recipeVersionId);
     if (recipe && recipe.status === 'Draft') {
-      const step = recipe.steps.find((s) => s.id === stepId);
-      if (step) {
-        step.coverMediaAssetId = cand.mediaAssetId;
-        step.mediaAssetIds = Array.from(new Set([...(step.mediaAssetIds || []), cand.mediaAssetId]));
-        await putRecord('recipes', recipe);
+      if (!stepId) {
+        recipe.primaryMediaAssetId = cand.mediaAssetId;
+      } else {
+        const step = recipe.steps.find((s) => s.id === stepId);
+        if (step) {
+          step.coverMediaAssetId = cand.mediaAssetId;
+          step.mediaAssetIds = Array.from(new Set([...(step.mediaAssetIds || []), cand.mediaAssetId]));
+        }
       }
+      await putRecord('recipes', recipe);
     }
-
     await this.logAudit(actor.email, actor.role, 'AI_ACCEPT_IMAGE', 'recipe', recipeVersionId, {
       candidateId,
       mediaAssetId: cand.mediaAssetId,
     });
+    return cand.mediaAssetId;
   }
 
   async discardAiCandidate(actor: SessionInfo, candidateId: string): Promise<void> {
