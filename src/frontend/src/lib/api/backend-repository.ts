@@ -465,6 +465,17 @@ export class BackendRepository extends DemoRepository {
     );
   }
 
+  async generateIngredientCode(actor: SessionInfo, categoryId: string): Promise<string> {
+    const response = record(
+      await requestJson('api/v1/recipes/ingredients/generate-code', this.actorId(actor), {
+        method: 'POST',
+        body: JSON.stringify({ categoryId }),
+      }),
+      'generated ingredient code'
+    );
+    return text(response.code, 'generated ingredient code.code');
+  }
+
   override async createIngredient(
     actor: SessionInfo,
     data: Omit<Ingredient, 'id' | 'createdAt' | 'updatedAt'>
@@ -610,6 +621,18 @@ export class BackendRepository extends DemoRepository {
       steps,
     };
     return payload;
+  }
+
+  async generateRecipeCode(actor: SessionInfo): Promise<string> {
+    const response = record(
+      await requestJson('api/v1/recipes/generate-code', this.actorId(actor), { method: 'POST' }),
+      'generated recipe code'
+    );
+    const code = text(response.code, 'generated recipe code.code');
+    if (!/^REC-[0-9]{3,}$/.test(code)) {
+      throw new TypeError('Recipe Service trả về mã công thức không hợp lệ.');
+    }
+    return code;
   }
 
   override async createRecipe(

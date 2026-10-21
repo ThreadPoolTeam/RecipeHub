@@ -7,6 +7,7 @@ import { ArrowLeft, FlaskConical, Save, Loader2 } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { Ingredient } from '@/lib/demo/types';
 import { Button, TextInput, Select, Alert } from '@/components/workspace/fields';
+import { CodeInput } from '@/components/workspace/code-input';
 import { CatalogItem, UnitItem } from '@/lib/api/backend-repository';
 
 export default function EditIngredientPage() {
@@ -19,6 +20,9 @@ export default function EditIngredientPage() {
   const [ingredient, setIngredient] = useState<Ingredient | null>(null);
 
   const [code, setCode] = useState('');
+  const [generatingCode, setGeneratingCode] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [generatedCode, setGeneratedCode] = useState<{ code: string; categoryId: string } | null>(null);
   const [name, setName] = useState('');
   const [categories, setCategories] = useState<CatalogItem[]>([]);
   const [units, setUnits] = useState<UnitItem[]>([]);
@@ -51,6 +55,7 @@ export default function EditIngredientPage() {
           setCategories(categoryItems);
           setUnits(unitItems);
           setCode(found.code);
+          setGeneratedCode(null);
           setName(found.name);
           setCategoryId(found.categoryId ?? '');
           setDefaultUnitId(found.defaultUnitId ?? '');
@@ -73,9 +78,36 @@ export default function EditIngredientPage() {
     };
   }, [ingredientId, repo]);
 
+  const canGenerateCode = categories.some((item) => item.id === categoryId && item.state === 'active');
+
+  const handleCategoryChange = (nextCategoryId: string) => {
+    if (generatingCode || submitting || nextCategoryId === categoryId) return;
+    if (generatedCode && code === generatedCode.code && nextCategoryId !== generatedCode.categoryId) {
+      setCode('');
+    }
+    setGeneratedCode(null);
+    setCategoryId(nextCategoryId);
+  };
+
+  const handleGenerateCode = async () => {
+    if (!session || !ingredient || !canGenerateCode || generatingCode || submitting) return;
+    setGeneratingCode(true);
+    setCodeError(null);
+    try {
+      const nextCode = await repo.generateIngredientCode(session, categoryId);
+      setCode(nextCode);
+      setGeneratedCode({ code: nextCode, categoryId });
+      touch();
+    } catch (error: unknown) {
+      setCodeError(error instanceof Error ? error.message : 'Không thể tạo mã nguyên liệu.');
+    } finally {
+      setGeneratingCode(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!session || !ingredient) return;
+    if (!session || !ingredient || generatingCode || submitting) return;
     setError(null);
 
     const cleanCode = code.trim().toUpperCase();
@@ -182,12 +214,23 @@ export default function EditIngredientPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <TextInput
-            label="Mã Nguyên Liệu *"
-            placeholder="VD: ING-TRA-01"
+          <CodeInput
+            label="Mã Nguyên Liệu"
+            placeholder="VD: ING-TRA-001"
             value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            helper="Mã viết hoa, không trùng lặp"
+            onChange={(e) => {
+              setCode(e.target.value.toUpperCase());
+              setGeneratedCode(null);
+            }}
+            onGenerate={handleGenerateCode}
+            generateLabel="Tạo mã nguyên liệu"
+            generating={generatingCode}
+            generateDisabled={!session || !ingredient || !canGenerateCode}
+            disabled={submitting}
+            helper={canGenerateCode
+              ? 'Nhập mã riêng hoặc tạo mã theo nhóm đã chọn. Đổi nhóm chỉ xóa mã vừa tạo, không xóa mã đã tải hoặc đã sửa tay.'
+              : 'Chọn nhóm nguyên liệu đang hoạt động để tạo mã; mã hiện tại vẫn được giữ nguyên.'}
+            error={codeError}
             required
           />
 
@@ -204,7 +247,8 @@ export default function EditIngredientPage() {
           <Select
             label="Nhóm Phân Loại *"
             value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
+            onChange={(e) => handleCategoryChange(e.target.value)}
+            disabled={generatingCode || submitting}
             options={categories
               .filter((item) => item.state === 'active' || item.id === categoryId)
               .map((item) => ({
@@ -262,7 +306,7 @@ export default function EditIngredientPage() {
           <Button
             variant="gold"
             type="submit"
-            disabled={submitting || categories.length === 0 || units.length === 0}
+            disabled={submitting || generatingCode || !ingredient || categories.length === 0 || units.length === 0}
           >
             <Save className="w-4 h-4 mr-1.5" />
             {submitting ? 'Đang lưu...' : 'Lưu Thay Đổi'}

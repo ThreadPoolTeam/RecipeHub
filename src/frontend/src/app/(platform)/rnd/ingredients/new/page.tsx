@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, FlaskConical, Save } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { Button, TextInput, Select, Alert } from '@/components/workspace/fields';
+import { CodeInput } from '@/components/workspace/code-input';
 import { CatalogItem, UnitItem } from '@/lib/api/backend-repository';
 
 export default function NewIngredientPage() {
@@ -13,6 +14,9 @@ export default function NewIngredientPage() {
   const { session, repo, touch } = useDemo();
 
   const [code, setCode] = useState('');
+  const [generatingCode, setGeneratingCode] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [generatedCode, setGeneratedCode] = useState<{ code: string; categoryId: string } | null>(null);
   const [name, setName] = useState('');
   const [categories, setCategories] = useState<CatalogItem[]>([]);
   const [units, setUnits] = useState<UnitItem[]>([]);
@@ -50,9 +54,36 @@ export default function NewIngredientPage() {
     };
   }, [repo]);
 
+  const canGenerateCode = categories.some((item) => item.id === categoryId && item.state === 'active');
+
+  const handleCategoryChange = (nextCategoryId: string) => {
+    if (generatingCode || submitting || nextCategoryId === categoryId) return;
+    if (generatedCode && code === generatedCode.code && nextCategoryId !== generatedCode.categoryId) {
+      setCode('');
+    }
+    setGeneratedCode(null);
+    setCategoryId(nextCategoryId);
+  };
+
+  const handleGenerateCode = async () => {
+    if (!session || !canGenerateCode || generatingCode || submitting || catalogueLoading) return;
+    setGeneratingCode(true);
+    setCodeError(null);
+    try {
+      const nextCode = await repo.generateIngredientCode(session, categoryId);
+      setCode(nextCode);
+      setGeneratedCode({ code: nextCode, categoryId });
+      touch();
+    } catch (error: unknown) {
+      setCodeError(error instanceof Error ? error.message : 'Không thể tạo mã nguyên liệu.');
+    } finally {
+      setGeneratingCode(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!session) return;
+    if (!session || generatingCode || submitting) return;
     setError(null);
 
     const cleanCode = code.trim().toUpperCase();
@@ -158,12 +189,23 @@ export default function NewIngredientPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <TextInput
-            label="Mã Nguyên Liệu *"
-            placeholder="VD: ING-TRA-01"
+          <CodeInput
+            label="Mã Nguyên Liệu"
+            placeholder="VD: ING-TRA-001"
             value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            helper="Mã viết hoa, không trùng lặp"
+            onChange={(e) => {
+              setCode(e.target.value.toUpperCase());
+              setGeneratedCode(null);
+            }}
+            onGenerate={handleGenerateCode}
+            generateLabel="Tạo mã nguyên liệu"
+            generating={generatingCode}
+            generateDisabled={!session || catalogueLoading || !canGenerateCode}
+            disabled={submitting}
+            helper={canGenerateCode
+              ? 'Nhập mã riêng hoặc tạo mã theo nhóm đã chọn. Đổi nhóm sẽ xóa mã vừa tạo nếu chưa sửa tay.'
+              : 'Chọn nhóm nguyên liệu đang hoạt động để tạo mã; vẫn có thể nhập mã riêng.'}
+            error={codeError}
             required
           />
 
@@ -180,9 +222,9 @@ export default function NewIngredientPage() {
           <Select
             label="Nhóm Phân Loại *"
             value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
+            onChange={(e) => handleCategoryChange(e.target.value)}
             options={categories.map((item) => ({ value: item.id, label: item.name }))}
-            disabled={catalogueLoading || categories.length === 0}
+            disabled={catalogueLoading || categories.length === 0 || generatingCode || submitting}
             helper={categories.length === 0 && !catalogueLoading ? 'Hãy tạo nhóm nguyên liệu trong trang Admin.' : undefined}
           />
 
@@ -232,7 +274,7 @@ export default function NewIngredientPage() {
           <Button
             variant="gold"
             type="submit"
-            disabled={submitting || catalogueLoading || categories.length === 0 || units.length === 0}
+            disabled={submitting || generatingCode || catalogueLoading || categories.length === 0 || units.length === 0}
           >
             <Save className="w-4 h-4 mr-1.5" />
             {submitting ? 'Đang lưu...' : 'Lưu Nguyên Liệu'}
