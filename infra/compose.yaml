@@ -1,10 +1,10 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16-alpine
     container_name: recipehub-postgres
     restart: unless-stopped
+    ports:
+      - "5433:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-recipehub_admin}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-recipehub_secret_pw}
@@ -35,7 +35,7 @@ services:
     container_name: recipehub-redis
     restart: unless-stopped
     ports:
-      - "127.0.0.1:6379:6379"
+      - "6380:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -50,7 +50,7 @@ services:
     restart: unless-stopped
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__Database=Host=postgres;Port=5432;Database=${IDENTITY_DB_NAME:-recipehub_identity};Username=${IDENTITY_DB_USER:-identity_user};Password=${IDENTITY_DB_PASSWORD:-identity_pw}
+      - ConnectionStrings__IdentityDb=Host=postgres;Port=5432;Database=${IDENTITY_DB_NAME:-recipehub_identity};Username=${IDENTITY_DB_USER:-identity_user};Password=${IDENTITY_DB_PASSWORD:-identity_pw}
     depends_on:
       postgres:
         condition: service_healthy
@@ -68,7 +68,7 @@ services:
     restart: unless-stopped
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__Database=Host=postgres;Port=5432;Database=${RECIPE_DB_NAME:-recipehub_recipe};Username=${RECIPE_DB_USER:-recipe_user};Password=${RECIPE_DB_PASSWORD:-recipe_pw}
+      - ConnectionStrings__RecipeDb=Host=postgres;Port=5432;Database=${RECIPE_DB_NAME:-recipehub_recipe};Username=${RECIPE_DB_USER:-recipe_user};Password=${RECIPE_DB_PASSWORD:-recipe_pw}
       - ConnectionStrings__Redis=redis:6379
     depends_on:
       postgres:

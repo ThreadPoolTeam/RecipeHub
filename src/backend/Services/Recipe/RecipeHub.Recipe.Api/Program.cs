@@ -1,3 +1,4 @@
+using RecipeHub.BuildingBlocks.Security;
 using RecipeHub.Recipe.Api;
 using RecipeHub.Recipe.Api.Swagger;
 using RecipeHub.Recipe.Api.Services;
@@ -27,6 +28,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddHealthChecks();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApplicationExceptionHandler>();
+builder.Services.AddRecipeHubAuth(builder.Configuration);
 builder.Services.AddRecipeApplication();
 builder.Services.AddRecipeInfrastructure(builder.Configuration);
 
@@ -42,6 +44,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseExceptionHandler();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapGrpcService<ProbeServiceImpl>();
 app.MapGrpcService<RecipeAiContextQueryServiceImpl>();
 app.MapControllers();
