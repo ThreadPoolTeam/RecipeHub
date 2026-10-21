@@ -51,7 +51,7 @@ export default function HelpPage() {
           <div className="w-10 h-10 rounded-xl bg-[#FAF9F5] border border-[#E8E2D9] flex items-center justify-center text-sky-700">
             <Coffee className="w-5 h-5" />
           </div>
-          <h2 className="text-base font-bold text-[#1A1917]">3. Tra cứu SOP Barista (Viewer)</h2>
+          <h2 className="text-base font-bold text-[#1A1917]">3. Tra cứu SOP Barista</h2>
           <p className="text-xs text-[#706E68] leading-relaxed">
             Giao diện tinh gọn dành cho nhân viên pha chế tại quầy: tra cứu nhanh tỷ lệ thành phần, thời gian đánh sữa và hướng dẫn chiết xuất.
           </p>

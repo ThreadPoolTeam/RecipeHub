@@ -112,7 +112,7 @@ export default function AdminAuditLogsPage() {
             <ShieldCheck className="w-3.5 h-3.5 text-[#B47820]" />
             <span>Unalterable Audit Trail</span>
           </div>
-          <h1 className="text-2xl font-bold text-[#1A1917]">Nhật ký Truy vết Hoạt động (Audit Logs)</h1>
+          <h1 className="text-2xl font-bold text-[#1A1917]">Nhật ký Truy vết Hoạt động</h1>
           <p className="text-[#706E68] text-xs mt-1">
             Ghi nhận toàn bộ thao tác đăng nhập, chỉnh sửa, phát hành công thức và thay đổi thiết lập hệ thống.
           </p>
@@ -126,7 +126,7 @@ export default function AdminAuditLogsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-4 bg-white border border-[#E8E2D9] rounded-2xl shadow-xs">
         <div className="sm:col-span-2">
           <SearchInput
-            placeholder="Lọc theo Email người thao tác (Actor)..."
+            placeholder="Lọc theo Email người thao tác..."
             value={actorQuery}
             onChange={(e) => setActorQuery(e.target.value)}
             onClear={() => setActorQuery('')}
@@ -171,7 +171,7 @@ export default function AdminAuditLogsPage() {
             ),
           },
           {
-            header: 'Người thao tác (Actor)',
+            header: 'Người thao tác',
             render: (l) => (
               <div>
                 <div className="text-xs font-semibold text-[#1A1917]">{l.actorEmail}</div>
@@ -182,7 +182,7 @@ export default function AdminAuditLogsPage() {
             ),
           },
           {
-            header: 'Hành động (Action)',
+            header: 'Hành động',
             render: (l) => (
               <span
                 className={`inline-block px-2 py-0.5 rounded text-[11px] font-mono font-bold border ${getActionColor(
@@ -194,7 +194,7 @@ export default function AdminAuditLogsPage() {
             ),
           },
           {
-            header: 'Đối tượng tác động (Target)',
+            header: 'Đối tượng tác động',
             render: (l) => (
               <div>
                 <span className="inline-block px-2 py-0.5 rounded-full text-[10px] uppercase font-semibold bg-[#FAF9F5] text-[#706E68] border border-[#E8E2D9]">
@@ -209,7 +209,7 @@ export default function AdminAuditLogsPage() {
             ),
           },
           {
-            header: 'Chi tiết thông số (Details)',
+            header: 'Chi tiết thông số',
             render: (l) => {
               if (!l.details || Object.keys(l.details).length === 0) {
                 return <span className="text-xs text-[#706E68]">—</span>;
