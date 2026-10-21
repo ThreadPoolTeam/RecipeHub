@@ -613,8 +613,8 @@ export default function AdminCataloguePage() {
             onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
             options={[
               { label: 'Tất cả trạng thái', value: 'all' },
-              { label: 'Đang kích hoạt (Active)', value: 'active' },
-              { label: 'Vô hiệu hóa (Inactive)', value: 'inactive' },
+              { label: 'Đang kích hoạt', value: 'active' },
+              { label: 'Vô hiệu hóa', value: 'inactive' },
             ]}
           />
         </div>
@@ -904,7 +904,7 @@ export default function AdminCataloguePage() {
               onChange={(e) => setEditIsActive(e.target.checked)}
               className="w-4 h-4 accent-[#B47820]"
             />
-            <span className="text-xs text-[#1A1917] font-medium">Trạng thái kích hoạt (Active)</span>
+            <span className="text-xs text-[#1A1917] font-medium">Trạng thái kích hoạt</span>
           </label>
         </div>
       </Dialog>

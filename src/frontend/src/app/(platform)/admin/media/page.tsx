@@ -18,7 +18,7 @@ export default function AdminMediaPage() {
           </div>
           <h1 className="text-2xl font-bold text-[#1A1917]">Quản trị Kho ảnh &amp; Đa phương tiện</h1>
           <p className="text-[#706E68] text-xs mt-1 max-w-2xl">
-            Giám sát toàn bộ hình ảnh thực tế (Real SOP) và ảnh mô phỏng AI (AI Concept). Truy vết liên kết tới từng bước công thức, phát hiện ảnh mồ côi và thử nghiệm cơ chế khôi phục lỗi xóa.
+            Giám sát toàn bộ hình ảnh thực tế và ảnh mô phỏng AI. Truy vết liên kết tới từng bước công thức, phát hiện ảnh mồ côi và thử nghiệm cơ chế khôi phục lỗi xóa.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -34,7 +34,7 @@ export default function AdminMediaPage() {
       <div className="p-4 bg-white border border-[#E8E2D9] rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs shadow-xs">
         <div className="space-y-1 text-[#1A1917]">
           <div className="font-semibold text-[#B47820] flex items-center gap-1.5">
-            <Info className="w-4 h-4 text-[#B47820]" /> Hướng dẫn kiểm thử Khả năng Phục hồi (Delete Resilience Demo):
+            <Info className="w-4 h-4 text-[#B47820]" /> Hướng dẫn kiểm thử Khả năng Phục hồi:
           </div>
           <p className="text-[#706E68]">
             1. Vào <strong className="text-[#1A1917]">Cấu hình AI</strong> &rarr; Bật <em>"Mô phỏng lỗi xóa tệp Media"</em>.<br />

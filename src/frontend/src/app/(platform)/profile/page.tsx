@@ -213,7 +213,7 @@ export default function ProfilePage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-bold text-[#1A1917]">Công thức Tiêu biểu (Showcase)</h2>
+            <h2 className="text-base font-bold text-[#1A1917]">Công thức Tiêu biểu</h2>
             <p className="text-xs text-[#706E68]">
               Các công thức pha chế tiêu biểu đã hoàn thiện định mức và quy trình SOP.
             </p>

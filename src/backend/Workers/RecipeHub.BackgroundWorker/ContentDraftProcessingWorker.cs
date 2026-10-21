@@ -88,7 +88,7 @@ public sealed class ContentDraftProcessingWorker : BackgroundService
                     GroupName,
                     _consumerName,
                     ">",
-                    count: 1);
+                    count: 2);
 
                 if (messages == null || messages.Length == 0)
                 {
@@ -96,10 +96,9 @@ public sealed class ContentDraftProcessingWorker : BackgroundService
                     continue;
                 }
 
-                foreach (var message in messages)
-                {
-                    await ProcessStreamMessageAsync(message, db, streamName, stoppingToken);
-                }
+                _logger.LogInformation("Processing {Count} image draft job(s) concurrently from {StreamName}...", messages.Length, streamName);
+                var processingTasks = messages.Select(message => ProcessStreamMessageAsync(message, db, streamName, stoppingToken));
+                await Task.WhenAll(processingTasks);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

@@ -139,7 +139,7 @@ export default function AdminAiSettingsPage() {
           <div className="p-6 bg-white border border-[#E2DDD2] rounded-xl shadow-xs space-y-5">
             <div className="flex items-center justify-between border-b border-[#E2DDD2] pb-3">
               <div>
-                <h2 className="text-base font-bold text-[#1C1917]">Bộ tạo nội dung Trí tuệ Nhân tạo (Generative AI)</h2>
+                <h2 className="text-base font-bold text-[#1C1917]">Bộ tạo nội dung Trí tuệ Nhân tạo</h2>
                 <p className="text-xs text-[#78716C]">Điều phối mô hình AI hỗ trợ R&amp;D soạn thảo SOP và vẽ ảnh minh họa bước thực hiện.</p>
               </div>
               <span className="text-xs font-mono px-2 py-0.5 rounded bg-[#FAF8F2] text-[#B47820] border border-[#E2DDD2] font-semibold">
