@@ -34,3 +34,4 @@ Thumbs.db
 
 # Local AI session artifacts
 .superpowers/
+.claude/
