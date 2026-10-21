@@ -4,6 +4,7 @@ namespace RecipeHub.Recipe.Application.Interfaces;
 
 public interface IRecipeService
 {
+    Task<GeneratedRecipeCodeResponse> GenerateCodeAsync(CancellationToken cancellationToken);
     Task<PagedResponse<RecipeSummaryResponse>> SearchAsync(
         string? query,
         string? state,

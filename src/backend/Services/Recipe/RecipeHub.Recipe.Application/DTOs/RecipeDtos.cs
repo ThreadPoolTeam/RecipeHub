@@ -2,6 +2,8 @@ namespace RecipeHub.Recipe.Application.DTOs;
 
 public sealed record PagedResponse<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount);
 
+public sealed record GeneratedRecipeCodeResponse(string Code);
+
 public sealed record RecipeSummaryResponse(
     Guid Id,
     string Code,

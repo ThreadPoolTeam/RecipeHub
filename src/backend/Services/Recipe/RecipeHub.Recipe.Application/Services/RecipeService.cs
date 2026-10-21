@@ -1,3 +1,4 @@
+using System.Globalization;
 using RecipeHub.Recipe.Application.DTOs;
 using RecipeHub.Recipe.Application.Interfaces;
 using RecipeHub.Recipe.Domain.Entities;
@@ -10,12 +11,29 @@ public sealed class RecipeService : IRecipeService
     private readonly IRecipeRepository _recipeRepository;
     private readonly IIngredientRepository _ingredientRepository;
     private readonly IUnitRepository _unitRepository;
-
-    public RecipeService(IRecipeRepository recipeRepository, IIngredientRepository ingredientRepository, IUnitRepository unitRepository)
+    public RecipeService(
+        IRecipeRepository recipeRepository,
+        IIngredientRepository ingredientRepository,
+        IUnitRepository unitRepository)
     {
         _recipeRepository = recipeRepository;
         _ingredientRepository = ingredientRepository;
         _unitRepository = unitRepository;
+    }
+
+    public async Task<GeneratedRecipeCodeResponse> GenerateCodeAsync(CancellationToken cancellationToken)
+    {
+        var max = await _recipeRepository.GetMaxCodeNumberAsync("REC", cancellationToken);
+        var nextNumber = max + 1;
+        while (true)
+        {
+            var code = "REC-" + nextNumber.ToString("D3", CultureInfo.InvariantCulture);
+            if (!await _recipeRepository.RecipeCodeExistsAsync(code, null, cancellationToken))
+            {
+                return new GeneratedRecipeCodeResponse(code);
+            }
+            nextNumber++;
+        }
     }
 
     public async Task<PagedResponse<RecipeSummaryResponse>> SearchAsync(

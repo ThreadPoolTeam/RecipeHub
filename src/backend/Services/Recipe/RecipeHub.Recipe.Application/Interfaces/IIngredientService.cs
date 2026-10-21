@@ -4,6 +4,7 @@ namespace RecipeHub.Recipe.Application.Interfaces;
 
 public interface IIngredientService
 {
+    Task<GeneratedIngredientCodeResponse> GenerateCodeAsync(GenerateIngredientCodeRequest request, CancellationToken cancellationToken);
     Task<IReadOnlyList<IngredientResponse>> SearchAsync(string? query, string? state, Guid? categoryId, CancellationToken cancellationToken);
     Task<IngredientResponse> GetByIdAsync(Guid publicId, CancellationToken cancellationToken);
     Task<IngredientResponse> CreateAsync(CreateIngredientRequest request, Guid actorUserId, CancellationToken cancellationToken);

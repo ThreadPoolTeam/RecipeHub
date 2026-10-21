@@ -58,6 +58,14 @@ public sealed class RecipesController : ControllerBase
         return Ok(version);
     }
 
+    [HttpPost("generate-code")]
+    [ProducesResponseType(typeof(GeneratedRecipeCodeResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<GeneratedRecipeCodeResponse>> GenerateCode(CancellationToken cancellationToken)
+    {
+        _ = RequestActor.GetUserId(HttpContext);
+        return Ok(await _recipeService.GenerateCodeAsync(cancellationToken));
+    }
+
     [HttpPost]
     public async Task<ActionResult<RecipeDetailResponse>> Create(
         [FromBody] CreateRecipeRequest request,

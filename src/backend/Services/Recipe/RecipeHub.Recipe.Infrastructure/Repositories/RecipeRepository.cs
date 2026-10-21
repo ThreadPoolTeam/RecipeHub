@@ -109,6 +109,25 @@ public sealed class RecipeRepository : IRecipeRepository
         _dbContext.Recipes.AnyAsync(
             item => item.NormalizedCode == normalizedCode && item.PublicId != excludedPublicId,
             cancellationToken);
+    public async Task<int> GetMaxCodeNumberAsync(string prefix, CancellationToken cancellationToken)
+    {
+        var targetPrefix = prefix + "-";
+        var codes = await _dbContext.Recipes.AsNoTracking()
+            .Where(item => item.Code.StartsWith(targetPrefix))
+            .Select(item => item.Code)
+            .ToListAsync(cancellationToken);
+
+        var max = 0;
+        foreach (var code in codes)
+        {
+            var suffix = code.Substring(targetPrefix.Length);
+            if (int.TryParse(suffix, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var num) && num > max)
+            {
+                max = num;
+            }
+        }
+        return max;
+    }
 
     public async Task AddRecipeAsync(RecipeEntity recipe, CancellationToken cancellationToken) =>
         await _dbContext.Recipes.AddAsync(recipe, cancellationToken);

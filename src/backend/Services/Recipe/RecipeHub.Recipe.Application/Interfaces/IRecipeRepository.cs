@@ -19,6 +19,7 @@ public interface IRecipeRepository
     Task<IReadOnlyList<RecipeVersion>> GetVersionHistoryAsync(Guid recipePublicId, CancellationToken cancellationToken);
     Task<RecipeEntity?> GetRecipeAsync(Guid publicId, CancellationToken cancellationToken);
     Task<bool> RecipeCodeExistsAsync(string normalizedCode, Guid? excludedPublicId, CancellationToken cancellationToken);
+    Task<int> GetMaxCodeNumberAsync(string prefix, CancellationToken cancellationToken);
     Task AddRecipeAsync(RecipeEntity recipe, CancellationToken cancellationToken);
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

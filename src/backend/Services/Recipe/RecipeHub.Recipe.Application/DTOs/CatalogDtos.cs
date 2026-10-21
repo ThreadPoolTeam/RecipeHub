@@ -53,6 +53,10 @@ public sealed record IngredientResponse(
     DateTime CreatedAt,
     DateTime UpdatedAt);
 
+public sealed record GenerateIngredientCodeRequest(Guid CategoryId);
+
+public sealed record GeneratedIngredientCodeResponse(string Code);
+
 public sealed record CreateIngredientRequest(
     string? Code,
     string? Name,
