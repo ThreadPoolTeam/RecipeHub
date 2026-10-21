@@ -1,0 +1,92 @@
+Project RecipeHubIdentityDatabase {
+  database_type: 'PostgreSQL'
+  Note: 'Identity Service: tài khoản, password hash, role và refresh sessions. Bám IdentityDbContext và migration 20261020140022_InitialIdentity; không tạo FK xuyên database.'
+}
+
+Table identity_db.user_account {
+  id bigint [pk, increment]
+  public_id uuid [not null]
+  user_name text [not null]
+  normalized_user_name text [not null]
+  email text
+  normalized_email text
+  display_name text [not null]
+  state text [not null, default: 'active', note: 'Application chấp nhận active, locked, deactivated; migration hiện tại không có CHECK constraint.']
+  last_login_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    public_id [unique, name: 'IX_user_account_public_id']
+    normalized_user_name [unique, name: 'IX_user_account_normalized_user_name']
+    normalized_email [unique, name: 'IX_user_account_normalized_email']
+    state [name: 'user_account_state_idx']
+  }
+
+  Note: 'id là khóa nội bộ. public_id là UUID sử dụng trong API/JWT và user references của service khác; UUID do application cấp, không có DB default.'
+}
+
+Table identity_db.auth_credential {
+  id bigint [pk, increment]
+  user_account_id bigint [not null]
+  password_hash text [note: 'ASP.NET Core PasswordHasher hash; không lưu plaintext. Nullable đúng theo model/migration hiện có.']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    user_account_id [unique, name: 'auth_credential_user_uidx']
+  }
+
+  Note: 'Mỗi tài khoản có tối đa một credential.'
+}
+
+Table identity_db.role {
+  id bigint [pk, increment]
+  name text [not null]
+  normalized_name text [not null]
+  description text
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    normalized_name [unique, name: 'IX_role_normalized_name']
+  }
+
+  Note: 'Seeder hiện có tạo Admin, RndStaff, Viewer. Permission mapping nằm trong code RolePermissionMap, không có bảng permission riêng.'
+}
+
+Table identity_db.user_role {
+  user_account_id bigint [not null]
+  role_id bigint [not null]
+  assigned_at timestamptz [not null, default: `now()`]
+  assigned_by_user_ref uuid [note: 'public_id người gán role, chỉ là reference; model hiện tại không tạo FK.']
+
+  indexes {
+    (user_account_id, role_id) [pk, name: 'PK_user_role']
+    role_id [name: 'user_role_role_idx']
+  }
+}
+
+Table identity_db.user_session {
+  id bigint [pk, increment]
+  session_token_hash text [not null, note: 'SHA-256 hash của refresh token; không lưu raw refresh token.']
+  user_account_id bigint [not null]
+  created_at timestamptz [not null, default: `now()`]
+  last_activity_at timestamptz [not null]
+  expires_at timestamptz [not null]
+  revoked_at timestamptz
+  ip_address inet
+  user_agent text
+
+  indexes {
+    session_token_hash [unique, name: 'IX_user_session_session_token_hash']
+    (user_account_id, expires_at) [name: 'user_session_user_expiry_idx']
+    expires_at [name: 'user_session_expiry_idx']
+  }
+
+  Note: 'Refresh rotation thu hồi session cũ rồi tạo session mới. expires_at và last_activity_at do application cấp.'
+}
+
+Ref FK_auth_credential_user_account_user_account_id: identity_db.user_account.id - identity_db.auth_credential.user_account_id [delete: cascade]
+Ref FK_user_role_user_account_user_account_id: identity_db.user_role.user_account_id > identity_db.user_account.id [delete: cascade]
+Ref FK_user_role_role_role_id: identity_db.user_role.role_id > identity_db.role.id [delete: cascade]
+Ref FK_user_session_user_account_user_account_id: identity_db.user_session.user_account_id > identity_db.user_account.id [delete: cascade]
