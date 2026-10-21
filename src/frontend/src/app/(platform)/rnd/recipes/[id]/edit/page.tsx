@@ -24,6 +24,7 @@ import {
 import { useDemo } from '@/lib/demo/provider';
 import { RecipeVersion, Ingredient, RecipeIngredient, RecipeStep, AiCandidate, MediaAsset } from '@/lib/demo/types';
 import { Button, TextInput, TextArea, Select, Alert } from '@/components/workspace/fields';
+import { CodeInput } from '@/components/workspace/code-input';
 import { MediaLibrary } from '@/components/workspace/media-library';
 import { Dialog } from '@/components/workspace/dialog';
 import { UnitItem } from '@/lib/api/backend-repository';
@@ -42,9 +43,11 @@ export default function EditRecipePage() {
 
   // Form Fields
   const [code, setCode] = useState('');
+  const [generatingCode, setGeneratingCode] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [targetYield, setTargetYield] = useState<number>(1);
+  const [targetYield, setTargetYield] = useState('');
   const [yieldUnit, setYieldUnit] = useState('');
   const [availableUnits, setAvailableUnits] = useState<UnitItem[]>([]);
 
@@ -93,8 +96,8 @@ export default function EditRecipePage() {
         setCode(rec.code);
         setName(rec.name);
         setDescription(rec.description || '');
-        setTargetYield(rec.targetYield || 1);
-        setYieldUnit(rec.yieldUnit || units[0]?.code || '');
+        setTargetYield(rec.targetYield === null ? '' : String(rec.targetYield));
+        setYieldUnit(rec.yieldUnit ?? '');
         setAvailableUnits(units.filter((unit) => unit.state === 'active'));
         setIngredients(rec.ingredients || []);
         setSteps(rec.steps || []);
@@ -286,9 +289,25 @@ export default function EditRecipePage() {
     setIsMediaPickerOpen(false);
   };
 
+  const codeImmutable = recipe?.status === 'Published' || (recipe?.versionNumber ?? 0) > 1;
+
+  const handleGenerateCode = async () => {
+    if (!session || !recipe || codeImmutable || generatingCode || saving) return;
+    setGeneratingCode(true);
+    setCodeError(null);
+    try {
+      setCode(await repo.generateRecipeCode(session));
+      touch();
+    } catch (error: unknown) {
+      setCodeError(error instanceof Error ? error.message : 'Không thể tạo mã công thức.');
+    } finally {
+      setGeneratingCode(false);
+    }
+  };
+
   // Save Recipe Draft
   const handleSaveRecipe = async () => {
-    if (!session || !recipe) return;
+    if (!session || !recipe || generatingCode || saving) return;
     setErrorMsg(null);
     setSuccessMsg(null);
 
@@ -299,8 +318,15 @@ export default function EditRecipePage() {
       setErrorMsg('Vui lòng nhập đầy đủ mã và tên công thức.');
       return;
     }
-    if (!yieldUnit) {
-      setErrorMsg('Recipe Service chưa có đơn vị thành phẩm khả dụng.');
+    const hasYieldQuantity = targetYield.trim().length > 0;
+    const hasYieldUnit = yieldUnit.trim().length > 0;
+    if (hasYieldQuantity !== hasYieldUnit) {
+      setErrorMsg('Sản lượng và đơn vị thành phẩm phải được nhập cùng nhau hoặc cùng để trống.');
+      return;
+    }
+    const parsedYield = hasYieldQuantity ? Number(targetYield) : null;
+    if (parsedYield !== null && (!Number.isFinite(parsedYield) || parsedYield <= 0)) {
+      setErrorMsg('Sản lượng mục tiêu phải là số lớn hơn 0.');
       return;
     }
 
@@ -313,8 +339,8 @@ export default function EditRecipePage() {
           code: cleanCode,
           name: cleanName,
           description: description.trim(),
-          targetYield: Number(targetYield) || 1,
-          yieldUnit,
+          targetYield: parsedYield,
+          yieldUnit: hasYieldUnit ? yieldUnit : null,
           ingredients: ingredients,
           steps: steps,
         },
@@ -379,7 +405,7 @@ export default function EditRecipePage() {
           <Link href={`/rnd/recipes/${recipe.id}`}>
             <Button variant="secondary">Xem Chi Tiết</Button>
           </Link>
-          <Button variant="gold" size="sm" isLoading={saving} onClick={handleSaveRecipe}>
+          <Button variant="gold" size="sm" isLoading={saving} disabled={generatingCode} onClick={handleSaveRecipe}>
             <Save className="w-3.5 h-3.5 mr-1" /> Lưu Bản Nháp
           </Button>
         </div>
@@ -399,11 +425,20 @@ export default function EditRecipePage() {
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <TextInput
-            label="Mã Công Thức *"
+          <CodeInput
+            label="Mã Công Thức"
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
-            helper="Chữ hoa, duy nhất trên toàn hệ thống"
+            onGenerate={handleGenerateCode}
+            generateLabel="Tạo mã công thức"
+            generating={generatingCode}
+            generateDisabled={!session}
+            disabled={codeImmutable || saving}
+            helper={codeImmutable
+              ? 'Mã được giữ cố định sau lần phát hành đầu tiên; không thể sửa hoặc tạo mã mới.'
+              : 'Nhập mã riêng hoặc tạo mã REC-001, REC-002… Mã đã cấp có thể bị bỏ qua nếu không lưu.'}
+            error={codeError}
+            required
           />
           <TextInput
             label="Tên Công Thức *"
@@ -421,20 +456,23 @@ export default function EditRecipePage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <TextInput
-            label="Sản Lượng Mục Tiêu *"
+            label="Sản Lượng Mục Tiêu"
             type="number"
             min={1}
             value={targetYield}
-            onChange={(e) => setTargetYield(Math.max(1, Number(e.target.value) || 1))}
+            onChange={(e) => setTargetYield(e.target.value)}
           />
           <Select
-            label="Đơn Vị Thành Phẩm *"
+            label="Đơn Vị Thành Phẩm"
             value={yieldUnit}
             onChange={(e) => setYieldUnit(e.target.value)}
-            options={availableUnits.map((unit) => ({
-              value: unit.code,
-              label: `${unit.name} (${unit.code})`,
-            }))}
+            options={[
+              { value: '', label: 'Chưa thiết lập' },
+              ...availableUnits.map((unit) => ({
+                value: unit.code,
+                label: `${unit.name} (${unit.code})`,
+              })),
+            ]}
           />
         </div>
       </div>
@@ -767,7 +805,7 @@ export default function EditRecipePage() {
         <Link href={`/rnd/recipes/${recipe.id}`}>
           <Button variant="secondary">Quay Lại Chi Tiết</Button>
         </Link>
-        <Button variant="gold" size="lg" isLoading={saving} onClick={handleSaveRecipe}>
+        <Button variant="gold" size="lg" isLoading={saving} disabled={generatingCode} onClick={handleSaveRecipe}>
           <Save className="w-4 h-4 mr-1.5" /> Lưu Bản Nháp
         </Button>
       </div>
@@ -779,7 +817,7 @@ export default function EditRecipePage() {
           if (!isGeneratingAiImage) handleDiscardCandidate();
         }}
         title="✨ Tạo Ảnh Minh Họa Concept Bằng AI"
-        description="Mô phỏng ảnh thao tác cho bước SOP. Ảnh sẽ được đánh dấu AI Concept với hạn dùng 30 phút trước khi thẩm định."
+        description="Mô phỏng ảnh thao tác cho bước SOP. Ảnh được đánh dấu AI Concept và có hạn dùng 30 phút trước khi chấp nhận."
         confirmLabel="Chấp Nhận & Gắn Ảnh Này"
         confirmVariant="gold"
         isConfirming={isGeneratingAiImage}

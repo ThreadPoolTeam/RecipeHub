@@ -17,9 +17,6 @@ public sealed record UnitResponse(
     string Name,
     Guid CategoryId,
     string CategoryName,
-    bool IsBase,
-    decimal FactorToBase,
-    decimal OffsetToBase,
     short DecimalPlaces,
     string State,
     DateTime CreatedAt,
@@ -29,9 +26,6 @@ public sealed record UnitRequest(
     string? Code,
     string? Name,
     Guid CategoryId,
-    bool IsBase,
-    decimal FactorToBase,
-    decimal OffsetToBase,
     short DecimalPlaces);
 
 public sealed record IngredientCategoryResponse(
@@ -58,6 +52,10 @@ public sealed record IngredientResponse(
     string State,
     DateTime CreatedAt,
     DateTime UpdatedAt);
+
+public sealed record GenerateIngredientCodeRequest(Guid CategoryId);
+
+public sealed record GeneratedIngredientCodeResponse(string Code);
 
 public sealed record CreateIngredientRequest(
     string? Code,

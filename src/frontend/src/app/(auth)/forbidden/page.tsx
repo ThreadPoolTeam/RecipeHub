@@ -40,12 +40,6 @@ export default function ForbiddenPage() {
             {session?.role || 'Chưa xác định'}
           </span>
         </div>
-        <div>
-          Quyền Phê Duyệt (canApprove):{' '}
-          <span className="font-semibold text-[#B47820]">
-            {session?.canApprove ? 'Có' : 'Không'}
-          </span>
-        </div>
       </div>
 
       <div className="flex flex-col gap-2 pt-2">

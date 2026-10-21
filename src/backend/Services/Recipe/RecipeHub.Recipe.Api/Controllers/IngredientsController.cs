@@ -35,6 +35,20 @@ public sealed class IngredientsController : ControllerBase
         return Ok(ingredient);
     }
 
+    [HttpPost("generate-code")]
+    [ProducesResponseType(typeof(GeneratedIngredientCodeResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<GeneratedIngredientCodeResponse>> GenerateCode(
+        [FromBody] GenerateIngredientCodeRequest request,
+        CancellationToken cancellationToken)
+    {
+        _ = RequestActor.GetUserId(HttpContext);
+        return Ok(await _ingredientService.GenerateCodeAsync(request, cancellationToken));
+    }
+
     [HttpPost]
     public async Task<ActionResult<IngredientResponse>> Create(
         [FromBody] CreateIngredientRequest request,

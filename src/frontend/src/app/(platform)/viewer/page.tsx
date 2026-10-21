@@ -24,7 +24,7 @@ export default function ViewerPage() {
       return;
     }
 
-    // repo.getRecipes automatically restricts viewer accounts to Approved recipes in currentUser.allowedRecipeIds
+    // The repository restricts viewer accounts to published recipes in currentUser.allowedRecipeIds.
     repo
       .getRecipes(session, {
         query: searchQuery.trim(),
@@ -146,7 +146,9 @@ export default function ViewerPage() {
                     Định lượng
                   </span>
                   <span className="font-semibold text-[#1A1917] line-clamp-1">
-                    {recipe.targetYield} {recipe.yieldUnit}
+                    {recipe.targetYield !== null && recipe.yieldUnit
+                      ? `${recipe.targetYield} ${recipe.yieldUnit}`
+                      : 'Chưa thiết lập'}
                   </span>
                 </div>
                 <div className="bg-[#FAF9F5] rounded p-1.5 border border-[#E8E2D9]">

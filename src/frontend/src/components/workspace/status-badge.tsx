@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Camera, AlertTriangle, Check, ShieldCheck, Clock, Archive } from 'lucide-react';
+import { Sparkles, Camera, AlertTriangle, Check, Archive } from 'lucide-react';
 import { RecipeStatus, MediaSource, MediaState, Role } from '@/lib/demo/types';
 
 export function StatusBadge({ status }: { status: RecipeStatus }) {
@@ -11,18 +11,11 @@ export function StatusBadge({ status }: { status: RecipeStatus }) {
           Nháp (Draft)
         </span>
       );
-    case 'PendingApproval':
-      return (
-        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-800 border border-blue-200">
-          <Clock className="w-3 h-3 text-blue-600 animate-pulse" />
-          Chờ duyệt
-        </span>
-      );
-    case 'Approved':
+    case 'Published':
       return (
         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
           <Check className="w-3 h-3 text-emerald-600" />
-          Đã duyệt
+          Đã phát hành
         </span>
       );
     case 'Archived':
@@ -69,7 +62,7 @@ export function MediaStateBadge({ state }: { state: MediaState }) {
   );
 }
 
-export function RoleBadge({ role, canApprove }: { role: Role; canApprove?: boolean }) {
+export function RoleBadge({ role }: { role: Role }) {
   let roleText = 'Người dùng';
   let roleColor = 'bg-zinc-100 text-zinc-700 border-zinc-200';
 
@@ -89,12 +82,6 @@ export function RoleBadge({ role, canApprove }: { role: Role; canApprove?: boole
       <span className={`px-2 py-0.5 rounded text-xs font-medium border ${roleColor}`}>
         {roleText}
       </span>
-      {canApprove && (
-        <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-          <ShieldCheck className="w-3 h-3 text-emerald-600" />
-          Quyền Duyệt
-        </span>
-      )}
     </div>
   );
 }

@@ -88,9 +88,8 @@ public sealed class UnitService : IUnitService
         var unit = new Unit
         {
             PublicId = Guid.NewGuid(), Code = values.Code, NormalizedCode = values.NormalizedCode,
-            Name = values.Name, CategoryId = category.Id, IsBase = request.IsBase,
-            FactorToBase = request.FactorToBase, OffsetToBase = request.OffsetToBase,
-            DecimalPlaces = request.DecimalPlaces, State = "active", CreatedByUserRef = actorUserId,
+            Name = values.Name, CategoryId = category.Id, DecimalPlaces = request.DecimalPlaces,
+            State = "active", CreatedByUserRef = actorUserId,
             UpdatedByUserRef = actorUserId, CreatedAt = now, UpdatedAt = now, Category = category
         };
         await _unitRepository.AddUnitAsync(unit, cancellationToken);
@@ -110,17 +109,13 @@ public sealed class UnitService : IUnitService
             throw new ConflictException($"Unit code '{values.Code}' already exists.");
         var category = await GetActiveCategoryAsync(request.CategoryId, cancellationToken);
         if (await _unitRepository.UnitIsUsedAsync(unit.Id, cancellationToken) &&
-            (unit.CategoryId != category.Id || unit.FactorToBase != request.FactorToBase ||
-             unit.OffsetToBase != request.OffsetToBase))
-            throw new ConflictException("A used unit cannot change category or conversion values.");
+            (unit.CategoryId != category.Id || unit.NormalizedCode != values.NormalizedCode))
+            throw new ConflictException("A used unit cannot change code or category. Create a new unit and deactivate this one instead.");
 
         unit.Code = values.Code;
         unit.NormalizedCode = values.NormalizedCode;
         unit.Name = values.Name;
         unit.CategoryId = category.Id;
-        unit.IsBase = request.IsBase;
-        unit.FactorToBase = request.FactorToBase;
-        unit.OffsetToBase = request.OffsetToBase;
         unit.DecimalPlaces = request.DecimalPlaces;
         unit.UpdatedByUserRef = actorUserId;
         unit.UpdatedAt = DateTime.UtcNow;
@@ -188,7 +183,6 @@ public sealed class UnitService : IUnitService
         var code = RequireText(request.Code, "Unit code");
         var name = RequireText(request.Name, "Unit name");
         if (request.CategoryId == Guid.Empty) throw new ValidationException("Unit category ID is required.");
-        if (request.FactorToBase <= 0) throw new ValidationException("Factor to base must be greater than zero.");
         if (request.DecimalPlaces is < 0 or > 8) throw new ValidationException("Decimal places must be between 0 and 8.");
         return (code, Normalize(code), name);
     }
@@ -215,7 +209,7 @@ public sealed class UnitService : IUnitService
 
     private static UnitResponse MapUnit(Unit unit) => new(
         unit.PublicId, unit.Code, unit.Name, unit.Category.PublicId, unit.Category.Name,
-        unit.IsBase, unit.FactorToBase, unit.OffsetToBase, unit.DecimalPlaces, unit.State,
+        unit.DecimalPlaces, unit.State,
         unit.CreatedAt, unit.UpdatedAt);
 
     private static string RequireText(string? value, string fieldName) =>

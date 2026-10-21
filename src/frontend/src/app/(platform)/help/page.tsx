@@ -38,12 +38,12 @@ export default function HelpPage() {
           <div className="w-10 h-10 rounded-xl bg-[#FAF9F5] border border-[#E8E2D9] flex items-center justify-center text-emerald-700">
             <CheckSquare className="w-5 h-5" />
           </div>
-          <h2 className="text-base font-bold text-[#1A1917]">2. Quy trình Phê duyệt SOP</h2>
+          <h2 className="text-base font-bold text-[#1A1917]">2. Phát hành SOP</h2>
           <p className="text-xs text-[#706E68] leading-relaxed">
-            Chuyên viên R&amp;D có quyền tự thẩm định và phê duyệt phiên bản công thức hoàn thiện để chuyển trạng thái sang Approved phục vụ quầy Barista.
+            Chuyên viên R&amp;D kiểm tra công thức hoàn thiện rồi phát hành trực tiếp để phục vụ quầy Barista.
           </p>
-          <Link href="/approvals" className="inline-flex items-center gap-1 text-xs font-semibold text-[#B47820] hover:underline pt-2">
-            Mở hàng chờ phê duyệt &rarr;
+          <Link href="/rnd/recipes" className="inline-flex items-center gap-1 text-xs font-semibold text-[#B47820] hover:underline pt-2">
+            Mở danh mục công thức &rarr;
           </Link>
         </div>
 
