@@ -87,4 +87,11 @@ RecipeHub/
 - **Language & Style:** Communication in Vietnamese, concise/terse caveman style unless asked otherwise.
 - **Git Workflow:** Atomic commits (no big-bang commits). Include scope prefixes: `feat:`, `fix:`, `docs:`, `refactor:`, `chore:`.
 - **Validation:** Always verify changes (`dotnet build src/backend/RecipeHub.sln`, `npm run build`) before claiming completion.
-- **API Swagger Enforcement (BẮT BUỘC):** Luôn đảm bảo mọi backend API service có Swagger và duy trì cập nhật khi thêm endpoint mới. Không được bỏ qua cấu hình Swagger UI khi tạo service mới hoặc refactor.
+- **API Swagger Enforcement (BẮT BUỘC):** Luôn đảm bảo mọi backend API service có Swagger và duy trì cập nhật khi thêm endpoint mới. Không được bỏ qua cấu hình Swagger UI khi tạo service mới hoặc refactor. Cấm viết comment xml vô hàm controller
+- **Content AI & FLUX Schnell Guidelines (BẮT BUỘC):**
+  - Khi làm việc hoặc chỉnh sửa hệ thống Content AI (Gemini prompt translator, FLUX.1 generator, System Prompt, image drafts, worker gen ảnh), **BẮT BUỘC** phải đọc và tuân thủ tài liệu hướng dẫn kỹ thuật `docs/flux-schnell-prompt-engineering-guide.md`.
+  - Phải trích xuất và đưa ra lời cảnh báo về các quy tắc/điểm chết cốt tử:
+    1. *Hiệu ứng con voi hồng (Negative Prompt Leakage):* Cloudflare FLUX không có tham số `negative_prompt`. Tuyệt đối KHÔNG dùng từ phủ định (`no`, `not`, `without`, `never`) trong prompt gửi FLUX. Phải dùng mô tả khẳng định khép kín (Positive Framing).
+    2. *Khóa cứng Visual Elements:* Chỉ trích xuất nguyên liệu thị giác (lát quả, bọt kem, tầng màu); lọc bỏ toàn bộ nguyên liệu hòa tan (đường, muối, siro, bột béo).
+    3. *Hố sâu văn hóa (Domain Gap):* Phải quy đổi món Việt (Cà phê muối, Rau má, Mãng cầu...) sang thuộc tính vật lý phổ quát phương Tây, không dịch thô danh từ.
+    4. *Ràng buộc kỹ thuật FLUX Schnell:* Cố định `steps: 4`, độ dài vàng 300–600 ký tự (Front-loading chủ thể ly nước vào 77 token đầu), `temperature: 0.2` cho Gemini (loại bỏ tính từ cảm xúc/hoa mỹ).
