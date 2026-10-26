@@ -9,9 +9,13 @@ function isAllowedPath(path: string): boolean {
   return ALLOWED_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 
+type RouteContext = {
+  params: Promise<{ path: string[] }> | { path: string[] };
+};
+
 async function proxyRequest(
   request: Request,
-  context: RouteContext<'/api/backend/[...path]'>
+  context: RouteContext
 ): Promise<Response> {
   const { path } = await context.params;
   const backendPath = path.join('/');

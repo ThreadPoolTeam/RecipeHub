@@ -350,7 +350,7 @@ export function DocumentWorkspace({ recipe, readOnly = false }: DocumentWorkspac
                 <span className="font-semibold text-[#1A1917]">2. Xuất Bản Phát Hành Chính Thức</span>
                 <p className="text-[#706E68]">
                   Bản sạch không có watermark. Chỉ kích hoạt khi công thức đạt trạng thái{' '}
-                  <strong className="text-emerald-700">Đã Phát Hành (Published)</strong>.
+                  <strong className="text-emerald-700">Đã phát hành</strong>.
                 </p>
                 <div className="pt-2">
                   <Button

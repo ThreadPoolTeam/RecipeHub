@@ -112,8 +112,10 @@ export interface MediaAsset {
 export interface AiCandidate {
   id: string;
   stepId?: string;
+  targetKind?: 'final_product' | 'step_instruction';
   prompt: string;
   mediaAssetId: string;
+  previewUrl?: string;
   state: DraftState;
   expiresAt: string;
   createdAt: string;

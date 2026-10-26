@@ -205,6 +205,9 @@ function mapRecipeSummary(value: unknown): RecipeVersion {
   const item = record(value, 'recipe summary');
   const versionNumber = numberValue(item.versionNumber, 'recipe summary.versionNumber');
   const updatedAt = text(item.updatedAt, 'recipe summary.updatedAt');
+  const primaryMediaAssetId =
+    optionalText(item.primaryMediaAssetRef, 'recipe summary.primaryMediaAssetRef') ??
+    optionalText(item.primaryMediaAssetId, 'recipe summary.primaryMediaAssetId');
   return {
     id: text(item.id, 'recipe summary.id'),
     recipeId: text(item.id, 'recipe summary.id'),
@@ -216,6 +219,7 @@ function mapRecipeSummary(value: unknown): RecipeVersion {
     code: text(item.code, 'recipe summary.code'),
     targetYield: null,
     yieldUnit: null,
+    primaryMediaAssetId: primaryMediaAssetId || undefined,
     ingredients: [],
     steps: [],
     creatorId: '',
@@ -228,22 +232,41 @@ function mapRecipeSummary(value: unknown): RecipeVersion {
 async function mapMediaAsset(value: unknown, actorId: string | null): Promise<MediaAsset> {
   const item = record(value, 'media asset');
   const id = text(item.assetId, 'media asset.assetId');
-  const deliveryUrl = text(item.deliveryUrl, 'media asset.deliveryUrl');
-  const blob = /^https?:\/\//i.test(deliveryUrl)
-    ? await requestExternalBlob(deliveryUrl)
-    : await requestBlob(deliveryUrl.replace(/^\//, ''), actorId, { method: 'GET' });
+  const deliveryUrl = optionalText(item.deliveryUrl, 'media asset.deliveryUrl') ?? '';
+  let blob = new Blob();
+  let resolvedUrl = deliveryUrl;
+
+  if (deliveryUrl) {
+    try {
+      blob = /^https?:\/\//i.test(deliveryUrl)
+        ? await requestExternalBlob(deliveryUrl)
+        : await requestBlob(deliveryUrl.replace(/^\//, ''), actorId, { method: 'GET' });
+    } catch {
+      // Fallback if simulated Cloudinary 404s
+      const aiDraftId = optionalText(item.aiDraftId, 'media asset.aiDraftId');
+      if (aiDraftId) {
+        try {
+          blob = await requestBlob(`api/v1/content/image-drafts/${aiDraftId}/image`, actorId, { method: 'GET' });
+          resolvedUrl = `/api/backend/api/v1/content/image-drafts/${aiDraftId}/image`;
+        } catch {
+          resolvedUrl = `/api/backend/api/v1/content/image-drafts/${aiDraftId}/image`;
+        }
+      }
+    }
+  }
+
   return {
     id,
     name: optionalText(item.originalFileName, 'media asset.originalFileName') ?? id,
-    mimeType: text(item.mimeType, 'media asset.mimeType'),
+    mimeType: optionalText(item.mimeType, 'media asset.mimeType') ?? 'image/png',
     sizeBytes: numberValue(item.byteSize, 'media asset.byteSize'),
     blob,
-    source: text(item.sourceType, 'media asset.sourceType').toLowerCase().includes('ai') ? 'AiIllustration' : 'Real',
+    source: (optionalText(item.sourceType, 'media asset.sourceType') ?? '').toLowerCase().includes('ai') ? 'AiIllustration' : 'Real',
     state: 'Active',
     tags: [],
     uploadedBy: '',
-    createdAt: text(item.createdAt, 'media asset.createdAt'),
-    deliveryUrl,
+    createdAt: optionalText(item.createdAt, 'media asset.createdAt') ?? new Date().toISOString(),
+    deliveryUrl: resolvedUrl || (blob.size > 0 ? URL.createObjectURL(blob) : undefined),
   };
 }
 
@@ -553,8 +576,32 @@ export class BackendRepository extends DemoRepository {
     const page = numberValue(response.page, 'recipes page.page');
     const pageSize = numberValue(response.pageSize, 'recipes page.pageSize');
     const total = numberValue(response.totalCount, 'recipes page.totalCount');
+    const rawItems = array(response.items, 'recipes page.items');
+    const items = await Promise.all(
+      rawItems.map(async (raw) => {
+        const summary = mapRecipeSummary(raw);
+        try {
+          const detail = await this.getRecipeVersion(actor, summary.id);
+          return {
+            ...detail,
+            id: summary.id,
+            recipeId: summary.recipeId,
+            versionId: summary.versionId || detail.versionId,
+            versionNumber: summary.versionNumber || detail.versionNumber,
+            versionLabel: summary.versionLabel || detail.versionLabel,
+            status: summary.status || detail.status,
+            name: summary.name || detail.name,
+            code: summary.code || detail.code,
+            primaryMediaAssetId: detail.primaryMediaAssetId || summary.primaryMediaAssetId,
+          };
+        } catch {
+          return summary;
+        }
+      })
+    );
+
     return {
-      items: array(response.items, 'recipes page.items').map(mapRecipeSummary),
+      items,
       page,
       pageSize,
       total,
@@ -570,6 +617,58 @@ export class BackendRepository extends DemoRepository {
     return recipe;
   }
 
+  override async getRecipeVersions(actor: SessionInfo, recipeId: string): Promise<RecipeVersion[]> {
+    try {
+      const rawVersions = array(
+        await requestJson(`api/v1/recipes/${recipeId}/versions`, this.actorId(actor), { method: 'GET' }),
+        'recipe versions'
+      );
+      const detailedVersions = await Promise.all(
+        rawVersions.map(async (vItem) => {
+          const vRec = record(vItem, 'version summary');
+          const versionId = text(vRec.id, 'version summary.id');
+          try {
+            const detail = mapRecipeDetail(
+              await requestJson(`api/v1/recipes/${recipeId}/versions/${versionId}`, this.actorId(actor), { method: 'GET' })
+            );
+            return {
+              ...detail,
+              recipeId,
+            };
+          } catch {
+            const versionNumber = numberValue(vRec.versionNumber, 'version summary.versionNumber');
+            return {
+              id: versionId,
+              recipeId,
+              versionId,
+              versionNumber,
+              versionLabel: `v${versionNumber}.0`,
+              status: mapStatus(text(vRec.status, 'version summary.status'), 'active'),
+              name: text(vRec.name, 'version summary.name'),
+              code: '',
+              targetYield: null,
+              yieldUnit: null,
+              ingredients: [],
+              steps: [],
+              creatorId: '',
+              creatorEmail: '',
+              createdAt: text(vRec.createdAt, 'version summary.createdAt'),
+              updatedAt: text(vRec.updatedAt, 'version summary.updatedAt'),
+            };
+          }
+        })
+      );
+      return detailedVersions.sort((a, b) => b.versionNumber - a.versionNumber);
+    } catch {
+      // Fallback: if versions endpoint fails, return current version
+      try {
+        const current = await this.getRecipeVersion(actor, recipeId);
+        return [current];
+      } catch {
+        return [];
+      }
+    }
+  }
   private async recipePayload(
     data: {
       code: string;
@@ -750,10 +849,26 @@ export class BackendRepository extends DemoRepository {
         createdAt: new Date().toISOString(),
       };
     }
-    return mapMediaAsset(
-      await requestJson(`api/v1/content/media-assets/${id}`, null, { method: 'GET' }),
-      null
-    );
+    try {
+      return mapMediaAsset(
+        await requestJson(`api/v1/content/media-assets/${id}`, null, { method: 'GET' }),
+        null
+      );
+    } catch {
+      return {
+        id,
+        name: `ai-draft-${id}.png`,
+        mimeType: 'image/png',
+        sizeBytes: 0,
+        blob: new Blob(),
+        deliveryUrl: `/api/backend/api/v1/content/image-drafts/${id}/image`,
+        source: 'AiIllustration',
+        state: 'Active',
+        tags: [],
+        uploadedBy: '',
+        createdAt: new Date().toISOString(),
+      };
+    }
   }
 
   override async uploadMedia(
@@ -810,35 +925,59 @@ export class BackendRepository extends DemoRepository {
 
   override async generateAiImageCandidate(
     actor: SessionInfo,
-    stepId: string,
-    prompt: string
+    stepId: string | null | undefined,
+    prompt: string,
+    targetKind: 'final_product' | 'step_instruction' = 'step_instruction',
+    recipeVersionId?: string,
+    onProgress?: (info: { attempt: number; state: string; message: string }) => void
   ): Promise<AiCandidate> {
-    const context = this.draftContexts.get(stepId);
-    if (!context) throw new Error('Không xác định được recipe version của bước đang chọn. Hãy tải lại trang.');
+    const isHero = targetKind === 'final_product';
+    const resolvedVersionId =
+      recipeVersionId ||
+      (stepId ? this.draftContexts.get(stepId)?.versionId : undefined) ||
+      Array.from(this.draftContexts.values())[0]?.versionId;
+
+    if (!resolvedVersionId) {
+      throw new Error('Không xác định được recipe version. Hãy tải lại trang.');
+    }
+
     const created = record(await requestJson('api/v1/content/image-drafts', this.actorId(actor), {
       method: 'POST',
       body: JSON.stringify({
-        recipeVersionId: context.versionId,
-        recipeStepId: stepId,
-        targetKind: 'step_instruction',
+        recipeVersionId: resolvedVersionId,
+        recipeStepId: isHero ? null : stepId,
+        targetKind,
         userBrief: prompt,
         expectedRecipeRevision: 0,
       }),
     }), 'image draft');
     const draftId = text(created.draftId, 'image draft.draftId');
     let current = created;
-    for (let attempt = 1; attempt <= 30; attempt += 1) {
+    onProgress?.({ attempt: 0, state: 'queued', message: 'Đã gửi yêu cầu vào hàng đợi Redis Streams...' });
+
+    for (let attempt = 1; attempt <= 100; attempt += 1) {
       const state = text(current.state, 'image draft.state').toLowerCase();
-      if (state === 'generated') break;
+      if (state === 'generated') {
+        onProgress?.({ attempt, state: 'generated', message: 'Sinh ảnh hoàn tất!' });
+        break;
+      }
       if (state === 'failed' || state === 'expired') {
         throw new Error(optionalText(current.errorMessage, 'image draft.errorMessage') ?? `Tạo ảnh thất bại: ${state}`);
       }
+      onProgress?.({
+        attempt,
+        state,
+        message:
+          state === 'processing'
+            ? `Worker đang sinh ảnh với AI... (${attempt}s / 100s)`
+            : `Đang chờ trong hàng đợi Redis... (${attempt}s / 100s)`,
+      });
       await new Promise<void>((resolve) => window.setTimeout(resolve, 1000));
       current = record(
         await requestJson(`api/v1/content/image-drafts/${draftId}`, this.actorId(actor), { method: 'GET' }),
         'image draft'
       );
-      if (attempt === 30) throw new Error('Image Draft chưa hoàn tất sau 30 giây. Hãy thử lại sau.');
+      if (attempt === 100) throw new Error('Quá thời gian chờ (100 giây). AI chưa hoàn tất sinh ảnh, vui lòng thử lại.');
     }
     this.draftPreviews.set(
       draftId,
@@ -846,9 +985,11 @@ export class BackendRepository extends DemoRepository {
     );
     return {
       id: draftId,
-      stepId,
+      stepId: stepId ?? '',
+      targetKind,
       prompt,
       mediaAssetId: draftId,
+      previewUrl: `/api/backend/api/v1/content/image-drafts/${draftId}/image`,
       state: 'Generated',
       expiresAt: optionalText(current.expiresAt, 'image draft.expiresAt') ?? new Date(Date.now() + 1_800_000).toISOString(),
       createdAt: text(current.createdAt, 'image draft.createdAt'),
@@ -859,14 +1000,29 @@ export class BackendRepository extends DemoRepository {
     actor: SessionInfo,
     candidateId: string,
     recipeId: string,
-    stepId: string
-  ): Promise<void> {
+    stepId?: string | null
+  ): Promise<string> {
     const accepted = record(
       await requestJson(`api/v1/content/image-drafts/${candidateId}/accept`, this.actorId(actor), { method: 'POST' }),
       'accepted image draft'
     );
     const mediaAssetId = text(accepted.mediaAssetId, 'accepted image draft.mediaAssetId');
+    const previewBlob = this.draftPreviews.get(candidateId);
+    if (previewBlob) {
+      this.draftPreviews.set(mediaAssetId, previewBlob);
+    }
+    if (typeof window !== 'undefined') {
+      const draftUrl = `/api/backend/api/v1/content/image-drafts/${candidateId}/image`;
+      localStorage.setItem(`recipehub_media_url_${mediaAssetId}`, draftUrl);
+      localStorage.setItem(`recipehub_media_url_${candidateId}`, draftUrl);
+    }
     const current = await this.getRecipeVersion(actor, recipeId);
+
+    if (!stepId) {
+      await this.saveRecipeDraft(actor, recipeId, { primaryMediaAssetId: mediaAssetId }, 0);
+      return mediaAssetId;
+    }
+
     if (!current.steps.some((step) => step.id === stepId)) {
       throw new Error(`Không tìm thấy bước '${stepId}' trong công thức '${recipeId}'.`);
     }
@@ -878,6 +1034,7 @@ export class BackendRepository extends DemoRepository {
         }
       : step);
     await this.saveRecipeDraft(actor, recipeId, { steps }, 0);
+    return mediaAssetId;
   }
 
   override async discardAiCandidate(actor: SessionInfo, candidateId: string): Promise<void> {

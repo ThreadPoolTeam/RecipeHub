@@ -8,7 +8,7 @@ export function StatusBadge({ status }: { status: RecipeStatus }) {
       return (
         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200">
           <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-          Nháp (Draft)
+          Bản nháp
         </span>
       );
     case 'Published':
@@ -33,14 +33,14 @@ export function MediaSourceBadge({ source }: { source: MediaSource }) {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-200">
         <Sparkles className="w-3 h-3 text-purple-600" />
-        AI Concept
+        Ảnh AI
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-sky-50 text-sky-700 border border-sky-200">
       <Camera className="w-3 h-3 text-sky-600" />
-      Thực tế (Real)
+      Ảnh chụp thực tế
     </span>
   );
 }
@@ -67,16 +67,15 @@ export function RoleBadge({ role }: { role: Role }) {
   let roleColor = 'bg-zinc-100 text-zinc-700 border-zinc-200';
 
   if (role === 'rnd') {
-    roleText = 'R&D Specialist';
+    roleText = 'Chuyên viên R&D';
     roleColor = 'bg-amber-50 text-amber-800 border-amber-200';
   } else if (role === 'viewer') {
-    roleText = 'Barista Viewer';
+    roleText = 'Nhân viên pha chế';
     roleColor = 'bg-blue-50 text-blue-800 border-blue-200';
   } else if (role === 'admin') {
-    roleText = 'System Admin';
+    roleText = 'Quản trị hệ thống';
     roleColor = 'bg-purple-50 text-purple-800 border-purple-200';
   }
-
   return (
     <div className="inline-flex items-center gap-1.5">
       <span className={`px-2 py-0.5 rounded text-xs font-medium border ${roleColor}`}>

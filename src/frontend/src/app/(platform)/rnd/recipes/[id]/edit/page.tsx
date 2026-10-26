@@ -20,6 +20,8 @@ import {
   Thermometer,
   CheckCircle2,
   Utensils,
+  History,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { RecipeVersion, Ingredient, RecipeIngredient, RecipeStep, AiCandidate, MediaAsset } from '@/lib/demo/types';
@@ -28,8 +30,26 @@ import { CodeInput } from '@/components/workspace/code-input';
 import { MediaLibrary } from '@/components/workspace/media-library';
 import { Dialog } from '@/components/workspace/dialog';
 import { UnitItem } from '@/lib/api/backend-repository';
-
+import {
+  PersistentAiDraft,
+  getStoredAiDrafts,
+  saveStoredAiDraft,
+  removeStoredAiDraft,
+  syncBackendAiDrafts,
+} from '@/lib/ai-draft-storage';
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const PROMPT_CHIPS = [
+  'Ly thủy tinh cao cấp',
+  'Tách sứ bọt kem latte art',
+  'Góc chụp cận cảnh 45°',
+  'Ánh sáng studio ấm áp',
+  'Phân tầng màu sắc nghệ thuật',
+  'Trang trí lát cam sấy & lá hương thảo',
+  'Đá viên pha lê trong suốt',
+  'Bọt kem cheese bồng bềnh',
+];
+
 export default function EditRecipePage() {
   const params = useParams();
   const router = useRouter();
@@ -69,12 +89,16 @@ export default function EditRecipePage() {
   const [generatedCandidate, setGeneratedCandidate] = useState<AiCandidate | null>(null);
   const [candidateAssetUrl, setCandidateAssetUrl] = useState<string | null>(null);
   const [aiImageError, setAiImageError] = useState<string | null>(null);
+  const [aiTargetType, setAiTargetType] = useState<'hero' | 'step'>('hero');
+  const [aiProgressStatus, setAiProgressStatus] = useState<{ attempt: number; state: string; message: string } | null>(null);
+  const [activeDrafts, setActiveDrafts] = useState<PersistentAiDraft[]>([]);
+  // Recipe Primary Cover State
+  const [primaryMediaAssetId, setPrimaryMediaAssetId] = useState<string | null>(null);
+  const [isPickingHeroCover, setIsPickingHeroCover] = useState(false);
 
   // MediaLibrary Picker Dialog for Step Cover Image
   const [isMediaPickerOpen, setIsMediaPickerOpen] = useState(false);
   const [pickingStepIndex, setPickingStepIndex] = useState<number | null>(null);
-
-  // Step Cover Previews (mediaAssetId -> blob url)
   const [coverPreviews, setCoverPreviews] = useState<Record<string, string>>({});
 
   // Load Recipe Data
@@ -101,7 +125,7 @@ export default function EditRecipePage() {
         setAvailableUnits(units.filter((unit) => unit.state === 'active'));
         setIngredients(rec.ingredients || []);
         setSteps(rec.steps || []);
-
+        setPrimaryMediaAssetId(rec.primaryMediaAssetId ?? null);
         setAvailableIngredients(ings);
 
         const previews: Record<string, string> = {};
@@ -186,8 +210,84 @@ export default function EditRecipePage() {
     updated[targetIdx] = temp;
     setSteps(updated.map((s, idx) => ({ ...s, stepNumber: idx + 1 })));
   };
+  // Prompt suggestion builder based on current recipe data
+  const generateSuggestedPrompt = (target: 'hero' | 'step', step?: RecipeStep | null) => {
+    if (target === 'hero') {
+      const ingNames = ingredients
+        .map((i) => availableIngredients.find((a) => a.id === i.ingredientId)?.name)
+        .filter(Boolean)
+        .slice(0, 3)
+        .join(', ');
+      const desc = description.trim() ? `, ${description.trim().slice(0, 80)}` : '';
+      return `Ảnh chụp thành phẩm món ${name || 'đồ uống'}${desc}, thành phần gồm ${ingNames || 'nguyên liệu pha chế tươi'}, phong cách chụp studio đồ uống cao cấp, ly thủy tinh sang trọng, bọt mịn màng, ánh sáng tự nhiên ấm áp, độ phân giải cao.`;
+    } else {
+      const stepTitle = step?.title || 'thao tác';
+      const stepInstruction = step?.instruction || '';
+      return `Ảnh cận cảnh quy trình pha chế: Thao tác "${stepTitle}". Chi tiết: ${stepInstruction.slice(0, 100) || 'bước chuẩn bị nguyên liệu và rót tầng tỉ mỉ'}, góc nhìn ngang 45 độ của barista, ánh sáng rõ nét, phong cách chuyên nghiệp.`;
+    }
+  };
 
-  // AI Image Candidate Trigger
+  const getRemainingMinutes = (expiresAt?: string) => {
+    if (!expiresAt) return 30;
+    const diff = new Date(expiresAt).getTime() - Date.now();
+    return Math.max(0, Math.ceil(diff / (60 * 1000)));
+  };
+
+  const handleSelectDraft = (draft: PersistentAiDraft) => {
+    setGeneratedCandidate({
+      id: draft.id,
+      stepId: draft.stepId || undefined,
+      targetKind: draft.targetKind,
+      prompt: draft.prompt,
+      mediaAssetId: draft.mediaAssetId,
+      previewUrl: draft.previewUrl,
+      state: 'Generated',
+      expiresAt: draft.expiresAt,
+      createdAt: draft.createdAt,
+    });
+    setCandidateAssetUrl(draft.previewUrl);
+    setImagePrompt(draft.prompt);
+  };
+
+  // AI Image Triggers
+  const handleOpenHeroAiModal = () => {
+    setErrorMsg(null);
+    setAiTargetType('hero');
+    setActiveStepForImage(null);
+    setAiImageError(null);
+    const versionId = recipe?.versionId || recipe?.id || '';
+    const stored = getStoredAiDrafts(versionId, 'final_product');
+    setActiveDrafts(stored);
+
+    if (stored.length > 0) {
+      handleSelectDraft(stored[0]);
+    } else {
+      setGeneratedCandidate(null);
+      setCandidateAssetUrl(null);
+      setImagePrompt(generateSuggestedPrompt('hero'));
+    }
+
+    setIsAiImageModalOpen(true);
+
+    if (versionId) {
+      syncBackendAiDrafts(versionId, 'final_product').then((remote) => {
+        if (remote.length > 0) {
+          const refreshed = getStoredAiDrafts(versionId, 'final_product');
+          setActiveDrafts(refreshed);
+          if (!generatedCandidate && refreshed.length > 0) {
+            handleSelectDraft(refreshed[0]);
+          }
+        }
+      });
+    }
+  };
+
+  const handleOpenHeroMediaPicker = () => {
+    setIsPickingHeroCover(true);
+    setPickingStepIndex(null);
+    setIsMediaPickerOpen(true);
+  };
+
   const handleOpenAiImage = (step: RecipeStep) => {
     if (!UUID_PATTERN.test(step.id)) {
       setErrorMsg('Bước này chưa được lưu vào hệ thống. Bạn vui lòng bấm nút "Lưu Bản Nháp" ở góc dưới bên phải trang trước, sau đó bấm lại nút AI này nhé!');
@@ -195,89 +295,206 @@ export default function EditRecipePage() {
       return;
     }
     setErrorMsg(null);
+    setAiTargetType('step');
     setActiveStepForImage(step);
-    setGeneratedCandidate(null);
-    setCandidateAssetUrl(null);
     setAiImageError(null);
+    const versionId = recipe?.versionId || recipe?.id || '';
+    const stored = getStoredAiDrafts(versionId, 'step_instruction', step.id);
+    setActiveDrafts(stored);
+
+    if (stored.length > 0) {
+      handleSelectDraft(stored[0]);
+    } else {
+      setGeneratedCandidate(null);
+      setCandidateAssetUrl(null);
+      setImagePrompt(generateSuggestedPrompt('step', step));
+    }
+
     setIsAiImageModalOpen(true);
+
+    if (versionId) {
+      syncBackendAiDrafts(versionId, 'step_instruction', step.id).then((remote) => {
+        if (remote.length > 0) {
+          const refreshed = getStoredAiDrafts(versionId, 'step_instruction', step.id);
+          setActiveDrafts(refreshed);
+          if (!generatedCandidate && refreshed.length > 0) {
+            handleSelectDraft(refreshed[0]);
+          }
+        }
+      });
+    }
   };
 
   const handleGenerateAiImage = async () => {
-    if (!session || !activeStepForImage) return;
+    if (!session || !recipe) return;
     try {
       setIsGeneratingAiImage(true);
       setAiImageError(null);
-      const cand = await repo.generateAiImageCandidate(session, activeStepForImage.id, imagePrompt);
-      setGeneratedCandidate(cand);
+      const isHero = aiTargetType === 'hero';
+      const targetStepId = isHero ? null : activeStepForImage?.id;
+      const targetKind = isHero ? 'final_product' : 'step_instruction';
+      const versionId = recipe.versionId || recipe.id;
 
-      // fetch candidate media asset blob
-      const asset = await repo.getMediaById(cand.mediaAssetId);
-      if (asset) {
-        setCandidateAssetUrl(URL.createObjectURL(asset.blob));
+      if (!isHero && !targetStepId) {
+        setErrorMsg('Vui lòng chọn bước cần tạo ảnh.');
+        return;
       }
+      setAiProgressStatus({ attempt: 0, state: 'queued', message: 'Đã gửi yêu cầu vào hàng đợi Redis Streams...' });
+      const cand = await repo.generateAiImageCandidate(
+        session,
+        targetStepId,
+        imagePrompt,
+        targetKind,
+        versionId,
+        (info) => setAiProgressStatus(info)
+      );
+
+      // Determine reliable preview URL
+      let previewUrl = cand.previewUrl;
+      if (!previewUrl) {
+        const asset = await repo.getMediaById(cand.mediaAssetId);
+        if (asset) {
+          previewUrl = asset.deliveryUrl || (asset.blob ? URL.createObjectURL(asset.blob) : '');
+        }
+      }
+      if (!previewUrl) {
+        previewUrl = `/api/backend/api/v1/content/image-drafts/${cand.id}/image`;
+      }
+
+      const candidateWithPreview: AiCandidate = {
+        ...cand,
+        previewUrl,
+      };
+      setGeneratedCandidate(candidateWithPreview);
+      setCandidateAssetUrl(previewUrl);
+
+      // Save to persistent storage (survives refresh, auto expires after 30 mins)
+      const persistentDraft: PersistentAiDraft = {
+        id: cand.id,
+        recipeVersionId: versionId,
+        targetKind,
+        stepId: targetStepId ?? null,
+        prompt: imagePrompt,
+        mediaAssetId: cand.mediaAssetId,
+        previewUrl,
+        state: 'Generated',
+        createdAt: cand.createdAt || new Date().toISOString(),
+        expiresAt: cand.expiresAt || new Date(Date.now() + 1_800_000).toISOString(),
+      };
+      saveStoredAiDraft(persistentDraft);
+
+      const refreshed = getStoredAiDrafts(versionId, targetKind, targetStepId);
+      setActiveDrafts(refreshed);
     } catch (err: unknown) {
       const e = err as Error;
       setAiImageError(e.message || 'Lỗi khi sinh ảnh AI Candidate.');
     } finally {
       setIsGeneratingAiImage(false);
+      setAiProgressStatus(null);
     }
   };
 
   const handleAcceptCandidate = async () => {
-    if (!session || !recipe || !generatedCandidate || !activeStepForImage) return;
+    if (!session || !recipe || !generatedCandidate) return;
     try {
-      await repo.acceptAiCandidate(session, generatedCandidate.id, recipe.id, activeStepForImage.id);
-      // update local step cover
-      const updatedSteps = steps.map((s) => {
-        if (s.id === activeStepForImage.id) {
-          return {
-            ...s,
-            coverMediaAssetId: generatedCandidate.mediaAssetId,
-            mediaAssetIds: Array.from(new Set([...(s.mediaAssetIds || []), generatedCandidate.mediaAssetId])),
-          };
-        }
-        return s;
-      });
-      setSteps(updatedSteps);
+      setIsGeneratingAiImage(true);
+      const isHero = aiTargetType === 'hero';
+      const targetStepId = isHero ? null : activeStepForImage?.id;
+      const targetKind = isHero ? 'final_product' : 'step_instruction';
+      const versionId = recipe.versionId || recipe.id;
 
-      // Update cover previews map
-      if (candidateAssetUrl) {
-        setCoverPreviews((prev) => ({ ...prev, [generatedCandidate.mediaAssetId]: candidateAssetUrl }));
+      const permanentMediaId = await repo.acceptAiCandidate(session, generatedCandidate.id, recipe.id, targetStepId);
+
+      // Remove accepted draft from storage
+      removeStoredAiDraft(generatedCandidate.id);
+
+      if (isHero) {
+        setPrimaryMediaAssetId(permanentMediaId);
+        if (candidateAssetUrl) {
+          setCoverPreviews((prev) => ({ ...prev, [permanentMediaId]: candidateAssetUrl }));
+        }
+        setSuccessMsg('Đã chấp nhận và đặt làm ảnh bìa thành phẩm thành công!');
+      } else if (activeStepForImage) {
+        const updatedSteps = steps.map((s) => {
+          if (s.id === activeStepForImage.id) {
+            return {
+              ...s,
+              coverMediaAssetId: permanentMediaId,
+              mediaAssetIds: Array.from(new Set([...(s.mediaAssetIds || []), permanentMediaId])),
+            };
+          }
+          return s;
+        });
+        setSteps(updatedSteps);
+
+        if (candidateAssetUrl) {
+          setCoverPreviews((prev) => ({ ...prev, [permanentMediaId]: candidateAssetUrl }));
+        }
+        setSuccessMsg(`Đã gắn ảnh AI vào bước "${activeStepForImage.title || activeStepForImage.stepNumber}" thành công!`);
       }
 
       touch();
       setIsAiImageModalOpen(false);
+      setGeneratedCandidate(null);
+      setCandidateAssetUrl(null);
+
+      // Update remaining drafts
+      const remaining = getStoredAiDrafts(versionId, targetKind, targetStepId);
+      setActiveDrafts(remaining);
     } catch (err: unknown) {
       const e = err as Error;
       setAiImageError(e.message || 'Không thể chấp nhận đề xuất ảnh AI.');
+    } finally {
+      setIsGeneratingAiImage(false);
     }
   };
 
-  const handleDiscardCandidate = async () => {
-    if (!session || !generatedCandidate) {
+  const handleDiscardCandidate = async (candidateIdToDiscard?: string) => {
+    const idToDiscard = candidateIdToDiscard || generatedCandidate?.id;
+    if (!idToDiscard) {
       setIsAiImageModalOpen(false);
       return;
     }
+    const versionId = recipe?.versionId || recipe?.id || '';
+    const targetKind = aiTargetType === 'hero' ? 'final_product' : 'step_instruction';
+    const targetStepId = aiTargetType === 'hero' ? null : activeStepForImage?.id;
+
     try {
-      await repo.discardAiCandidate(session, generatedCandidate.id);
+      if (session) {
+        await repo.discardAiCandidate(session, idToDiscard);
+      }
     } catch {
       // ignore
-    } finally {
-      setIsAiImageModalOpen(false);
+    }
+    removeStoredAiDraft(idToDiscard);
+
+    const remaining = getStoredAiDrafts(versionId, targetKind, targetStepId);
+    setActiveDrafts(remaining);
+
+    if (remaining.length > 0) {
+      handleSelectDraft(remaining[0]);
+    } else {
+      setGeneratedCandidate(null);
+      setCandidateAssetUrl(null);
     }
   };
-
-  // MediaLibrary Picker
   const handleOpenMediaPicker = (stepIndex: number) => {
     setPickingStepIndex(stepIndex);
     setIsMediaPickerOpen(true);
   };
 
   const handleSelectMediaForStep = (asset: MediaAsset) => {
-    if (pickingStepIndex === null) return;
     const url = URL.createObjectURL(asset.blob);
     setCoverPreviews((prev) => ({ ...prev, [asset.id]: url }));
 
+    if (isPickingHeroCover) {
+      setPrimaryMediaAssetId(asset.id);
+      setIsPickingHeroCover(false);
+      setIsMediaPickerOpen(false);
+      return;
+    }
+
+    if (pickingStepIndex === null) return;
     const updated = [...steps];
     const currentStep = updated[pickingStepIndex];
     updated[pickingStepIndex] = {
@@ -341,6 +558,7 @@ export default function EditRecipePage() {
           description: description.trim(),
           targetYield: parsedYield,
           yieldUnit: hasYieldUnit ? yieldUnit : null,
+          primaryMediaAssetId: primaryMediaAssetId || undefined,
           ingredients: ingredients,
           steps: steps,
         },
@@ -475,8 +693,66 @@ export default function EditRecipePage() {
             ]}
           />
         </div>
-      </div>
 
+        {/* Cover Image / Hero Image */}
+        <div className="pt-4 border-t border-[#E8E2D9]">
+          <label className="block text-xs font-semibold text-[#1A1917] mb-2">
+            Ảnh Bìa Thành Phẩm Đồ Uống (Hero Cover Image)
+          </label>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-[#FAF9F5] p-3.5 rounded-xl border border-[#E8E2D9]">
+            <div className="w-28 h-28 rounded-xl bg-white border border-[#E8E2D9] overflow-hidden flex items-center justify-center shrink-0 shadow-2xs">
+              {primaryMediaAssetId && coverPreviews[primaryMediaAssetId] ? (
+                <img
+                  src={coverPreviews[primaryMediaAssetId]}
+                  alt="Ảnh bìa thành phẩm"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-[#8C887F] p-2 text-center">
+                  <Camera className="w-6 h-6 mb-1 text-[#C9A84C]" />
+                  <span className="text-[10px]">Chưa có ảnh</span>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2 flex-1 min-w-0">
+              <p className="text-xs text-[#706E68]">
+                Ảnh bìa đại diện cho thành phẩm đồ uống hiển thị trên thẻ menu, danh sách R&amp;D và tài liệu SOP chính thức.
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleOpenHeroMediaPicker}
+                >
+                  <Camera className="w-3.5 h-3.5 mr-1 text-[#706E68]" /> Chọn Từ Thư Viện
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="text-purple-700 border-purple-300 hover:bg-purple-50"
+                  onClick={handleOpenHeroAiModal}
+                >
+                  <Sparkles className="w-3.5 h-3.5 mr-1 text-purple-600" /> ✨ Tạo Bằng AI
+                </Button>
+                {primaryMediaAssetId && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-rose-600 hover:bg-rose-50"
+                    onClick={() => setPrimaryMediaAssetId(null)}
+                  >
+                    <Trash2 className="w-3.5 h-3.5 mr-1" /> Gỡ ảnh
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       {/* 2. Ingredients Builder */}
       <div className="bg-white border border-[#E8E2D9] rounded-xl p-6 space-y-4 shadow-xs">
         <div className="flex items-center justify-between border-b border-[#E8E2D9] pb-3">
@@ -814,68 +1090,226 @@ export default function EditRecipePage() {
       <Dialog
         isOpen={isAiImageModalOpen}
         onClose={() => {
-          if (!isGeneratingAiImage) handleDiscardCandidate();
+          if (!isGeneratingAiImage) setIsAiImageModalOpen(false);
         }}
-        title="✨ Tạo Ảnh Minh Họa Concept Bằng AI"
-        description="Mô phỏng ảnh thao tác cho bước SOP. Ảnh được đánh dấu AI Concept và có hạn dùng 30 phút trước khi chấp nhận."
-        confirmLabel="Chấp Nhận & Gắn Ảnh Này"
+        title={aiTargetType === 'hero' ? '✨ Tạo Ảnh Bìa Thành Phẩm Bằng AI' : '✨ Tạo Ảnh Minh Họa Concept Bằng AI'}
+        description={
+          aiTargetType === 'hero'
+            ? 'Mô phỏng hình ảnh đồ uống thành phẩm hoàn chỉnh để làm ảnh đại diện công thức.'
+            : `Mô phỏng ảnh thao tác cho bước: "${activeStepForImage?.title || 'bước'}". Ảnh lưu tạm 30 phút, tự động xóa khi hết hạn.`
+        }
+        confirmLabel={aiTargetType === 'hero' ? 'Chấp Nhận & Đặt Làm Ảnh Bìa' : 'Chấp Nhận & Gắn Ảnh Này'}
         confirmVariant="gold"
         isConfirming={isGeneratingAiImage}
-        onConfirm={handleAcceptCandidate}
+        onConfirm={generatedCandidate ? handleAcceptCandidate : undefined}
+        maxWidth="4xl"
       >
-        <div className="space-y-4 py-2">
+        <div className="py-1">
           {aiImageError && <Alert type="error" message={aiImageError} />}
 
-          <TextInput
-            label="Mô Tả Bối Cảnh Ảnh Cần Tạo (Prompt)"
-            value={imagePrompt}
-            onChange={(e) => setImagePrompt(e.target.value)}
-          />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start mt-1">
+            {/* Left Column: Prompt, suggestions & generation trigger */}
+            <div className="lg:col-span-5 space-y-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-[#1A1917]">
+                    Mô Tả Bối Cảnh Ảnh Cần Tạo (Prompt)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setImagePrompt(generateSuggestedPrompt(aiTargetType, activeStepForImage))}
+                    className="text-xs text-[#B47820] hover:text-[#9E6714] font-medium flex items-center gap-1 hover:underline transition cursor-pointer"
+                  >
+                    <Sparkles className="w-3 h-3" /> Gợi ý từ công thức
+                  </button>
+                </div>
 
-          <div className="flex justify-end">
-            <Button
-              variant="secondary"
-              size="sm"
-              isLoading={isGeneratingAiImage}
-              onClick={handleGenerateAiImage}
-              className="text-purple-300 border-purple-800"
-            >
-              Sinh Ảnh Đề Xuất
-            </Button>
-          </div>
-
-          {candidateAssetUrl && (
-            <div className="p-4 bg-[#FAF9F5] border border-[#E2DDD2] rounded-xl space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-purple-700">
-                  ✨ Ảnh Đề Xuất Mới (Candidate)
-                </span>
-                <span className="text-[11px] text-[#B47820] font-medium">Hạn duyệt: 30 phút</span>
-              </div>
-
-              <div className="flex justify-center bg-white p-3 rounded-lg border border-[#E2DDD2]">
-                <img
-                  src={candidateAssetUrl}
-                  alt="Candidate Concept"
-                  className="max-h-56 max-w-full rounded object-contain"
+                <TextArea
+                  value={imagePrompt}
+                  onChange={(e) => setImagePrompt(e.target.value)}
+                  rows={4}
+                  placeholder="Nhập mô tả bối cảnh hình ảnh..."
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
-                <Button variant="danger" size="sm" onClick={handleDiscardCandidate}>
-                  Hủy / Bỏ Qua
-                </Button>
+              {/* Quick Suggestion Chips */}
+              <div>
+                <div className="text-[11px] font-medium text-[#706E68] mb-1.5 flex items-center gap-1">
+                  <span>Gợi ý chi tiết thêm:</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {PROMPT_CHIPS.map((chip) => (
+                    <button
+                      key={chip}
+                      type="button"
+                      onClick={() => {
+                        setImagePrompt((prev) => (prev.trim() ? `${prev.trim()}, ${chip}` : chip));
+                      }}
+                      className="text-[11px] px-2 py-0.5 rounded-full bg-[#FAF9F5] hover:bg-[#F5F0E8] text-[#706E68] hover:text-[#1A1917] border border-[#E8E2D9] transition cursor-pointer"
+                    >
+                      + {chip}
+                    </button>
+                  ))}
+                </div>
               </div>
+
+              {/* Trigger Generation Button */}
+              <Button
+                variant="gold"
+                size="md"
+                isLoading={isGeneratingAiImage}
+                onClick={handleGenerateAiImage}
+                className="w-full flex items-center justify-center font-semibold"
+              >
+                <Sparkles className="w-4 h-4 mr-2" /> Bắt Đầu Tạo Ảnh Với AI
+              </Button>
+
+              {/* Asynchronous Progress Indicator */}
+              {isGeneratingAiImage && (
+                <div className="p-3.5 bg-amber-50/80 border border-amber-200/80 rounded-xl space-y-2.5 animate-pulse">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-amber-900 flex items-center gap-2">
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#B47820]"></span>
+                      </span>
+                      {aiProgressStatus?.message || 'Đang gửi yêu cầu vào hàng đợi Redis Streams...'}
+                    </span>
+                    <span className="font-mono text-[#B47820] font-bold">{aiProgressStatus?.attempt || 0}s / 100s</span>
+                  </div>
+                  <div className="w-full bg-amber-200/60 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="bg-[#B47820] h-1.5 rounded-full transition-all duration-300"
+                      style={{ width: `${Math.min(100, Math.max(8, (aiProgressStatus?.attempt || 1)))}%` }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-[#706E68] leading-relaxed">
+                    Đang chạy qua Redis Streams & Worker. Tối đa 100 giây. Bạn có thể giữ mở hoặc refresh lại mà không mất ảnh đề xuất.
+                  </p>
+                </div>
+              )}
             </div>
-          )}
+
+            {/* Right Column: Active Preview & Drafts Gallery */}
+            <div className="lg:col-span-7 space-y-3.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#1A1917] uppercase tracking-wider">
+                  Xem Trước Ảnh Đề Xuất
+                </span>
+                {generatedCandidate && (
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[#B47820] font-medium flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Còn lại ~{getRemainingMinutes(generatedCandidate.expiresAt)} phút (auto xóa khi hết hạn)
+                  </span>
+                )}
+              </div>
+
+              {/* Main Preview Box */}
+              <div className="rounded-xl border border-[#E8E2D9] bg-[#FAF9F5] p-3 overflow-hidden min-h-[260px] flex flex-col justify-center items-center relative">
+                {candidateAssetUrl ? (
+                  <div className="w-full space-y-2.5">
+                    <div className="relative aspect-video w-full rounded-lg overflow-hidden border border-[#E2DDD2] bg-zinc-950 flex items-center justify-center shadow-inner">
+                      <img
+                        src={candidateAssetUrl}
+                        alt="AI Concept"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/60 backdrop-blur-xs text-white text-[10px] font-medium flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-amber-400" />
+                        AI Concept • Chưa áp dụng
+                      </div>
+                    </div>
+
+                    <div className="flex items-start justify-between gap-3 pt-1">
+                      <p className="text-xs text-[#706E68] line-clamp-2 italic">
+                        "{generatedCandidate?.prompt || imagePrompt}"
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => handleDiscardCandidate(generatedCandidate?.id)}
+                        className="text-xs text-red-600 hover:text-red-700 flex items-center gap-1 shrink-0 font-medium hover:underline cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Bỏ đề xuất này
+                      </button>
+                    </div>
+                  </div>
+                ) : isGeneratingAiImage ? (
+                  <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center animate-bounce">
+                      <Sparkles className="w-6 h-6 text-[#B47820]" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-[#1A1917]">AI đang phác thảo hình ảnh...</div>
+                      <div className="text-xs text-[#706E68] mt-0.5">Worker đang kết xuất chi tiết theo prompt</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-12 flex flex-col items-center justify-center text-center space-y-2 text-[#8C887F]">
+                    <ImageIcon className="w-10 h-10 opacity-40 stroke-1" />
+                    <p className="text-xs max-w-xs">
+                      Chưa có ảnh đề xuất nào cho mục này. Nhập prompt bên trái và bấm <strong>"Bắt Đầu Tạo Ảnh Với AI"</strong> để sinh ảnh mới.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Kho ảnh đề xuất (Persistent across refresh, auto deleted when expired) */}
+              {activeDrafts.length > 0 && (
+                <div className="pt-2 border-t border-[#E8E2D9] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-[#1A1917] flex items-center gap-1.5">
+                      <History className="w-3.5 h-3.5 text-[#B47820]" />
+                      Kho ảnh đề xuất tạm thời ({activeDrafts.length})
+                    </span>
+                    <span className="text-[10px] text-[#706E68]">
+                      Lưu giữ 30 phút • Click để chọn
+                    </span>
+                  </div>
+
+                  <div className="flex gap-2.5 overflow-x-auto py-1">
+                    {activeDrafts.map((d) => {
+                      const isSelected = candidateAssetUrl === d.previewUrl || generatedCandidate?.id === d.id;
+                      const mins = getRemainingMinutes(d.expiresAt);
+                      return (
+                        <button
+                          key={d.id}
+                          type="button"
+                          onClick={() => handleSelectDraft(d)}
+                          className={`w-20 h-16 rounded-xl border overflow-hidden shrink-0 transition cursor-pointer relative group ${
+                            isSelected
+                              ? 'ring-2 ring-[#B47820] border-[#B47820] shadow-sm'
+                              : 'border-[#E8E2D9] hover:border-[#B47820] opacity-80 hover:opacity-100'
+                          }`}
+                          title={`Prompt: ${d.prompt}\nCòn lại: ~${mins} phút`}
+                        >
+                          <img src={d.previewUrl} alt={d.prompt} className="w-full h-full object-cover" />
+                          <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[9px] font-mono py-0.5 text-center">
+                            {mins}p
+                          </div>
+                          {isSelected && (
+                            <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-[#B47820] text-white flex items-center justify-center">
+                              <Check className="w-2.5 h-2.5" />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </Dialog>
 
       {/* MediaLibrary Picker Dialog */}
       <Dialog
         isOpen={isMediaPickerOpen}
-        onClose={() => setIsMediaPickerOpen(false)}
-        title="Chọn Ảnh Thao Tác Từ Kho Phương Tiện"
+        onClose={() => {
+          setIsMediaPickerOpen(false);
+          setIsPickingHeroCover(false);
+        }}
+        title={isPickingHeroCover ? 'Chọn Ảnh Bìa Thành Phẩm Từ Thư Viện' : 'Chọn Ảnh Thao Tác Từ Kho Phương Tiện'}
         description="Chọn ảnh thực tế hoặc ảnh AI minh họa đã lưu trong thư viện."
       >
         <div className="max-h-[70vh] overflow-y-auto py-2">

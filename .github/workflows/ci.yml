@@ -1,0 +1,58 @@
+name: CI Build & Syntax Check
+
+on:
+  push:
+    branches: [ "dev", "main" ]
+  pull_request:
+    branches: [ "dev", "main" ]
+
+jobs:
+  backend-check:
+    name: Build & Check .NET Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore src/backend/RecipeHub.sln
+
+      - name: Build solution (compile & syntax check)
+        run: dotnet build src/backend/RecipeHub.sln --no-restore --configuration Release
+
+      - name: Run unit tests
+        run: dotnet test src/backend/RecipeHub.sln --no-build --configuration Release --verbosity normal
+
+  frontend-check:
+    name: Build & Lint Next.js Frontend
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: src/frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Syntax & TypeScript type check
+        run: npx tsc --noEmit
+
+      - name: Next.js production build
+        run: npm run build

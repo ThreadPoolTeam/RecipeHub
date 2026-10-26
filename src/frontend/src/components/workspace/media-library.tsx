@@ -292,8 +292,8 @@ export function MediaLibrary({
             className="bg-white border border-[#E8E2D9] text-[#1A1917] rounded-md px-2 py-1 shadow-xs"
           >
             <option value="all">Tất cả trạng thái</option>
-            <option value="Active">Đang hoạt động (Active)</option>
-            <option value="DeleteFailed">Lỗi xóa (DeleteFailed)</option>
+            <option value="Active">Đang hoạt động</option>
+            <option value="DeleteFailed">Lỗi xóa</option>
           </select>
         </div>
       </div>

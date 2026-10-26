@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from './fields';
 
 interface DialogProps {
@@ -13,8 +14,19 @@ interface DialogProps {
   confirmLabel?: string;
   confirmVariant?: 'primary' | 'danger' | 'gold';
   isConfirming?: boolean;
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
 }
 
+const maxWidthMap: Record<string, string> = {
+  sm: 'max-w-sm',
+  md: 'max-w-md',
+  lg: 'max-w-lg',
+  xl: 'max-w-xl',
+  '2xl': 'max-w-2xl',
+  '3xl': 'max-w-3xl',
+  '4xl': 'max-w-4xl',
+  '5xl': 'max-w-5xl',
+};
 export function Dialog({
   isOpen,
   onClose,
@@ -25,11 +37,19 @@ export function Dialog({
   confirmLabel = 'Xác nhận',
   confirmVariant = 'gold',
   isConfirming = false,
+  maxWidth = 'lg',
 }: DialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -38,23 +58,29 @@ export function Dialog({
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in"
+      className="fixed inset-0 z-[9999] w-screen h-screen flex items-center justify-center p-4 sm:p-6 bg-zinc-950/70 backdrop-blur-sm transition-opacity"
       role="dialog"
       aria-modal="true"
       aria-labelledby="dialog-title"
     >
+      {/* Backdrop click outside */}
+      <div className="absolute inset-0" onClick={onClose} aria-hidden="true" />
+
       <div
         ref={dialogRef}
-        className="w-full max-w-lg bg-white border border-[#E8E2D9] rounded-xl shadow-xl p-6 text-[#1A1917] space-y-4"
+        className={`relative z-10 w-full ${maxWidthMap[maxWidth] || 'max-w-lg'} max-h-[88vh] flex flex-col min-h-0 bg-white border border-[#E8E2D9] rounded-2xl shadow-2xl p-6 text-[#1A1917]`}
       >
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between shrink-0 mb-3">
           <div>
             <h3 id="dialog-title" className="text-lg font-bold text-[#1A1917]">
               {title}
@@ -72,9 +98,9 @@ export function Dialog({
           </button>
         </div>
 
-        <div className="py-2 text-sm text-[#1A1917]">{children}</div>
+        <div className="py-2 text-sm text-[#1A1917] overflow-y-auto flex-1 min-h-0 pr-1 space-y-4">{children}</div>
 
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#E8E2D9]">
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#E8E2D9] shrink-0">
           <Button variant="ghost" onClick={onClose} disabled={isConfirming}>
             Hủy bỏ
           </Button>
@@ -89,6 +115,7 @@ export function Dialog({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

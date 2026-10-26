@@ -86,7 +86,7 @@ export default function AdminPage() {
       tag: 'AI Simulation',
     },
     {
-      title: 'Nhật ký kiểm toán (Audit Trail)',
+      title: 'Nhật ký kiểm toán',
       desc: 'Truy vết toàn diện mọi hành động: tạo, sửa, phát hành công thức, khóa tài khoản và xuất bản tài liệu.',
       href: '/admin/logs',
       icon: ShieldCheck,
@@ -95,7 +95,7 @@ export default function AdminPage() {
     },
     {
       title: 'Quản trị kho ảnh đa phương tiện',
-      desc: 'Kiểm tra ảnh đính kèm theo bước SOP, giải phóng ảnh mồ côi (unreferenced) và xử lý ảnh xóa thất bại.',
+      desc: 'Kiểm tra ảnh đính kèm theo bước SOP, giải phóng ảnh không liên kết và xử lý ảnh xóa thất bại.',
       href: '/admin/media',
       icon: Image,
       count: `${stats.mediaCount} tệp media`,
