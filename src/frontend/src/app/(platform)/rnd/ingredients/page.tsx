@@ -7,6 +7,7 @@ import { useDemo } from '@/lib/demo/provider';
 import { Ingredient } from '@/lib/demo/types';
 import { Button, Select, Alert, SearchInput } from '@/components/workspace/fields';
 import { DataTable } from '@/components/workspace/data-table';
+import { UnitConversionModal } from '@/components/shared/UnitConversionModal';
 
 export default function RndIngredientsPage() {
   const { session, repo, dataVersion, touch } = useDemo();
@@ -208,7 +209,8 @@ export default function RndIngredientsPage() {
             Định nghĩa danh mục nguyên liệu tiêu chuẩn và đơn vị đo phục vụ xây dựng công thức.
           </p>
         </div>
-        <div>
+        <div className="flex items-center gap-2">
+          <UnitConversionModal />
           <Link href="/rnd/ingredients/new">
             <Button variant="gold" size="sm">
               <Plus className="w-4 h-4 mr-1" /> Thêm nguyên liệu

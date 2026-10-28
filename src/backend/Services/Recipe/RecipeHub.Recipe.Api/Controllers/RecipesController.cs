@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using RecipeHub.Recipe.Application.DTOs;
 using RecipeHub.Recipe.Application.Interfaces;
+using RecipeHub.Recipe.Application;
 
 namespace RecipeHub.Recipe.Api.Controllers;
 
@@ -8,6 +9,12 @@ namespace RecipeHub.Recipe.Api.Controllers;
 [Route("api/v1/recipes")]
 public sealed class RecipesController : ControllerBase
 {
+    private bool IsViewer => User.IsInRole("viewer");
+    private Guid[] ViewerScope => User.FindAll("allowed_recipe_id").Select(c => Guid.Parse(c.Value)).ToArray();
+    private void EnsureViewerScope(Guid id)
+    {
+        if (IsViewer && !ViewerScope.Contains(id)) throw new ForbiddenException("Bạn không có quyền truy cập công thức này.");
+    }
     private readonly IRecipeService _recipeService;
 
     public RecipesController(IRecipeService recipeService)
@@ -26,7 +33,8 @@ public sealed class RecipesController : ControllerBase
         CancellationToken cancellationToken)
     {
         var recipes = await _recipeService.SearchAsync(
-            query, state, versionStatus, createdByUserId, page ?? 1, pageSize ?? 20, cancellationToken);
+            query, IsViewer ? "active" : state, IsViewer ? "published" : versionStatus, createdByUserId,
+            page ?? 1, pageSize ?? 20, cancellationToken, IsViewer ? ViewerScope : null);
         return Ok(recipes);
     }
 
@@ -35,7 +43,17 @@ public sealed class RecipesController : ControllerBase
         Guid publicId,
         CancellationToken cancellationToken)
     {
-        var recipe = await _recipeService.GetAsync(publicId, cancellationToken);
+        EnsureViewerScope(publicId);
+        RecipeDetailResponse recipe;
+        if (IsViewer)
+        {
+            var history = await _recipeService.GetVersionHistoryAsync(publicId, cancellationToken);
+            var published = history.FirstOrDefault(v => v.Status == "published")
+                ?? throw new ForbiddenException("Công thức chưa được phát hành.");
+            recipe = await _recipeService.GetVersionAsync(publicId, published.Id, cancellationToken);
+            if (recipe.State != "active") throw new ForbiddenException("Công thức đã được lưu trữ.");
+        }
+        else recipe = await _recipeService.GetAsync(publicId, cancellationToken);
         return Ok(recipe);
     }
 
@@ -44,7 +62,11 @@ public sealed class RecipesController : ControllerBase
         Guid publicId,
         CancellationToken cancellationToken)
     {
+        EnsureViewerScope(publicId);
+        if (IsViewer && (await _recipeService.GetAsync(publicId, cancellationToken)).State != "active")
+            throw new ForbiddenException("Công thức đã được lưu trữ.");
         var versions = await _recipeService.GetVersionHistoryAsync(publicId, cancellationToken);
+        if (IsViewer) versions = versions.Where(v => v.Status == "published").ToArray();
         return Ok(versions);
     }
 
@@ -54,7 +76,10 @@ public sealed class RecipesController : ControllerBase
         Guid versionId,
         CancellationToken cancellationToken)
     {
+        EnsureViewerScope(publicId);
         var version = await _recipeService.GetVersionAsync(publicId, versionId, cancellationToken);
+        if (IsViewer && (version.VersionStatus != "published" || version.State != "active"))
+            throw new ForbiddenException("Chỉ được xem công thức đang hoạt động và đã phát hành.");
         return Ok(version);
     }
 

@@ -26,7 +26,7 @@ Table recipe_db.unit_category {
     `state IN ('active', 'inactive')` [name: 'unit_category_state_check']
   }
 
-  Note: 'Nhóm phân loại đơn vị hiển thị; MVP không tự động quy đổi đơn vị.'
+  Note: 'Nhóm phân loại đơn vị; API quy đổi metric chỉ chấp nhận cùng nhóm và cùng đại lượng vật lý. Phép tính không ghi DB.'
 }
 
 // Display units grouped by category.
@@ -53,7 +53,7 @@ Table recipe_db.unit {
     `state IN ('active', 'inactive')` [name: 'unit_state_check']
   }
 
-  Note: 'Đơn vị hiển thị thuộc một nhóm; MVP không tự động quy đổi đơn vị.'
+  Note: 'Đơn vị thuộc một nhóm. Quy đổi metric mg/g/kg và ml/cl/dl/l dùng hệ số vật lý cố định; đơn vị khác chỉ đổi sang chính nó. Không suy đoán cup/shot hoặc khối lượng sang thể tích.'
 }
 
 // Ingredient categories used to group and filter the shared catalog.

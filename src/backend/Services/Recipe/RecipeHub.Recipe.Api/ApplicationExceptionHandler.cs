@@ -19,6 +19,7 @@ public sealed class ApplicationExceptionHandler : IExceptionHandler
         {
             ValidationException => (StatusCodes.Status400BadRequest, "Validation failed"),
             UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "Authentication required"),
+            ForbiddenException => (StatusCodes.Status403Forbidden, "Access denied"),
             NotFoundException => (StatusCodes.Status404NotFound, "Resource not found"),
             ConflictException => (StatusCodes.Status409Conflict, "Resource conflict"),
             Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException => (StatusCodes.Status409Conflict, "Concurrency conflict"),

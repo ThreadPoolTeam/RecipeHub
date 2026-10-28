@@ -4,6 +4,12 @@ using RecipeHub.Recipe.Api.Services;
 using RecipeHub.Recipe.Application;
 using RecipeHub.Recipe.Infrastructure;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.OpenApi.Models;
+using Grpc.Net.Client;
+using RecipeHub.GrpcContracts.Identity;
+using Microsoft.EntityFrameworkCore;
+using RecipeHub.Recipe.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,8 +28,13 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "RecipeHub.Recipe.Api", Version = "v1" });
-    c.OperationFilter<SwaggerXUserIdHeaderFilter>();
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme { Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT" });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement { [new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } }] = [] });
 });
+builder.Services.AddSingleton(_ => GrpcChannel.ForAddress(builder.Configuration["Grpc:IdentityServiceUrl"] ?? "http://localhost:5011"));
+builder.Services.AddSingleton(sp => new IdentitySession.IdentitySessionClient(sp.GetRequiredService<GrpcChannel>()));
+builder.Services.AddAuthentication("Bearer").AddScheme<AuthenticationSchemeOptions, RecipeAuthenticationHandler>("Bearer", _ => { });
+builder.Services.AddAuthorization();
 builder.Services.AddHealthChecks();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApplicationExceptionHandler>();
@@ -34,6 +45,11 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
+    if (builder.Configuration.GetValue<bool>("Recipe:ApplyMigrations"))
+    {
+        using var scope = app.Services.CreateScope();
+        await scope.ServiceProvider.GetRequiredService<RecipeDbContext>().Database.MigrateAsync();
+    }
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
@@ -42,9 +58,22 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseExceptionHandler();
+app.UseAuthentication();
+app.UseAuthorization();
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path;
+    var calculation = path.StartsWithSegments("/api/v1/recipes/calculate") || path == "/api/v1/recipes/units/convert";
+    if (path.StartsWithSegments("/api/v1/recipes") && !HttpMethods.IsGet(context.Request.Method) && !calculation)
+    {
+        if (context.User.Identity?.IsAuthenticated != true) { await context.ChallengeAsync(); return; }
+        if (!context.User.IsInRole("rnd") && !context.User.IsInRole("admin")) { await context.ForbidAsync(); return; }
+    }
+    await next();
+});
 app.MapGrpcService<ProbeServiceImpl>();
 app.MapGrpcService<RecipeAiContextQueryServiceImpl>();
-app.MapControllers();
+app.MapControllers().RequireAuthorization();
 
 app.MapGet("/", () => Results.Ok(new
 {

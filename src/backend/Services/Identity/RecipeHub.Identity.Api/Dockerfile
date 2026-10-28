@@ -11,7 +11,8 @@ RUN dotnet publish Services/Identity/RecipeHub.Identity.Api/RecipeHub.Identity.A
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 COPY --from=build /app/publish .
 ENV ASPNETCORE_URLS=http://+:5001
-EXPOSE 5001
+EXPOSE 5001 5011
 ENTRYPOINT ["dotnet", "RecipeHub.Identity.Api.dll"]

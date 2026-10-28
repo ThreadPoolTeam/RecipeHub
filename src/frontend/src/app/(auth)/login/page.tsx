@@ -4,7 +4,7 @@ import React, { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { FlaskConical, CheckSquare, Coffee, Settings, LogIn } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
-import { getDefaultDashboardForRole } from '@/lib/demo/permissions';
+import { getDefaultDashboardForRole, isPathAllowedForUser } from '@/lib/demo/permissions';
 import { DEMO_PASSWORD } from '@/lib/demo/seed';
 import { TextInput, Button, Alert } from '@/components/workspace/fields';
 function LoginForm() {
@@ -26,7 +26,7 @@ function LoginForm() {
     try {
       const session = await login(email, password);
       // Validate internal redirect
-      if (nextParam.startsWith('/') && !nextParam.startsWith('//') && !nextParam.includes('\\')) {
+      if (nextParam.startsWith('/') && !nextParam.startsWith('//') && !nextParam.includes('\\') && isPathAllowedForUser(nextParam, session).allowed) {
         router.push(nextParam);
       } else {
         router.push(getDefaultDashboardForRole(session.role));

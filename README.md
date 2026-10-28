@@ -1,8 +1,10 @@
-# RecipeHub - Coffee R&D Formula Management System (Foundation Shell)
+# RecipeHub - Coffee R&D Formula Management System
 
 Dự án môn học PRN232 / PRM Semester 8: Khung kiến trúc kỹ thuật microservices nền tảng (Foundation Skeleton).
 
-> **LƯU Ý QUAN TRỌNG:** Đây là bộ khung kỹ thuật nền tảng (Technical Architecture Skeleton) nhằm kiểm tra và chứng minh việc tích hợp các công nghệ yêu cầu (.NET 8 Clean Architecture, YARP Gateway, gRPC, Redis Streams, PostgreSQL, Next.js App Router). Toàn bộ nghiệp vụ công thức, quy trình phê duyệt R&D, đăng nhập JWT thực tế và các thao tác CRUD dữ liệu được trì hoãn sang các phase nghiệp vụ tiếp theo.
+Tasks 1.1–1.8 có JWT session thật, Users RBAC/khóa/mật khẩu, catalog/nguyên liệu, SOP, scale mẻ, totals và quy đổi đơn vị qua Gateway. Xem [đối chiếu và triển khai](docs/plans/261028-tasks-1.1-1.8/implementation.md). Frontend hiện dùng Next.js 16 / React 19.
+
+Development: `admin@recipehub.demo`, `rd@recipehub.demo`, `viewer@recipehub.demo` dùng `Demo@1234` khi bật seed. Sáu tài khoản legacy giữ email/password hash cũ; Viewer chỉ xem công thức đã publish và được Admin cấp quyền. Production phải cấu hình `Jwt__SigningKey` ít nhất 32 bytes và chạy migration trước khi khởi động; không bật seed demo.
 
 ---
 
@@ -27,7 +29,7 @@ RecipeHub/
 │   │   └── Workers/
 │   │       └── RecipeHub.BackgroundWorker/       # Redis Streams consumer with MKSTREAM & ACK
 │   └── frontend/
-│       └── recipehub-web/                        # Next.js 14 App Router (Standalone output)
+│       └── src/                                  # Next.js 16 App Router (Standalone output)
 ├── infra/
 │   ├── compose.yaml                              # Docker Compose full-stack orchestration
 │   └── postgres/
@@ -68,7 +70,7 @@ RecipeHub/
    ```
 2. **Build & Start Frontend:**
    ```bash
-   cd src/frontend/recipehub-web
+   cd src/frontend
    npm run build
    npm start
    ```
@@ -85,13 +87,13 @@ RecipeHub/
 | | | - `/api/v1/recipes/*`  -> `Recipe.Api` |
 | | | - `/api/v1/content/*`  -> `Content.Api` |
 | | | - `/api/v1/audit/*`    -> `Audit.Api` |
-| **Identity Service** | `5001` (nội bộ) | Health & Quản lý danh tính shell |
-| **Recipe Service** | `5002` (nội bộ) | Health, gRPC Server (`ServiceProbe.Ping`), Redis publish dev trigger |
+| **Identity Service** | `5001` REST, `5011` gRPC (nội bộ) | JWT/session, Users RBAC, Swagger Development |
+| **Recipe Service** | `5002` REST, `5012` gRPC (nội bộ) | Catalog, ingredient, recipe/SOP, scale/totals/convert, Swagger Development |
 | **Content Service** | `5003` (nội bộ) | Health & gRPC Client gọi sang Recipe Service (`/api/v1/content/probe-recipe`) |
 | **Audit Service** | `5004` (nội bộ) | Health & Audit log shell |
 | **Background Worker**| - | Lắng nghe & ACK Redis Stream `platform.heartbeat.v1` |
-| **PostgreSQL** | `5432` | 4 CSDL: `recipehub_identity`, `recipehub_recipe`, `recipehub_content`, `recipehub_audit` |
-| **Redis** | `6379` | Message broker Redis Streams |
+| **PostgreSQL** | Host `5433` → container `5432` | 4 CSDL: `recipehub_identity`, `recipehub_recipe`, `recipehub_content`, `recipehub_audit` |
+| **Redis** | Host `6380` → container `6379` | Message broker Redis Streams |
 
 ---
 

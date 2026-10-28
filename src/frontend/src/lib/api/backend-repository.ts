@@ -13,8 +13,11 @@ import {
   RecipeStep,
   RecipeVersion,
   SessionInfo,
+  User,
+  Role,
 } from '@/lib/demo/types';
-import { requestBlob, requestExternalBlob, requestJson } from './client';
+import { clearSession, saveBackendSession, updateSessionUser } from '@/lib/demo/session';
+import { ApiError, requestBlob, requestExternalBlob, requestJson } from './client';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -34,6 +37,26 @@ export interface UnitItem extends CatalogItem {
 
 interface DraftContext {
   versionId: string;
+}
+
+export interface ScaleResult {
+  standardYield: number;
+  targetYield: number;
+  multiplier: number;
+  ingredients: RecipeIngredient[];
+}
+export interface UnitTotal { unit: string; quantity: number }
+
+function mapUser(value: unknown): User {
+  const item = record(value, 'user');
+  const role = text(item.role, 'user.role');
+  if (!['admin', 'rnd', 'viewer'].includes(role)) throw new TypeError('Role không hợp lệ.');
+  return {
+    id: text(item.id, 'user.id'), email: text(item.email, 'user.email'), fullName: text(item.fullName, 'user.fullName'),
+    role: role as Role, isLocked: !booleanValue(item.isActive, 'user.isActive'),
+    allowedRecipeIds: array(item.allowedRecipeIds, 'user.allowedRecipeIds').map(id => text(id, 'recipe id')),
+    createdAt: text(item.createdAt, 'user.createdAt'),
+  };
 }
 
 function record(value: unknown, label: string): JsonRecord {
@@ -271,6 +294,112 @@ async function mapMediaAsset(value: unknown, actorId: string | null): Promise<Me
 }
 
 export class BackendRepository extends DemoRepository {
+  override async login(username: string, password: string): Promise<SessionInfo> {
+    const response = record(await requestJson('api/v1/identity/auth/login', null, {
+      method: 'POST', body: JSON.stringify({ username, password }),
+    }), 'login');
+    return saveBackendSession(mapUser(response.user), {
+      accessToken: text(response.accessToken, 'login.accessToken'), refreshToken: text(response.refreshToken, 'login.refreshToken'),
+      expiresAt: text(response.expiresAt, 'login.expiresAt'),
+    });
+  }
+
+  override async logout(_session: SessionInfo | null): Promise<void> {
+    try { await requestJson('api/v1/identity/auth/logout', null, { method: 'POST' }); }
+    finally { clearSession(); }
+  }
+
+  override async getCurrentUser(_session: SessionInfo): Promise<User | null> {
+    try {
+      const user = mapUser(await requestJson('api/v1/identity/auth/me', null, { method: 'GET' }));
+      updateSessionUser(user);
+      return user;
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) return null;
+      throw error;
+    }
+  }
+
+  async getUsersPage(search = '', role = '', state = '', page = 1, pageSize = 20): Promise<PaginatedResult<User>> {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (search.trim()) params.set('search', search.trim());
+    if (role && role !== 'all') params.set('role', role);
+    if (state && state !== 'all') params.set('state', state);
+    const response = record(await requestJson(`api/v1/identity/users?${params}`, null, { method: 'GET' }), 'users page');
+    const total = numberValue(response.totalCount, 'users.totalCount');
+    return { items: array(response.items, 'users.items').map(mapUser), total,
+      page: numberValue(response.page, 'users.page'), pageSize: numberValue(response.pageSize, 'users.pageSize'),
+      totalPages: Math.max(1, Math.ceil(total / pageSize)) };
+  }
+
+  override async getUsers(search = '', role = '', state = '', page = 1, pageSize = 100): Promise<User[]> {
+    return (await this.getUsersPage(search, role, state, page, pageSize)).items;
+  }
+
+  override async createUser(actor: SessionInfo, data: Omit<User, 'id' | 'createdAt'> & { password?: string }): Promise<User> {
+    return mapUser(await requestJson('api/v1/identity/users', this.actorId(actor), {
+      method: 'POST', body: JSON.stringify({ email: data.email, fullName: data.fullName, role: data.role,
+        password: data.password, allowedRecipeIds: data.allowedRecipeIds }),
+    }));
+  }
+
+  override async updateUser(actor: SessionInfo, id: string, data: Partial<User>): Promise<User> {
+    const current = mapUser(await requestJson(`api/v1/identity/users/${id}`, this.actorId(actor), { method: 'GET' }));
+    return mapUser(await requestJson(`api/v1/identity/users/${id}`, this.actorId(actor), {
+      method: 'PUT', body: JSON.stringify({ fullName: data.fullName ?? current.fullName, role: data.role ?? current.role,
+        allowedRecipeIds: data.allowedRecipeIds ?? current.allowedRecipeIds }),
+    }));
+  }
+
+  async updateUserStatus(actor: SessionInfo, id: string, isActive: boolean): Promise<User> {
+    return mapUser(await requestJson(`api/v1/identity/users/${id}/status`, this.actorId(actor), {
+      method: 'PUT', body: JSON.stringify({ isActive }),
+    }));
+  }
+
+  override async toggleUserLock(actor: SessionInfo, id: string): Promise<boolean> {
+    const current = mapUser(await requestJson(`api/v1/identity/users/${id}`, this.actorId(actor), { method: 'GET' }));
+    return (await this.updateUserStatus(actor, id, current.isLocked)).isLocked;
+  }
+
+  async resetUserPassword(actor: SessionInfo, id: string, newPassword: string): Promise<void> {
+    await requestJson(`api/v1/identity/users/${id}/password`, this.actorId(actor), { method: 'PUT', body: JSON.stringify({ newPassword }) });
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    await requestJson('api/v1/identity/auth/password', null, { method: 'PUT', body: JSON.stringify({ currentPassword, newPassword }) });
+    clearSession();
+  }
+
+  async scaleRecipe(ingredients: RecipeIngredient[], standardYield: number, targetYield: number, signal?: AbortSignal): Promise<ScaleResult> {
+    const response = record(await requestJson('api/v1/recipes/calculate/scale', null, {
+      method: 'POST', signal, body: JSON.stringify({ ingredients, standardYield, targetYield }),
+    }), 'scale');
+    return { standardYield: numberValue(response.standardYield, 'scale.standardYield'), targetYield: numberValue(response.targetYield, 'scale.targetYield'),
+      multiplier: numberValue(response.multiplier, 'scale.multiplier'), ingredients: array(response.ingredients, 'scale.ingredients').map((value) => {
+        const line = record(value, 'scaled ingredient');
+        return { ingredientId: text(line.ingredientId, 'ingredientId'), quantity: numberValue(line.quantity, 'quantity'),
+          unit: text(line.unit, 'unit'), order: numberValue(line.order, 'order'), notes: optionalText(line.notes, 'notes'), stageNote: optionalText(line.stageNote, 'stageNote') };
+      }) };
+  }
+
+  async convertUnit(value: number, sourceUnit: string, targetUnit: string, signal?: AbortSignal): Promise<number> {
+    const response = record(await requestJson('api/v1/recipes/units/convert', null, {
+      method: 'POST', signal, body: JSON.stringify({ value, sourceUnit, targetUnit }),
+    }), 'conversion');
+    return numberValue(response.convertedValue, 'conversion.convertedValue');
+  }
+
+  async calculateTotals(ingredients: RecipeIngredient[], signal?: AbortSignal): Promise<UnitTotal[]> {
+    const response = record(await requestJson('api/v1/recipes/calculate/totals', null, {
+      method: 'POST', signal, body: JSON.stringify({ ingredients }),
+    }), 'totals');
+    return array(response.totals, 'totals.totals').map(value => {
+      const total = record(value, 'total');
+      return { unit: text(total.unit, 'total.unit'), quantity: numberValue(total.quantity, 'total.quantity') };
+    });
+  }
+
   private categories: CatalogItem[] | null = null;
   private unitCategories: CatalogItem[] | null = null;
   private units: UnitItem[] | null = null;
@@ -286,17 +415,10 @@ export class BackendRepository extends DemoRepository {
   }
 
   private actorId(actor: SessionInfo): string {
-    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(actor.userId)) {
+    if (/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(actor.userId)) {
       return actor.userId;
     }
-    const knownActors: Record<string, string> = {
-      'rd@recipehub.demo': '00000000-0000-0000-0000-000000000101',
-      'viewer@recipehub.demo': '00000000-0000-0000-0000-000000000102',
-      'admin@recipehub.demo': '00000000-0000-0000-0000-000000000103',
-    };
-    const mapped = knownActors[actor.email.toLowerCase()];
-    if (!mapped) throw new Error(`Tài khoản ${actor.email} chưa có UUID để gọi backend.`);
-    return mapped;
+    throw new Error('Session không có User ID hợp lệ. Hãy đăng nhập lại.');
   }
 
   private async getCategories(): Promise<CatalogItem[]> {
@@ -323,7 +445,7 @@ export class BackendRepository extends DemoRepository {
 
   async getUnits(): Promise<UnitItem[]> {
     if (this.units) return this.units;
-    const response = await requestJson('api/v1/recipes/units', null, { method: 'GET' });
+    const response = await requestJson('api/v1/recipes/catalogs/units', null, { method: 'GET' });
     this.units = array(response, 'units').map((entry, index) => mapUnit(entry, `units[${index}]`));
     return this.units;
   }
@@ -581,7 +703,9 @@ export class BackendRepository extends DemoRepository {
       rawItems.map(async (raw) => {
         const summary = mapRecipeSummary(raw);
         try {
-          const detail = await this.getRecipeVersion(actor, summary.id);
+          const detail = mapRecipeDetail(await requestJson(
+            `api/v1/recipes/${summary.id}/versions/${summary.versionId}`, this.actorId(actor), { method: 'GET' }
+          ));
           return {
             ...detail,
             id: summary.id,

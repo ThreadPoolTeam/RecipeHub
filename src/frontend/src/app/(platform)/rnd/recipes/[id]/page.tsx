@@ -20,7 +20,8 @@ import {
   Check,
 } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
-import { RecipeVersion, Ingredient, MediaAsset } from '@/lib/demo/types';
+import { RecipeVersion, RecipeIngredient, Ingredient, MediaAsset } from '@/lib/demo/types';
+import { RecipeBatchScaler } from '@/components/recipes/RecipeBatchScaler';
 import { Button, TextInput, Alert } from '@/components/workspace/fields';
 import { StatusBadge } from '@/components/workspace/status-badge';
 import { Dialog } from '@/components/workspace/dialog';
@@ -34,10 +35,12 @@ export default function RecipeDetailPage() {
 
   const { session, repo, dataVersion, touch } = useDemo();
   const [recipe, setRecipe] = useState<RecipeVersion | null>(null);
+  const [scaledIngredients, setScaledIngredients] = useState<RecipeIngredient[] | null>(null);
   const [ingredientsMap, setIngredientsMap] = useState<Record<string, Ingredient>>({});
   const [mediaMap, setMediaMap] = useState<Record<string, string>>({}); // mediaId -> objectUrl
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [mediaWarning, setMediaWarning] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   // Version History State
@@ -61,11 +64,15 @@ export default function RecipeDetailPage() {
     if (!session || !id) return;
     let isMounted = true;
     setLoading(true);
+    setMediaWarning(null);
 
     Promise.all([
       repo.getRecipeVersion(session, id),
       repo.getIngredients(),
-      repo.getMedia(),
+      repo.getMedia().catch(() => {
+        if (isMounted) setMediaWarning('Chưa tải được media. Bạn vẫn có thể xem SOP và tính định lượng.');
+        return [] as MediaAsset[];
+      }),
       repo.getRecipeVersions(session, id),
     ])
       .then(([rec, allIngs, mediaList, versionList]) => {
@@ -461,6 +468,8 @@ export default function RecipeDetailPage() {
         )}
       </div>
       {/* Ingredients Section */}
+      {mediaWarning && <Alert variant="warning">{mediaWarning}</Alert>}
+      <RecipeBatchScaler key={recipe.versionId ?? recipe.id} recipe={recipe} onScaled={setScaledIngredients} />
       <div className="bg-white border border-[#E8E2D9] rounded-xl p-5 space-y-3 shadow-xs">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-[#706E68] flex items-center justify-between">
           <span>Định lượng nguyên liệu ({recipe.ingredients.length})</span>
@@ -485,7 +494,7 @@ export default function RecipeDetailPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E8E2D9]">
-                {recipe.ingredients.map((item, index) => {
+                {(scaledIngredients ?? recipe.ingredients).map((item, index) => {
                   const ing = ingredientsMap[item.ingredientId];
                   return (
                     <tr key={index} className="hover:bg-[#FAF8F2] transition-colors">

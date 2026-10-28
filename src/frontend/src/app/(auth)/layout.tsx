@@ -24,7 +24,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <main className="flex-1 flex items-center justify-center p-4 sm:p-6">{children}</main>
 
         <footer className="p-4 text-center text-xs text-[#706E68] border-t border-[#E8E2D9] bg-[#F5F0E8]">
-          RecipeHub Beverage R&amp;D System © 2026 • IndexedDB Local Storage Mode
+          RecipeHub Beverage R&amp;D System © 2026
         </footer>
       </div>
     </DemoProvider>

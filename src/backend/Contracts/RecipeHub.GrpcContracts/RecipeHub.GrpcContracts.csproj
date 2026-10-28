@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <Protobuf Include="Protos\probe.proto" GrpcServices="Both" />
+    <Protobuf Include="Protos\identity_session.proto" GrpcServices="Both" />
     <Protobuf Include="Protos\recipe_ai_context.proto" GrpcServices="Both" />
   </ItemGroup>
 

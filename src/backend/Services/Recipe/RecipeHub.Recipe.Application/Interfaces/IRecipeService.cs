@@ -12,7 +12,8 @@ public interface IRecipeService
         Guid? createdByUserId,
         int page,
         int pageSize,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        IReadOnlyCollection<Guid>? allowedRecipeIds = null);
     Task<RecipeDetailResponse> GetAsync(Guid publicId, CancellationToken cancellationToken);
     Task<RecipeDetailResponse> GetVersionAsync(Guid publicId, Guid versionId, CancellationToken cancellationToken);
     Task<IReadOnlyList<RecipeVersionSummaryResponse>> GetVersionHistoryAsync(Guid publicId, CancellationToken cancellationToken);

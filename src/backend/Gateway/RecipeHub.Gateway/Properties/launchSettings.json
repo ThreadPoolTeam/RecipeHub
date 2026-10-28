@@ -1,4 +1,4 @@
-﻿{
+{
   "$schema": "http://json.schemastore.org/launchsettings.json",
   "iisSettings": {
     "windowsAuthentication": false,
@@ -18,7 +18,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development",
         "ReverseProxy__Clusters__recipe-cluster__Destinations__destination1__Address": "http://localhost:5002",
         "ReverseProxy__Clusters__content-cluster__Destinations__destination1__Address": "http://localhost:5256",
-        "ReverseProxy__Clusters__identity-cluster__Destinations__destination1__Address": "http://localhost:5281"
+        "ReverseProxy__Clusters__identity-cluster__Destinations__destination1__Address": "http://localhost:5001"
       }
     },
     "https": {
@@ -30,7 +30,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development",
         "ReverseProxy__Clusters__recipe-cluster__Destinations__destination1__Address": "http://localhost:5002",
         "ReverseProxy__Clusters__content-cluster__Destinations__destination1__Address": "http://localhost:5256",
-        "ReverseProxy__Clusters__identity-cluster__Destinations__destination1__Address": "http://localhost:5281"
+        "ReverseProxy__Clusters__identity-cluster__Destinations__destination1__Address": "http://localhost:5001"
       }
     },
     "IIS Express": {

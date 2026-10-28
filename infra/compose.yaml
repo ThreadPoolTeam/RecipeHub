@@ -5,6 +5,8 @@ services:
     image: postgres:16-alpine
     container_name: recipehub-postgres
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:5433:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-recipehub_admin}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-recipehub_secret_pw}
@@ -35,7 +37,7 @@ services:
     container_name: recipehub-redis
     restart: unless-stopped
     ports:
-      - "127.0.0.1:6379:6379"
+      - "127.0.0.1:6380:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -70,6 +72,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__Database=Host=postgres;Port=5432;Database=${RECIPE_DB_NAME:-recipehub_recipe};Username=${RECIPE_DB_USER:-recipe_user};Password=${RECIPE_DB_PASSWORD:-recipe_pw}
       - ConnectionStrings__Redis=redis:6379
+      - Grpc__IdentityServiceUrl=http://identity-service:5011
     depends_on:
       postgres:
         condition: service_healthy
@@ -184,7 +187,7 @@ services:
       gateway:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/health || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 5

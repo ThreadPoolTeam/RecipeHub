@@ -18,6 +18,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\backend\Services\Identity\RecipeHub.Identity.Application\RecipeHub.Identity.Application.csproj" />
+    <ProjectReference Include="..\..\src\backend\Services\Identity\RecipeHub.Identity.Infrastructure\RecipeHub.Identity.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\backend\Services\Content\RecipeHub.Content.Application\RecipeHub.Content.Application.csproj" />
     <ProjectReference Include="..\..\src\backend\Services\Content\RecipeHub.Content.Infrastructure\RecipeHub.Content.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\backend\Services\Recipe\RecipeHub.Recipe.Application\RecipeHub.Recipe.Application.csproj" />

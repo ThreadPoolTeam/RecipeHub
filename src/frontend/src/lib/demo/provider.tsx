@@ -45,11 +45,12 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         setCurrentUser(null);
         clearSession();
       } else {
-        setSession(stored);
+        setSession(getStoredSession(activeSettings.idleTimeoutMinutes));
         setCurrentUser(freshUser);
       }
     } catch {
-      // Storage or init error
+      setSession(null);
+      setCurrentUser(null);
     } finally {
       setDataVersion((v) => v + 1);
       setLoading(false);
@@ -60,6 +61,12 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    const cleared = () => { setSession(null); setCurrentUser(null); };
+    window.addEventListener('recipehub:session-cleared', cleared);
+    return () => window.removeEventListener('recipehub:session-cleared', cleared);
+  }, []);
+
   // Periodic idle check (every 30 seconds)
   useEffect(() => {
     if (!session || !settings) return;
@@ -68,6 +75,13 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       if (!current) {
         setSession(null);
         setCurrentUser(null);
+      } else {
+        void repo.getCurrentUser(current).then(user => {
+          if (!user) { setSession(null); setCurrentUser(null); return; }
+          setCurrentUser(user);
+          setSession(previous => previous && (previous.role !== user.role || previous.fullName !== user.fullName)
+            ? getStoredSession(settings.idleTimeoutMinutes) : previous);
+        }).catch(() => { setSession(null); setCurrentUser(null); });
       }
     }, 30000);
     return () => clearInterval(interval);
@@ -83,10 +97,12 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(async (): Promise<void> => {
-    await repo.logout(session);
-    setSession(null);
-    setCurrentUser(null);
-    setDataVersion((v) => v + 1);
+    try { await repo.logout(session); }
+    finally {
+      setSession(null);
+      setCurrentUser(null);
+      setDataVersion((v) => v + 1);
+    }
   }, [session]);
 
   const touch = useCallback(() => {

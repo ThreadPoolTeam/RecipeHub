@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useDemo } from '@/lib/demo/provider';
 import { User, Role } from '@/lib/demo/types';
 import { Button, TextInput, Select, Alert, SearchInput } from '@/components/workspace/fields';
@@ -19,11 +19,17 @@ export default function AdminUsersPage() {
   // Search & Filter
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<'all' | Role>('all');
+  const [filterState, setFilterState] = useState('all');
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const loadSequence = useRef(0);
 
   // Create User Modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [newFullName, setNewFullName] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState<Role>('rnd');
   const [newAllowedRecipes, setNewAllowedRecipes] = useState<string[]>([]);
   const [createSubmitting, setCreateSubmitting] = useState(false);
@@ -37,20 +43,45 @@ export default function AdminUsersPage() {
 
   // Toggle lock state
   const [lockingUserId, setLockingUserId] = useState<string | null>(null);
+  const [passwordUser, setPasswordUser] = useState<User | null>(null);
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetSubmitting, setResetSubmitting] = useState(false);
 
   const loadData = async () => {
+    const sequence = ++loadSequence.current;
     try {
       setLoading(true);
-      const [userList, recipeResult] = await Promise.all([
-        repo.getUsers(),
-        session
-          ? repo.getRecipes(session, { status: 'Published', pageSize: 100 })
-          : Promise.resolve({ items: [], total: 0 }),
-      ]);
-      setUsers(userList);
+      const userResult = await repo.getUsersPage(searchTerm, filterRole, filterState, page, 10);
+      if (sequence !== loadSequence.current) return;
+      setUsers(userResult.items);
+      setTotal(userResult.total);
+      setTotalPages(userResult.totalPages);
+      if (page > userResult.totalPages) setPage(userResult.totalPages);
+    } catch (err: unknown) {
+      if (sequence === loadSequence.current) setErrorMsg(err instanceof Error ? err.message : 'Lỗi khi tải danh sách người dùng');
+    } finally {
+      if (sequence === loadSequence.current) setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!session) return;
+    let active = true;
+    // Recipe choices are independent of the Identity table load.
+    const loadRecipes = async () => {
+      const all: Array<{ id: string; recipeId: string; name: string; code: string }> = [];
+      let recipePage = 1;
+      let pages = 1;
+      do {
+        const result = await repo.getRecipes(session, { status: 'Published', page: recipePage, pageSize: 100 });
+        all.push(...result.items);
+        pages = result.totalPages;
+        recipePage++;
+      } while (recipePage <= pages && active);
+      if (!active) return;
       // Group recipe by distinct recipeId
       const uniqueRecipes = new Map<string, { id: string; recipeId: string; name: string; code: string }>();
-      for (const item of recipeResult.items) {
+      for (const item of all) {
         if (!uniqueRecipes.has(item.recipeId)) {
           uniqueRecipes.set(item.recipeId, {
             id: item.id,
@@ -61,16 +92,15 @@ export default function AdminUsersPage() {
         }
       }
       setRecipes(Array.from(uniqueRecipes.values()));
-    } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Lỗi khi tải danh sách người dùng');
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+    void loadRecipes().catch(err => { if (active) setErrorMsg(err instanceof Error ? err.message : 'Không tải được danh mục công thức.'); });
+    return () => { active = false; };
+  }, [session, repo, dataVersion]);
 
   useEffect(() => {
-    loadData();
-  }, [session, repo, dataVersion]);
+    const timer = window.setTimeout(() => { if (session) void loadData(); }, 250);
+    return () => { window.clearTimeout(timer); loadSequence.current++; };
+  }, [session, repo, dataVersion, searchTerm, filterRole, filterState, page]);
 
   // Handle Create User
   const handleCreateUser = async () => {
@@ -86,14 +116,16 @@ export default function AdminUsersPage() {
         email: newEmail.trim().toLowerCase(),
         fullName: newFullName.trim(),
         role: newRole,
+        password: newPassword,
         isLocked: false,
         allowedRecipeIds: newRole === 'viewer' ? newAllowedRecipes : [],
       });
-      setSuccessMsg(`Đã tạo tài khoản demo thành công: ${newEmail}`);
+      setSuccessMsg(`Đã tạo tài khoản thành công: ${newEmail}`);
       setIsCreateOpen(false);
       // reset form
       setNewEmail('');
       setNewFullName('');
+      setNewPassword('');
       setNewRole('rnd');
       setNewAllowedRecipes([]);
       touch();
@@ -150,10 +182,11 @@ export default function AdminUsersPage() {
     try {
       setLockingUserId(targetUser.id);
       setErrorMsg(null);
-      const isLocked = await repo.toggleUserLock(session, targetUser.id);
+      const updated = await repo.updateUserStatus(session, targetUser.id, targetUser.isLocked);
+      const isLocked = updated.isLocked;
       setSuccessMsg(
         isLocked
-          ? `Đã khóa tài khoản [${targetUser.email}]. Người này không thể đăng nhập demo.`
+          ? `Đã khóa tài khoản [${targetUser.email}] và thu hồi mọi session.`
           : `Đã mở khóa tài khoản [${targetUser.email}].`
       );
       touch();
@@ -165,24 +198,25 @@ export default function AdminUsersPage() {
     }
   };
 
-  // Filtered User list
-  const filteredUsers = useMemo(() => {
-    return users.filter((u) => {
-      const matchRole = filterRole === 'all' || u.role === filterRole;
-      const q = searchTerm.toLowerCase().trim();
-      const matchSearch = !q || u.email.toLowerCase().includes(q) || u.fullName.toLowerCase().includes(q);
-      return matchRole && matchSearch;
-    });
-  }, [users, filterRole, searchTerm]);
+  const handleResetPassword = async () => {
+    if (!session || !passwordUser) return;
+    try {
+      setResetSubmitting(true); setErrorMsg(null);
+      await repo.resetUserPassword(session, passwordUser.id, resetPassword);
+      setSuccessMsg(`Đã đổi mật khẩu cho ${passwordUser.email} và thu hồi mọi session.`);
+      setPasswordUser(null); setResetPassword(''); touch();
+    } catch (err) { setErrorMsg(err instanceof Error ? err.message : 'Không thể đổi mật khẩu.'); }
+    finally { setResetSubmitting(false); }
+  };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E2D9]">
         <div>
-          <h1 className="text-2xl font-bold text-[#1A1917]">Quản lý Tài khoản &amp; Phân quyền Demo</h1>
+          <h1 className="text-2xl font-bold text-[#1A1917]">Quản lý Tài khoản &amp; Phân quyền</h1>
           <p className="text-[#706E68] text-xs mt-1">
-            Thiết lập danh tính người dùng mô phỏng, phân bổ vai trò R&amp;D / Barista Viewer và cấp phép truy cập công thức.
+            Quản lý tài khoản, vai trò R&amp;D / Barista Viewer và quyền truy cập công thức.
           </p>
         </div>
         <Button variant="gold" onClick={() => setIsCreateOpen(true)}>
@@ -203,19 +237,19 @@ export default function AdminUsersPage() {
       )}
 
       {/* Filter toolbar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-white border border-[#E8E2D9] rounded-2xl shadow-xs">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 p-4 bg-white border border-[#E8E2D9] rounded-2xl shadow-xs">
         <div className="sm:col-span-2">
           <SearchInput
             placeholder="Tìm theo email hoặc họ tên..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onClear={() => setSearchTerm('')}
+            onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+            onClear={() => { setSearchTerm(''); setPage(1); }}
           />
         </div>
         <div>
           <Select
             value={filterRole}
-            onChange={(e) => setFilterRole(e.target.value as 'all' | Role)}
+            onChange={(e) => { setFilterRole(e.target.value as 'all' | Role); setPage(1); }}
             options={[
               { label: 'Tất cả vai trò', value: 'all' },
               { label: 'System Admin', value: 'admin' },
@@ -224,11 +258,13 @@ export default function AdminUsersPage() {
             ]}
           />
         </div>
+        <Select aria-label="Lọc trạng thái tài khoản" value={filterState} onChange={e => { setFilterState(e.target.value); setPage(1); }}
+          options={[{ label: 'Tất cả trạng thái', value: 'all' }, { label: 'Đang hoạt động', value: 'active' }, { label: 'Đã khóa', value: 'inactive' }]} />
       </div>
 
       {/* Users DataTable */}
       <DataTable<User>
-        data={filteredUsers}
+        data={users}
         keyExtractor={(u) => u.id}
         isLoading={loading}
         emptyTitle="Không tìm thấy người dùng"
@@ -273,6 +309,7 @@ export default function AdminUsersPage() {
             className: 'text-right',
             render: (u) => (
               <div className="flex items-center justify-end gap-2">
+                <Button size="sm" disabled={u.id === session?.userId} onClick={() => { setPasswordUser(u); setResetPassword(''); setErrorMsg(null); }}>Đổi mật khẩu</Button>
                 <Button
                   size="sm"
                   variant="secondary"
@@ -296,26 +333,45 @@ export default function AdminUsersPage() {
         ]}
       />
 
+      <div className="flex items-center justify-between gap-3 text-xs text-[#706E68]">
+        <span>{total} tài khoản · Trang {page}/{totalPages}</span>
+        <div className="flex gap-2">
+          <Button size="sm" disabled={loading || page <= 1} onClick={() => setPage(p => p - 1)}>Trước</Button>
+          <Button size="sm" disabled={loading || page >= totalPages} onClick={() => setPage(p => p + 1)}>Sau</Button>
+        </div>
+      </div>
+
+      <Dialog isOpen={!!passwordUser} onClose={() => { if (!resetSubmitting) { setPasswordUser(null); setResetPassword(''); } }}
+        title={`Đổi mật khẩu: ${passwordUser?.email ?? ''}`} description="Mọi session của tài khoản này sẽ bị thu hồi."
+        onConfirm={handleResetPassword} confirmLabel="Lưu mật khẩu" isConfirming={resetSubmitting}>
+        {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
+        <TextInput label="Mật khẩu mới" type="password" autoComplete="new-password" value={resetPassword} onChange={e => setResetPassword(e.target.value)}
+          helper="8–128 ký tự, gồm chữ hoa, chữ thường và số." />
+      </Dialog>
+
       {/* Modal Thêm người dùng mới */}
       <Dialog
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        title="Thêm người dùng Demo mới"
-        description="Tạo tài khoản để kiểm thử phân quyền RBAC và trải nghiệm các vai trò trong hệ thống."
+        title="Thêm người dùng mới"
+        description="Tạo tài khoản và cấp vai trò trong hệ thống."
         confirmLabel="Lưu tài khoản"
         confirmVariant="gold"
         onConfirm={handleCreateUser}
         isConfirming={createSubmitting}
       >
         <div className="space-y-4">
+          {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
           <TextInput
             label="Email tài khoản"
             required
             placeholder="barista.demo@beveragelab.vn"
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
-            helper="Mật khẩu demo mặc định là 'demo123'"
           />
+
+          <TextInput label="Mật khẩu ban đầu" type="password" autoComplete="new-password" required value={newPassword}
+            onChange={e => setNewPassword(e.target.value)} helper="8–128 ký tự, gồm chữ hoa, chữ thường và số." />
 
           <TextInput
             label="Họ và tên"
@@ -388,13 +444,14 @@ export default function AdminUsersPage() {
         isOpen={!!editingUser}
         onClose={() => setEditingUser(null)}
         title={`Chỉnh sửa: ${editingUser?.email}`}
-        description="Cập nhật quyền hạn và phạm vi công thức cho tài khoản demo."
+        description="Cập nhật quyền hạn và phạm vi công thức cho tài khoản."
         confirmLabel="Lưu thay đổi"
         confirmVariant="gold"
         onConfirm={handleEditUser}
         isConfirming={editSubmitting}
       >
         <div className="space-y-4">
+          {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
           <TextInput
             label="Họ và tên"
             required

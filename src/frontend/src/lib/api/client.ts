@@ -1,3 +1,5 @@
+import { clearSession, getStoredSession } from '@/lib/demo/session';
+
 interface ProblemDetails {
   title?: string;
   detail?: string;
@@ -19,6 +21,8 @@ export class ApiError extends Error {
 function buildHeaders(actorId: string | null, headers: HeadersInit | undefined): Headers {
   const result = new Headers(headers);
   if (actorId) result.set('X-User-Id', actorId);
+  const session = getStoredSession();
+  if (session?.accessToken) result.set('Authorization', `Bearer ${session.accessToken}`);
   return result;
 }
 
@@ -41,6 +45,7 @@ async function execute(path: string, actorId: string | null, init: RequestInit):
   });
   if (!response.ok) {
     const body = await response.text();
+    if (response.status === 401) clearSession();
     throw new ApiError(response.status, parseProblem(body, response.status), body);
   }
   return response;

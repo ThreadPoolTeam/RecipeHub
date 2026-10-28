@@ -17,6 +17,7 @@ import {
 import { useDemo } from '@/lib/demo/provider';
 import {
   RecipeVersion,
+  RecipeIngredient,
   Ingredient,
   MediaAsset,
   PublishedDocument,
@@ -24,6 +25,7 @@ import {
 import { Button, Alert } from '@/components/workspace/fields';
 import { StatusBadge, MediaSourceBadge } from '@/components/workspace/status-badge';
 import { downloadPdfBlob } from '@/lib/demo/pdf-export';
+import { RecipeBatchScaler } from '@/components/recipes/RecipeBatchScaler';
 
 export default function ViewerRecipeDetailPage() {
   const params = useParams();
@@ -33,6 +35,7 @@ export default function ViewerRecipeDetailPage() {
   const { session, repo, dataVersion } = useDemo();
 
   const [recipe, setRecipe] = useState<RecipeVersion | null>(null);
+  const [scaledIngredients, setScaledIngredients] = useState<RecipeIngredient[] | null>(null);
   const [ingredientsMap, setIngredientsMap] = useState<Record<string, Ingredient>>({});
   const [mediaMap, setMediaMap] = useState<Record<string, MediaAsset>>({});
   const [mediaUrls, setMediaUrls] = useState<Record<string, string>>({});
@@ -41,6 +44,7 @@ export default function ViewerRecipeDetailPage() {
   const [loading, setLoading] = useState(true);
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [mediaWarning, setMediaWarning] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
@@ -50,11 +54,15 @@ export default function ViewerRecipeDetailPage() {
     setLoading(true);
     setPermissionDenied(false);
     setErrorMsg(null);
+    setMediaWarning(null);
 
     Promise.all([
       repo.getRecipeVersion(session, id),
       repo.getIngredients(),
-      repo.getMedia(),
+      repo.getMedia().catch(() => {
+        if (isMounted) setMediaWarning('Chưa tải được media. Bạn vẫn có thể xem SOP và tính định lượng.');
+        return [] as MediaAsset[];
+      }),
       repo.getPublishedDocument(id),
     ])
       .then(([rec, ings, mediaList, pubDoc]) => {
@@ -83,7 +91,7 @@ export default function ViewerRecipeDetailPage() {
       })
       .catch((err) => {
         if (!isMounted) return;
-        if (err?.code === 'Forbidden' || err?.message?.toLowerCase().includes('quyền')) {
+        if (err?.status === 403 || err?.code === 'Forbidden' || err?.message?.toLowerCase().includes('quyền')) {
           setPermissionDenied(true);
         } else {
           setErrorMsg(err.message || 'Không thể tải chi tiết công thức');
@@ -271,6 +279,8 @@ export default function ViewerRecipeDetailPage() {
       </div>
 
       {/* Ingredients Section */}
+      {mediaWarning && <Alert variant="warning">{mediaWarning}</Alert>}
+      <RecipeBatchScaler key={recipe.versionId ?? recipe.id} recipe={recipe} onScaled={setScaledIngredients} />
       <div className="bg-white border border-[#E8E2D9] rounded-2xl p-6 sm:p-8 shadow-xs">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2.5">
@@ -296,7 +306,7 @@ export default function ViewerRecipeDetailPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E8E2D9] text-[#1A1917]">
-              {recipe.ingredients.map((item, idx) => {
+              {(scaledIngredients ?? recipe.ingredients).map((item, idx) => {
                 const ingInfo = ingredientsMap[item.ingredientId];
                 return (
                   <tr key={`${item.ingredientId}_${idx}`} className="hover:bg-[#FAF9F5] transition">

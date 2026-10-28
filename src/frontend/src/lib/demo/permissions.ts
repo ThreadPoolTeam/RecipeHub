@@ -48,11 +48,11 @@ export function isPathAllowedForUser(
 export function getDefaultDashboardForRole(role: Role): string {
   switch (role) {
     case 'rnd':
-      return '/rnd';
+      return '/rnd/recipes';
     case 'viewer':
-      return '/viewer';
+      return '/viewer/recipes';
     case 'admin':
-      return '/admin';
+      return '/admin/users';
     default:
       return '/platform';
   }
