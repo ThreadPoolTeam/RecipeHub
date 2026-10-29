@@ -15,7 +15,7 @@ public sealed class IdentityTests
     private IdentityService Service => new(store, passwords, tokens);
 
     private async Task<UserResponse> Create(string role = "rnd", string email = "test@example.com") =>
-        await Service.CreateUserAsync(new(email, "Test User", role, "Test@1234", []), default);
+        await Service.CreateUserAsync(new(email, "Test User", role, "Test@1234"), default);
 
     [Fact]
     public async Task Login_ValidatesSignedTokenAndStoresOnlyRefreshHash()
@@ -100,7 +100,7 @@ public sealed class IdentityTests
     {
         var admin = await Create("admin");
         Assert.Equal(409, (await Assert.ThrowsAsync<IdentityException>(() => Service.SetStatusAsync(admin.Id, admin.Id, false, default))).StatusCode);
-        await Assert.ThrowsAsync<IdentityException>(() => Service.UpdateUserAsync(admin.Id, admin.Id, new("Admin", "viewer", []), default));
+        await Assert.ThrowsAsync<IdentityException>(() => Service.UpdateUserAsync(admin.Id, admin.Id, new("Admin", "viewer"), default));
     }
 
     [Theory]
@@ -109,7 +109,7 @@ public sealed class IdentityTests
     [InlineData("ALLUPPERCASE1")]
     [InlineData("NoNumbersHere")]
     public async Task Create_RejectsWeakPassword(string password) =>
-        Assert.Equal(400, (await Assert.ThrowsAsync<IdentityException>(() => Service.CreateUserAsync(new("test@example.com", "Test", "rnd", password, []), default))).StatusCode);
+        Assert.Equal(400, (await Assert.ThrowsAsync<IdentityException>(() => Service.CreateUserAsync(new("test@example.com", "Test", "rnd", password), default))).StatusCode);
 
     [Fact]
     public async Task Create_NormalizesEmailAndRejectsDuplicatesAndInvalidRole()
@@ -125,10 +125,22 @@ public sealed class IdentityTests
     {
         var user = await Create("viewer");
         var login = await Service.LoginAsync(new(user.Email, "Test@1234"), default);
-        var scope = new[] { Guid.NewGuid() };
-        var updated = await Service.UpdateUserAsync(Guid.NewGuid(), user.Id, new("Updated", "viewer", scope), default);
-        Assert.Equal(scope, updated.AllowedRecipeIds);
+        var updated = await Service.UpdateUserAsync(Guid.NewGuid(), user.Id, new("Updated", "admin"), default);
+        Assert.Equal("admin", updated.Role);
         Assert.Null(await Service.ValidateAsync(login.AccessToken, default));
+    }
+
+    [Fact]
+    public async Task Create_ViewerUser_HasViewerRoleAndCanLogin()
+    {
+        var viewer = await Create("viewer", "viewer@example.com");
+        Assert.Equal("viewer", viewer.Role);
+        var login = await Service.LoginAsync(new("viewer@example.com", "Test@1234"), default);
+        Assert.NotNull(login.AccessToken);
+        var session = await Service.ValidateAsync(login.AccessToken, default);
+        Assert.NotNull(session);
+        Assert.Equal("viewer", session.User.Role);
+        Assert.Equal(viewer.Id, session.User.Id);
     }
 
     [Fact]
@@ -144,7 +156,7 @@ public sealed class IdentityTests
         public readonly List<IdentityUser> Users = [];
         public readonly List<AuthSession> Sessions = [];
         public Task<IdentityUser?> FindUserAsync(Guid id, CancellationToken ct) => Task.FromResult(Users.SingleOrDefault(u => u.Id == id));
-        public Task<IdentityUser?> FindEmailAsync(string email, CancellationToken ct) => Task.FromResult(Users.SingleOrDefault(u => u.NormalizedEmail == email));
+        public Task<IdentityUser?> FindEmailAsync(string email, CancellationToken ct) => Task.FromResult(Users.SingleOrDefault(u => string.Equals(u.Email, email, StringComparison.OrdinalIgnoreCase)));
         public Task<AuthSession?> FindSessionAsync(Guid id, CancellationToken ct) => Task.FromResult(Sessions.SingleOrDefault(s => s.Id == id));
         public Task<AuthSession?> FindRefreshAsync(string hash, CancellationToken ct) => Task.FromResult(Sessions.SingleOrDefault(s => s.RefreshTokenHash == hash));
         public Task RevokeSessionsAsync(Guid userId, CancellationToken ct) { Sessions.Where(s => s.UserId == userId).ToList().ForEach(s => s.RevokedAt = DateTime.UtcNow); return Task.CompletedTask; }

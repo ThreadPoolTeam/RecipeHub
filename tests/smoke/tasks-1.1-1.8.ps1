@@ -32,9 +32,9 @@ try {
     Api PUT "api/v1/identity/users/$($admin.user.id)/status" @{ isActive = $false } $admin.accessToken 409 | Out-Null
     Api GET 'api/v1/identity/users?page=0' $null $admin.accessToken 400 | Out-Null
 
-    $rdUser = Api POST 'api/v1/identity/users' @{ email = "qa-rnd-$suffix@recipehub.local"; fullName = "QA R&D $suffix"; role = 'rnd'; password = 'QaTest@1234'; allowedRecipeIds = @() } $admin.accessToken 201
+    $rdUser = Api POST 'api/v1/identity/users' @{ email = "qa-rnd-$suffix@recipehub.local"; fullName = "QA R&D $suffix"; role = 'rnd'; password = 'QaTest@1234' } $admin.accessToken 201
     $createdUsers.Add($rdUser.id)
-    $viewerUser = Api POST 'api/v1/identity/users' @{ email = "qa-viewer-$suffix@recipehub.local"; fullName = "QA Viewer $suffix"; role = 'viewer'; password = 'QaTest@1234'; allowedRecipeIds = @() } $admin.accessToken 201
+    $viewerUser = Api POST 'api/v1/identity/users' @{ email = "qa-viewer-$suffix@recipehub.local"; fullName = "QA Viewer $suffix"; role = 'viewer'; password = 'QaTest@1234' } $admin.accessToken 201
     $createdUsers.Add($viewerUser.id)
     $rnd = Api POST 'api/v1/identity/auth/login' @{ username = $rdUser.email; password = 'QaTest@1234' }
     Api GET 'api/v1/identity/users' $null $rnd.accessToken 403 | Out-Null
@@ -65,10 +65,10 @@ try {
     $otherBody = $recipeBody.Clone(); $otherBody.code = "QA-DRAFT-$suffix"; $otherBody.name = "QA Draft $suffix"
     $draft = Api POST 'api/v1/recipes' $otherBody $rnd.accessToken 201
     $createdRecipes.Add($draft.id)
-    Api PUT "api/v1/identity/users/$($viewerUser.id)" @{ fullName = $viewerUser.fullName; role = 'viewer'; allowedRecipeIds = @($recipe.id, $draft.id) } $admin.accessToken | Out-Null
+    Api PUT "api/v1/identity/users/$($viewerUser.id)" @{ fullName = $viewerUser.fullName; role = 'viewer' } $admin.accessToken | Out-Null
     $viewer = Api POST 'api/v1/identity/auth/login' @{ username = $viewerUser.email; password = 'QaTest@1234' }
     $visible = Api GET "api/v1/recipes/$($recipe.id)" $null $viewer.accessToken
-    Check ($visible.versionStatus -eq 'published') 'Viewer can read assigned published SOP'
+    Check ($visible.versionStatus -eq 'published') 'Viewer can read published SOP without assigned recipe IDs'
     Api GET "api/v1/recipes/$($draft.id)" $null $viewer.accessToken 403 | Out-Null
     Api GET "api/v1/recipes/$([Guid]::NewGuid())" $null $viewer.accessToken 403 | Out-Null
     Api POST 'api/v1/recipes/ingredients' $ingredientBody $viewer.accessToken 403 | Out-Null

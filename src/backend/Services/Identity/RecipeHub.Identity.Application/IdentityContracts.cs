@@ -4,10 +4,10 @@ namespace RecipeHub.Identity.Application;
 
 public sealed record LoginRequest(string? Username, string? Password);
 public sealed record RefreshRequest(string? RefreshToken);
-public sealed record UserResponse(Guid Id, string Email, string FullName, string Role, bool IsActive, Guid[] AllowedRecipeIds, DateTime CreatedAt);
+public sealed record UserResponse(Guid Id, string Email, string FullName, string Role, bool IsActive, DateTime CreatedAt);
 public sealed record UserPage(IReadOnlyList<UserResponse> Items, int TotalCount, int Page, int PageSize);
-public sealed record CreateUserRequest(string? Email, string? FullName, string? Role, string? Password, Guid[]? AllowedRecipeIds);
-public sealed record UpdateUserRequest(string? FullName, string? Role, Guid[]? AllowedRecipeIds);
+public sealed record CreateUserRequest(string? Email, string? FullName, string? Role, string? Password);
+public sealed record UpdateUserRequest(string? FullName, string? Role);
 public sealed record UserStatusRequest(bool IsActive);
 public sealed record ChangePasswordRequest(string? CurrentPassword, string? NewPassword);
 public sealed record ResetPasswordRequest(string? NewPassword);
@@ -22,7 +22,7 @@ public sealed class IdentityException(int statusCode, string message) : Exceptio
 public interface IIdentityStore
 {
     Task<IdentityUser?> FindUserAsync(Guid id, CancellationToken ct);
-    Task<IdentityUser?> FindEmailAsync(string normalizedEmail, CancellationToken ct);
+    Task<IdentityUser?> FindEmailAsync(string email, CancellationToken ct);
     Task<(IReadOnlyList<IdentityUser> Items, int Total)> SearchAsync(string? search, string? role, bool? isActive, int page, int pageSize, CancellationToken ct);
     Task<AuthSession?> FindSessionAsync(Guid id, CancellationToken ct);
     Task<AuthSession?> FindRefreshAsync(string hash, CancellationToken ct);

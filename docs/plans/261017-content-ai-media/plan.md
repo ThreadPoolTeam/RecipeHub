@@ -1,4 +1,22 @@
+---
+title: "Content AI & Media"
+description: "Thiết kế Content AI, media và liên kết ảnh Recipe."
+status: pending
+priority: P1
+created: 2026-10-17
+blockedBy: [261029-db-first-cutover]
+blocks: []
+---
+
 # Content AI & Media — plan thiết kế và chuẩn bị triển khai
+
+## Cập nhật chính sách database — 2026-10-29
+
+- **Blocked đối với phần persistence/schema còn lại:** chờ [cutover DB First toàn backend](../261029-db-first-cutover/plan.md). Không mở lại các phần đã triển khai hoặc chặn riêng việc đọc/review thiết kế.
+- Từ mốc này, schema quản lý bằng PostgreSQL SQL có version; áp dụng trên DB tham chiếu rồi reverse-engineer persistence model/DbContext trong Infrastructure. Không thêm EF Code First migration hoặc tự chạy migration lúc API/worker khởi động.
+- Từ “migration” trong các phần thiết kế cũ bên dưới phải hiểu là SQL incremental đã review, không phải yêu cầu tạo EF migration. Domain giữ nghiệp vụ, không bị scaffold ghi đè; không FK xuyên database.
+- Các mục “hiện trạng” bên dưới ghi nhận thời điểm lập plan gốc, không chứng minh runtime hiện tại chưa có tính năng/bảng. Cutover phải kiểm tra code và DB thực tế, không suy từ trạng thái plan cũ.
+
 
 > Dành cho người triển khai tiếp: đọc plan này cùng `docs/database-schema/content-db/RecipeHub.Content.dbml` và README cạnh schema. Đây là quyết định thiết kế và lộ trình; chưa phải tính năng đã triển khai. Không tự bắt đầu code khi chỉ được yêu cầu cập nhật tài liệu.
 

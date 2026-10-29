@@ -45,11 +45,6 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    if (builder.Configuration.GetValue<bool>("Recipe:ApplyMigrations"))
-    {
-        using var scope = app.Services.CreateScope();
-        await scope.ServiceProvider.GetRequiredService<RecipeDbContext>().Database.MigrateAsync();
-    }
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {

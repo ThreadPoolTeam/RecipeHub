@@ -3,23 +3,28 @@ Project RecipeHubIdentityDatabase {
   Note: 'Identity Service; không FK xuyên database. JWT có session ID, thu hồi ngay khi logout/khóa/đổi mật khẩu.'
 }
 
+Table identity_db.roles {
+  id smallint [pk]
+  code varchar(20) [not null, unique]
+  name text [not null]
+  description text
+  created_at timestamptz [not null, default: `now()`]
+}
+
 Table identity_db.users {
   id uuid [pk]
   email text [not null]
-  normalized_email text [not null, unique]
   full_name text [not null]
   password_hash text [not null]
-  role text [not null]
+  role_id smallint [not null]
   is_active boolean [not null, default: true]
-  allowed_recipe_ids uuid[] [not null, default: `'{}'::uuid[]`, note: 'Recipe public IDs; không FK xuyên DB.']
   created_at timestamptz [not null, default: `now()`]
   updated_at timestamptz [not null, default: `now()`]
   indexes {
-    (role, is_active) [name: 'users_role_active_idx']
+    (role_id, is_active) [name: 'users_role_active_idx']
   }
   checks {
-    `role IN ('admin','rnd','viewer')` [name: 'users_role_check']
-    `normalized_email = lower(btrim(email)) AND length(normalized_email) > 3` [name: 'users_email_check']
+    `length(btrim(email)) > 3` [name: 'users_email_check']
     `length(btrim(full_name)) > 0` [name: 'users_name_check']
   }
 }
@@ -39,4 +44,5 @@ Table identity_db.auth_sessions {
   }
 }
 
+Ref: identity_db.users.role_id > identity_db.roles.id [delete: restrict]
 Ref: identity_db.auth_sessions.user_id > identity_db.users.id [delete: restrict]

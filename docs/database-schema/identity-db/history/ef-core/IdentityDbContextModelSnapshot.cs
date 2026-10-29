@@ -73,13 +73,6 @@ namespace RecipeHub.Identity.Infrastructure.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<Guid[]>("AllowedRecipeIds")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid[]")
-                        .HasColumnName("allowed_recipe_ids")
-                        .HasDefaultValueSql("'{}'::uuid[]");
-
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")

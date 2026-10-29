@@ -49,6 +49,7 @@ Build only the technical frame shown in the supplied architecture: .NET 8 Clean 
 - gRPC contract is a neutral `Ping`/`GetServiceInfo` probe, not fake domain logic.
 - YARP exposes one public origin and forwards versioned route prefixes to service shells.
 - Next.js App Router uses route groups and static placeholders; no fake business data layer.
+- Chính sách database mới từ 2026-10-29: [DB First toàn backend](../261029-db-first-cutover/plan.md). Đây là cutover riêng, không chứng minh plan nền tảng ban đầu đã chọn EF Code First/Database First và không đổi trạng thái nghiệm thu của plan này.
 
 ## Target Shape
 

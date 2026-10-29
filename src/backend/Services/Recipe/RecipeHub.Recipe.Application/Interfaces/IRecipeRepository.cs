@@ -12,8 +12,7 @@ public interface IRecipeRepository
         Guid? createdByUserId,
         int page,
         int pageSize,
-        CancellationToken cancellationToken,
-        IReadOnlyCollection<Guid>? allowedRecipeIds = null);
+        CancellationToken cancellationToken);
     Task<RecipeVersion?> GetLatestRecipeVersionAsync(Guid recipePublicId, CancellationToken cancellationToken);
     Task<RecipeVersion?> GetLatestTrackedRecipeVersionAsync(Guid recipePublicId, CancellationToken cancellationToken);
     Task<RecipeVersion?> GetRecipeVersionAsync(Guid recipePublicId, Guid versionPublicId, CancellationToken cancellationToken);

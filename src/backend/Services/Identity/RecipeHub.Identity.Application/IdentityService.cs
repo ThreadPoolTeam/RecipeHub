@@ -9,7 +9,7 @@ public sealed class IdentityService(IIdentityStore store, IPasswordService passw
 {
     private static readonly string[] Roles = ["admin", "rnd", "viewer"];
 
-    public static UserResponse Map(IdentityUser user) => new(user.Id, user.Email, user.FullName, user.Role, user.IsActive, user.AllowedRecipeIds, user.CreatedAt);
+    public static UserResponse Map(IdentityUser user) => new(user.Id, user.Email, user.FullName, user.Role, user.IsActive, user.CreatedAt);
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request, CancellationToken ct)
     {
@@ -87,8 +87,7 @@ public sealed class IdentityService(IIdentityStore store, IPasswordService passw
         var role = ValidateRole(request.Role);
         var user = new IdentityUser
         {
-            Email = email, NormalizedEmail = email, FullName = ValidateName(request.FullName), Role = role,
-            AllowedRecipeIds = ValidateScope(role, request.AllowedRecipeIds)
+            Email = email, FullName = ValidateName(request.FullName), Role = role
         };
         user.PasswordHash = passwords.Hash(user, request.Password!);
         store.AddUser(user);
@@ -103,7 +102,6 @@ public sealed class IdentityService(IIdentityStore store, IPasswordService passw
         if (actorId == id && role != "admin") throw new IdentityException(409, "Không thể tự hạ vai trò Admin đang đăng nhập.");
         user.FullName = ValidateName(request.FullName);
         user.Role = role;
-        user.AllowedRecipeIds = ValidateScope(role, request.AllowedRecipeIds);
         user.UpdatedAt = DateTime.UtcNow;
         await store.SaveAsync(ct);
         return Map(user);
@@ -146,11 +144,6 @@ public sealed class IdentityService(IIdentityStore store, IPasswordService passw
     private static string ValidateName(string? name) => string.IsNullOrWhiteSpace(name) || name.Trim().Length > 200
         ? throw new IdentityException(400, "Họ tên phải có 1–200 ký tự.") : name.Trim();
     private static string ValidateRole(string? role) => Roles.Contains(role) ? role! : throw new IdentityException(400, "Role phải là admin, rnd hoặc viewer.");
-    private static Guid[] ValidateScope(string role, Guid[]? ids)
-    {
-        if (ids?.Any(id => id == Guid.Empty) == true || ids?.Length > 1000) throw new IdentityException(400, "Danh sách công thức không hợp lệ.");
-        return role == "viewer" ? ids?.Distinct().ToArray() ?? [] : [];
-    }
     private static void ValidatePassword(string? password)
     {
         if (password is null || password.Length is < 8 or > 128 || !password.Any(char.IsUpper) || !password.Any(char.IsLower) || !password.Any(char.IsDigit))

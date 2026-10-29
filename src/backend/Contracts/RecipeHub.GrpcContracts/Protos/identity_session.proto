@@ -10,5 +10,6 @@ message ValidateSessionResponse {
   bool valid = 1;
   string user_id = 2;
   string role = 3;
-  repeated string allowed_recipe_ids = 4;
+  reserved 4;
+  reserved "allowed_recipe_ids";
 }

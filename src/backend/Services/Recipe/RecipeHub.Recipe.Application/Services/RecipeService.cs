@@ -38,14 +38,14 @@ public sealed class RecipeService : IRecipeService
 
     public async Task<PagedResponse<RecipeSummaryResponse>> SearchAsync(
         string? query, string? state, string? versionStatus, Guid? createdByUserId,
-        int page, int pageSize, CancellationToken cancellationToken, IReadOnlyCollection<Guid>? allowedRecipeIds = null)
+        int page, int pageSize, CancellationToken cancellationToken)
     {
         if (page < 1) throw new ValidationException("Page must be greater than zero.");
         if (pageSize is < 1 or > 100) throw new ValidationException("Page size must be between 1 and 100.");
         ValidateOptionalState(state, ["active", "archived"], "recipe state");
         ValidateOptionalState(versionStatus, ["draft", "published"], "version status");
         var result = await _recipeRepository.SearchLatestVersionsAsync(
-            query, state, versionStatus, createdByUserId, page, pageSize, cancellationToken, allowedRecipeIds);
+            query, state, versionStatus, createdByUserId, page, pageSize, cancellationToken);
         return new PagedResponse<RecipeSummaryResponse>(result.Items.Select(MapSummary).ToArray(), page, pageSize, result.TotalCount);
     }
 

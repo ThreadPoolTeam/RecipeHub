@@ -32,10 +32,3 @@ public partial class RecipeDbContext
         modelBuilder.Entity<RecipeStepMedia>().ToTable("recipe_step_media", "recipe_db", table => table.HasCheckConstraint("recipe_step_media_sort_order_check", "sort_order > 0"));
     }
 }
-
-public sealed class RecipeDbContextFactory : IDesignTimeDbContextFactory<RecipeDbContext>
-{
-    public RecipeDbContext CreateDbContext(string[] args) => new(new DbContextOptionsBuilder<RecipeDbContext>()
-        .UseNpgsql(Environment.GetEnvironmentVariable("ConnectionStrings__Database") ??
-            "Host=localhost;Port=5433;Database=recipehub_recipe;Username=recipe_user;Password=recipe_pw").Options);
-}

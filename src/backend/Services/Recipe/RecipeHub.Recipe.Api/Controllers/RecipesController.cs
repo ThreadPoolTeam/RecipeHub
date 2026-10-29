@@ -10,11 +10,6 @@ namespace RecipeHub.Recipe.Api.Controllers;
 public sealed class RecipesController : ControllerBase
 {
     private bool IsViewer => User.IsInRole("viewer");
-    private Guid[] ViewerScope => User.FindAll("allowed_recipe_id").Select(c => Guid.Parse(c.Value)).ToArray();
-    private void EnsureViewerScope(Guid id)
-    {
-        if (IsViewer && !ViewerScope.Contains(id)) throw new ForbiddenException("Bạn không có quyền truy cập công thức này.");
-    }
     private readonly IRecipeService _recipeService;
 
     public RecipesController(IRecipeService recipeService)
@@ -34,7 +29,7 @@ public sealed class RecipesController : ControllerBase
     {
         var recipes = await _recipeService.SearchAsync(
             query, IsViewer ? "active" : state, IsViewer ? "published" : versionStatus, createdByUserId,
-            page ?? 1, pageSize ?? 20, cancellationToken, IsViewer ? ViewerScope : null);
+            page ?? 1, pageSize ?? 20, cancellationToken);
         return Ok(recipes);
     }
 
@@ -43,7 +38,6 @@ public sealed class RecipesController : ControllerBase
         Guid publicId,
         CancellationToken cancellationToken)
     {
-        EnsureViewerScope(publicId);
         RecipeDetailResponse recipe;
         if (IsViewer)
         {
@@ -62,7 +56,6 @@ public sealed class RecipesController : ControllerBase
         Guid publicId,
         CancellationToken cancellationToken)
     {
-        EnsureViewerScope(publicId);
         if (IsViewer && (await _recipeService.GetAsync(publicId, cancellationToken)).State != "active")
             throw new ForbiddenException("Công thức đã được lưu trữ.");
         var versions = await _recipeService.GetVersionHistoryAsync(publicId, cancellationToken);
@@ -76,7 +69,6 @@ public sealed class RecipesController : ControllerBase
         Guid versionId,
         CancellationToken cancellationToken)
     {
-        EnsureViewerScope(publicId);
         var version = await _recipeService.GetVersionAsync(publicId, versionId, cancellationToken);
         if (IsViewer && (version.VersionStatus != "published" || version.State != "active"))
             throw new ForbiddenException("Chỉ được xem công thức đang hoạt động và đã phát hành.");

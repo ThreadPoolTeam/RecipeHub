@@ -10,8 +10,6 @@ public sealed class IdentitySessionService(IdentityService identity) : IdentityS
     {
         var session = await identity.ValidateAsync(request.AccessToken, context.CancellationToken);
         if (session is null) return new ValidateSessionResponse { Valid = false };
-        var response = new ValidateSessionResponse { Valid = true, UserId = session.User.Id.ToString(), Role = session.User.Role };
-        response.AllowedRecipeIds.AddRange(session.User.AllowedRecipeIds.Select(x => x.ToString()));
-        return response;
+        return new ValidateSessionResponse { Valid = true, UserId = session.User.Id.ToString(), Role = session.User.Role };
     }
 }

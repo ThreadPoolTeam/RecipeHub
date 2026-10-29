@@ -22,17 +22,14 @@ public sealed class RecipeRepository : IRecipeRepository
         Guid? createdByUserId,
         int page,
         int pageSize,
-        CancellationToken cancellationToken,
-        IReadOnlyCollection<Guid>? allowedRecipeIds = null)
+        CancellationToken cancellationToken)
     {
-        var publishedOnly = allowedRecipeIds is not null || string.Equals(versionStatus, "published", StringComparison.OrdinalIgnoreCase);
+        var publishedOnly = string.Equals(versionStatus, "published", StringComparison.OrdinalIgnoreCase);
         var versions = _dbContext.RecipeVersions.AsNoTracking()
             .Include(item => item.Recipe)
             .Where(item => !_dbContext.RecipeVersions.Any(other =>
                 other.RecipeId == item.RecipeId && other.VersionNumber > item.VersionNumber && (!publishedOnly || other.Status == "published")));
 
-        if (allowedRecipeIds is not null)
-            versions = versions.Where(item => allowedRecipeIds.Contains(item.Recipe.PublicId) && item.Status == "published" && item.Recipe.ArchivedAt == null);
 
         if (!string.IsNullOrWhiteSpace(query))
         {

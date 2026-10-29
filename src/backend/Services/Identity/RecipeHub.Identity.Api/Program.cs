@@ -55,15 +55,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Identity v1"));
     using var scope = app.Services.CreateScope();
-    if (builder.Configuration.GetValue<bool>("Identity:ApplyMigrations"))
-        await scope.ServiceProvider.GetRequiredService<IdentityDbContext>().Database.MigrateAsync();
     if (builder.Configuration.GetValue<bool>("Identity:SeedDemoUsers"))
     {
         var identity = scope.ServiceProvider.GetRequiredService<IdentityService>();
         var store = scope.ServiceProvider.GetRequiredService<IIdentityStore>();
         foreach (var (email, name, role) in new[] { ("admin@recipehub.demo", "Quản trị hệ thống", "admin"), ("rd@recipehub.demo", "Chuyên viên R&D", "rnd"), ("viewer@recipehub.demo", "Barista Viewer", "viewer") })
             if (await store.FindEmailAsync(email, default) is null)
-                await identity.CreateUserAsync(new(email, name, role, "Demo@1234", []), default);
+                await identity.CreateUserAsync(new(email, name, role, "Demo@1234"), default);
     }
 }
 app.UseRateLimiter();
