@@ -97,7 +97,7 @@ Không coi “có dependency” đồng nghĩa “chắc chắn gây lỗi”. �
 
 ## 7. Báo cáo theo thứ tự người dùng cần
 
-Điều chỉnh độ dài theo phạm vi; câu hỏi hẹp chỉ trả lời phần liên quan. Với review đầy đủ dùng cấu trúc:
+Điều chỉnh độ dài theo phạm vi; câu hỏi hẹp chỉ trả lời phần liên quan. Khi người dùng yêu cầu chỉ rõ tính năng ở đâu hoặc rà soát danh mục API/file theo nhóm chức năng, áp dụng khung trình bày chuẩn tại `references/feature-breakdown-template.md`. Với review đầy đủ dùng cấu trúc:
 
 ### Nhánh này làm gì?
 Giải thích dễ hiểu trước. Ghi nhánh/head, base và phạm vi so sánh ngắn gọn.
