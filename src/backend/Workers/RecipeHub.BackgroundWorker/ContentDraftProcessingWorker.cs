@@ -6,7 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RecipeHub.Content.Application.Interfaces;
 using RecipeHub.Content.Domain;
-using RecipeHub.Content.Infrastructure.Persistence;
+using RecipeHub.Content.Infrastructure.Data;
 using StackExchange.Redis;
 
 namespace RecipeHub.BackgroundWorker;

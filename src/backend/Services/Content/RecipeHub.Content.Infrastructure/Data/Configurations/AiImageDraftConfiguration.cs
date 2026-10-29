@@ -1,8 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using RecipeHub.Content.Domain;
+using RecipeHub.Content.Infrastructure.Data;
 
-namespace RecipeHub.Content.Infrastructure.Persistence.Configurations;
+namespace RecipeHub.Content.Infrastructure.Data.Configurations;
 
 public sealed class AiImageDraftConfiguration : IEntityTypeConfiguration<AiImageDraft>
 {

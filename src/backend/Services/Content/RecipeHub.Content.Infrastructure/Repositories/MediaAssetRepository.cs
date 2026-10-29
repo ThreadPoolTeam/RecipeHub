@@ -1,8 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using RecipeHub.Content.Application.Interfaces;
 using RecipeHub.Content.Domain;
+using RecipeHub.Content.Infrastructure.Data;
 
-namespace RecipeHub.Content.Infrastructure.Persistence.Repositories;
+namespace RecipeHub.Content.Infrastructure.Repositories;
 
 public sealed class MediaAssetRepository : IMediaAssetRepository
 {

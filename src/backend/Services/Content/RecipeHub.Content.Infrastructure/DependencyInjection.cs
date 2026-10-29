@@ -5,8 +5,8 @@ using RecipeHub.Content.Application.Interfaces;
 using RecipeHub.Content.Infrastructure.Ai;
 using RecipeHub.Content.Infrastructure.Clients;
 using RecipeHub.Content.Infrastructure.Outbox;
-using RecipeHub.Content.Infrastructure.Persistence;
-using RecipeHub.Content.Infrastructure.Persistence.Repositories;
+using RecipeHub.Content.Infrastructure.Data;
+using RecipeHub.Content.Infrastructure.Repositories;
 using RecipeHub.Content.Infrastructure.Storage;
 
 namespace RecipeHub.Content.Infrastructure;

@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RecipeHub.Content.Domain;
 
-namespace RecipeHub.Content.Infrastructure.Persistence;
+namespace RecipeHub.Content.Infrastructure.Data;
 
 public sealed class ContentDbContext : DbContext
 {
