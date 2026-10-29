@@ -1,71 +1,18 @@
 using System.Net.Mail;
-using System.Security.Cryptography;
-using System.Text;
+using RecipeHub.Identity.Application.DTOs;
+using RecipeHub.Identity.Application.Exceptions;
+using RecipeHub.Identity.Application.Interfaces;
+using RecipeHub.Identity.Application.Mappings;
 using RecipeHub.Identity.Domain.Entities;
 
-namespace RecipeHub.Identity.Application;
+namespace RecipeHub.Identity.Application.Services;
 
-public sealed class IdentityService(IIdentityStore store, IPasswordService passwords, ITokenService tokens)
+public sealed class UserService(IIdentityStore store, IPasswordService passwords) : IUserService
 {
     private static readonly string[] Roles = ["admin", "rnd", "viewer"];
 
-    public static UserResponse Map(IdentityUser user) => new(user.Id, user.Email, user.FullName, user.Role, user.IsActive, user.CreatedAt);
-
-    public async Task<LoginResponse> LoginAsync(LoginRequest request, CancellationToken ct)
-    {
-        var email = (request.Username ?? "").Trim().ToLowerInvariant();
-        if (email.Length > 254 || string.IsNullOrEmpty(request.Password) || request.Password.Length > 128)
-            throw new IdentityException(401, "Email hoặc mật khẩu không chính xác.");
-        var user = await store.FindEmailAsync(email, ct);
-        if (user is null || !passwords.Verify(user, request.Password))
-            throw new IdentityException(401, "Email hoặc mật khẩu không chính xác.");
-        if (!user.IsActive) throw new IdentityException(403, "Tài khoản đã bị khóa.");
-        return await CreateSessionAsync(user, ct);
-    }
-
-    private async Task<LoginResponse> CreateSessionAsync(IdentityUser user, CancellationToken ct)
-    {
-        var refreshToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48));
-        var session = new AuthSession
-        {
-            User = user, UserId = user.Id,
-            RefreshTokenHash = HashRefresh(refreshToken), ExpiresAt = DateTime.UtcNow.AddHours(8)
-        };
-        store.AddSession(session);
-        await store.SaveAsync(ct);
-        var access = tokens.Issue(user, session);
-        return new LoginResponse(access.Token, refreshToken, access.ExpiresAt, Map(user));
-    }
-
-    public async Task<ValidatedSession?> ValidateAsync(string token, CancellationToken ct)
-    {
-        var ids = tokens.Validate(token);
-        if (ids is null) return null;
-        var session = await store.FindSessionAsync(ids.Value.SessionId, ct);
-        if (session is null || session.UserId != ids.Value.UserId || session.RevokedAt is not null ||
-            session.ExpiresAt <= DateTime.UtcNow || !session.User.IsActive || session.CreatedAt < session.User.UpdatedAt) return null;
-        return new ValidatedSession(session.Id, Map(session.User));
-    }
-
-    public async Task<LoginResponse> RefreshAsync(RefreshRequest request, CancellationToken ct)
-    {
-        if (string.IsNullOrEmpty(request.RefreshToken) || request.RefreshToken.Length > 256)
-            throw new IdentityException(401, "Refresh token không hợp lệ.");
-        var session = await store.FindRefreshAsync(HashRefresh(request.RefreshToken), ct);
-        if (session is null || session.RevokedAt is not null || session.ExpiresAt <= DateTime.UtcNow || !session.User.IsActive || session.CreatedAt < session.User.UpdatedAt)
-            throw new IdentityException(401, "Session đã hết hạn hoặc bị thu hồi.");
-        // Revocation and the replacement session are saved in the same transaction.
-        session.RevokedAt = DateTime.UtcNow;
-        return await CreateSessionAsync(session.User, ct);
-    }
-
-    public async Task LogoutAsync(Guid sessionId, CancellationToken ct)
-    {
-        var session = await store.FindSessionAsync(sessionId, ct);
-        if (session is null) return;
-        session.RevokedAt = DateTime.UtcNow;
-        await store.SaveAsync(ct);
-    }
+    public async Task<UserResponse> GetUserAsync(Guid id, CancellationToken ct) =>
+        UserMapping.ToResponse(await RequiredUserAsync(id, ct));
 
     public async Task<UserPage> GetUsersAsync(string? search, string? role, string? state, int page, int pageSize, CancellationToken ct)
     {
@@ -74,7 +21,7 @@ public sealed class IdentityService(IIdentityStore store, IPasswordService passw
         role = string.IsNullOrWhiteSpace(role) ? null : ValidateRole(role);
         bool? active = state switch { null or "" or "all" => null, "active" => true, "inactive" => false, _ => throw new IdentityException(400, "State phải là active hoặc inactive.") };
         var result = await store.SearchAsync(search?.Trim(), role, active, page, pageSize, ct);
-        return new UserPage(result.Items.Select(Map).ToArray(), result.Total, page, pageSize);
+        return new UserPage(result.Items.Select(UserMapping.ToResponse).ToArray(), result.Total, page, pageSize);
     }
 
     public async Task<UserResponse> CreateUserAsync(CreateUserRequest request, CancellationToken ct)
@@ -84,27 +31,28 @@ public sealed class IdentityService(IIdentityStore store, IPasswordService passw
             throw new IdentityException(400, "Email không hợp lệ.");
         if (await store.FindEmailAsync(email, ct) is not null) throw new IdentityException(409, "Email đã tồn tại.");
         ValidatePassword(request.Password);
-        var role = ValidateRole(request.Role);
+        var role = await RequiredRoleAsync(request.Role, ct);
         var user = new IdentityUser
         {
-            Email = email, FullName = ValidateName(request.FullName), Role = role
+            Email = email, FullName = ValidateName(request.FullName), RoleId = role.Id, Role = role
         };
         user.PasswordHash = passwords.Hash(user, request.Password!);
         store.AddUser(user);
         await store.SaveAsync(ct);
-        return Map(user);
+        return UserMapping.ToResponse(user);
     }
 
     public async Task<UserResponse> UpdateUserAsync(Guid actorId, Guid id, UpdateUserRequest request, CancellationToken ct)
     {
         var user = await RequiredUserAsync(id, ct);
-        var role = ValidateRole(request.Role);
-        if (actorId == id && role != "admin") throw new IdentityException(409, "Không thể tự hạ vai trò Admin đang đăng nhập.");
+        var role = await RequiredRoleAsync(request.Role, ct);
+        if (actorId == id && role.Code != "admin") throw new IdentityException(409, "Không thể tự hạ vai trò Admin đang đăng nhập.");
         user.FullName = ValidateName(request.FullName);
+        user.RoleId = role.Id;
         user.Role = role;
         user.UpdatedAt = DateTime.UtcNow;
         await store.SaveAsync(ct);
-        return Map(user);
+        return UserMapping.ToResponse(user);
     }
 
     public async Task<UserResponse> SetStatusAsync(Guid actorId, Guid id, bool active, CancellationToken ct)
@@ -115,7 +63,7 @@ public sealed class IdentityService(IIdentityStore store, IPasswordService passw
         user.UpdatedAt = DateTime.UtcNow;
         if (!active) await store.RevokeSessionsAsync(id, ct);
         await store.SaveAsync(ct);
-        return Map(user);
+        return UserMapping.ToResponse(user);
     }
 
     public async Task ChangePasswordAsync(Guid id, ChangePasswordRequest request, CancellationToken ct)
@@ -141,6 +89,12 @@ public sealed class IdentityService(IIdentityStore store, IPasswordService passw
     private async Task<IdentityUser> RequiredUserAsync(Guid id, CancellationToken ct) =>
         await store.FindUserAsync(id, ct) ?? throw new IdentityException(404, "Không tìm thấy tài khoản.");
 
+    private async Task<Role> RequiredRoleAsync(string? role, CancellationToken ct)
+    {
+        var code = ValidateRole(role);
+        return await store.FindRoleAsync(code, ct) ?? throw new IdentityException(400, "Vai trò chưa được cấu hình.");
+    }
+
     private static string ValidateName(string? name) => string.IsNullOrWhiteSpace(name) || name.Trim().Length > 200
         ? throw new IdentityException(400, "Họ tên phải có 1–200 ký tự.") : name.Trim();
     private static string ValidateRole(string? role) => Roles.Contains(role) ? role! : throw new IdentityException(400, "Role phải là admin, rnd hoặc viewer.");
@@ -149,5 +103,4 @@ public sealed class IdentityService(IIdentityStore store, IPasswordService passw
         if (password is null || password.Length is < 8 or > 128 || !password.Any(char.IsUpper) || !password.Any(char.IsLower) || !password.Any(char.IsDigit))
             throw new IdentityException(400, "Mật khẩu cần 8–128 ký tự, gồm chữ hoa, chữ thường và số.");
     }
-    private static string HashRefresh(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
 }

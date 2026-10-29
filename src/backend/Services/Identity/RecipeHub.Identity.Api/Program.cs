@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using RecipeHub.Identity.Api;
 using RecipeHub.Identity.Application;
+using RecipeHub.Identity.Application.Exceptions;
+using RecipeHub.Identity.Application.Interfaces;
 using RecipeHub.Identity.Infrastructure;
 using RecipeHub.Identity.Infrastructure.Data;
 
@@ -15,12 +17,8 @@ builder.WebHost.ConfigureKestrel(options =>
     options.ListenAnyIP(5001, o => o.Protocols = HttpProtocols.Http1);
     options.ListenAnyIP(5011, o => o.Protocols = HttpProtocols.Http2);
 });
-builder.Services.AddDbContext<IdentityDbContext>(o => o.UseNpgsql(builder.Configuration.GetConnectionString("Database")
-    ?? throw new InvalidOperationException("ConnectionStrings:Database bắt buộc cho Identity Service.")));
-builder.Services.AddScoped<IIdentityStore, IdentityStore>();
-builder.Services.AddScoped<IdentityService>();
-builder.Services.AddSingleton<IPasswordService, PasswordService>();
-builder.Services.AddSingleton<ITokenService>(_ => new TokenService(builder.Configuration, builder.Environment.IsDevelopment()));
+builder.Services.AddIdentityApplication();
+builder.Services.AddIdentityInfrastructure(builder.Configuration, builder.Environment.IsDevelopment());
 builder.Services.AddAuthentication("Bearer").AddScheme<AuthenticationSchemeOptions, IdentityAuthenticationHandler>("Bearer", _ => { });
 builder.Services.AddAuthorization();
 builder.Services.AddGrpc();
@@ -57,11 +55,11 @@ if (app.Environment.IsDevelopment())
     using var scope = app.Services.CreateScope();
     if (builder.Configuration.GetValue<bool>("Identity:SeedDemoUsers"))
     {
-        var identity = scope.ServiceProvider.GetRequiredService<IdentityService>();
+        var users = scope.ServiceProvider.GetRequiredService<IUserService>();
         var store = scope.ServiceProvider.GetRequiredService<IIdentityStore>();
         foreach (var (email, name, role) in new[] { ("admin@recipehub.demo", "Quản trị hệ thống", "admin"), ("rd@recipehub.demo", "Chuyên viên R&D", "rnd"), ("viewer@recipehub.demo", "Barista Viewer", "viewer") })
             if (await store.FindEmailAsync(email, default) is null)
-                await identity.CreateUserAsync(new(email, name, role, "Demo@1234"), default);
+                await users.CreateUserAsync(new(email, name, role, "Demo@1234"), default);
     }
 }
 app.UseRateLimiter();

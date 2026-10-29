@@ -36,13 +36,12 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
             entity.Property(x => x.FullName).HasColumnName("full_name").IsRequired();
             entity.Property(x => x.PasswordHash).HasColumnName("password_hash").IsRequired();
             entity.Property(x => x.RoleId).HasColumnName("role_id").IsRequired();
-            entity.Ignore(x => x.Role);
             entity.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
             entity.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
             entity.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
             entity.HasIndex(x => new { x.RoleId, x.IsActive }).HasDatabaseName("users_role_active_idx");
 
-            entity.HasOne(x => x.RoleNavigation)
+            entity.HasOne(x => x.Role)
                 .WithMany(r => r.Users)
                 .HasForeignKey(x => x.RoleId)
                 .OnDelete(DeleteBehavior.Restrict)

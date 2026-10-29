@@ -2,25 +2,13 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using RecipeHub.Identity.Application;
+using RecipeHub.Identity.Application.Interfaces;
 using RecipeHub.Identity.Domain.Entities;
 using IdentityUser = RecipeHub.Identity.Domain.Entities.IdentityUser;
 
-namespace RecipeHub.Identity.Infrastructure;
-
-public sealed class PasswordService : IPasswordService
-{
-    private readonly PasswordHasher<IdentityUser> hasher = new();
-    public string Hash(IdentityUser user, string password) => hasher.HashPassword(user, password);
-    public bool Verify(IdentityUser user, string password)
-    {
-        try { return !string.IsNullOrEmpty(user.PasswordHash) && hasher.VerifyHashedPassword(user, user.PasswordHash, password) != PasswordVerificationResult.Failed; }
-        catch (FormatException) { return false; }
-    }
-}
+namespace RecipeHub.Identity.Infrastructure.Security;
 
 public sealed class TokenService : ITokenService
 {
@@ -44,7 +32,7 @@ public sealed class TokenService : ITokenService
     {
         var expires = DateTime.UtcNow.AddMinutes(30);
         var jwt = new JwtSecurityToken(issuer, audience,
-            [new Claim("sub", user.Id.ToString()), new Claim("jti", session.Id.ToString()), new Claim("role", user.Role)],
+            [new Claim("sub", user.Id.ToString()), new Claim("jti", session.Id.ToString()), new Claim("role", user.Role.Code)],
             notBefore: DateTime.UtcNow, expires: expires, signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
         return (handler.WriteToken(jwt), expires);
     }
