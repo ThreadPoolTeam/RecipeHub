@@ -54,7 +54,9 @@ function mapUser(value: unknown): User {
   return {
     id: text(item.id, 'user.id'), email: text(item.email, 'user.email'), fullName: text(item.fullName, 'user.fullName'),
     role: role as Role, isLocked: !booleanValue(item.isActive, 'user.isActive'),
-    allowedRecipeIds: array(item.allowedRecipeIds, 'user.allowedRecipeIds').map(id => text(id, 'recipe id')),
+    allowedRecipeIds: Array.isArray(item.allowedRecipeIds)
+      ? item.allowedRecipeIds.map(id => text(id, 'recipe id'))
+      : [],
     createdAt: text(item.createdAt, 'user.createdAt'),
   };
 }
@@ -339,15 +341,14 @@ export class BackendRepository extends DemoRepository {
   override async createUser(actor: SessionInfo, data: Omit<User, 'id' | 'createdAt'> & { password?: string }): Promise<User> {
     return mapUser(await requestJson('api/v1/identity/users', this.actorId(actor), {
       method: 'POST', body: JSON.stringify({ email: data.email, fullName: data.fullName, role: data.role,
-        password: data.password, allowedRecipeIds: data.allowedRecipeIds }),
+        password: data.password }),
     }));
   }
 
   override async updateUser(actor: SessionInfo, id: string, data: Partial<User>): Promise<User> {
     const current = mapUser(await requestJson(`api/v1/identity/users/${id}`, this.actorId(actor), { method: 'GET' }));
     return mapUser(await requestJson(`api/v1/identity/users/${id}`, this.actorId(actor), {
-      method: 'PUT', body: JSON.stringify({ fullName: data.fullName ?? current.fullName, role: data.role ?? current.role,
-        allowedRecipeIds: data.allowedRecipeIds ?? current.allowedRecipeIds }),
+      method: 'PUT', body: JSON.stringify({ fullName: data.fullName ?? current.fullName, role: data.role ?? current.role }),
     }));
   }
 
