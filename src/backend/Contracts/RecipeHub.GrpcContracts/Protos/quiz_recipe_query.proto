@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+option csharp_namespace = "RecipeHub.GrpcContracts.Recipe";
+
+package recipehub.contracts.v1;
+
+// Service nội bộ: Quiz gọi Recipe để xác thực và lấy thông tin phiên bản công thức phục vụ tạo/publish/làm đề thi
+service QuizRecipeQuery {
+  rpc GetQuizRecipeVersions (GetQuizRecipeVersionsRequest) returns (GetQuizRecipeVersionsResponse);
+}
+
+message GetQuizRecipeVersionsRequest {
+  repeated string recipe_version_ids = 1; // Danh sách UUID (tối đa 100)
+}
+
+message QuizRecipeVersionItemDto {
+  string recipe_version_id = 1;
+  string recipe_id = 2;
+  string title = 3;
+  bool is_eligible = 4; // status == "published" AND recipe archived_at IS NULL
+  string status = 5;
+}
+
+message GetQuizRecipeVersionsResponse {
+  bool is_success = 1;
+  string error_message = 2;
+  repeated QuizRecipeVersionItemDto items = 3;
+}

@@ -68,6 +68,7 @@ app.Use(async (context, next) =>
 });
 app.MapGrpcService<ProbeServiceImpl>();
 app.MapGrpcService<RecipeAiContextQueryServiceImpl>();
+app.MapGrpcService<QuizRecipeQueryServiceImpl>();
 app.MapControllers().RequireAuthorization();
 
 app.MapGet("/", () => Results.Ok(new
