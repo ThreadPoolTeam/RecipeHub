@@ -25,7 +25,8 @@ RecipeHub/
 │   │   │   ├── Identity/ (Domain, Application, Infrastructure, Api)
 │   │   │   ├── Recipe/   (Domain, Application, Infrastructure, Api)
 │   │   │   ├── Content/  (Domain, Application, Infrastructure, Api)
-│   │   │   └── Audit/    (Domain, Application, Infrastructure, Api)
+│   │   │   ├── Audit/    (Domain, Application, Infrastructure, Api)
+│   │   │   └── Quiz/     (Domain, Application, Infrastructure, Api)
 │   │   └── Workers/
 │   │       └── RecipeHub.BackgroundWorker/       # Redis Streams consumer with MKSTREAM & ACK
 │   └── frontend/
@@ -33,7 +34,7 @@ RecipeHub/
 ├── infra/
 │   ├── compose.yaml                              # Docker Compose full-stack orchestration
 │   └── postgres/
-│       └── init-databases.sh                     # Khởi tạo 4 database logic riêng biệt
+│   │       └── init-databases.sh                     # Khởi tạo 5 database logic riêng biệt
 ├── tests/
 │   └── smoke/
 │       └── smoke-test.sh                         # Kịch bản kiểm thử tích hợp tự động
