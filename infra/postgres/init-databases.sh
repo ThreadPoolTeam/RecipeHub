@@ -35,6 +35,10 @@ if [ -f "/schema/quiz-db/RecipeHub.Quiz.postgres" ]; then
     PGPASSWORD="${QUIZ_MIGRATOR_PASSWORD:-quiz_migrator_pw}" psql -v ON_ERROR_STOP=1 --username "${QUIZ_MIGRATOR_USER:-quiz_migrator}" --dbname "${QUIZ_DB_NAME:-recipehub_quiz}" -f "/schema/quiz-db/RecipeHub.Quiz.postgres"
 fi
 
+if [ -f "/schema/quiz-db/migrations/20261031120000_quiz_integrity.sql" ]; then
+    PGPASSWORD="${QUIZ_MIGRATOR_PASSWORD:-quiz_migrator_pw}" psql -v ON_ERROR_STOP=1 --username "${QUIZ_MIGRATOR_USER:-quiz_migrator}" --dbname "${QUIZ_DB_NAME:-recipehub_quiz}" -f "/schema/quiz-db/migrations/20261031120000_quiz_integrity.sql"
+fi
+
 # Grant least-privilege runtime DML to quiz_user
 PGPASSWORD="${QUIZ_MIGRATOR_PASSWORD:-quiz_migrator_pw}" psql -v ON_ERROR_STOP=1 --username "${QUIZ_MIGRATOR_USER:-quiz_migrator}" --dbname "${QUIZ_DB_NAME:-recipehub_quiz}" <<-EOSQL
     GRANT USAGE ON SCHEMA quiz_db TO ${QUIZ_DB_USER:-quiz_user};

@@ -11,6 +11,21 @@ jobs:
     name: Build & Check .NET Backend
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: recipehub_admin
+          POSTGRES_PASSWORD: recipehub_secret_pw
+          POSTGRES_DB: recipehub_default
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -26,7 +41,25 @@ jobs:
       - name: Build solution (compile & syntax check)
         run: dotnet build src/backend/RecipeHub.sln --no-restore --configuration Release
 
-      - name: Run unit tests
+      - name: Initialize Quiz Database
+        env:
+          PGPASSWORD: recipehub_secret_pw
+        run: |
+          psql -h localhost -p 5432 -U recipehub_admin -d recipehub_default -c "CREATE USER quiz_migrator WITH ENCRYPTED PASSWORD 'quiz_migrator_pw';"
+          psql -h localhost -p 5432 -U recipehub_admin -d recipehub_default -c "CREATE USER quiz_user WITH ENCRYPTED PASSWORD 'quiz_pw';"
+          psql -h localhost -p 5432 -U recipehub_admin -d recipehub_default -c "CREATE DATABASE recipehub_quiz OWNER quiz_migrator;"
+          psql -h localhost -p 5432 -U recipehub_admin -d recipehub_default -c "GRANT CONNECT ON DATABASE recipehub_quiz TO quiz_user;"
+          PGPASSWORD=quiz_migrator_pw psql -h localhost -p 5432 -U quiz_migrator -d recipehub_quiz -f docs/database-schema/quiz-db/RecipeHub.Quiz.postgres
+          PGPASSWORD=quiz_migrator_pw psql -h localhost -p 5432 -U quiz_migrator -d recipehub_quiz -f docs/database-schema/quiz-db/migrations/20261031120000_quiz_integrity.sql
+          PGPASSWORD=quiz_migrator_pw psql -h localhost -p 5432 -U quiz_migrator -d recipehub_quiz <<-EOSQL
+            GRANT USAGE ON SCHEMA quiz_db TO quiz_user;
+            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA quiz_db TO quiz_user;
+            GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA quiz_db TO quiz_user;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA quiz_db GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO quiz_user;
+            ALTER DEFAULT PRIVILEGES IN SCHEMA quiz_db GRANT USAGE, SELECT ON SEQUENCES TO quiz_user;
+          EOSQL
+
+      - name: Run unit & integration tests
         run: dotnet test src/backend/RecipeHub.sln --no-build --configuration Release --verbosity normal
 
   frontend-check:
