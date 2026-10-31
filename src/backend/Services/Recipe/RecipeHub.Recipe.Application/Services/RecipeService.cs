@@ -395,7 +395,9 @@ public sealed class RecipeService : IRecipeService
 
     private static RecipeSummaryResponse MapSummary(RecipeVersion version) => new(
         version.Recipe.PublicId, version.Recipe.Code, GetRecipeState(version.Recipe), version.PublicId,
-        version.VersionNumber, version.Status, version.Name, version.UpdatedAt);
+        version.VersionNumber, version.Status, version.Name, version.Description, version.PrimaryMediaAssetRef,
+        version.RecipeIngredients.Count, version.RecipeSteps.Count, version.CreatedByUserRef,
+        version.UpdatedAt);
 
     private static RecipeVersionSummaryResponse MapVersionSummary(RecipeVersion version) => new(
         version.PublicId, version.VersionNumber, version.Status, version.Name, version.CreatedByUserRef,
