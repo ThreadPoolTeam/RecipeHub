@@ -1,9 +1,12 @@
 using Grpc.Net.Client;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.OpenApi.Models;
 using RecipeHub.Content.Api;
-using RecipeHub.Content.Api.Swagger;
 using RecipeHub.Content.Application;
+using RecipeHub.Content.Application.Interfaces;
 using RecipeHub.Content.Infrastructure;
 using RecipeHub.GrpcContracts;
+using RecipeHub.GrpcContracts.Identity;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,8 +16,52 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "RecipeHub.Content.Api", Version = "v1" });
-    c.OperationFilter<SwaggerXUserIdHeaderFilter>();
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Nhập access token Identity"
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
 });
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IContentCallerContext, ContentCallerContext>();
+
+builder.Services.AddSingleton(sp =>
+{
+    var identityUrl = builder.Configuration["Grpc:IdentityServiceUrl"] ?? "http://localhost:5011";
+    var channel = GrpcChannel.ForAddress(identityUrl);
+    return new IdentitySession.IdentitySessionClient(channel);
+});
+builder.Services.AddAuthentication("Bearer")
+    .AddScheme<AuthenticationSchemeOptions, ContentAuthenticationHandler>("Bearer", _ => { });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("ContentEditors", policy =>
+        policy.RequireAuthenticatedUser()
+              .RequireRole("admin", "rnd"));
+    options.AddPolicy("ContentReaders", policy =>
+        policy.RequireAuthenticatedUser()
+              .RequireRole("admin", "rnd", "viewer"));
+});
+
 builder.Services.AddHealthChecks();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApplicationExceptionHandler>();
@@ -39,7 +86,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseExceptionHandler();
-app.MapControllers();
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers().RequireAuthorization();
+
 app.MapGet("/", () => Results.Ok(new
 {
     service = "RecipeHub.Content.Api",
@@ -56,7 +107,7 @@ app.MapGet("/api/v1/content/info", () => Results.Ok(new
     version = "1.0.0",
     status = "Ready",
     description = "Content AI & Media Management Service"
-}));
+})).RequireAuthorization("ContentReaders");
 
 // Endpoint trigger gRPC Ping to Recipe.Api
 app.MapGet("/api/v1/content/probe-recipe", async (IConfiguration config) =>
@@ -90,6 +141,6 @@ app.MapGet("/api/v1/content/probe-recipe", async (IConfiguration config) =>
             detail: $"Failed to ping Recipe gRPC at {recipeGrpcUrl}: {ex.Message}",
             title: "gRPC Ping Error");
     }
-});
+}).RequireAuthorization("ContentEditors");
 
 app.Run();

@@ -13,8 +13,11 @@ import {
   RecipeStep,
   RecipeVersion,
   SessionInfo,
+  User,
+  Role,
 } from '@/lib/demo/types';
-import { requestBlob, requestExternalBlob, requestJson } from './client';
+import { clearSession, saveBackendSession, updateSessionUser } from '@/lib/demo/session';
+import { ApiError, requestBlob, requestJson } from './client';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -34,6 +37,28 @@ export interface UnitItem extends CatalogItem {
 
 interface DraftContext {
   versionId: string;
+}
+
+export interface ScaleResult {
+  standardYield: number;
+  targetYield: number;
+  multiplier: number;
+  ingredients: RecipeIngredient[];
+}
+export interface UnitTotal { unit: string; quantity: number }
+
+function mapUser(value: unknown): User {
+  const item = record(value, 'user');
+  const role = text(item.role, 'user.role');
+  if (!['admin', 'rnd', 'viewer'].includes(role)) throw new TypeError('Role không hợp lệ.');
+  return {
+    id: text(item.id, 'user.id'), email: text(item.email, 'user.email'), fullName: text(item.fullName, 'user.fullName'),
+    role: role as Role, isLocked: !booleanValue(item.isActive, 'user.isActive'),
+    allowedRecipeIds: Array.isArray(item.allowedRecipeIds)
+      ? item.allowedRecipeIds.map(id => text(id, 'recipe id'))
+      : [],
+    createdAt: text(item.createdAt, 'user.createdAt'),
+  };
 }
 
 function record(value: unknown, label: string): JsonRecord {
@@ -208,6 +233,9 @@ function mapRecipeSummary(value: unknown): RecipeVersion {
   const primaryMediaAssetId =
     optionalText(item.primaryMediaAssetRef, 'recipe summary.primaryMediaAssetRef') ??
     optionalText(item.primaryMediaAssetId, 'recipe summary.primaryMediaAssetId');
+  const ingredientCount = typeof item.ingredientCount === 'number' ? item.ingredientCount : 0;
+  const stepCount = typeof item.stepCount === 'number' ? item.stepCount : 0;
+  const createdByUserRef = optionalText(item.createdByUserRef, 'recipe summary.createdByUserRef') ?? '';
   return {
     id: text(item.id, 'recipe summary.id'),
     recipeId: text(item.id, 'recipe summary.id'),
@@ -217,66 +245,156 @@ function mapRecipeSummary(value: unknown): RecipeVersion {
     status: mapStatus(text(item.versionStatus, 'recipe summary.versionStatus'), text(item.state, 'recipe summary.state')),
     name: text(item.name, 'recipe summary.name'),
     code: text(item.code, 'recipe summary.code'),
+    description: optionalText(item.description, 'recipe summary.description') ?? '',
     targetYield: null,
     yieldUnit: null,
     primaryMediaAssetId: primaryMediaAssetId || undefined,
-    ingredients: [],
-    steps: [],
-    creatorId: '',
-    creatorEmail: '',
+    ingredients: Array.from({ length: ingredientCount }, (_, i) => ({ ingredientId: '', quantity: 0, unit: '', order: i + 1 })),
+    steps: Array.from({ length: stepCount }, (_, i) => ({ id: String(i + 1), stepNumber: i + 1, title: '', instruction: '' })),
+    creatorId: createdByUserRef,
+    creatorEmail: createdByUserRef ? 'rd@recipehub.demo' : '',
     createdAt: updatedAt,
     updatedAt,
   };
 }
 
-async function mapMediaAsset(value: unknown, actorId: string | null): Promise<MediaAsset> {
+function mapMediaAsset(value: unknown): MediaAsset {
   const item = record(value, 'media asset');
   const id = text(item.assetId, 'media asset.assetId');
   const deliveryUrl = optionalText(item.deliveryUrl, 'media asset.deliveryUrl') ?? '';
-  let blob = new Blob();
-  let resolvedUrl = deliveryUrl;
-
-  if (deliveryUrl) {
-    try {
-      blob = /^https?:\/\//i.test(deliveryUrl)
-        ? await requestExternalBlob(deliveryUrl)
-        : await requestBlob(deliveryUrl.replace(/^\//, ''), actorId, { method: 'GET' });
-    } catch {
-      // Fallback if simulated Cloudinary 404s
-      const aiDraftId = optionalText(item.aiDraftId, 'media asset.aiDraftId');
-      if (aiDraftId) {
-        try {
-          blob = await requestBlob(`api/v1/content/image-drafts/${aiDraftId}/image`, actorId, { method: 'GET' });
-          resolvedUrl = `/api/backend/api/v1/content/image-drafts/${aiDraftId}/image`;
-        } catch {
-          resolvedUrl = `/api/backend/api/v1/content/image-drafts/${aiDraftId}/image`;
-        }
-      }
-    }
-  }
-
+  const aiDraftId = optionalText(item.aiDraftId, 'media asset.aiDraftId');
   return {
     id,
     name: optionalText(item.originalFileName, 'media asset.originalFileName') ?? id,
     mimeType: optionalText(item.mimeType, 'media asset.mimeType') ?? 'image/png',
     sizeBytes: numberValue(item.byteSize, 'media asset.byteSize'),
-    blob,
+    blob: new Blob(),
     source: (optionalText(item.sourceType, 'media asset.sourceType') ?? '').toLowerCase().includes('ai') ? 'AiIllustration' : 'Real',
     state: 'Active',
     tags: [],
     uploadedBy: '',
     createdAt: optionalText(item.createdAt, 'media asset.createdAt') ?? new Date().toISOString(),
-    deliveryUrl: resolvedUrl || (blob.size > 0 ? URL.createObjectURL(blob) : undefined),
+    deliveryUrl: deliveryUrl || undefined,
   };
 }
 
 export class BackendRepository extends DemoRepository {
+  override async login(username: string, password: string): Promise<SessionInfo> {
+    const response = record(await requestJson('api/v1/identity/auth/login', null, {
+      method: 'POST', body: JSON.stringify({ username, password }),
+    }), 'login');
+    return saveBackendSession(mapUser(response.user), {
+      accessToken: text(response.accessToken, 'login.accessToken'), refreshToken: text(response.refreshToken, 'login.refreshToken'),
+      expiresAt: text(response.expiresAt, 'login.expiresAt'),
+    });
+  }
+
+  override async logout(_session: SessionInfo | null): Promise<void> {
+    try { await requestJson('api/v1/identity/auth/logout', null, { method: 'POST' }); }
+    finally { clearSession(); }
+  }
+
+  override async getCurrentUser(_session: SessionInfo): Promise<User | null> {
+    try {
+      const user = mapUser(await requestJson('api/v1/identity/auth/me', null, { method: 'GET' }));
+      updateSessionUser(user);
+      return user;
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) return null;
+      throw error;
+    }
+  }
+
+  async getUsersPage(search = '', role = '', state = '', page = 1, pageSize = 20): Promise<PaginatedResult<User>> {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (search.trim()) params.set('search', search.trim());
+    if (role && role !== 'all') params.set('role', role);
+    if (state && state !== 'all') params.set('state', state);
+    const response = record(await requestJson(`api/v1/identity/users?${params}`, null, { method: 'GET' }), 'users page');
+    const total = numberValue(response.totalCount, 'users.totalCount');
+    return { items: array(response.items, 'users.items').map(mapUser), total,
+      page: numberValue(response.page, 'users.page'), pageSize: numberValue(response.pageSize, 'users.pageSize'),
+      totalPages: Math.max(1, Math.ceil(total / pageSize)) };
+  }
+
+  override async getUsers(search = '', role = '', state = '', page = 1, pageSize = 100): Promise<User[]> {
+    return (await this.getUsersPage(search, role, state, page, pageSize)).items;
+  }
+
+  override async createUser(actor: SessionInfo, data: Omit<User, 'id' | 'createdAt'> & { password?: string }): Promise<User> {
+    return mapUser(await requestJson('api/v1/identity/users', this.actorId(actor), {
+      method: 'POST', body: JSON.stringify({ email: data.email, fullName: data.fullName, role: data.role,
+        password: data.password }),
+    }));
+  }
+
+  override async updateUser(actor: SessionInfo, id: string, data: Partial<User>): Promise<User> {
+    const current = mapUser(await requestJson(`api/v1/identity/users/${id}`, this.actorId(actor), { method: 'GET' }));
+    return mapUser(await requestJson(`api/v1/identity/users/${id}`, this.actorId(actor), {
+      method: 'PUT', body: JSON.stringify({ fullName: data.fullName ?? current.fullName, role: data.role ?? current.role }),
+    }));
+  }
+
+  async updateUserStatus(actor: SessionInfo, id: string, isActive: boolean): Promise<User> {
+    return mapUser(await requestJson(`api/v1/identity/users/${id}/status`, this.actorId(actor), {
+      method: 'PUT', body: JSON.stringify({ isActive }),
+    }));
+  }
+
+  override async toggleUserLock(actor: SessionInfo, id: string): Promise<boolean> {
+    const current = mapUser(await requestJson(`api/v1/identity/users/${id}`, this.actorId(actor), { method: 'GET' }));
+    return (await this.updateUserStatus(actor, id, current.isLocked)).isLocked;
+  }
+
+  async resetUserPassword(actor: SessionInfo, id: string, newPassword: string): Promise<void> {
+    await requestJson(`api/v1/identity/users/${id}/password`, this.actorId(actor), { method: 'PUT', body: JSON.stringify({ newPassword }) });
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    await requestJson('api/v1/identity/auth/password', null, { method: 'PUT', body: JSON.stringify({ currentPassword, newPassword }) });
+    clearSession();
+  }
+
+  async scaleRecipe(ingredients: RecipeIngredient[], standardYield: number, targetYield: number, signal?: AbortSignal): Promise<ScaleResult> {
+    const response = record(await requestJson('api/v1/recipes/calculate/scale', null, {
+      method: 'POST', signal, body: JSON.stringify({ ingredients, standardYield, targetYield }),
+    }), 'scale');
+    return { standardYield: numberValue(response.standardYield, 'scale.standardYield'), targetYield: numberValue(response.targetYield, 'scale.targetYield'),
+      multiplier: numberValue(response.multiplier, 'scale.multiplier'), ingredients: array(response.ingredients, 'scale.ingredients').map((value) => {
+        const line = record(value, 'scaled ingredient');
+        return { ingredientId: text(line.ingredientId, 'ingredientId'), quantity: numberValue(line.quantity, 'quantity'),
+          unit: text(line.unit, 'unit'), order: numberValue(line.order, 'order'), notes: optionalText(line.notes, 'notes'), stageNote: optionalText(line.stageNote, 'stageNote') };
+      }) };
+  }
+
+  async convertUnit(value: number, sourceUnit: string, targetUnit: string, signal?: AbortSignal): Promise<number> {
+    const response = record(await requestJson('api/v1/recipes/units/convert', null, {
+      method: 'POST', signal, body: JSON.stringify({ value, sourceUnit, targetUnit }),
+    }), 'conversion');
+    return numberValue(response.convertedValue, 'conversion.convertedValue');
+  }
+
+  async calculateTotals(ingredients: RecipeIngredient[], signal?: AbortSignal): Promise<UnitTotal[]> {
+    const response = record(await requestJson('api/v1/recipes/calculate/totals', null, {
+      method: 'POST', signal, body: JSON.stringify({ ingredients }),
+    }), 'totals');
+    return array(response.totals, 'totals.totals').map(value => {
+      const total = record(value, 'total');
+      return { unit: text(total.unit, 'total.unit'), quantity: numberValue(total.quantity, 'total.quantity') };
+    });
+  }
+
   private categories: CatalogItem[] | null = null;
   private unitCategories: CatalogItem[] | null = null;
   private units: UnitItem[] | null = null;
+  private ingredientsCache: Ingredient[] | null = null;
+  private ingredientsPromise: Promise<Ingredient[]> | null = null;
+  private mediaCache: MediaAsset[] | null = null;
+  private mediaPromise: Promise<MediaAsset[]> | null = null;
+  private recipesCache = new Map<string, PaginatedResult<RecipeVersion>>();
+  private recipesPromise = new Map<string, Promise<PaginatedResult<RecipeVersion>>>();
   private readonly draftContexts = new Map<string, DraftContext>();
   private readonly draftPreviews = new Map<string, Blob>();
-
   private rememberDraftContext(recipe: RecipeVersion): void {
     const context = {
       versionId: recipe.versionId ?? '',
@@ -286,17 +404,10 @@ export class BackendRepository extends DemoRepository {
   }
 
   private actorId(actor: SessionInfo): string {
-    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(actor.userId)) {
+    if (/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(actor.userId)) {
       return actor.userId;
     }
-    const knownActors: Record<string, string> = {
-      'rd@recipehub.demo': '00000000-0000-0000-0000-000000000101',
-      'viewer@recipehub.demo': '00000000-0000-0000-0000-000000000102',
-      'admin@recipehub.demo': '00000000-0000-0000-0000-000000000103',
-    };
-    const mapped = knownActors[actor.email.toLowerCase()];
-    if (!mapped) throw new Error(`Tài khoản ${actor.email} chưa có UUID để gọi backend.`);
-    return mapped;
+    throw new Error('Session không có User ID hợp lệ. Hãy đăng nhập lại.');
   }
 
   private async getCategories(): Promise<CatalogItem[]> {
@@ -323,7 +434,7 @@ export class BackendRepository extends DemoRepository {
 
   async getUnits(): Promise<UnitItem[]> {
     if (this.units) return this.units;
-    const response = await requestJson('api/v1/recipes/units', null, { method: 'GET' });
+    const response = await requestJson('api/v1/recipes/catalogs/units', null, { method: 'GET' });
     this.units = array(response, 'units').map((entry, index) => mapUnit(entry, `units[${index}]`));
     return this.units;
   }
@@ -473,19 +584,60 @@ export class BackendRepository extends DemoRepository {
     return match.id;
   }
 
-  override async getIngredients(query?: string, group?: string, activeOnly?: boolean): Promise<Ingredient[]> {
+  override async getIngredients(
+    query?: string,
+    group?: string,
+    activeOnly?: boolean,
+    signal?: AbortSignal
+  ): Promise<Ingredient[]> {
     const effectiveQuery = query ?? '';
     const effectiveGroup = group ?? '';
     const onlyActive = activeOnly ?? false;
-    const params = new URLSearchParams();
-    if (effectiveQuery.trim()) params.set('query', effectiveQuery.trim());
-    if (onlyActive) params.set('state', 'active');
-    if (effectiveGroup && effectiveGroup !== 'all') params.set('categoryId', await this.resolveCategoryId(effectiveGroup));
-    const suffix = params.size ? `?${params.toString()}` : '';
-    const response = await requestJson(`api/v1/recipes/ingredients${suffix}`, null, { method: 'GET' });
-    return array(response, 'ingredients').map((entry, index) =>
-      mapIngredient(entry, `ingredients[${index}]`)
-    );
+    const isDefault = !effectiveQuery.trim() && (!effectiveGroup || effectiveGroup === 'all') && !onlyActive;
+
+    if (isDefault && this.ingredientsCache) {
+      return this.ingredientsCache;
+    }
+
+    const withAbort = <T>(promise: Promise<T>): Promise<T> => {
+      if (!signal) return promise;
+      if (signal.aborted) return Promise.reject(new DOMException('This operation was aborted', 'AbortError'));
+      const { promise: abortPromise, reject } = Promise.withResolvers<T>();
+      signal.addEventListener('abort', () => reject(new DOMException('This operation was aborted', 'AbortError')), { once: true });
+      return Promise.race([promise, abortPromise]);
+    };
+
+    if (isDefault && this.ingredientsPromise) {
+      return withAbort(this.ingredientsPromise);
+    }
+
+    const fetchPromise = (async () => {
+      const params = new URLSearchParams();
+      if (effectiveQuery.trim()) params.set('query', effectiveQuery.trim());
+      if (onlyActive) params.set('state', 'active');
+      if (effectiveGroup && effectiveGroup !== 'all') params.set('categoryId', await this.resolveCategoryId(effectiveGroup));
+      const suffix = params.size ? `?${params.toString()}` : '';
+      const response = await requestJson(`api/v1/recipes/ingredients${suffix}`, null, { method: 'GET' });
+      const items = array(response, 'ingredients').map((entry, index) =>
+        mapIngredient(entry, `ingredients[${index}]`)
+      );
+      if (isDefault) {
+        this.ingredientsCache = items;
+      }
+      return items;
+    })();
+
+    if (isDefault) {
+      this.ingredientsPromise = fetchPromise;
+      const clearIfSame = () => {
+        if (this.ingredientsPromise === fetchPromise) {
+          this.ingredientsPromise = null;
+        }
+      };
+      fetchPromise.then(clearIfSame, clearIfSame);
+    }
+
+    return withAbort(fetchPromise);
   }
 
   async generateIngredientCode(actor: SessionInfo, categoryId: string): Promise<string> {
@@ -516,6 +668,7 @@ export class BackendRepository extends DemoRepository {
         imageAssetRef: data.imageAssetId ?? null,
       }),
     });
+    this.ingredientsCache = null;
     const created = mapIngredient(response, 'ingredient');
     if (data.isActive) return created;
     await requestJson(`api/v1/recipes/ingredients/${created.id}`, this.actorId(actor), { method: 'DELETE' });
@@ -545,6 +698,7 @@ export class BackendRepository extends DemoRepository {
         imageAssetRef: data.imageAssetId ?? current.imageAssetId ?? null,
       }),
     });
+    this.ingredientsCache = null;
     let updated = mapIngredient(response, 'ingredient');
     if (desiredActive !== updated.isActive) {
       const method = desiredActive ? 'PATCH' : 'DELETE';
@@ -559,54 +713,86 @@ export class BackendRepository extends DemoRepository {
     const effectiveFilter = filter ?? {};
     const requestedPageSize = effectiveFilter.pageSize ?? 10;
     const clampedPageSize = Math.min(Math.max(1, requestedPageSize), 100);
-    const params = new URLSearchParams({
-      page: String(effectiveFilter.page ?? 1),
-      pageSize: String(clampedPageSize),
-    });
-    if (effectiveFilter.query?.trim()) params.set('query', effectiveFilter.query.trim());
-    if (effectiveFilter.status && effectiveFilter.status !== 'all') {
-      if (effectiveFilter.status === 'Archived') params.set('state', 'archived');
-      else if (effectiveFilter.status === 'Published') params.set('versionStatus', 'published');
-      else params.set('versionStatus', effectiveFilter.status.toLowerCase());
-    }
-    const response = record(
-      await requestJson(`api/v1/recipes?${params.toString()}`, this.actorId(actor), { method: 'GET' }),
-      'recipes page'
-    );
-    const page = numberValue(response.page, 'recipes page.page');
-    const pageSize = numberValue(response.pageSize, 'recipes page.pageSize');
-    const total = numberValue(response.totalCount, 'recipes page.totalCount');
-    const rawItems = array(response.items, 'recipes page.items');
-    const items = await Promise.all(
-      rawItems.map(async (raw) => {
-        const summary = mapRecipeSummary(raw);
-        try {
-          const detail = await this.getRecipeVersion(actor, summary.id);
-          return {
-            ...detail,
-            id: summary.id,
-            recipeId: summary.recipeId,
-            versionId: summary.versionId || detail.versionId,
-            versionNumber: summary.versionNumber || detail.versionNumber,
-            versionLabel: summary.versionLabel || detail.versionLabel,
-            status: summary.status || detail.status,
-            name: summary.name || detail.name,
-            code: summary.code || detail.code,
-            primaryMediaAssetId: detail.primaryMediaAssetId || summary.primaryMediaAssetId,
-          };
-        } catch {
-          return summary;
-        }
-      })
-    );
+    const cacheKey = `${effectiveFilter.page ?? 1}_${clampedPageSize}_${effectiveFilter.query?.trim() ?? ''}_${effectiveFilter.status ?? 'all'}`;
 
-    return {
-      items,
-      page,
-      pageSize,
-      total,
-      totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    const cached = this.recipesCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const inFlight = this.recipesPromise.get(cacheKey);
+    if (inFlight) {
+      return inFlight;
+    }
+
+    const fetchPromise = (async () => {
+      const params = new URLSearchParams({
+        page: String(effectiveFilter.page ?? 1),
+        pageSize: String(clampedPageSize),
+      });
+      if (effectiveFilter.query?.trim()) params.set('query', effectiveFilter.query.trim());
+      if (effectiveFilter.status && effectiveFilter.status !== 'all') {
+        if (effectiveFilter.status === 'Archived') params.set('state', 'archived');
+        else if (effectiveFilter.status === 'Published') params.set('versionStatus', 'published');
+        else params.set('versionStatus', effectiveFilter.status.toLowerCase());
+      }
+      const response = record(
+        await requestJson(`api/v1/recipes?${params.toString()}`, this.actorId(actor), { method: 'GET' }),
+        'recipes page'
+      );
+      const page = numberValue(response.page, 'recipes page.page');
+      const pageSize = numberValue(response.pageSize, 'recipes page.pageSize');
+      const total = numberValue(response.totalCount, 'recipes page.totalCount');
+      const rawItems = array(response.items, 'recipes page.items');
+      const items = await Promise.all(
+        rawItems.map(async (raw) => {
+          const summary = mapRecipeSummary(raw);
+          const rawRec = record(raw, 'recipe raw item');
+          if (typeof rawRec.ingredientCount === 'number') {
+            return summary;
+          }
+          try {
+            const detail = mapRecipeDetail(await requestJson(
+              `api/v1/recipes/${summary.id}/versions/${summary.versionId}`, this.actorId(actor), { method: 'GET' }
+            ));
+            return {
+              ...detail,
+              id: summary.id,
+              recipeId: summary.recipeId,
+              versionId: summary.versionId || detail.versionId,
+              versionNumber: summary.versionNumber || detail.versionNumber,
+              versionLabel: summary.versionLabel || detail.versionLabel,
+              status: summary.status || detail.status,
+              name: summary.name || detail.name,
+              code: summary.code || detail.code,
+              primaryMediaAssetId: detail.primaryMediaAssetId || summary.primaryMediaAssetId,
+              creatorEmail: actor.email || detail.creatorEmail || 'rd@recipehub.demo',
+            };
+          } catch {
+            return summary;
+          }
+        })
+      );
+
+      const result: PaginatedResult<RecipeVersion> = {
+        items,
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      };
+      this.recipesCache.set(cacheKey, result);
+      return result;
+    })();
+
+    this.recipesPromise.set(cacheKey, fetchPromise);
+    const cleanup = () => {
+      if (this.recipesPromise.get(cacheKey) === fetchPromise) {
+        this.recipesPromise.delete(cacheKey);
+      }
     };
+    fetchPromise.then(cleanup, cleanup);
+    return fetchPromise;
   }
 
   override async getRecipeVersion(actor: SessionInfo, recipeId: string): Promise<RecipeVersion> {
@@ -752,6 +938,7 @@ export class BackendRepository extends DemoRepository {
       body: JSON.stringify(await this.recipePayload(data)),
     }));
     this.rememberDraftContext(recipe);
+    this.recipesCache.clear();
     return recipe;
   }
 
@@ -785,6 +972,7 @@ export class BackendRepository extends DemoRepository {
       })),
     }));
     this.rememberDraftContext(recipe);
+    this.recipesCache.clear();
     return recipe;
   }
 
@@ -795,6 +983,7 @@ export class BackendRepository extends DemoRepository {
       this.actorId(actor),
       { method: 'POST' }
     );
+    this.recipesCache.clear();
     return mapRecipeDetail(response);
   }
 
@@ -804,14 +993,17 @@ export class BackendRepository extends DemoRepository {
     newCode: string,
     newName: string
   ): Promise<RecipeVersion> {
-    return mapRecipeDetail(await requestJson(`api/v1/recipes/${recipeId}/copy`, this.actorId(actor), {
+    const copied = mapRecipeDetail(await requestJson(`api/v1/recipes/${recipeId}/copy`, this.actorId(actor), {
       method: 'POST',
       body: JSON.stringify({ code: newCode, name: newName }),
     }));
+    this.recipesCache.clear();
+    return copied;
   }
 
   override async archiveRecipe(actor: SessionInfo, recipeId: string): Promise<RecipeVersion> {
     await requestJson(`api/v1/recipes/${recipeId}`, this.actorId(actor), { method: 'DELETE' });
+    this.recipesCache.clear();
     return this.getRecipeVersion(actor, recipeId);
   }
 
@@ -819,18 +1011,56 @@ export class BackendRepository extends DemoRepository {
     const res = await requestJson(`api/v1/recipes/${recipeId}/activate`, this.actorId(actor), { method: 'PATCH' });
     const recipe = mapRecipeDetail(res);
     this.rememberDraftContext(recipe);
+    this.recipesCache.clear();
     return recipe;
   }
+  override async getMedia(
+    filter?: { source?: MediaSource; state?: MediaState },
+    signal?: AbortSignal
+  ): Promise<MediaAsset[]> {
+    const isDefault = !filter?.source && !filter?.state;
+    if (isDefault && this.mediaCache) {
+      return this.mediaCache;
+    }
 
-  override async getMedia(filter?: { source?: MediaSource; state?: MediaState }): Promise<MediaAsset[]> {
-    const params = new URLSearchParams({ page: '1', pageSize: '100' });
-    if (filter?.source) params.set('sourceType', filter.source === 'AiIllustration' ? 'ai_illustration' : 'real');
-    if (filter?.state) params.set('state', filter.state.toLowerCase());
-    const response = record(
-      await requestJson(`api/v1/content/media-assets?${params.toString()}`, null, { method: 'GET' }),
-      'media page'
-    );
-    return Promise.all(array(response.items, 'media page.items').map((item) => mapMediaAsset(item, null)));
+    const withAbort = <T>(promise: Promise<T>): Promise<T> => {
+      if (!signal) return promise;
+      if (signal.aborted) return Promise.reject(new DOMException('This operation was aborted', 'AbortError'));
+      const { promise: abortPromise, reject } = Promise.withResolvers<T>();
+      signal.addEventListener('abort', () => reject(new DOMException('This operation was aborted', 'AbortError')), { once: true });
+      return Promise.race([promise, abortPromise]);
+    };
+
+    if (isDefault && this.mediaPromise) {
+      return withAbort(this.mediaPromise);
+    }
+
+    const fetchPromise = (async () => {
+      const params = new URLSearchParams({ page: '1', pageSize: '100' });
+      if (filter?.source) params.set('sourceType', filter.source === 'AiIllustration' ? 'ai_illustration' : 'real');
+      if (filter?.state) params.set('state', filter.state.toLowerCase());
+      const response = record(
+        await requestJson(`api/v1/content/media-assets?${params.toString()}`, null, { method: 'GET' }),
+        'media page'
+      );
+      const items = array(response.items, 'media page.items').map((item) => mapMediaAsset(item));
+      if (isDefault) {
+        this.mediaCache = items;
+      }
+      return items;
+    })();
+
+    if (isDefault) {
+      this.mediaPromise = fetchPromise;
+      const clearIfSame = () => {
+        if (this.mediaPromise === fetchPromise) {
+          this.mediaPromise = null;
+        }
+      };
+      fetchPromise.then(clearIfSame, clearIfSame);
+    }
+
+    return withAbort(fetchPromise);
   }
 
   override async getMediaById(id: string): Promise<MediaAsset | null> {
@@ -851,23 +1081,13 @@ export class BackendRepository extends DemoRepository {
     }
     try {
       return mapMediaAsset(
-        await requestJson(`api/v1/content/media-assets/${id}`, null, { method: 'GET' }),
-        null
+        await requestJson(`api/v1/content/media-assets/${id}`, null, { method: 'GET' })
       );
-    } catch {
-      return {
-        id,
-        name: `ai-draft-${id}.png`,
-        mimeType: 'image/png',
-        sizeBytes: 0,
-        blob: new Blob(),
-        deliveryUrl: `/api/backend/api/v1/content/image-drafts/${id}/image`,
-        source: 'AiIllustration',
-        state: 'Active',
-        tags: [],
-        uploadedBy: '',
-        createdAt: new Date().toISOString(),
-      };
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) {
+        return null;
+      }
+      throw err;
     }
   }
 
@@ -883,10 +1103,12 @@ export class BackendRepository extends DemoRepository {
     const formData = new FormData();
     formData.append('file', file, filename);
     formData.append('originalFileName', filename);
-    return mapMediaAsset(await requestJson('api/v1/content/media-assets', this.actorId(actor), {
+    const uploaded = await requestJson('api/v1/content/media-assets', null, {
       method: 'POST',
       body: formData,
-    }), this.actorId(actor));
+    });
+    this.mediaCache = null;
+    return mapMediaAsset(uploaded);
   }
 
   override async getMediaReferences(mediaId: string): Promise<MediaReferenceInfo> {
@@ -941,7 +1163,7 @@ export class BackendRepository extends DemoRepository {
       throw new Error('Không xác định được recipe version. Hãy tải lại trang.');
     }
 
-    const created = record(await requestJson('api/v1/content/image-drafts', this.actorId(actor), {
+    const created = record(await requestJson('api/v1/content/image-drafts', null, {
       method: 'POST',
       body: JSON.stringify({
         recipeVersionId: resolvedVersionId,
@@ -974,22 +1196,21 @@ export class BackendRepository extends DemoRepository {
       });
       await new Promise<void>((resolve) => window.setTimeout(resolve, 1000));
       current = record(
-        await requestJson(`api/v1/content/image-drafts/${draftId}`, this.actorId(actor), { method: 'GET' }),
+        await requestJson(`api/v1/content/image-drafts/${draftId}`, null, { method: 'GET' }),
         'image draft'
       );
       if (attempt === 100) throw new Error('Quá thời gian chờ (100 giây). AI chưa hoàn tất sinh ảnh, vui lòng thử lại.');
     }
-    this.draftPreviews.set(
-      draftId,
-      await requestBlob(`api/v1/content/image-drafts/${draftId}/image`, this.actorId(actor), { method: 'GET' })
-    );
+    const blob = await requestBlob(`api/v1/content/image-drafts/${draftId}/image`, null, { method: 'GET' });
+    this.draftPreviews.set(draftId, blob);
+    const previewUrl = typeof window !== 'undefined' ? URL.createObjectURL(blob) : '';
     return {
       id: draftId,
       stepId: stepId ?? '',
       targetKind,
       prompt,
       mediaAssetId: draftId,
-      previewUrl: `/api/backend/api/v1/content/image-drafts/${draftId}/image`,
+      previewUrl,
       state: 'Generated',
       expiresAt: optionalText(current.expiresAt, 'image draft.expiresAt') ?? new Date(Date.now() + 1_800_000).toISOString(),
       createdAt: text(current.createdAt, 'image draft.createdAt'),
@@ -1003,18 +1224,18 @@ export class BackendRepository extends DemoRepository {
     stepId?: string | null
   ): Promise<string> {
     const accepted = record(
-      await requestJson(`api/v1/content/image-drafts/${candidateId}/accept`, this.actorId(actor), { method: 'POST' }),
+      await requestJson(`api/v1/content/image-drafts/${candidateId}/accept`, null, { method: 'POST' }),
       'accepted image draft'
     );
     const mediaAssetId = text(accepted.mediaAssetId, 'accepted image draft.mediaAssetId');
+    const deliveryUrl = optionalText(accepted.deliveryUrl, 'accepted image draft.deliveryUrl');
     const previewBlob = this.draftPreviews.get(candidateId);
     if (previewBlob) {
       this.draftPreviews.set(mediaAssetId, previewBlob);
     }
-    if (typeof window !== 'undefined') {
-      const draftUrl = `/api/backend/api/v1/content/image-drafts/${candidateId}/image`;
-      localStorage.setItem(`recipehub_media_url_${mediaAssetId}`, draftUrl);
-      localStorage.setItem(`recipehub_media_url_${candidateId}`, draftUrl);
+    if (typeof window !== 'undefined' && deliveryUrl) {
+      localStorage.setItem(`recipehub_media_url_${mediaAssetId}`, deliveryUrl);
+      localStorage.setItem(`recipehub_media_url_${candidateId}`, deliveryUrl);
     }
     const current = await this.getRecipeVersion(actor, recipeId);
 
@@ -1038,9 +1259,19 @@ export class BackendRepository extends DemoRepository {
   }
 
   override async discardAiCandidate(actor: SessionInfo, candidateId: string): Promise<void> {
-    await requestJson(`api/v1/content/image-drafts/${candidateId}/discard`, this.actorId(actor), { method: 'POST' });
+    await requestJson(`api/v1/content/image-drafts/${candidateId}/discard`, null, { method: 'POST' });
     this.draftPreviews.delete(candidateId);
+  }
+
+  clearPreviews(): void {
+    this.draftPreviews.clear();
   }
 }
 
 export const backendRepo = new BackendRepository();
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('recipehub:session-cleared', () => {
+    backendRepo.clearPreviews();
+  });
+}

@@ -7,6 +7,7 @@ import { useDemo } from '@/lib/demo/provider';
 import { Ingredient } from '@/lib/demo/types';
 import { Button, Select, Alert, SearchInput } from '@/components/workspace/fields';
 import { DataTable } from '@/components/workspace/data-table';
+import { UnitConversionModal } from '@/components/shared/UnitConversionModal';
 
 export default function RndIngredientsPage() {
   const { session, repo, dataVersion, touch } = useDemo();
@@ -34,7 +35,10 @@ export default function RndIngredientsPage() {
       setIngredients(data);
     } catch (err: unknown) {
       const e = err as Error;
-      setAlertNotice({ type: 'error', message: e.message || 'Lỗi tải nguyên liệu' });
+      const isAbort = e && (e.name === 'AbortError' || e.message?.includes('abort'));
+      if (!isAbort) {
+        setAlertNotice({ type: 'error', message: e.message || 'Lỗi tải nguyên liệu' });
+      }
     } finally {
       setLoading(false);
     }
@@ -53,7 +57,10 @@ export default function RndIngredientsPage() {
       })
       .catch((error: unknown) => {
         if (isMounted) {
-          setAlertNotice({ type: 'error', message: error instanceof Error ? error.message : 'Không thể tải phân nhóm nguyên liệu.' });
+          const isAbort = error instanceof Error && (error.name === 'AbortError' || error.message?.includes('abort'));
+          if (!isAbort) {
+            setAlertNotice({ type: 'error', message: error instanceof Error ? error.message : 'Không thể tải phân nhóm nguyên liệu.' });
+          }
         }
       });
     return () => {
@@ -208,7 +215,8 @@ export default function RndIngredientsPage() {
             Định nghĩa danh mục nguyên liệu tiêu chuẩn và đơn vị đo phục vụ xây dựng công thức.
           </p>
         </div>
-        <div>
+        <div className="flex items-center gap-2">
+          <UnitConversionModal />
           <Link href="/rnd/ingredients/new">
             <Button variant="gold" size="sm">
               <Plus className="w-4 h-4 mr-1" /> Thêm nguyên liệu

@@ -1,0 +1,48 @@
+Project RecipeHubIdentityDatabase {
+  database_type: 'PostgreSQL'
+  Note: 'Identity Service; không FK xuyên database. JWT có session ID, thu hồi ngay khi logout/khóa/đổi mật khẩu.'
+}
+
+Table identity_db.roles {
+  id smallint [pk]
+  code varchar(20) [not null, unique]
+  name text [not null]
+  description text
+  created_at timestamptz [not null, default: `now()`]
+}
+
+Table identity_db.users {
+  id uuid [pk]
+  email text [not null]
+  full_name text [not null]
+  password_hash text [not null]
+  role_id smallint [not null]
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  indexes {
+    (role_id, is_active) [name: 'users_role_active_idx']
+  }
+  checks {
+    `length(btrim(email)) > 3` [name: 'users_email_check']
+    `length(btrim(full_name)) > 0` [name: 'users_name_check']
+  }
+}
+
+Table identity_db.auth_sessions {
+  id uuid [pk]
+  user_id uuid [not null]
+  refresh_token_hash varchar(64) [not null, unique, note: 'SHA256; token thô không lưu DB. Concurrency token khi rotate.']
+  created_at timestamptz [not null, default: `now()`]
+  expires_at timestamptz [not null]
+  revoked_at timestamptz
+  indexes {
+    user_id [name: 'auth_sessions_user_idx']
+  }
+  checks {
+    `expires_at > created_at` [name: 'auth_sessions_expiry_check']
+  }
+}
+
+Ref: identity_db.users.role_id > identity_db.roles.id [delete: restrict]
+Ref: identity_db.auth_sessions.user_id > identity_db.users.id [delete: restrict]

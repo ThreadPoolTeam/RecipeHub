@@ -20,7 +20,8 @@ import {
   Check,
 } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
-import { RecipeVersion, Ingredient, MediaAsset } from '@/lib/demo/types';
+import { RecipeVersion, RecipeIngredient, Ingredient, MediaAsset } from '@/lib/demo/types';
+import { RecipeBatchScaler } from '@/components/recipes/RecipeBatchScaler';
 import { Button, TextInput, Alert } from '@/components/workspace/fields';
 import { StatusBadge } from '@/components/workspace/status-badge';
 import { Dialog } from '@/components/workspace/dialog';
@@ -34,10 +35,12 @@ export default function RecipeDetailPage() {
 
   const { session, repo, dataVersion, touch } = useDemo();
   const [recipe, setRecipe] = useState<RecipeVersion | null>(null);
+  const [scaledIngredients, setScaledIngredients] = useState<RecipeIngredient[] | null>(null);
   const [ingredientsMap, setIngredientsMap] = useState<Record<string, Ingredient>>({});
   const [mediaMap, setMediaMap] = useState<Record<string, string>>({}); // mediaId -> objectUrl
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [mediaWarning, setMediaWarning] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   // Version History State
@@ -61,11 +64,15 @@ export default function RecipeDetailPage() {
     if (!session || !id) return;
     let isMounted = true;
     setLoading(true);
+    setMediaWarning(null);
 
     Promise.all([
       repo.getRecipeVersion(session, id),
       repo.getIngredients(),
-      repo.getMedia(),
+      repo.getMedia().catch(() => {
+        if (isMounted) setMediaWarning('Chưa tải được media. Bạn vẫn có thể xem SOP và tính định lượng.');
+        return [] as MediaAsset[];
+      }),
       repo.getRecipeVersions(session, id),
     ])
       .then(([rec, allIngs, mediaList, versionList]) => {
@@ -379,7 +386,7 @@ export default function RecipeDetailPage() {
 
       {/* Archived Warning Banner */}
       {recipe.status === 'Archived' && (
-        <div className="p-4 bg-zinc-100 border border-zinc-300 rounded-lg flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+        <div className="p-4 bg-zinc-100 border border-zinc-300 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-2 text-zinc-700 text-sm">
             <Archive className="w-4 h-4 text-zinc-500" />
             <span>Công thức này đang ở trạng thái <strong>Lưu trữ</strong> và đang bị khóa chỉnh sửa.</span>
@@ -398,9 +405,7 @@ export default function RecipeDetailPage() {
           if (!coverUrl && typeof window !== 'undefined') {
             coverUrl = localStorage.getItem(`recipehub_media_url_${recipe.primaryMediaAssetId}`) || null;
           }
-          if (!coverUrl) {
-            coverUrl = `/api/backend/api/v1/content/image-drafts/${recipe.primaryMediaAssetId}/image`;
-          }
+
         }
         if (!coverUrl) {
           const versionId = recipe.versionId || recipe.id;
@@ -461,6 +466,8 @@ export default function RecipeDetailPage() {
         )}
       </div>
       {/* Ingredients Section */}
+      {mediaWarning && <Alert variant="warning">{mediaWarning}</Alert>}
+      <RecipeBatchScaler key={recipe.versionId ?? recipe.id} recipe={recipe} onScaled={setScaledIngredients} />
       <div className="bg-white border border-[#E8E2D9] rounded-xl p-5 space-y-3 shadow-xs">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-[#706E68] flex items-center justify-between">
           <span>Định lượng nguyên liệu ({recipe.ingredients.length})</span>
@@ -485,7 +492,7 @@ export default function RecipeDetailPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E8E2D9]">
-                {recipe.ingredients.map((item, index) => {
+                {(scaledIngredients ?? recipe.ingredients).map((item, index) => {
                   const ing = ingredientsMap[item.ingredientId];
                   return (
                     <tr key={index} className="hover:bg-[#FAF8F2] transition-colors">
@@ -533,7 +540,7 @@ export default function RecipeDetailPage() {
               return (
                 <div
                   key={step.id}
-                  className="bg-[#FAF9F5] border border-[#E8E2D9] rounded-lg p-4 space-y-2.5"
+                  className="bg-[#FAF9F5] border border-[#E8E2D9] rounded-xl p-4 space-y-2.5"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">

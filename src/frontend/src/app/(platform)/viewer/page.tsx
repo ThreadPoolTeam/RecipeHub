@@ -6,7 +6,7 @@ import { BookOpen, Search, Coffee, ArrowRight, Shield } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { RecipeVersion } from '@/lib/demo/types';
 import { TextInput, Alert, SearchInput } from '@/components/workspace/fields';
-import { StatusBadge } from '@/components/workspace/status-badge';
+import { StatusBadge, RoleBadge } from '@/components/workspace/status-badge';
 export default function ViewerPage() {
   const { session, currentUser, repo, dataVersion } = useDemo();
   const [recipes, setRecipes] = useState<RecipeVersion[]>([]);
@@ -52,23 +52,19 @@ export default function ViewerPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E2D9]">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-              Barista / Quầy Bar
-            </span>
-            <span className="text-xs text-[#706E68]">
-              Được cấp quyền:{' '}
-              <strong className="text-[#1A1917]">
-                {currentUser?.allowedRecipeIds?.length || 0} công thức
-              </strong>
-            </span>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#1A1917] flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-[#B47820]" /> Tra Cứu Quy Trình Pha Chế (SOP)
+          <h1 className="text-2xl font-bold text-[#1A1917] flex items-center gap-2.5">
+            <BookOpen className="w-6 h-6 text-[#B47820]" />
+            Tra Cứu Quy Trình Pha Chế (SOP)
           </h1>
-          <p className="text-xs sm:text-sm text-[#706E68] mt-0.5">
+          <p className="text-sm text-[#706E68] mt-1">
             Tra cứu nhanh thành phần, thao tác quầy bar và tài liệu kỹ thuật chuẩn.
           </p>
+        </div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <RoleBadge role="viewer" />
+          <span className="text-xs text-[#706E68] font-mono">
+            Được cấp quyền: <strong className="text-[#B47820] font-bold">{currentUser?.allowedRecipeIds?.length || 0}</strong> công thức
+          </span>
         </div>
       </div>
 

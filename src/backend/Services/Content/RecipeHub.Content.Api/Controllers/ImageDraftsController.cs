@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RecipeHub.Content.Application.DTOs;
 using RecipeHub.Content.Application.Interfaces;
@@ -6,6 +7,7 @@ namespace RecipeHub.Content.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/content/image-drafts")]
+[Authorize(Policy = "ContentEditors")]
 public sealed class ImageDraftsController : ControllerBase
 {
     private readonly IImageDraftService _draftService;
@@ -20,8 +22,7 @@ public sealed class ImageDraftsController : ControllerBase
         [FromBody] CreateDraftRequest request,
         CancellationToken ct)
     {
-        var userId = RequestActor.GetUserId(HttpContext);
-        var response = await _draftService.CreateDraftAsync(request, userId, ct);
+        var response = await _draftService.CreateDraftAsync(request, ct);
         return Accepted($"/api/v1/content/image-drafts/{response.DraftId}", response);
     }
 
@@ -72,8 +73,7 @@ public sealed class ImageDraftsController : ControllerBase
         [FromBody] RegenerateDraftRequest request,
         CancellationToken ct)
     {
-        var userId = RequestActor.GetUserId(HttpContext);
-        var response = await _draftService.RegenerateDraftAsync(draftId, request, userId, ct);
+        var response = await _draftService.RegenerateDraftAsync(draftId, request, ct);
         return Accepted($"/api/v1/content/image-drafts/{response.DraftId}", response);
     }
 
@@ -82,8 +82,7 @@ public sealed class ImageDraftsController : ControllerBase
         [FromRoute] Guid draftId,
         CancellationToken ct)
     {
-        var userId = RequestActor.GetUserId(HttpContext);
-        var response = await _draftService.AcceptDraftAsync(draftId, userId, ct);
+        var response = await _draftService.AcceptDraftAsync(draftId, ct);
         return Ok(response);
     }
 
@@ -92,8 +91,7 @@ public sealed class ImageDraftsController : ControllerBase
         [FromRoute] Guid draftId,
         CancellationToken ct)
     {
-        var userId = RequestActor.GetUserId(HttpContext);
-        var response = await _draftService.DiscardDraftAsync(draftId, userId, ct);
+        var response = await _draftService.DiscardDraftAsync(draftId, ct);
         return Ok(response);
     }
 }

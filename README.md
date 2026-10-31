@@ -1,8 +1,10 @@
-# RecipeHub - Coffee R&D Formula Management System (Foundation Shell)
+# RecipeHub - Coffee R&D Formula Management System
 
 Dự án môn học PRN232 / PRM Semester 8: Khung kiến trúc kỹ thuật microservices nền tảng (Foundation Skeleton).
 
-> **LƯU Ý QUAN TRỌNG:** Đây là bộ khung kỹ thuật nền tảng (Technical Architecture Skeleton) nhằm kiểm tra và chứng minh việc tích hợp các công nghệ yêu cầu (.NET 8 Clean Architecture, YARP Gateway, gRPC, Redis Streams, PostgreSQL, Next.js App Router). Toàn bộ nghiệp vụ công thức, quy trình phê duyệt R&D, đăng nhập JWT thực tế và các thao tác CRUD dữ liệu được trì hoãn sang các phase nghiệp vụ tiếp theo.
+Tasks 1.1–1.8 có JWT session thật, Users RBAC/khóa/mật khẩu, catalog/nguyên liệu, SOP, scale mẻ, totals và quy đổi đơn vị qua Gateway. Xem [đối chiếu và triển khai](docs/plans/261028-tasks-1.1-1.8/implementation.md). Frontend hiện dùng Next.js 16 / React 19.
+
+Development: `admin@recipehub.demo`, `rd@recipehub.demo`, `viewer@recipehub.demo` dùng `Demo@1234` khi bật seed. Sáu tài khoản legacy giữ email/password hash cũ; Viewer chỉ xem công thức đã publish và được Admin cấp quyền. Production phải cấu hình `Jwt__SigningKey` ít nhất 32 bytes và áp dụng SQL phù hợp với trạng thái DB trước khi khởi động; không bật seed demo.
 
 ---
 
@@ -23,15 +25,16 @@ RecipeHub/
 │   │   │   ├── Identity/ (Domain, Application, Infrastructure, Api)
 │   │   │   ├── Recipe/   (Domain, Application, Infrastructure, Api)
 │   │   │   ├── Content/  (Domain, Application, Infrastructure, Api)
-│   │   │   └── Audit/    (Domain, Application, Infrastructure, Api)
+│   │   │   ├── Audit/    (Domain, Application, Infrastructure, Api)
+│   │   │   └── Quiz/     (Domain, Application, Infrastructure, Api)
 │   │   └── Workers/
 │   │       └── RecipeHub.BackgroundWorker/       # Redis Streams consumer with MKSTREAM & ACK
 │   └── frontend/
-│       └── recipehub-web/                        # Next.js 14 App Router (Standalone output)
+│       └── src/                                  # Next.js 16 App Router (Standalone output)
 ├── infra/
 │   ├── compose.yaml                              # Docker Compose full-stack orchestration
 │   └── postgres/
-│       └── init-databases.sh                     # Khởi tạo 4 database logic riêng biệt
+│   │       └── init-databases.sh                     # Khởi tạo 5 database logic riêng biệt
 ├── tests/
 │   └── smoke/
 │       └── smoke-test.sh                         # Kịch bản kiểm thử tích hợp tự động
@@ -68,11 +71,21 @@ RecipeHub/
    ```
 2. **Build & Start Frontend:**
    ```bash
-   cd src/frontend/recipehub-web
+   cd src/frontend
    npm run build
    npm start
    ```
+### Tối ưu hóa Trải nghiệm Điều hướng Frontend (UX Navigation & Prefetching)
+- **Next.js Link Prefetching (`prefetch={true}`):** Toàn bộ các mục điều hướng chính trên sidebar (`WorkspaceShell`) được cấu hình `prefetch={true}`. Trình duyệt chủ động nạp trước các route chunk của sidebar, giúp việc chuyển đổi giữa các không gian làm việc (R&D, Viewer, Admin) phản hồi ngay khi nhấp chuột.
+- **Route Segment Loading Boundary (`(platform)/loading.tsx`):** Vùng nội dung công tác sử dụng khung skeleton phản hồi tức thì khi phân đoạn route đích đang nạp, giữ nguyên sidebar ổn định và loại bỏ hiện tượng giữ giao diện cũ khi chuyển trang.
+- **In-Memory Caching & Deduplication:** Lớp repository frontend (`BackendRepository`) duy trì bộ nhớ đệm tạm thời cho danh sách nguyên liệu và công thức, triệt tiêu các lượt gọi API lặp lại khi chuyển đổi qua lại giữa các tab làm việc.
 
+### Quản lý schema theo DB First
+
+- Thiết kế và SQL có version nằm trong `docs/database-schema/`. Xem hướng dẫn [Identity](docs/database-schema/identity-db/README.md) và [Recipe](docs/database-schema/recipe-db/README.md).
+- File `.postgres` chỉ khởi tạo database trống. Database có dữ liệu dùng SQL nâng cấp đúng trạng thái nguồn, sau backup và restore thử; không chạy lại DDL khởi tạo.
+- Không dùng EF Code First migrations hoặc `dotnet ef database update`. Giữ nguyên `__EFMigrationsHistory` đã có như lịch sử; SQL mới không chèn hoặc sửa lịch sử EF.
+- Việc chuyển migration trong source sang SQL không có nghĩa SQL đã áp dụng lên DB đang chạy hoặc toàn bộ cutover DB First đã hoàn tất. Trạng thái triển khai theo [plan DB First](docs/plans/261029-db-first-cutover/plan.md).
 ---
 
 ## 3. Bản đồ Cổng & Tuyến đường (Routing Map)
@@ -85,18 +98,18 @@ RecipeHub/
 | | | - `/api/v1/recipes/*`  -> `Recipe.Api` |
 | | | - `/api/v1/content/*`  -> `Content.Api` |
 | | | - `/api/v1/audit/*`    -> `Audit.Api` |
-| **Identity Service** | `5001` (nội bộ) | Health & Quản lý danh tính shell |
-| **Recipe Service** | `5002` (nội bộ) | Health, gRPC Server (`ServiceProbe.Ping`), Redis publish dev trigger |
+| **Identity Service** | `5001` REST, `5011` gRPC (nội bộ) | JWT/session, Users RBAC, Swagger Development |
+| **Recipe Service** | `5002` REST, `5012` gRPC (nội bộ) | Catalog, ingredient, recipe/SOP, scale/totals/convert, Swagger Development |
 | **Content Service** | `5003` (nội bộ) | Health & gRPC Client gọi sang Recipe Service (`/api/v1/content/probe-recipe`) |
 | **Audit Service** | `5004` (nội bộ) | Health & Audit log shell |
 | **Background Worker**| - | Lắng nghe & ACK Redis Stream `platform.heartbeat.v1` |
-| **PostgreSQL** | `5432` | 4 CSDL: `recipehub_identity`, `recipehub_recipe`, `recipehub_content`, `recipehub_audit` |
-| **Redis** | `6379` | Message broker Redis Streams |
+| **PostgreSQL** | Host `5433` → container `5432` | 4 CSDL: `recipehub_identity`, `recipehub_recipe`, `recipehub_content`, `recipehub_audit` |
+| **Redis** | Host `6380` → container `6379` | Message broker Redis Streams |
 
 ---
 
 ## 4. Backlog trì hoãn (Deferred Work cho các phase sau)
-- Triển khai Entity Framework Core DbContext và Migrations với bảng dữ liệu công thức, nguyên liệu.
+- Hoàn tất DB First: SQL schema có version, entity và mapping trong `Data` cập nhật theo DB, kiểm chứng cutover theo plan; không dùng EF Code First migrations, không bắt buộc scaffold.
 - Xử lý nghiệp vụ REST CRUD: Quản lý công thức, phiên bản công thức, quy trình phê duyệt R&D.
 - Cơ chế xác thực JWT Login / Refresh Token và Authorize Policies (RBAC) thực tế.
 - Đồng bộ trạng thái ngoại tuyến và messaging reliability dùng chung. Outbox/Redis Streams cho Content đã chọn ở mục 5 nhưng chưa triển khai; không phải hạ tầng outbox toàn nền tảng đã có.

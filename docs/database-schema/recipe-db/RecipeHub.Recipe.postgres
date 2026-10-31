@@ -210,11 +210,11 @@ CREATE INDEX "recipe_step_media_order_idx" ON "recipe_db"."recipe_step_media" ("
 
 CREATE INDEX "recipe_step_media_reference_idx" ON "recipe_db"."recipe_step_media" ("media_asset_ref");
 
-COMMENT ON TABLE "recipe_db"."unit_category" IS 'Nhóm phân loại đơn vị hiển thị; MVP không tự động quy đổi đơn vị.';
+COMMENT ON TABLE "recipe_db"."unit_category" IS 'Nhóm phân loại đơn vị; API quy đổi metric chỉ chấp nhận cùng nhóm và cùng đại lượng vật lý. Phép tính không ghi DB.';
 
 COMMENT ON COLUMN "recipe_db"."unit_category"."state" IS 'active hoặc inactive.';
 
-COMMENT ON TABLE "recipe_db"."unit" IS 'Đơn vị hiển thị thuộc một nhóm; MVP không tự động quy đổi đơn vị.';
+COMMENT ON TABLE "recipe_db"."unit" IS 'Đơn vị thuộc một nhóm. Quy đổi metric mg/g/kg và ml/cl/dl/l dùng hệ số vật lý cố định; đơn vị khác chỉ đổi sang chính nó. Không suy đoán cup/shot hoặc khối lượng sang thể tích.';
 
 COMMENT ON COLUMN "recipe_db"."unit"."decimal_places" IS 'Số chữ số thập phân khi làm tròn.';
 
@@ -275,27 +275,27 @@ COMMENT ON COLUMN "recipe_db"."recipe_step_media"."public_id" IS 'ID công khai 
 
 COMMENT ON COLUMN "recipe_db"."recipe_step_media"."media_asset_ref" IS 'MediaAsset public ID từ Content Service; không tạo FK xuyên database.';
 
-ALTER TABLE "recipe_db"."unit" ADD CONSTRAINT "unit_category" FOREIGN KEY ("category_id") REFERENCES "recipe_db"."unit_category" ("id") ON DELETE RESTRICT DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "recipe_db"."unit" ADD CONSTRAINT "unit_category" FOREIGN KEY ("category_id") REFERENCES "recipe_db"."unit_category" ("id") ON DELETE RESTRICT;
 
-ALTER TABLE "recipe_db"."ingredient" ADD CONSTRAINT "ingredient_category" FOREIGN KEY ("category_id") REFERENCES "recipe_db"."ingredient_category" ("id") ON DELETE RESTRICT DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "recipe_db"."ingredient" ADD CONSTRAINT "ingredient_category" FOREIGN KEY ("category_id") REFERENCES "recipe_db"."ingredient_category" ("id") ON DELETE RESTRICT;
 
-ALTER TABLE "recipe_db"."ingredient" ADD CONSTRAINT "ingredient_default_unit" FOREIGN KEY ("default_unit_id") REFERENCES "recipe_db"."unit" ("id") ON DELETE RESTRICT DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "recipe_db"."ingredient" ADD CONSTRAINT "ingredient_default_unit" FOREIGN KEY ("default_unit_id") REFERENCES "recipe_db"."unit" ("id") ON DELETE RESTRICT;
 
-ALTER TABLE "recipe_db"."recipe_version" ADD CONSTRAINT "recipe_version_recipe" FOREIGN KEY ("recipe_id") REFERENCES "recipe_db"."recipe" ("id") ON DELETE RESTRICT DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "recipe_db"."recipe_version" ADD CONSTRAINT "recipe_version_recipe" FOREIGN KEY ("recipe_id") REFERENCES "recipe_db"."recipe" ("id") ON DELETE RESTRICT;
 
-ALTER TABLE "recipe_db"."recipe_yield" ADD CONSTRAINT "recipe_yield_version" FOREIGN KEY ("recipe_version_id") REFERENCES "recipe_db"."recipe_version" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "recipe_db"."recipe_yield" ADD CONSTRAINT "recipe_yield_version" FOREIGN KEY ("recipe_version_id") REFERENCES "recipe_db"."recipe_version" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "recipe_db"."recipe_yield" ADD CONSTRAINT "recipe_yield_unit" FOREIGN KEY ("unit_id") REFERENCES "recipe_db"."unit" ("id") ON DELETE RESTRICT DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "recipe_db"."recipe_yield" ADD CONSTRAINT "recipe_yield_unit" FOREIGN KEY ("unit_id") REFERENCES "recipe_db"."unit" ("id") ON DELETE RESTRICT;
 
-ALTER TABLE "recipe_db"."recipe_ingredient" ADD CONSTRAINT "recipe_ingredient_version" FOREIGN KEY ("recipe_version_id") REFERENCES "recipe_db"."recipe_version" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "recipe_db"."recipe_ingredient" ADD CONSTRAINT "recipe_ingredient_version" FOREIGN KEY ("recipe_version_id") REFERENCES "recipe_db"."recipe_version" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "recipe_db"."recipe_ingredient" ADD CONSTRAINT "recipe_ingredient_master" FOREIGN KEY ("ingredient_id") REFERENCES "recipe_db"."ingredient" ("id") ON DELETE RESTRICT DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "recipe_db"."recipe_ingredient" ADD CONSTRAINT "recipe_ingredient_master" FOREIGN KEY ("ingredient_id") REFERENCES "recipe_db"."ingredient" ("id") ON DELETE RESTRICT;
 
-ALTER TABLE "recipe_db"."recipe_ingredient" ADD CONSTRAINT "recipe_ingredient_unit" FOREIGN KEY ("unit_id") REFERENCES "recipe_db"."unit" ("id") ON DELETE RESTRICT DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "recipe_db"."recipe_ingredient" ADD CONSTRAINT "recipe_ingredient_unit" FOREIGN KEY ("unit_id") REFERENCES "recipe_db"."unit" ("id") ON DELETE RESTRICT;
 
-ALTER TABLE "recipe_db"."recipe_step" ADD CONSTRAINT "recipe_step_version" FOREIGN KEY ("recipe_version_id") REFERENCES "recipe_db"."recipe_version" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "recipe_db"."recipe_step" ADD CONSTRAINT "recipe_step_version" FOREIGN KEY ("recipe_version_id") REFERENCES "recipe_db"."recipe_version" ("id") ON DELETE CASCADE;
 
-ALTER TABLE "recipe_db"."recipe_step_media" ADD CONSTRAINT "recipe_step_media_step" FOREIGN KEY ("recipe_step_id") REFERENCES "recipe_db"."recipe_step" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "recipe_db"."recipe_step_media" ADD CONSTRAINT "recipe_step_media_step" FOREIGN KEY ("recipe_step_id") REFERENCES "recipe_db"."recipe_step" ("id") ON DELETE CASCADE;
 
 -- Partial unique indexes required by business rules
 CREATE UNIQUE INDEX IF NOT EXISTS "recipe_step_one_primary_media_uidx" ON "recipe_db"."recipe_step_media" ("recipe_step_id") WHERE is_primary = true;

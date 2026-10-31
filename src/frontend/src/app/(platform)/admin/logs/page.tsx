@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { ShieldCheck } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { AuditEntry } from '@/lib/demo/types';
 import { Button, TextInput, SearchInput, Select } from '@/components/workspace/fields';
 import { DataTable } from '@/components/workspace/data-table';
 import { RoleBadge } from '@/components/workspace/status-badge';
 import { Dialog } from '@/components/workspace/dialog';
+import { ScrollText } from 'lucide-react';
 
 export default function AdminAuditLogsPage() {
   const { repo, dataVersion } = useDemo();
@@ -108,12 +108,11 @@ export default function AdminAuditLogsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E2D9]">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#FAF9F5] text-[#706E68] border border-[#E8E2D9] mb-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#B47820]" />
-            <span>Unalterable Audit Trail</span>
-          </div>
-          <h1 className="text-2xl font-bold text-[#1A1917]">Nhật ký Truy vết Hoạt động</h1>
-          <p className="text-[#706E68] text-xs mt-1">
+          <h1 className="text-2xl font-bold text-[#1A1917] flex items-center gap-2.5">
+            <ScrollText className="w-6 h-6 text-[#B47820]" />
+            Nhật ký Truy vết Hoạt động
+          </h1>
+          <p className="text-[#706E68] text-sm mt-1">
             Ghi nhận toàn bộ thao tác đăng nhập, chỉnh sửa, phát hành công thức và thay đổi thiết lập hệ thống.
           </p>
         </div>

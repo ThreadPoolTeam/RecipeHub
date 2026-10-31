@@ -21,6 +21,7 @@ import { useDemo } from '@/lib/demo/provider';
 import { RecipeVersion } from '@/lib/demo/types';
 import { Button } from '@/components/workspace/fields';
 import { StatusBadge } from '@/components/workspace/status-badge';
+import { ChangePasswordModal } from '@/components/shared/ChangePasswordModal';
 
 export default function ProfilePage() {
   const { session, currentUser, repo, dataVersion } = useDemo();
@@ -83,6 +84,7 @@ export default function ProfilePage() {
           Hồ sơ Chuyên viên R&amp;D • RecipeHub Profile
         </div>
         <div className="flex items-center gap-2">
+          <ChangePasswordModal />
           <Button
             variant="secondary"
             size="sm"

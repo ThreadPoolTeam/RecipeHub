@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\RecipeHub.Quiz.Infrastructure\RecipeHub.Quiz.Infrastructure.csproj" />
+    <ProjectReference Include="..\RecipeHub.Quiz.Application\RecipeHub.Quiz.Application.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\RecipeHub.BuildingBlocks\RecipeHub.BuildingBlocks.csproj" />
+    <ProjectReference Include="..\..\..\Contracts\RecipeHub.GrpcContracts\RecipeHub.GrpcContracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11" PrivateAssets="all" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>quiz-service-user-secrets-261031</UserSecretsId>
+  </PropertyGroup>
+
+</Project>

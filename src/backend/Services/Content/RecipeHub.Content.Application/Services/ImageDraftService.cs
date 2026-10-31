@@ -15,6 +15,7 @@ public sealed class ImageDraftService : IImageDraftService
     private readonly ITemporaryImageStore _temporaryImageStore;
     private readonly IMediaStorage _mediaStorage;
     private readonly IRecipeContextClient _recipeContextClient;
+    private readonly IContentCallerContext _callerContext;
 
     public ImageDraftService(
         IImageDraftRepository draftRepository,
@@ -23,7 +24,8 @@ public sealed class ImageDraftService : IImageDraftService
         IContentUnitOfWork unitOfWork,
         ITemporaryImageStore temporaryImageStore,
         IMediaStorage mediaStorage,
-        IRecipeContextClient recipeContextClient)
+        IRecipeContextClient recipeContextClient,
+        IContentCallerContext callerContext)
     {
         _draftRepository = draftRepository;
         _mediaAssetRepository = mediaAssetRepository;
@@ -32,19 +34,26 @@ public sealed class ImageDraftService : IImageDraftService
         _temporaryImageStore = temporaryImageStore;
         _mediaStorage = mediaStorage;
         _recipeContextClient = recipeContextClient;
+        _callerContext = callerContext;
     }
 
-    public async Task<DraftDetailResponse> CreateDraftAsync(CreateDraftRequest request, Guid userId, CancellationToken ct = default)
+    private Guid GetActorUserId()
     {
+        var userId = _callerContext.UserId;
+        return userId != Guid.Empty
+            ? userId
+            : throw new UnauthorizedAccessException("Cần JWT session Identity hợp lệ.");
+    }
+    public async Task<DraftDetailResponse> CreateDraftAsync(CreateDraftRequest request, CancellationToken ct = default)
+    {
+        var userId = GetActorUserId();
         ValidateCreateRequest(request);
 
         var context = await _recipeContextClient.GetRecipeAiContextAsync(
             request.RecipeVersionId,
             request.RecipeStepId,
             request.TargetKind,
-            userId,
             ct);
-
         if (!context.IsSuccess)
         {
             switch (context.ErrorCode)
@@ -204,8 +213,9 @@ public sealed class ImageDraftService : IImageDraftService
         };
     }
 
-    public async Task<DraftDetailResponse> RegenerateDraftAsync(Guid draftId, RegenerateDraftRequest request, Guid userId, CancellationToken ct = default)
+    public async Task<DraftDetailResponse> RegenerateDraftAsync(Guid draftId, RegenerateDraftRequest request, CancellationToken ct = default)
     {
+        var userId = GetActorUserId();
         var existingDraft = await _draftRepository.GetByPublicIdAsync(draftId, ct);
         if (existingDraft == null)
         {
@@ -216,9 +226,7 @@ public sealed class ImageDraftService : IImageDraftService
             existingDraft.RecipeVersionRef,
             existingDraft.RecipeStepRef,
             existingDraft.TargetKind,
-            userId,
             ct);
-
         if (!context.IsSuccess)
         {
             throw new ValidationException(context.ErrorMessage ?? "Failed to acquire recipe AI context for regeneration.");
@@ -268,8 +276,9 @@ public sealed class ImageDraftService : IImageDraftService
         return MapToDetail(newDraft);
     }
 
-    public async Task<AcceptDraftResponse> AcceptDraftAsync(Guid draftId, Guid userId, CancellationToken ct = default)
+    public async Task<AcceptDraftResponse> AcceptDraftAsync(Guid draftId, CancellationToken ct = default)
     {
+        var userId = GetActorUserId();
         var draft = await _draftRepository.GetByPublicIdAsync(draftId, ct);
         if (draft == null)
         {
@@ -407,8 +416,9 @@ public sealed class ImageDraftService : IImageDraftService
         };
     }
 
-    public async Task<DraftDetailResponse> DiscardDraftAsync(Guid draftId, Guid userId, CancellationToken ct = default)
+    public async Task<DraftDetailResponse> DiscardDraftAsync(Guid draftId, CancellationToken ct = default)
     {
+        var userId = GetActorUserId();
         var draft = await _draftRepository.GetByPublicIdAsync(draftId, ct);
         if (draft == null)
         {

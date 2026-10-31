@@ -10,6 +10,14 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>d97ecf04-3ad3-49e4-8077-4b919e63292b</UserSecretsId>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Contracts\RecipeHub.GrpcContracts\RecipeHub.GrpcContracts.csproj" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.66.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11" PrivateAssets="all" />
+  </ItemGroup>
 
 </Project>

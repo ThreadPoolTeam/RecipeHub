@@ -17,6 +17,7 @@ import {
 import { useDemo } from '@/lib/demo/provider';
 import {
   RecipeVersion,
+  RecipeIngredient,
   Ingredient,
   MediaAsset,
   PublishedDocument,
@@ -24,6 +25,7 @@ import {
 import { Button, Alert } from '@/components/workspace/fields';
 import { StatusBadge, MediaSourceBadge } from '@/components/workspace/status-badge';
 import { downloadPdfBlob } from '@/lib/demo/pdf-export';
+import { RecipeBatchScaler } from '@/components/recipes/RecipeBatchScaler';
 
 export default function ViewerRecipeDetailPage() {
   const params = useParams();
@@ -33,6 +35,7 @@ export default function ViewerRecipeDetailPage() {
   const { session, repo, dataVersion } = useDemo();
 
   const [recipe, setRecipe] = useState<RecipeVersion | null>(null);
+  const [scaledIngredients, setScaledIngredients] = useState<RecipeIngredient[] | null>(null);
   const [ingredientsMap, setIngredientsMap] = useState<Record<string, Ingredient>>({});
   const [mediaMap, setMediaMap] = useState<Record<string, MediaAsset>>({});
   const [mediaUrls, setMediaUrls] = useState<Record<string, string>>({});
@@ -41,23 +44,24 @@ export default function ViewerRecipeDetailPage() {
   const [loading, setLoading] = useState(true);
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [mediaWarning, setMediaWarning] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
+    const createdBlobUrls: string[] = [];
     if (!id || !session) return;
-
     setLoading(true);
     setPermissionDenied(false);
     setErrorMsg(null);
+    setMediaWarning(null);
 
     Promise.all([
       repo.getRecipeVersion(session, id),
       repo.getIngredients(),
-      repo.getMedia(),
       repo.getPublishedDocument(id),
     ])
-      .then(([rec, ings, mediaList, pubDoc]) => {
+      .then(async ([rec, ings, pubDoc]) => {
         if (!isMounted) return;
 
         setRecipe(rec);
@@ -67,23 +71,51 @@ export default function ViewerRecipeDetailPage() {
           ingMap[ing.id] = ing;
         });
         setIngredientsMap(ingMap);
+        setPublishedDoc(pubDoc);
+
+        const mediaIds = new Set<string>();
+        if (rec.primaryMediaAssetId) mediaIds.add(rec.primaryMediaAssetId);
+        rec.steps?.forEach((step) => {
+          if (step.coverMediaAssetId) mediaIds.add(step.coverMediaAssetId);
+          step.mediaAssetIds?.forEach((mId) => mediaIds.add(mId));
+        });
 
         const mMap: Record<string, MediaAsset> = {};
         const urls: Record<string, string> = {};
-        mediaList.forEach((m) => {
-          mMap[m.id] = m;
-          if (m.blob) {
-            urls[m.id] = URL.createObjectURL(m.blob);
+
+
+        if (mediaIds.size > 0) {
+          const results = await Promise.allSettled(
+            Array.from(mediaIds).map((mId) => repo.getMediaById(mId))
+          );
+          if (!isMounted) return;
+          results.forEach((res) => {
+            if (res.status === 'fulfilled' && res.value) {
+              const m = res.value;
+              mMap[m.id] = m;
+              if (m.blob && m.blob.size > 0) {
+                const bUrl = URL.createObjectURL(m.blob);
+                createdBlobUrls.push(bUrl);
+                urls[m.id] = bUrl;
+              } else if (m.deliveryUrl) {
+                urls[m.id] = m.deliveryUrl;
+              }
+            }
+          });
+          if (results.some((res) => res.status === 'rejected') && isMounted) {
+            setMediaWarning('Chưa tải được một số hình ảnh. Bạn vẫn có thể xem SOP và tính định lượng.');
           }
-        });
+        }
+        if (!isMounted) {
+          createdBlobUrls.forEach((url) => URL.revokeObjectURL(url));
+          return;
+        }
         setMediaMap(mMap);
         setMediaUrls(urls);
-
-        setPublishedDoc(pubDoc);
       })
       .catch((err) => {
         if (!isMounted) return;
-        if (err?.code === 'Forbidden' || err?.message?.toLowerCase().includes('quyền')) {
+        if (err?.status === 403 || err?.code === 'Forbidden' || err?.message?.toLowerCase().includes('quyền')) {
           setPermissionDenied(true);
         } else {
           setErrorMsg(err.message || 'Không thể tải chi tiết công thức');
@@ -95,7 +127,9 @@ export default function ViewerRecipeDetailPage() {
 
     return () => {
       isMounted = false;
-      Object.values(mediaUrls).forEach((url) => URL.revokeObjectURL(url));
+      createdBlobUrls.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
     };
   }, [id, session, repo, dataVersion]);
 
@@ -271,6 +305,8 @@ export default function ViewerRecipeDetailPage() {
       </div>
 
       {/* Ingredients Section */}
+      {mediaWarning && <Alert variant="warning">{mediaWarning}</Alert>}
+      <RecipeBatchScaler key={recipe.versionId ?? recipe.id} recipe={recipe} onScaled={setScaledIngredients} />
       <div className="bg-white border border-[#E8E2D9] rounded-2xl p-6 sm:p-8 shadow-xs">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2.5">
@@ -296,7 +332,7 @@ export default function ViewerRecipeDetailPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E8E2D9] text-[#1A1917]">
-              {recipe.ingredients.map((item, idx) => {
+              {(scaledIngredients ?? recipe.ingredients).map((item, idx) => {
                 const ingInfo = ingredientsMap[item.ingredientId];
                 return (
                   <tr key={`${item.ingredientId}_${idx}`} className="hover:bg-[#FAF9F5] transition">

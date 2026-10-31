@@ -1,0 +1,622 @@
+Project RecipeHub {
+  database_type: 'PostgreSQL'
+  Note: 'RecipeHub Architecture: 3 Service Databases chính thức (Identity, Recipe, Content) + Đề xuất Quiz (Conceptual theo SRS 6.2). Không tạo FK vật lý xuyên database.'
+}
+
+// ============================================================================
+// 1. IDENTITY SERVICE (identity_db)
+// Nguồn gốc: docs/database-schema/identity-db/RecipeHub.Identity.dbml
+// ============================================================================
+
+Table identity_db.roles {
+  id smallint [pk]
+  code varchar(20) [not null, unique]
+  name text [not null]
+  description text
+  created_at timestamptz [not null, default: `now()`]
+}
+
+Table identity_db.users {
+  id uuid [pk]
+  email text [not null]
+  full_name text [not null]
+  password_hash text [not null]
+  role_id smallint [not null]
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  indexes {
+    (role_id, is_active) [name: 'users_role_active_idx']
+  }
+  checks {
+    `length(btrim(email)) > 3` [name: 'users_email_check']
+    `length(btrim(full_name)) > 0` [name: 'users_name_check']
+  }
+}
+
+Table identity_db.auth_sessions {
+  id uuid [pk]
+  user_id uuid [not null]
+  refresh_token_hash varchar(64) [not null, unique, note: 'SHA256; token thô không lưu DB. Concurrency token khi rotate.']
+  created_at timestamptz [not null, default: `now()`]
+  expires_at timestamptz [not null]
+  revoked_at timestamptz
+  indexes {
+    user_id [name: 'auth_sessions_user_idx']
+  }
+  checks {
+    `expires_at > created_at` [name: 'auth_sessions_expiry_check']
+  }
+}
+
+Ref: identity_db.users.role_id > identity_db.roles.id [delete: restrict]
+Ref: identity_db.auth_sessions.user_id > identity_db.users.id [delete: restrict]
+
+// ============================================================================
+// 2. RECIPE SERVICE (recipe_db)
+// Nguồn gốc: docs/database-schema/recipe-db/RecipeHub.Recipe.dbml
+// ============================================================================
+
+// Categories determine which units can be converted or added together.
+Table recipe_db.unit_category {
+  id bigint [pk, increment]
+  public_id uuid [not null, unique]
+  code text [not null]
+  normalized_code text [not null, unique]
+  name text [not null]
+  normalized_name text [not null, unique]
+  description text
+  state text [not null, default: 'active', note: 'active hoặc inactive.']
+  created_by_user_ref uuid [not null]
+  updated_by_user_ref uuid [not null]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    state [name: 'unit_category_state_idx']
+  }
+
+  checks {
+    `state IN ('active', 'inactive')` [name: 'unit_category_state_check']
+  }
+
+  Note: 'Nhóm phân loại đơn vị; API quy đổi metric chỉ chấp nhận cùng nhóm và cùng đại lượng vật lý. Phép tính không ghi DB.'
+}
+
+// Display units grouped by category.
+Table recipe_db.unit {
+  id bigint [pk, increment]
+  public_id uuid [not null, unique]
+  code text [not null]
+  normalized_code text [not null, unique]
+  name text [not null]
+  category_id bigint [not null]
+  decimal_places smallint [not null, default: 2, note: 'Số chữ số thập phân khi làm tròn.']
+  state text [not null, default: 'active']
+  created_by_user_ref uuid [not null]
+  updated_by_user_ref uuid [not null]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (category_id, state) [name: 'unit_category_usage_state_idx']
+  }
+
+  checks {
+    `decimal_places BETWEEN 0 AND 6` [name: 'unit_decimal_places_check']
+    `state IN ('active', 'inactive')` [name: 'unit_state_check']
+  }
+
+  Note: 'Đơn vị thuộc một nhóm. Quy đổi metric mg/g/kg và ml/cl/dl/l dùng hệ số vật lý cố định; đơn vị khác chỉ đổi sang chính nó. Không suy đoán cup/shot hoặc khối lượng sang thể tích.'
+}
+
+// Ingredient categories used to group and filter the shared catalog.
+Table recipe_db.ingredient_category {
+  id bigint [pk, increment]
+  public_id uuid [not null, unique]
+  code text [not null]
+  normalized_code text [not null, unique]
+  name text [not null]
+  normalized_name text [not null, unique]
+  description text
+  state text [not null, default: 'active', note: 'active hoặc inactive.']
+  created_by_user_ref uuid [not null]
+  updated_by_user_ref uuid [not null]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    state [name: 'ingredient_category_state_idx']
+  }
+
+  checks {
+    `state IN ('active', 'inactive')` [name: 'ingredient_category_state_check']
+  }
+
+  Note: 'Danh mục nguyên liệu, ví dụ Tea, Dairy hoặc Sweetener. Không hard-delete danh mục đã được sử dụng.'
+}
+
+// Shared ingredient catalog with soft-delete state.
+Table recipe_db.ingredient {
+  id bigint [pk, increment]
+  public_id uuid [not null, unique]
+  code text [not null]
+  normalized_code text [not null, unique]
+  name text [not null]
+  normalized_name text [not null]
+  category_id bigint [not null]
+  default_unit_id bigint [not null]
+  description text
+  warning text
+  note text
+  image_asset_ref uuid [note: 'MediaAsset public ID từ Content Service; không tạo FK xuyên database.']
+  state text [not null, default: 'active', note: 'active hoặc inactive; không hard-delete khi đã được công thức dùng.']
+  created_by_user_ref uuid [not null]
+  updated_by_user_ref uuid [not null]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    normalized_name [name: 'ingredient_name_idx']
+    (category_id, state) [name: 'ingredient_category_usage_state_idx']
+    default_unit_id [name: 'ingredient_default_unit_idx']
+    image_asset_ref [name: 'ingredient_image_reference_idx']
+  }
+
+  checks {
+    `state IN ('active', 'inactive')` [name: 'ingredient_state_check']
+  }
+
+  Note: 'Không có bảng Supplier, tồn kho hoặc lô hàng. category_id dùng để phân loại và lọc nguyên liệu.'
+}
+
+// Stable recipe identity and archive state.
+Table recipe_db.recipe {
+  id bigint [pk, increment]
+  public_id uuid [not null, unique, note: 'ID công khai dùng giữa các service.']
+  code text [not null, note: 'Mã công thức do người dùng nhập.']
+  normalized_code text [not null, unique, note: 'Mã chuẩn hóa để chống trùng không phân biệt hoa thường.']
+  created_by_user_ref uuid [not null, note: 'User public_id từ Identity Service.']
+  updated_by_user_ref uuid [not null, note: 'User public_id từ Identity Service.']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  archived_at timestamptz
+
+  indexes {
+    created_by_user_ref [name: 'recipe_created_by_idx']
+    archived_at [name: 'recipe_archived_at_idx']
+  }
+
+  Note: 'Không hard-delete Recipe. archived_at đánh dấu công thức đã lưu trữ.'
+}
+
+// All editable recipe content belongs to a version.
+Table recipe_db.recipe_version {
+  id bigint [pk, increment]
+  public_id uuid [not null, unique]
+  recipe_id bigint [not null]
+  version_number integer [not null, note: 'Số phiên bản tăng dần trong từng Recipe.']
+  status text [not null, default: 'draft', note: 'draft hoặc published.']
+  name text [not null]
+  normalized_name text [not null, note: 'Tên chuẩn hóa để tìm kiếm không phân biệt hoa thường.']
+  description text
+  primary_media_asset_ref uuid [note: 'MediaAsset public ID từ Content Service làm ảnh đại diện thành phẩm.']
+  created_by_user_ref uuid [not null]
+  updated_by_user_ref uuid [not null]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  published_at timestamptz
+  published_by_user_ref uuid
+  indexes {
+    (recipe_id, version_number) [unique, name: 'recipe_version_number_uidx']
+    normalized_name [name: 'recipe_version_name_idx']
+    status [name: 'recipe_version_status_idx']
+    created_by_user_ref [name: 'recipe_version_created_by_idx']
+    updated_at [name: 'recipe_version_updated_at_idx']
+    primary_media_asset_ref [name: 'recipe_version_primary_media_idx']
+  }
+
+  checks {
+    `version_number > 0` [name: 'recipe_version_number_check']
+    `status IN ('draft', 'published')` [name: 'recipe_version_status_check']
+    `(status = 'draft' AND published_at IS NULL AND published_by_user_ref IS NULL) OR (status = 'published' AND published_at IS NOT NULL AND published_by_user_ref IS NOT NULL)` [name: 'recipe_version_publication_check']
+  }
+
+  Note: 'Một Recipe chỉ có tối đa một draft; published versions là bất biến.'
+}
+
+// Standard output produced by one recipe version.
+Table recipe_db.recipe_yield {
+  id bigint [pk, increment]
+  recipe_version_id bigint [not null, unique, note: 'Một phiên bản công thức có tối đa một bản ghi sản lượng.']
+  quantity numeric(18,6) [not null, note: 'Số lượng thành phẩm tạo ra, ví dụ 1.5 hoặc 10.']
+  unit_id bigint [not null, note: 'Đơn vị của thành phẩm, ví dụ L, ml, cup hoặc serving.']
+  note text [note: 'Mô tả thêm khi cần, ví dụ 10 chai, mỗi chai 250 ml.']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    unit_id [name: 'recipe_yield_unit_idx']
+  }
+
+  checks {
+    `quantity > 0` [name: 'recipe_yield_quantity_check']
+  }
+
+  Note: 'Sản lượng của một phiên bản công thức; bắt buộc khi publish.'
+}
+
+// Ingredient lines and immutable snapshots for historical versions.
+Table recipe_db.recipe_ingredient {
+  id bigint [pk, increment]
+  recipe_version_id bigint [not null]
+  ingredient_id bigint [not null]
+  unit_id bigint [not null, note: 'Đơn vị dùng cho định lượng.']
+  quantity numeric(18,6) [not null]
+  sort_order integer [not null]
+  stage_name text [note: 'Giai đoạn sử dụng nếu nguyên liệu xuất hiện nhiều lần.']
+  note text
+  ingredient_code_snapshot text [not null]
+  ingredient_name_snapshot text [not null]
+  ingredient_warning_snapshot text
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (recipe_version_id, sort_order) [name: 'recipe_ingredient_order_idx']
+    ingredient_id [name: 'recipe_ingredient_ingredient_idx']
+    unit_id [name: 'recipe_ingredient_unit_idx']
+  }
+
+  checks {
+    `quantity > 0` [name: 'recipe_ingredient_quantity_check']
+    `sort_order > 0` [name: 'recipe_ingredient_sort_order_check']
+  }
+
+  Note: 'Một nguyên liệu có thể xuất hiện ở nhiều công đoạn khác nhau.'
+}
+
+// Ordered preparation steps.
+Table recipe_db.recipe_step {
+  id bigint [pk, increment]
+  public_id uuid [not null, unique, note: 'ID công khai ổn định của bước công thức.']
+  recipe_version_id bigint [not null]
+  sort_order integer [not null]
+  title text [not null]
+  description text [not null]
+  duration_seconds integer
+  temperature_celsius numeric(8,2)
+  equipment text
+  safety_note text
+  completion_criteria text
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (recipe_version_id, sort_order) [name: 'recipe_step_order_idx']
+  }
+
+  checks {
+    `sort_order > 0` [name: 'recipe_step_sort_order_check']
+    `duration_seconds IS NULL OR duration_seconds >= 0` [name: 'recipe_step_duration_check']
+  }
+}
+
+// Media references owned by Content Service.
+Table recipe_db.recipe_step_media {
+  id bigint [pk, increment]
+  public_id uuid [not null, unique, note: 'ID công khai ổn định của liên kết media (linkId).']
+  recipe_step_id bigint [not null]
+  media_asset_ref uuid [not null, note: 'MediaAsset public ID từ Content Service; không tạo FK xuyên database.']
+  sort_order integer [not null, default: 1]
+  is_primary boolean [not null, default: false]
+  caption text
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (recipe_step_id, media_asset_ref) [unique, name: 'recipe_step_media_asset_uidx']
+    (recipe_step_id, sort_order) [name: 'recipe_step_media_order_idx']
+    media_asset_ref [name: 'recipe_step_media_reference_idx']
+  }
+
+  checks {
+    `sort_order > 0` [name: 'recipe_step_media_sort_order_check']
+  }
+
+  Note: 'PostgreSQL migration cần partial unique index trên recipe_step_id WHERE is_primary = true. Content Service kiểm tra tham chiếu qua media_asset_ref trước khi xóa file.'
+}
+
+Ref unit_category: recipe_db.unit.category_id > recipe_db.unit_category.id [delete: restrict]
+Ref ingredient_category: recipe_db.ingredient.category_id > recipe_db.ingredient_category.id [delete: restrict]
+Ref ingredient_default_unit: recipe_db.ingredient.default_unit_id > recipe_db.unit.id [delete: restrict]
+Ref recipe_version_recipe: recipe_db.recipe_version.recipe_id > recipe_db.recipe.id [delete: restrict]
+Ref recipe_yield_version: recipe_db.recipe_yield.recipe_version_id > recipe_db.recipe_version.id [delete: cascade]
+Ref recipe_yield_unit: recipe_db.recipe_yield.unit_id > recipe_db.unit.id [delete: restrict]
+Ref recipe_ingredient_version: recipe_db.recipe_ingredient.recipe_version_id > recipe_db.recipe_version.id [delete: cascade]
+Ref recipe_ingredient_master: recipe_db.recipe_ingredient.ingredient_id > recipe_db.ingredient.id [delete: restrict]
+Ref recipe_ingredient_unit: recipe_db.recipe_ingredient.unit_id > recipe_db.unit.id [delete: restrict]
+Ref recipe_step_version: recipe_db.recipe_step.recipe_version_id > recipe_db.recipe_version.id [delete: cascade]
+Ref recipe_step_media_step: recipe_db.recipe_step_media.recipe_step_id > recipe_db.recipe_step.id [delete: cascade]
+
+// ============================================================================
+// 3. CONTENT SERVICE (content_db)
+// Nguồn gốc: docs/database-schema/content-db/RecipeHub.Content.dbml
+// ============================================================================
+
+Table content_db.ai_image_draft {
+  id bigint [pk, increment]
+  public_id uuid [not null, unique]
+  recipe_version_ref uuid [not null, note: 'RecipeVersion public_id từ Recipe Service; không tạo FK xuyên database.']
+  recipe_step_ref uuid [note: 'RecipeStep public_id; bắt buộc cho step_instruction, phải rỗng cho final_product.']
+  target_kind text [not null, note: 'final_product hoặc step_instruction.']
+  user_brief text
+  input_snapshot jsonb [not null, note: 'Snapshot JSON context công thức/bước tại thời điểm enqueue.']
+  prompt_snapshot text [note: 'Prompt tiếng Anh gửi image provider; NULL khi queued/processing trước LLM, bắt buộc khi generated/accepted.']
+  provider text [not null, default: 'CloudflareSchnell', note: 'Nhà cung cấp gen ảnh: CloudflareSchnell.']
+  model text [not null, default: '@cf/black-forest-labs/flux-1-schnell']
+  geometry_mode text [not null, default: 'native', note: 'FLUX Schnell native resolution; không nhận aspect_ratio tùy ý từ client.']
+  width integer [note: 'Kích thước pixel thực tế của ảnh.']
+  height integer [note: 'Kích thước pixel thực tế của ảnh.']
+  state text [not null, default: 'queued', note: 'queued | processing | generated | failed | accepting | accepted | discarded | expired.']
+  temporary_image_path text [note: 'Đường dẫn tương đối trong kho file tạm dùng chung API/worker; NULL khi chưa có ảnh hoặc đã dọn xong.']
+  mime_type text [note: 'MIME type: image/png, image/jpeg, image/webp.']
+  byte_size bigint [note: 'Dung lượng bytes của file tạm.']
+  error_code text [note: 'Mã lỗi máy đọc được.']
+  error_message text [note: 'Thông báo lỗi đã lọc bí mật.']
+  attempt_count integer [not null, default: 0]
+  lease_token uuid [note: 'Token phân quyền worker lease hoặc accept lease chống ghi đè kết quả.']
+  lease_expires_at timestamptz [note: 'Hạn lease ngăn chặn worker cũ ghi đè.']
+  created_by_user_ref uuid [not null]
+  created_at timestamptz [not null, default: `now()`]
+  generated_at timestamptz
+  expires_at timestamptz [note: 'Hạn duyệt 30 phút tính từ generated_at.']
+  decided_at timestamptz
+  decided_by_user_ref uuid
+
+  indexes {
+    (recipe_version_ref, target_kind) [name: 'ai_image_draft_recipe_target_idx']
+    recipe_step_ref [name: 'ai_image_draft_step_idx']
+    (state, expires_at) [name: 'ai_image_draft_cleanup_idx']
+    (created_by_user_ref, created_at) [name: 'ai_image_draft_creator_idx']
+    (state, lease_expires_at) [name: 'ai_image_draft_worker_lease_idx']
+  }
+
+  checks {
+    `target_kind IN ('final_product', 'step_instruction')` [name: 'ai_image_draft_target_kind_check']
+    `(target_kind = 'final_product' AND recipe_step_ref IS NULL) OR (target_kind = 'step_instruction' AND recipe_step_ref IS NOT NULL)` [name: 'ai_image_draft_target_reference_check']
+    `state IN ('queued', 'processing', 'generated', 'failed', 'accepting', 'accepted', 'discarded', 'expired')` [name: 'ai_image_draft_state_check']
+    `geometry_mode = 'native'` [name: 'ai_image_draft_geometry_mode_check']
+    `(generated_at IS NULL AND expires_at IS NULL) OR (generated_at IS NOT NULL AND expires_at IS NOT NULL AND expires_at > generated_at)` [name: 'ai_image_draft_expiry_check']
+    `state NOT IN ('generated', 'accepting', 'accepted', 'expired') OR (generated_at IS NOT NULL AND expires_at IS NOT NULL AND prompt_snapshot IS NOT NULL)` [name: 'ai_image_draft_generated_time_check']
+    `state NOT IN ('generated', 'accepting') OR (temporary_image_path IS NOT NULL AND width > 0 AND height > 0 AND byte_size > 0)` [name: 'ai_image_draft_generated_file_check']
+    `state NOT IN ('accepted', 'discarded') OR (decided_at IS NOT NULL AND decided_by_user_ref IS NOT NULL)` [name: 'ai_image_draft_decision_check']
+  }
+
+  Note: 'Bản ghi giữ lịch sử tác vụ và quyết định sau Accept/Discard; chỉ file tạm được dọn. Trạng thái accepting giữ lease ngăn race giữa Cloudinary upload và cleanup/discard. input_snapshot lưu ngay khi enqueue; prompt_snapshot lưu sau LLM.'
+}
+
+Table content_db.media_asset {
+  id bigint [pk, increment]
+  public_id uuid [not null, unique, note: 'ID công khai dùng cho media_asset_ref phía Recipe Service.']
+  ai_image_draft_id bigint [unique, note: 'NULL cho ảnh upload thủ công; một draft tối đa tạo một asset.']
+  storage_provider text [not null, default: 'Cloudinary']
+  provider_public_id text [not null, note: 'Cloudinary public ID, dùng quản lý/xóa ảnh; không phải đường dẫn local.']
+  delivery_url text [not null, note: 'URL HTTPS hiển thị ảnh.']
+  original_file_name text
+  mime_type text [not null]
+  byte_size bigint [not null]
+  width integer [not null]
+  height integer [not null]
+  source_type text [not null, note: 'real hoặc ai_illustration.']
+  state text [not null, default: 'active', note: 'active. Các trạng thái delete bị loại bỏ vì tính năng DELETE bị hoãn theo R5 gate.']
+  created_by_user_ref uuid [not null]
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (storage_provider, provider_public_id) [unique, name: 'media_asset_provider_public_id_uidx']
+    (source_type, state, created_at) [name: 'media_asset_library_idx']
+    created_by_user_ref [name: 'media_asset_creator_idx']
+  }
+
+  checks {
+    `byte_size > 0` [name: 'media_asset_byte_size_check']
+    `width > 0 AND height > 0` [name: 'media_asset_dimensions_check']
+    `source_type IN ('real', 'ai_illustration')` [name: 'media_asset_source_type_check']
+    `state = 'active'` [name: 'media_asset_state_check']
+    `(source_type = 'real' AND ai_image_draft_id IS NULL) OR (source_type = 'ai_illustration' AND ai_image_draft_id IS NOT NULL)` [name: 'media_asset_ai_origin_check']
+  }
+
+  Note: 'Ảnh chính thức sau Accept hoặc upload thủ công. Metadata và file Cloudinary được lưu bền vững. Vị trí sử dụng do Recipe DB quản lý.'
+}
+
+Table content_db.outbox_message {
+  id uuid [pk]
+  event_type text [not null, note: 'Tên sự kiện: Content.ImageDraftQueued, Content.MediaAssetAccepted, v.v.']
+  payload jsonb [not null, note: 'Dữ liệu sự kiện JSON serialize.']
+  created_at timestamptz [not null, default: `now()`]
+  processed_at timestamptz [note: 'NULL khi chưa publish sang Redis Streams; lưu timestamp khi đã XADD thành công.']
+  retry_count integer [not null, default: 0]
+  error text [note: 'Lỗi gần nhất nếu relay gặp sự cố.']
+
+  indexes {
+    (processed_at, created_at) [name: 'outbox_pending_idx']
+  }
+
+  Note: 'Transactional Outbox bảo vệ tính nhất quán dữ liệu giữa PostgreSQL và Redis Streams; commit cùng transaction với draft/asset.'
+}
+
+Ref media_asset_ai_draft: content_db.media_asset.ai_image_draft_id > content_db.ai_image_draft.id [delete: restrict]
+
+// ============================================================================
+// 4. QUIZ (quiz_db)
+// [PROPOSED / CONCEPTUAL THEO SRS MỤC 6.2 - CHƯA TRIỂN KHAI RUNTIME/DB]
+// ============================================================================
+
+Table quiz_db.quiz {
+  id bigint [pk, increment]
+  public_id uuid [not null, unique, note: 'ID công khai của bài quiz']
+  code text [not null, unique, note: 'Mã quiz (ví dụ QUIZ-MATCHA-001)']
+  title text [not null]
+  description text
+  created_by_user_ref uuid [not null, note: 'Soft ref tới Identity.users']
+  next_version_number int [not null, default: 1, note: 'Bộ đếm số bản tiếp theo của đề, tăng dần không tái sử dụng']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  checks {
+    `length(btrim(code)) > 0` [name: 'quiz_code_check']
+    `length(btrim(title)) > 0` [name: 'quiz_title_check']
+    `next_version_number > 0` [name: 'quiz_next_version_number_check']
+  }
+
+  Note: 'Thực thể gốc định danh đề kiểm tra; một Quiz có thể có nhiều QuizVersion theo thời gian.'
+}
+
+Table quiz_db.quiz_version {
+  id bigint [pk, increment]
+  public_id uuid [not null, unique]
+  quiz_id bigint [not null]
+  version_number int [not null, default: 1]
+  recipe_version_ref uuid [not null, note: 'Soft ref tới Recipe.recipe_version đã duyệt']
+  passing_score numeric(5,2) [not null, default: 80.0, note: 'Ngưỡng đạt (%), mặc định 80%']
+  state text [not null, default: 'draft', note: 'draft | published | archived']
+  created_by_user_ref uuid [not null]
+  published_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (quiz_id, version_number) [unique, name: 'quiz_version_number_uidx']
+    recipe_version_ref [name: 'quiz_version_recipe_ref_idx']
+    state [name: 'quiz_version_state_idx']
+  }
+
+  checks {
+    `version_number > 0` [name: 'quiz_version_number_check']
+    `passing_score > 0 AND passing_score <= 100` [name: 'quiz_version_passing_score_check']
+    `state IN ('draft', 'published', 'archived')` [name: 'quiz_version_state_check']
+    `(state = 'draft' AND published_at IS NULL) OR (state IN ('published', 'archived') AND published_at IS NOT NULL)` [name: 'quiz_version_published_check']
+  }
+
+  Note: 'Phiên bản đề gắn cố định với 1 RecipeVersion; đề đã ban hành là bất biến, thay đổi phải tạo version mới.'
+}
+
+Table quiz_db.quiz_question {
+  id bigint [pk, increment]
+  quiz_version_id bigint [not null]
+  sort_order int [not null, default: 1]
+  content text [not null, note: 'Nội dung câu hỏi trắc nghiệm']
+  explanation text [note: 'Giải thích đáp án (chỉ hiện sau khi nộp bài)']
+
+  indexes {
+    (quiz_version_id, sort_order) [name: 'quiz_question_version_order_idx']
+  }
+
+  checks {
+    `sort_order > 0` [name: 'quiz_question_sort_order_check']
+    `length(btrim(content)) > 0` [name: 'quiz_question_content_check']
+  }
+}
+
+Table quiz_db.quiz_option {
+  id bigint [pk, increment]
+  question_id bigint [not null]
+  sort_order int [not null, default: 1]
+  content text [not null, note: 'Nội dung lựa chọn (A, B, C, D...)']
+  is_correct boolean [not null, default: false, note: 'Đánh dấu đáp án đúng; chỉ Admin/chấm điểm được đọc']
+
+  indexes {
+    (question_id, sort_order) [name: 'quiz_option_question_order_idx']
+  }
+
+  checks {
+    `sort_order > 0` [name: 'quiz_option_sort_order_check']
+    `length(btrim(content)) > 0` [name: 'quiz_option_content_check']
+  }
+}
+
+Table quiz_db.quiz_attempt {
+  id bigint [pk, increment]
+  public_id uuid [not null, unique]
+  quiz_version_id bigint [not null]
+  user_ref uuid [not null, note: 'Soft ref tới Identity.users (Viewer làm bài)']
+  state text [not null, default: 'in_progress', note: 'in_progress | submitted']
+  score numeric(5,2) [note: 'Điểm số % (NULL khi in_progress, có giá trị khi submitted)']
+  is_passed boolean [note: 'NULL khi in_progress, true/false khi submitted']
+  started_at timestamptz [not null, default: `now()`]
+  submitted_at timestamptz [note: 'NULL khi in_progress, ghi nhận lúc nộp']
+
+  indexes {
+    (user_ref, quiz_version_id) [name: 'quiz_attempt_user_version_idx']
+    state [name: 'quiz_attempt_state_idx']
+    (user_ref, quiz_version_id) [name: 'quiz_attempt_in_progress_uidx', note: 'unique partial index WHERE state = in_progress']
+  }
+
+  checks {
+    `state IN ('in_progress', 'submitted')` [name: 'quiz_attempt_state_check']
+    `(state = 'in_progress' AND score IS NULL AND submitted_at IS NULL AND is_passed IS NULL) OR (state = 'submitted' AND score IS NOT NULL AND submitted_at IS NOT NULL AND is_passed IS NOT NULL AND submitted_at >= started_at)` [name: 'quiz_attempt_submission_check']
+    `score IS NULL OR (score >= 0.0 AND score <= 100.0)` [name: 'quiz_attempt_score_range_check']
+  }
+
+  Note: 'Lưu lịch sử từng lần làm bài của Viewer; không xóa hoặc sửa bài đã nộp.'
+}
+
+Table quiz_db.quiz_answer {
+  id bigint [pk, increment]
+  attempt_id bigint [not null]
+  question_id bigint [not null]
+  selected_option_id bigint [note: 'Lựa chọn thí sinh đã tick; NULL nếu bỏ trống']
+
+  indexes {
+    (attempt_id, question_id) [unique, name: 'quiz_answer_attempt_question_uidx']
+    selected_option_id [name: 'quiz_answer_option_idx']
+  }
+
+  Note: 'Chi tiết từng câu trả lời của lượt thi để chấm điểm và đối chiếu lịch sử.'
+}
+
+Ref: quiz_db.quiz_version.quiz_id > quiz_db.quiz.id [delete: restrict]
+Ref: quiz_db.quiz_question.quiz_version_id > quiz_db.quiz_version.id [delete: restrict]
+Ref: quiz_db.quiz_option.question_id > quiz_db.quiz_question.id [delete: restrict]
+Ref: quiz_db.quiz_attempt.quiz_version_id > quiz_db.quiz_version.id [delete: restrict]
+Ref: quiz_db.quiz_answer.attempt_id > quiz_db.quiz_attempt.id [delete: restrict]
+Ref: quiz_db.quiz_answer.question_id > quiz_db.quiz_question.id [delete: restrict]
+Ref: quiz_db.quiz_answer.selected_option_id > quiz_db.quiz_option.id [delete: restrict]
+
+// ============================================================================
+// TABLE GROUPS (Phân chia ranh giới: 3 Service thực tế + 1 Đề xuất Quiz)
+// ============================================================================
+
+TableGroup IdentityService {
+  identity_db.roles
+  identity_db.users
+  identity_db.auth_sessions
+}
+
+TableGroup RecipeService {
+  recipe_db.unit_category
+  recipe_db.unit
+  recipe_db.ingredient_category
+  recipe_db.ingredient
+  recipe_db.recipe
+  recipe_db.recipe_version
+  recipe_db.recipe_yield
+  recipe_db.recipe_ingredient
+  recipe_db.recipe_step
+  recipe_db.recipe_step_media
+}
+
+TableGroup ContentService {
+  content_db.ai_image_draft
+  content_db.media_asset
+  content_db.outbox_message
+}
+
+TableGroup QuizService_Conceptual {
+  quiz_db.quiz
+  quiz_db.quiz_version
+  quiz_db.quiz_question
+  quiz_db.quiz_option
+  quiz_db.quiz_attempt
+  quiz_db.quiz_answer
+}

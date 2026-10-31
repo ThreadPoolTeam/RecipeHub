@@ -65,11 +65,10 @@ Trạng thái nghiệp vụ luôn kết hợp cả văn bản, biểu tượng (
 
 - **Thước đo cơ sở:** Bội số 4px (4px, 8px, 12px, 16px, 24px, 32px, 48px, 64px).
 - **Bo góc (Border Radius & Apple Geometry):**
-  - Buttons (Action, Secondary, Ghost, Danger): Dạng viên thuốc Apple (`rounded-full` / 9999px), micro-interaction mượt mà `active:scale-[0.98]`.
-  - Search bar (`SearchInput`): Dạng viên thuốc Apple (`rounded-full`), tích hợp kính lúp trái và nút xóa phải, chiều cao ~40px–44px.
-  - Form Inputs, Selects, TextAreas: Bo góc mềm `rounded-xl` (12px), focus ring tinh gọn `ring-2 ring-[#B47820]/15`.
-  - Thẻ card, panels, dialog modals: `rounded-2xl` (16px), viền hairline mảnh `1px solid #E8E2D9`.
-  - Filter chips, role & status badges: Dạng viên thuốc `rounded-full`.
+  - **Level 1 — Containers, Surface Cards & Data Tables (`rounded-2xl` / 16px):** Vỏ bọc thanh toolbar lọc, thẻ Card chính, khung bao `DataTable`, banner đầu trang, dialog modals. Viền hairline mảnh `1px solid #E8E2D9`.
+  - **Level 2 — Nested Cards, Stat Boxes & Form Controls (`rounded-xl` / 12px):** Ô chỉ số thống kê (stat boxes lồng trong trang), sub-panels nội dung con, `TextInput`, `Select`, `TextArea`.
+  - **Level 3 — Small Action Items & Thumbnails (`rounded-lg` / 8px):** Nút icon thao tác nhỏ (`w-8 h-8`), thumbnail media xem trước, tag mã code nhỏ.
+  - **Level 4 — Apple Pills (`rounded-full` / 9999px):** `Button` (Action, Secondary, Ghost, Danger), `SearchInput`, status badges, role badges, filter chips.
 - **Bóng đổ (Elevation):**
   - Không dùng hiệu ứng phát sáng vàng (`gold glow`) của NoirLuxe.
   - Dùng shadow tự nhiên, thanh thoát:
@@ -93,18 +92,64 @@ Trạng thái nghiệp vụ luôn kết hợp cả văn bản, biểu tượng (
 - **Thanh tìm kiếm (`SearchInput`):** Nền trắng `#FFFFFF`, bo tròn viên thuốc (`rounded-full`), icon kính lúp trái, icon xóa nhanh khi có text, viền `#E8E2D9`, hover `#D8D0C5`, focus viền `#B47820` kèm `ring-2 ring-[#B47820]/15`.
 - **Inputs thông thường & Selects:** Bo góc mềm `rounded-xl`, nền trắng `#FFFFFF`, chữ `#1A1917`, viền `#E8E2D9`, focus `ring-2 ring-[#B47820]/15`. Placeholder: `#8C887F`.
 ### Cards & Data Tables
-- Nền trắng `#FFFFFF`, bo góc 12px, viền mảnh 1px `#E8E2D9`.
+- Nền trắng `#FFFFFF`, bo góc 16px (`rounded-2xl`), viền mảnh 1px `#E8E2D9`, shadow-xs.
 - Header bảng: nền `#F5F0E8`, chữ `#706E68`, font size 12px, uppercase tracking-wider.
 - Phân cách dòng: viền `#E8E2D9`. Hover dòng: nền `#FAF9F5`.
 
 ### Dialogs & Modals
 - Backdrop: `rgba(26, 25, 23, 0.45)` kết hợp `backdrop-blur-xs`.
-- Nội dung dialog: nền trắng `#FFFFFF`, viền `#E8E2D9`, shadow-xl, bo góc 12px.
+- Nội dung dialog: nền trắng `#FFFFFF`, viền `#E8E2D9`, shadow-xl, bo góc 16px (`rounded-2xl`).
 - Focus trap và đóng bằng phím `Escape`.
+---
+
+## 6. Motion & Animation System
+
+Hệ thống chuyển động Warm Editorial ưu tiên sự thanh thoát, tĩnh tại, chuẩn mực của ấn phẩm biên tập cao cấp. Chuyển động đóng vai trò định hướng sự chú ý và báo hiệu trạng thái, không lạm dụng hiệu ứng lò xo (bounce) gây rối mắt hay làm chậm thao tác người dùng.
+
+### Motion Tokens & Quy chuẩn thời gian (Timing & Easing)
+
+| Token chuyển động | Thời lượng & Easing | Quỹ đạo / Thay đổi | Phạm vi sử dụng |
+|---|---|---|---|
+| `--motion-micro` | `150ms – 180ms ease-out` | `active:scale-[0.98]` | Nút bấm, icon action, pill filter, chip. |
+| `--motion-lift` | `160ms – 200ms ease-out` | `translateY(-2px)`, shadow lift | Card hover, table row highlight. |
+| `--motion-page-enter` | `220ms ease-out` | `opacity: 0 -> 1`, `translateY(4px -> 0)` | Chuyển trang toàn bộ Workspace, route transitions. |
+| `--motion-dialog` | `200ms – 250ms ease-out` | `scale-[0.98] -> scale-[1]`, `opacity: 0 -> 1` | Modal dialog, confirm prompt, popover. |
+| `--motion-drawer` | `280ms cubic-bezier(0.16, 1, 0.3, 1)` | `translateX(100% -> 0)` | Version history drawer, filter slide-out. |
+
+### Quy chuẩn hiệu ứng chuyển trang (Page Entrance Transition)
+- Mọi view con trong không gian làm việc (`WorkspaceShell`) khi chuyển đổi route BẮT BUỘC có hiệu ứng fade-in nhẹ kèm trượt 4px từ dưới lên:
+  ```css
+  @keyframes workspace-enter {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  ```
+- Bắt buộc bọc nội dung route với key thay đổi theo URL pathname (`key={pathname}`) để kích hoạt chuyển động mượt mà.
+
+### Quy chuẩn Loading State & Skeleton Pulse
+1. **Tránh Spinner toàn trang:** Tuyệt đối không treo spinner xoay đơn độc ở giữa màn hình trắng khi tải dữ liệu trang.
+2. **Skeleton Khớp Layout Thực Tế:**
+   - Dạng danh sách lưới (Grid/Cards): Hiển thị skeleton cards 3 cột mô phỏng đúng kích thước thẻ card thực tế.
+   - Dạng bảng (DataTable): Hiển thị skeleton header và các skeleton rows xen kẽ viền `#E8E2D9`.
+   - Hiệu ứng nhịp thở: Dùng `animate-pulse` với màu nền `#FAF9F5` / `#F5F0E8` bo góc đồng bộ với component thật.
+3. **Spinner Cục Bộ (Local Loader):** Chỉ dùng spinner xoay tròn kích thước nhỏ (`16px`) bên trong chính nút bấm (`Button isLoading`) khi thực hiện action (Lưu, Nộp bài, Xóa, Tạo mới).
+
+### Accessibility & Reduced Motion
+- **Quy tắc bắt buộc:** Mọi animation và transition phải tuân thủ nghiêm ngặt truy vấn `@media (prefers-reduced-motion: reduce)`.
+- Khi người dùng kích hoạt Reduced Motion trên hệ điều hành/trình duyệt:
+  - Tắt toàn bộ biến đổi dịch chuyển trục Y (`transform: translateY(...) -> none`).
+  - Tắt hiệu ứng trượt cuộn cinematic Story trên Landing page (hiển thị tĩnh có thể đọc ngay).
+  - Giữ hiệu ứng chuyển đổi `opacity` tức thời hoặc chuyển sang trạng thái cuối ngay lập tức (`transition: none !important; animation: none !important;`).
 
 ---
 
-## 6. Responsive & Accessibility Standards
+## 7. Responsive & Accessibility Standards
 
 1. **Độ tương phản (Contrast Ratio):**
    - Chữ thông thường (dưới 18pt/24px): Tối thiểu 4.5:1.
@@ -121,10 +166,11 @@ Trạng thái nghiệp vụ luôn kết hợp cả văn bản, biểu tượng (
 
 ---
 
-## 7. Acceptance Checklist
+## 8. Acceptance Checklist
 
 - [ ] DESIGN.md định nghĩa đầy đủ semantic tokens, token ngoại lệ cinematic và contrast ratios.
 - [ ] Mọi token và kiểu dáng cũ của NoirLuxe (dark background khắp app, gold glow, dancing script) được xóa bỏ.
 - [ ] Không có màu hardcode lạ ngoài bộ semantic đã quy định.
 - [ ] Giao diện hoạt động trơn tru trên cả desktop và mobile, không lỗi dấu tiếng Việt.
 - [ ] Story cinematic được cô lập an toàn, không bị ảnh hưởng bởi styles sáng của phần còn lại.
+- [ ] Chuyển động (motion) tuân thủ nhịp độ Warm Editorial; tôn trọng prefers-reduced-motion: reduce trên toàn bộ workspace.

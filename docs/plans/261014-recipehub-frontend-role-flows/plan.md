@@ -47,6 +47,10 @@ Không có quan hệ đầu ra bắt buộc giữa các plan; `blockedBy`/`block
 
 [Warm Editorial toàn bộ UI](../261019-warm-editorial-ui/plan.md) kế thừa flow/component đã có, thay quy chuẩn màu và presentation cho mọi route. Không khôi phục NoirLuxe hoặc ghi đè data provider hiện hành theo mô tả demo lịch sử của plan này. Quan hệ kế thừa, không có blocker hoàn thành cả plan; `blocks/blockedBy` vẫn rỗng. Source thực tế phải được đọc lại trước thực thi; không suy ra plan này đã hoàn tất.
 
+### Quiz production — 2026-10-31
+
+`../261031-quiz-ui/plan.md` bổ sung bộ Quiz cho Admin/R&D và làm bài cho Viewer bằng backend thật. Không dùng provider demo làm nguồn dữ liệu Quiz; giữ auth/session/WorkspaceShell hiện có. Đây là mở rộng độc lập, không chờ hoàn tất mọi mục lịch sử của plan này; không có hard blocker hai chiều.
+
 
 ## Các phase
 

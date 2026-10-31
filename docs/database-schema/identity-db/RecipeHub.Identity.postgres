@@ -1,0 +1,54 @@
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM pg_namespace WHERE nspname = 'identity_db') THEN
+        CREATE SCHEMA identity_db;
+    END IF;
+END $EF$;
+
+CREATE TABLE identity_db.roles (
+    id smallint NOT NULL,
+    code character varying(20) NOT NULL,
+    name text NOT NULL,
+    description text,
+    created_at timestamp with time zone NOT NULL DEFAULT (now()),
+    CONSTRAINT "PK_roles" PRIMARY KEY (id),
+    CONSTRAINT "UQ_roles_code" UNIQUE (code)
+);
+
+INSERT INTO identity_db.roles (id, code, name, description) VALUES
+(1, 'admin', 'Quản trị hệ thống', 'Toàn quyền quản trị tài khoản và hệ thống'),
+(2, 'rnd', 'Chuyên viên R&D', 'Tạo và quản lý công thức, nguyên liệu R&D'),
+(3, 'viewer', 'Barista Viewer', 'Xem công thức đã duyệt và tài liệu pha chế')
+ON CONFLICT (id) DO NOTHING;
+
+CREATE TABLE identity_db.users (
+    id uuid NOT NULL,
+    email text NOT NULL,
+    full_name text NOT NULL,
+    password_hash text NOT NULL,
+    role_id smallint NOT NULL,
+    is_active boolean NOT NULL DEFAULT TRUE,
+    created_at timestamp with time zone NOT NULL DEFAULT (now()),
+    updated_at timestamp with time zone NOT NULL DEFAULT (now()),
+    CONSTRAINT "PK_users" PRIMARY KEY (id),
+    CONSTRAINT "FK_users_roles_role_id" FOREIGN KEY (role_id) REFERENCES identity_db.roles (id) ON DELETE RESTRICT,
+    CONSTRAINT users_email_check CHECK (length(btrim(email)) > 3),
+    CONSTRAINT users_name_check CHECK (length(btrim(full_name)) > 0)
+);
+
+CREATE TABLE identity_db.auth_sessions (
+    id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    refresh_token_hash character varying(64) NOT NULL,
+    created_at timestamp with time zone NOT NULL DEFAULT (now()),
+    expires_at timestamp with time zone NOT NULL,
+    revoked_at timestamp with time zone,
+    CONSTRAINT "PK_auth_sessions" PRIMARY KEY (id),
+    CONSTRAINT auth_sessions_expiry_check CHECK (expires_at > created_at),
+    CONSTRAINT "FK_auth_sessions_users_user_id" FOREIGN KEY (user_id) REFERENCES identity_db.users (id) ON DELETE RESTRICT
+);
+
+CREATE INDEX auth_sessions_user_idx ON identity_db.auth_sessions (user_id);
+CREATE UNIQUE INDEX "IX_auth_sessions_refresh_token_hash" ON identity_db.auth_sessions (refresh_token_hash);
+CREATE UNIQUE INDEX users_email_unique_idx ON identity_db.users (lower(btrim(email)));
+CREATE INDEX users_role_active_idx ON identity_db.users (role_id, is_active);

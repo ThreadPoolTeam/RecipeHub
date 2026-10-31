@@ -174,9 +174,7 @@ function RecipeListContent() {
           if (!coverUrl && typeof window !== 'undefined') {
             coverUrl = localStorage.getItem(`recipehub_media_url_${item.primaryMediaAssetId}`) || null;
           }
-          if (!coverUrl) {
-            coverUrl = `/api/backend/api/v1/content/image-drafts/${item.primaryMediaAssetId}/image`;
-          }
+
         }
         if (!coverUrl) {
           const versionId = item.versionId || item.id;
@@ -253,24 +251,28 @@ function RecipeListContent() {
     },
     {
       header: 'Định lượng & Quy trình',
-      render: (item: RecipeVersion) => (
-        <div className="text-xs text-[#706E68] space-y-0.5">
-          <div>
-            <span className="text-[#8C887F]">Nguyên liệu:</span>{' '}
-            <span className="text-[#1A1917] font-medium">{item.ingredients.length}</span>
+      render: (item: RecipeVersion) => {
+        const hasIngredients = item.ingredients && item.ingredients.length > 0;
+        const hasSteps = item.steps && item.steps.length > 0;
+        return (
+          <div className="text-xs text-[#706E68] space-y-0.5">
+            <div>
+              <span className="text-[#8C887F]">Nguyên liệu:</span>{' '}
+              <span className="text-[#1A1917] font-medium">{hasIngredients ? item.ingredients.length : '—'}</span>
+            </div>
+            <div>
+              <span className="text-[#8C887F]">SOP:</span>{' '}
+              <span className="text-[#1A1917] font-medium">{hasSteps ? `${item.steps.length} bước` : '—'}</span>
+            </div>
           </div>
-          <div>
-            <span className="text-[#8C887F]">SOP:</span>{' '}
-            <span className="text-[#1A1917] font-medium">{item.steps.length} bước</span>
-          </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       header: 'Người tạo',
       render: (item: RecipeVersion) => (
-        <span className="text-xs text-[#706E68] font-mono" title={item.creatorEmail}>
-          {item.creatorEmail.split('@')[0]}
+        <span className="text-xs text-[#706E68] font-mono" title={item.creatorEmail || undefined}>
+          {item.creatorEmail ? item.creatorEmail.split('@')[0] : '—'}
         </span>
       ),
     },

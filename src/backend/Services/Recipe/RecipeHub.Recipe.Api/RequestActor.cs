@@ -4,9 +4,9 @@ public static class RequestActor
 {
     public static Guid GetUserId(HttpContext context)
     {
-        var value = context.Request.Headers["X-User-Id"].ToString();
+        var value = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         return Guid.TryParse(value, out var userId) && userId != Guid.Empty
             ? userId
-            : throw new UnauthorizedAccessException("Header 'X-User-Id' must contain a valid non-empty UUID.");
+            : throw new UnauthorizedAccessException("Cần JWT session Identity hợp lệ.");
     }
 }
