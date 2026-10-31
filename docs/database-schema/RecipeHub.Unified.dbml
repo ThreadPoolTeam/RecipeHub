@@ -1,6 +1,6 @@
 Project RecipeHub {
   database_type: 'PostgreSQL'
-  Note: 'RecipeHub Architecture: 3 Service Databases chính thức (Identity, Recipe, Content) + Đề xuất Quiz (Conceptual theo SRS 6.2). Không tạo FK vật lý xuyên database.'
+  Note: 'RecipeHub Architecture: 4 Service Databases chính thức (Identity, Recipe, Content, Audit) + Đề xuất Quiz (Conceptual theo SRS 6.2). Không tạo FK vật lý xuyên database.'
 }
 
 // ============================================================================
@@ -584,6 +584,44 @@ Ref: quiz_db.quiz_answer.question_id > quiz_db.quiz_question.id [delete: restric
 Ref: quiz_db.quiz_answer.selected_option_id > quiz_db.quiz_option.id [delete: restrict]
 
 // ============================================================================
+// 5. AUDIT SERVICE (audit_db)
+// Nguồn gốc: docs/database-schema/audit-db/RecipeHub.Audit.dbml
+// ============================================================================
+
+Table audit_db.audit_log {
+  id uuid [pk, note: 'PK khớp EventEnvelope.EventId, UUID khác zero']
+  actor_id uuid [not null, note: 'Soft ref tới Identity.users']
+  actor_name varchar(200) [not null, note: 'Snapshot tên người thực hiện tại thời điểm ghi nhận']
+  actor_role varchar(30) [not null, note: 'admin | rnd | viewer']
+  source varchar(30) [not null, note: 'identity | recipe | content | quiz']
+  action varchar(100) [not null, note: 'Mã hành động từ allowlist (ví dụ: recipe.created, user.updated)']
+  target_type varchar(50) [not null, note: 'Loại đối tượng (ví dụ: recipe_version, user, quiz)']
+  target_id uuid [not null, note: 'UUID định danh công khai của đối tượng, khác zero']
+  summary text [not null, note: 'Mô tả chi tiết nội dung thay đổi bằng tiếng Việt']
+  occurred_at timestamptz [not null, note: 'Thời điểm source commit và phát sinh sự kiện (UTC)']
+
+  indexes {
+    (occurred_at, id) [name: 'audit_log_occurred_at_id_idx']
+    (actor_id, occurred_at, id) [name: 'audit_log_actor_occurred_idx']
+    (target_type, target_id, occurred_at, id) [name: 'audit_log_target_occurred_idx']
+  }
+
+  checks {
+    `id <> '00000000-0000-0000-0000-000000000000'::uuid` [name: 'audit_log_id_check']
+    `actor_id <> '00000000-0000-0000-0000-000000000000'::uuid` [name: 'audit_log_actor_id_check']
+    `length(btrim(actor_name)) > 0` [name: 'audit_log_actor_name_check']
+    `actor_role IN ('admin', 'rnd', 'viewer')` [name: 'audit_log_actor_role_check']
+    `source IN ('identity', 'recipe', 'content', 'quiz')` [name: 'audit_log_source_check']
+    `length(btrim(action)) > 0` [name: 'audit_log_action_check']
+    `length(btrim(target_type)) > 0` [name: 'audit_log_target_type_check']
+    `target_id <> '00000000-0000-0000-0000-000000000000'::uuid` [name: 'audit_log_target_id_check']
+    `length(btrim(summary)) > 0` [name: 'audit_log_summary_check']
+  }
+
+  Note: 'Bảng ghi log nghiệp vụ duy nhất của Audit Service; chỉ thêm mới và đọc, bất biến, không sửa hoặc xóa.'
+}
+
+// ============================================================================
 // TABLE GROUPS (Phân chia ranh giới: 3 Service thực tế + 1 Đề xuất Quiz)
 // ============================================================================
 
@@ -619,4 +657,8 @@ TableGroup QuizService_Conceptual {
   quiz_db.quiz_option
   quiz_db.quiz_attempt
   quiz_db.quiz_answer
+}
+
+TableGroup AuditService {
+  audit_db.audit_log
 }
