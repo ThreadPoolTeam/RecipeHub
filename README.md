@@ -75,6 +75,10 @@ RecipeHub/
    npm run build
    npm start
    ```
+### Tối ưu hóa Trải nghiệm Điều hướng Frontend (UX Navigation & Prefetching)
+- **Next.js Link Prefetching (`prefetch={true}`):** Toàn bộ các mục điều hướng chính trên sidebar (`WorkspaceShell`) được cấu hình `prefetch={true}`. Trình duyệt chủ động nạp trước các route chunk của sidebar, giúp việc chuyển đổi giữa các không gian làm việc (R&D, Viewer, Admin) phản hồi ngay khi nhấp chuột.
+- **Route Segment Loading Boundary (`(platform)/loading.tsx`):** Vùng nội dung công tác sử dụng khung skeleton phản hồi tức thì khi phân đoạn route đích đang nạp, giữ nguyên sidebar ổn định và loại bỏ hiện tượng giữ giao diện cũ khi chuyển trang.
+- **In-Memory Caching & Deduplication:** Lớp repository frontend (`BackendRepository`) duy trì bộ nhớ đệm tạm thời cho danh sách nguyên liệu và công thức, triệt tiêu các lượt gọi API lặp lại khi chuyển đổi qua lại giữa các tab làm việc.
 
 ### Quản lý schema theo DB First
 
@@ -82,7 +86,6 @@ RecipeHub/
 - File `.postgres` chỉ khởi tạo database trống. Database có dữ liệu dùng SQL nâng cấp đúng trạng thái nguồn, sau backup và restore thử; không chạy lại DDL khởi tạo.
 - Không dùng EF Code First migrations hoặc `dotnet ef database update`. Giữ nguyên `__EFMigrationsHistory` đã có như lịch sử; SQL mới không chèn hoặc sửa lịch sử EF.
 - Việc chuyển migration trong source sang SQL không có nghĩa SQL đã áp dụng lên DB đang chạy hoặc toàn bộ cutover DB First đã hoàn tất. Trạng thái triển khai theo [plan DB First](docs/plans/261029-db-first-cutover/plan.md).
-
 ---
 
 ## 3. Bản đồ Cổng & Tuyến đường (Routing Map)

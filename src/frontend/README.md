@@ -23,6 +23,12 @@ exercised by this frontend upgrade check.
 
 Security reference: [npm Next.js advisories](https://registry.npmjs.org/-/npm/v1/security/advisories/bulk).
 
+## Navigation & Performance Optimization
+
+- **Sidebar Link Prefetching (`prefetch={true}`):** Main navigation links in `WorkspaceShell` have explicit `prefetch={true}` enabled to ensure browser prefetching of route chunks for instantaneous tab switching.
+- **Platform Loading Boundary (`(platform)/loading.tsx`):** Immediate skeleton feedback inside the platform workspace during route segment compilation and navigation, keeping the sidebar persistent and interactive.
+- **Repository In-Memory Cache:** `BackendRepository` maintains in-memory caching and in-flight deduplication for recipes and ingredients to eliminate redundant network requests on tab revisits.
+
 ## Getting Started
 
 First, run the development server:
