@@ -13,7 +13,6 @@ import {
   Users,
   Package,
   FileText,
-  FolderGit2,
   LogOut,
   Menu,
   X,
@@ -292,7 +291,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             className={navLinkStyle(isLinkActive('/admin/media'), isCollapsed)}
             title="Quản lý Media"
           >
-            <FolderGit2 className="w-5 h-5 text-[#706E68]" />
+            <ImageIcon className="w-5 h-5 text-[#706E68]" />
             {!isCollapsed && <span>Quản lý Media</span>}
           </Link>
           <Link
@@ -538,42 +537,15 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
           sidebarCollapsed ? 'md:pl-16' : 'md:pl-64'
         }`}
       >
-        {/* Topbar */}
-        <header className="h-14 sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-[#E8E2D9] px-4 sm:px-6 flex items-center justify-between shadow-xs">
-          <div className="flex items-center gap-3">
-            {/* Mobile Hamburger (only on mobile) */}
-            <button
-              onClick={() => setMobileSidebarOpen(true)}
-              className="md:hidden p-2 rounded-xl text-[#706E68] hover:text-[#1A1917] hover:bg-[#F5F0E8] transition"
-              aria-label="Mở menu"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-
-            {/* Clean Section Title */}
-            <h1 className="font-semibold text-sm sm:text-base text-[#1A1917]">
-              {pathname.includes('/quizzes/results') || pathname.includes('/quizzes/history')
-                ? 'Kết Quả & Lịch Sử Quiz'
-                : pathname.includes('/quizzes')
-                ? (session?.role === 'viewer' ? 'Bài Kiểm Tra Quiz' : 'Quản Lý Bộ Quiz')
-                : pathname.startsWith('/rnd')
-                ? 'Nghiên Cứu & Phát Triển (R&D)'
-                : pathname.startsWith('/viewer')
-                ? 'Tra Cứu SOP Cửa Hàng (Viewer)'
-                : pathname.startsWith('/admin')
-                ? 'Hệ Thống Quản Trị (Admin)'
-                : pathname.startsWith('/profile')
-                ? 'Hồ Sơ Chuyên Viên'
-                : pathname.startsWith('/settings')
-                ? 'Cài Đặt Hệ Thống'
-                : pathname.startsWith('/help')
-                ? 'Trợ Giúp & Hướng Dẫn'
-                : 'RecipeHub Platform'}
-            </h1>
-          </div>
-
-          {/* Right Header: Empty & Clean */}
-          <div className="flex items-center gap-2"></div>
+        {/* Topbar: Mobile only for hamburger drawer */}
+        <header className="md:hidden h-14 sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-[#E8E2D9] px-4 flex items-center shadow-xs">
+          <button
+            onClick={() => setMobileSidebarOpen(true)}
+            className="p-2 rounded-xl text-[#706E68] hover:text-[#1A1917] hover:bg-[#F5F0E8] transition"
+            aria-label="Mở menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
         </header>
 
         {/* Main Child View */}
@@ -581,7 +553,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
 
         {/* Footer */}
         <footer className="border-t border-[#E8E2D9] bg-[#F5F0E8] py-4 px-6 text-center text-xs text-[#706E68]">
-          RecipeHub Coffee &amp; Beverage R&amp;D Platform © 2026 • Recipe API Mode
+          RecipeHub Coffee &amp; Beverage R&amp;D Platform © 2026
         </footer>
       </div>
 

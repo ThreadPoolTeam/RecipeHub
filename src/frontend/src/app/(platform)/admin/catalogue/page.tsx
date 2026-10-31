@@ -380,8 +380,8 @@ export default function AdminCataloguePage() {
       <section className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-bold text-[#F2F0EB]">Danh mục dùng trong công thức</h2>
-            <p className="text-xs text-zinc-400 mt-1">
+            <h2 className="text-lg font-bold text-[#1A1917]">Danh mục dùng trong công thức</h2>
+            <p className="text-xs text-[#706E68] mt-1">
               Tạo nhóm nguyên liệu và đơn vị trước khi thêm nguyên liệu hoặc công thức.
             </p>
           </div>
@@ -390,7 +390,7 @@ export default function AdminCataloguePage() {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-sm font-semibold text-[#F2F0EB]">Nhóm nguyên liệu</h3>
+              <h3 className="text-sm font-semibold text-[#1A1917]">Nhóm nguyên liệu</h3>
               <Button
                 size="sm"
                 variant="secondary"
@@ -411,7 +411,7 @@ export default function AdminCataloguePage() {
                   render: (item) => (
                     <div>
                       <div className="font-mono text-xs font-semibold">{item.code}</div>
-                      <div className="text-xs text-[#78716C]">{item.name}</div>
+                      <div className="text-xs text-[#706E68]">{item.name}</div>
                     </div>
                   ),
                 },
@@ -447,7 +447,7 @@ export default function AdminCataloguePage() {
 
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-sm font-semibold text-[#F2F0EB]">Nhóm đơn vị</h3>
+              <h3 className="text-sm font-semibold text-[#1A1917]">Nhóm đơn vị</h3>
               <Button
                 size="sm"
                 variant="secondary"
@@ -468,7 +468,7 @@ export default function AdminCataloguePage() {
                   render: (item) => (
                     <div>
                       <div className="font-mono text-xs font-semibold">{item.code}</div>
-                      <div className="text-xs text-[#78716C]">{item.name}</div>
+                      <div className="text-xs text-[#706E68]">{item.name}</div>
                     </div>
                   ),
                 },
@@ -506,8 +506,8 @@ export default function AdminCataloguePage() {
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h3 className="text-sm font-semibold text-[#F2F0EB]">Đơn vị đo</h3>
-              <p className="text-xs text-zinc-400 mt-1">
+              <h3 className="text-sm font-semibold text-[#1A1917]">Đơn vị đo</h3>
+              <p className="text-xs text-[#706E68] mt-1">
                 Danh sách này dùng chung cho đơn vị chuẩn của nguyên liệu và đơn vị thành phẩm.
               </p>
             </div>
@@ -577,7 +577,7 @@ export default function AdminCataloguePage() {
         </div>
         <div className="bg-white border border-[#E8E2D9] rounded-xl p-3 shadow-xs">
           <div className="text-[11px] text-[#706E68] uppercase font-semibold">Đang kích hoạt</div>
-          <div className="text-xl font-bold text-emerald-700 mt-1">{stats.active}</div>
+          <div className="text-xl font-bold text-[#166534] mt-1">{stats.active}</div>
         </div>
         <div className="bg-white border border-[#E8E2D9] rounded-xl p-3 shadow-xs">
           <div className="text-[11px] text-[#706E68] uppercase font-semibold">Vô hiệu hóa</div>
@@ -678,13 +678,13 @@ export default function AdminCataloguePage() {
             header: 'Trạng thái',
             render: (i) =>
               i.isActive ? (
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#166534]" />
                   Kích hoạt
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-600 border border-zinc-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#F5F0E8] text-[#706E68] border border-[#E8E2D9]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#706E68]" />
                   Vô hiệu
                 </span>
               ),
