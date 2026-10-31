@@ -27,6 +27,8 @@ public sealed class ApplicationExceptionHandler : IExceptionHandler
             ConflictException => (StatusCodes.Status409Conflict, "Resource conflict", (string?)null),
             DraftExpiredException => (StatusCodes.Status410Gone, "Resource expired", (string?)null),
             NotImplementedException => (StatusCodes.Status501NotImplemented, "Operation Deferred", "https://tools.ietf.org/html/rfc7231#section-6.6.2"),
+            ContentDependencyException => (StatusCodes.Status503ServiceUnavailable, "Service unavailable", (string?)null),
+            Grpc.Core.RpcException => (StatusCodes.Status503ServiceUnavailable, "Service unavailable", (string?)null),
             _ => ((int StatusCode, string Title, string? Type)?)null
         };
 
@@ -40,7 +42,9 @@ public sealed class ApplicationExceptionHandler : IExceptionHandler
         {
             Status = mapping.Value.StatusCode,
             Title = mapping.Value.Title,
-            Detail = exception.Message
+            Detail = exception is Grpc.Core.RpcException
+                ? "Dịch vụ phụ thuộc không khả dụng. Vui lòng thử lại sau."
+                : exception.Message
         };
 
         if (!string.IsNullOrEmpty(mapping.Value.Type))

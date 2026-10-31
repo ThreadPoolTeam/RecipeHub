@@ -99,12 +99,15 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__Database=Host=postgres;Port=5432;Database=${CONTENT_DB_NAME:-recipehub_content};Username=${CONTENT_DB_USER:-content_user};Password=${CONTENT_DB_PASSWORD:-content_pw}
+      - Grpc__IdentityServiceUrl=http://identity-service:5011
       - Grpc__RecipeServiceUrl=http://recipe-service:5012
       - TemporaryStorage__BasePath=/app/temp-drafts
     volumes:
       - temp-drafts:/app/temp-drafts
     depends_on:
       postgres:
+        condition: service_healthy
+      identity-service:
         condition: service_healthy
       recipe-service:
         condition: service_healthy
