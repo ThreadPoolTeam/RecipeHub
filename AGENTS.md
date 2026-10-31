@@ -5,6 +5,7 @@
 - **Caveman skill (BẮT BUỘC):** Luôn đọc và sử dụng skill `caveman` khi bắt đầu phiên làm việc; duy trì trong mọi phản hồi. Giao tiếp tiếng Việt, ngắn gọn, giữ nguyên thuật ngữ/code/API/CLI. Dùng `sequential-thinking` khi cần suy luận có cấu trúc.
 - **CodeGraph**: Project indexed with CodeGraph. Use `codegraph_explore` MCP or `codegraph explore` CLI BEFORE `grep` or Read.
 - **Design System (BẮT BUỘC):** Mọi công việc Web FE (trừ mobile) BẮT BUỘC đọc `docs/DESIGN.md` trước khi thiết kế/chỉnh sửa; mọi quyết định UI/UX phải giải thích rõ lý do căn cứ theo DESIGN.md.
+- **System Design Reference (BẮT BUỘC TOÀN HỆ THỐNG):** Mọi công việc phát triển tính năng mới hoặc chỉnh sửa (cả Frontend và Backend) **BẮT BUỘC** phải đọc và tuân thủ bộ tài liệu chuẩn hóa tại `docs/systemmd/` (Frontend tại `docs/systemmd/frontend/`, Backend tại `docs/systemmd/backend/`, quy tắc quản trị tại `docs/systemmd/governance.md`).
 
 ## Project Overview
 - **Project Name:** RecipeHub
@@ -27,14 +28,14 @@ RecipeHub/
 │   │   │   ├── Identity/ (Domain, Application, Infrastructure, Api)
 │   │   │   ├── Recipe/   (Domain, Application, Infrastructure, Api)
 │   │   │   ├── Content/  (Domain, Application, Infrastructure, Api)
-│   │   │   └── Audit/    (Domain, Application, Infrastructure, Api)
+│   │   │   ├── Audit/    (Domain, Application, Infrastructure, Api)
+│   │   │   └── Quiz/     (Domain, Application, Infrastructure, Api)
 │   │   └── Workers/
 │   │       └── RecipeHub.BackgroundWorker/                  # Redis Streams consumer with MKSTREAM & ACK
-│   └── frontend/
-│       └── recipehub-web/                                   # Next.js 14 App Router (Standalone)
+│   └── frontend/                                            # Next.js 14 App Router (Standalone)
 ├── infra/
 │   ├── compose.yaml                                         # Full-stack Docker Compose
-│   └── postgres/init-databases.sh                           # 4 independent databases bootstrap
+│   └── postgres/init-databases.sh                           # 5 independent databases bootstrap
 ├── docs/
 │   ├── journals/                                            # Development journals & logs
 │   ├── plans/                                               # Implementation plans and phases
@@ -59,7 +60,7 @@ RecipeHub/
    - Asynchronous Messaging: Use **Redis Streams** via `EventEnvelope<T>` in `BuildingBlocks` with explicit consumer groups (`XREADGROUP` + `XACK`).
    - External Gateway: Use **YARP** routes prefixed with `/api/v1/{service-name}/*`.
 3. **Database Isolation:**
-   - Logical Database-per-service: `recipehub_identity`, `recipehub_recipe`, `recipehub_content`, `recipehub_audit`.
+   - Logical Database-per-service: `recipehub_identity`, `recipehub_recipe`, `recipehub_content`, `recipehub_audit`, `recipehub_quiz`.
    - Separate credentials per database service defined in `.env`.
 4. **Deferred Scope (Do NOT implement unless explicitly planned):**
    - Complex formula calculation logic.
@@ -108,3 +109,8 @@ RecipeHub/
   - Khi thiết kế, thêm mới hoặc chỉnh sửa UI/UX trên Web Frontend (`src/frontend/`), **BẮT BUỘC** phải đọc và tuân thủ `docs/DESIGN.md` trước khi thực hiện. Ngoại lệ duy nhất: không áp dụng cho mobile (`src/mobile/`).
   - Mọi quyết định thay đổi UI/UX (bố cục layout, phân cấp typography, component, màu sắc/token, animation, loading, điều hướng) **BẮT BUỘC** phải giải trình lý do ("vì sao làm vậy") bằng cách đối chiếu cụ thể với quy tắc, mục hoặc token trong `docs/DESIGN.md`.
   - Tuyệt đối không tự ý viết thêm file CSS biệt lập làm phân mảnh token, không phá vỡ hệ thống Semantic Tokens, và luôn kiểm tra hỗ trợ `prefers-reduced-motion: reduce`.
+
+- **System Design Compliance & Cảnh Báo Bắt Buộc (BẮT BUỘC cho cả Dev & AI):**
+  - **CẢNH BÁO ĐỎ:** Bộ tài liệu tại `docs/systemmd/` là Nguồn Sự Thật Duy Nhất (SSOT) về kiến trúc hệ thống và giao diện. Cả lập trình viên lẫn AI Agent tuyệt đối không được tự ý sáng tạo layout dị biệt, không tự chế sidebar/menu lệch luồng, không phá vỡ Clean Architecture hoặc nguyên tắc DB-First.
+  - Khi làm tính năng mới: BẮT BUỘC mở `docs/systemmd/governance.md` để đối chiếu checklist trước khi code.
+  - **Nếu có thay đổi/mở rộng chuẩn kiến trúc:** Khi thêm Role mới, thêm Service mới, thay đổi layout hay cấu hình route Gateway, **BẮT BUỘC PHẢI CẬP NHẬT CÁC FILE TƯƠNG ỨNG TRONG `docs/systemmd/` NGAY TRONG CÙNG COMMIT** với code thay đổi. Không bao giờ để code đi trước tài liệu hoặc tài liệu lệch chuẩn với code thực tế.
