@@ -1,5 +1,7 @@
 'use client';
 
+import { listAuditLogs } from '@/lib/api/audit';
+
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
@@ -17,9 +19,13 @@ export default function AdminPage() {
     userCount: 0,
     activeIngredientsCount: 0,
     totalIngredientsCount: 0,
-    auditCount: 0,
     mediaCount: 0,
     recipeCount: 0,
+  });
+  const [auditStatus, setAuditStatus] = useState<{ loading: boolean; error: boolean; count: number }>({
+    loading: true,
+    error: false,
+    count: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -27,10 +33,9 @@ export default function AdminPage() {
     let mounted = true;
     async function loadStats() {
       try {
-        const [users, ingredients, logs, media, recipes] = await Promise.all([
+        const [users, ingredients, media, recipes] = await Promise.all([
           repo.getUsers(),
           repo.getIngredients('', 'all', false),
-          repo.getAuditLogs(),
           repo.getMedia(),
           repo.getRecipes({ role: 'admin', userId: 'admin', email: 'admin@recipehub.demo', fullName: 'Administrator', lastActiveAt: Date.now() }),
         ]);
@@ -40,10 +45,20 @@ export default function AdminPage() {
             userCount: users.length,
             activeIngredientsCount: ingredients.filter((i) => i.isActive).length,
             totalIngredientsCount: ingredients.length,
-            auditCount: logs.length,
             mediaCount: media.length,
             recipeCount: recipes.total,
           });
+        }
+
+        try {
+          const auditRes = await listAuditLogs({ page: 1, pageSize: 1 });
+          if (mounted) {
+            setAuditStatus({ loading: false, error: false, count: auditRes.totalCount });
+          }
+        } catch {
+          if (mounted) {
+            setAuditStatus({ loading: false, error: true, count: 0 });
+          }
         }
       } catch {
         // demo stats fallback
@@ -80,7 +95,7 @@ export default function AdminPage() {
       desc: 'Truy vết toàn diện mọi hành động: tạo, sửa, phát hành công thức, khóa tài khoản và xuất bản tài liệu.',
       href: '/admin/logs',
       icon: ShieldCheck,
-      count: `${stats.auditCount} sự kiện ghi nhận`,
+      count: auditStatus.loading ? '...' : auditStatus.error ? 'Không tải được' : `${auditStatus.count} sự kiện ghi nhận`,
       tag: 'Audit Logs',
     },
     {

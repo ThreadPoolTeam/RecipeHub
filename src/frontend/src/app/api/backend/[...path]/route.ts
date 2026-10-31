@@ -1,4 +1,4 @@
-const ALLOWED_PREFIXES = ['api/v1/identity', 'api/v1/recipes', 'api/v1/content', 'api/v1/quiz'] as const;
+const ALLOWED_PREFIXES = ['api/v1/identity', 'api/v1/recipes', 'api/v1/content', 'api/v1/quiz', 'api/v1/audit'] as const;
 
 function getGatewayUrl(): string {
   const value = process.env.GATEWAY_INTERNAL_URL ?? 'http://localhost:5262';

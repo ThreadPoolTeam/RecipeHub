@@ -51,11 +51,16 @@ public sealed class ContentAuthenticationHandler(
                 return AuthenticateResult.Fail("Invalid user identifier in session.");
             }
 
-            var claims = new[]
+            var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, response.UserId),
-                new Claim(ClaimTypes.Role, response.Role.ToLowerInvariant())
+                new(ClaimTypes.NameIdentifier, response.UserId),
+                new(ClaimTypes.Role, response.Role.ToLowerInvariant())
             };
+
+            if (!string.IsNullOrWhiteSpace(response.DisplayName))
+            {
+                claims.Add(new Claim(ClaimTypes.Name, response.DisplayName));
+            }
 
             var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, Scheme.Name));
             return AuthenticateResult.Success(new AuthenticationTicket(principal, Scheme.Name));

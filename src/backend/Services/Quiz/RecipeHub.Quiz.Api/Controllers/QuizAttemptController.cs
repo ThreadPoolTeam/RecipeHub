@@ -22,8 +22,8 @@ public class QuizAttemptController : ControllerBase
         [FromRoute] Guid attemptId,
         CancellationToken ct = default)
     {
-        var (userId, _, _) = RequestActor.GetActor(HttpContext);
-        var resumeDto = await _attemptService.GetAttemptForResumeAsync(attemptId, userId, ct);
+        var (actor, _) = RequestActor.GetActor(HttpContext);
+        var resumeDto = await _attemptService.GetAttemptForResumeAsync(attemptId, actor.Id, ct);
         return Ok(resumeDto);
     }
 
@@ -33,8 +33,8 @@ public class QuizAttemptController : ControllerBase
         [FromBody] SubmitAnswersRequest request,
         CancellationToken ct = default)
     {
-        var (userId, _, _) = RequestActor.GetActor(HttpContext);
-        await _attemptService.SaveAnswersAsync(attemptId, request, userId, ct);
+        var (actor, _) = RequestActor.GetActor(HttpContext);
+        await _attemptService.SaveAnswersAsync(attemptId, request, actor.Id, ct);
         return NoContent();
     }
 
@@ -44,8 +44,8 @@ public class QuizAttemptController : ControllerBase
         [FromBody] SubmitAnswersRequest request,
         CancellationToken ct = default)
     {
-        var (userId, _, _) = RequestActor.GetActor(HttpContext);
-        var result = await _attemptService.SubmitAttemptAsync(attemptId, request, userId, ct);
+        var (actor, _) = RequestActor.GetActor(HttpContext);
+        var result = await _attemptService.SubmitAttemptAsync(attemptId, request, actor, ct);
         return Ok(result);
     }
 
@@ -61,8 +61,8 @@ public class QuizAttemptController : ControllerBase
         if (page < 1) page = 1;
         if (pageSize < 1 || pageSize > 100) pageSize = 10;
 
-        var (userId, _, _) = RequestActor.GetActor(HttpContext);
-        var (items, total) = await _attemptService.GetUserAttemptsAsync(userId, quizId, version, state, page, pageSize, ct);
+        var (actor, _) = RequestActor.GetActor(HttpContext);
+        var (items, total) = await _attemptService.GetUserAttemptsAsync(actor.Id, quizId, version, state, page, pageSize, ct);
 
         return Ok(new
         {
@@ -78,8 +78,8 @@ public class QuizAttemptController : ControllerBase
         [FromRoute] Guid attemptId,
         CancellationToken ct = default)
     {
-        var (userId, _, _) = RequestActor.GetActor(HttpContext);
-        var result = await _attemptService.GetAttemptResultAsync(attemptId, userId, ct);
+        var (actor, _) = RequestActor.GetActor(HttpContext);
+        var result = await _attemptService.GetAttemptResultAsync(attemptId, actor.Id, ct);
         return Ok(result);
     }
 }

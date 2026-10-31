@@ -46,6 +46,7 @@
 - Policies chuẩn hóa:
   - `ContentEditors`: Yêu cầu role `admin` hoặc `rnd` (quản trị tư liệu, tạo prompt AI, sinh ảnh, duyệt/hủy bản nháp, upload ảnh).
   - `ContentReaders`: Yêu cầu role `admin`, `rnd` hoặc `viewer` (kèm resource check xác thực quyền xem tư liệu gắn với recipe published/active).
+  - `AuditReaders`: Yêu cầu role `admin` (truy vấn danh sách nhật ký kiểm toán hệ thống `/api/v1/audit/logs`).
 
 ---
 

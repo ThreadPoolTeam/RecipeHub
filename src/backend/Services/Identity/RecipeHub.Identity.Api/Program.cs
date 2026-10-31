@@ -1,3 +1,4 @@
+using RecipeHub.BuildingBlocks.Audit;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Diagnostics;
@@ -19,6 +20,12 @@ builder.WebHost.ConfigureKestrel(options =>
 });
 builder.Services.AddIdentityApplication();
 builder.Services.AddIdentityInfrastructure(builder.Configuration, builder.Environment.IsDevelopment());
+var redisConn = builder.Configuration.GetConnectionString("Redis") ?? builder.Configuration["ConnectionStrings:Redis"];
+if (!string.IsNullOrWhiteSpace(redisConn))
+{
+    builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(_ => StackExchange.Redis.ConnectionMultiplexer.Connect(redisConn));
+}
+builder.Services.AddAuditActivityPublisher();
 builder.Services.AddAuthentication("Bearer").AddScheme<AuthenticationSchemeOptions, IdentityAuthenticationHandler>("Bearer", _ => { });
 builder.Services.AddAuthorization();
 builder.Services.AddGrpc();
@@ -56,10 +63,8 @@ if (app.Environment.IsDevelopment())
     if (builder.Configuration.GetValue<bool>("Identity:SeedDemoUsers"))
     {
         var users = scope.ServiceProvider.GetRequiredService<IUserService>();
-        var store = scope.ServiceProvider.GetRequiredService<IIdentityStore>();
         foreach (var (email, name, role) in new[] { ("admin@recipehub.demo", "Quản trị hệ thống", "admin"), ("rd@recipehub.demo", "Chuyên viên R&D", "rnd"), ("viewer@recipehub.demo", "Barista Viewer", "viewer") })
-            if (await store.FindEmailAsync(email, default) is null)
-                await users.CreateUserAsync(new(email, name, role, "Demo@1234"), default);
+            await users.SeedUserAsync(email, name, role, "Demo@1234", default);
     }
 }
 app.UseRateLimiter();

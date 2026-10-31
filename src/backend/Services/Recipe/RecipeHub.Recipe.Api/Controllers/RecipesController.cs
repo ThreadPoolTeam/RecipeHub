@@ -89,7 +89,7 @@ public sealed class RecipesController : ControllerBase
         CancellationToken cancellationToken)
     {
         var recipe = await _recipeService.CreateAsync(
-            request, RequestActor.GetUserId(HttpContext), cancellationToken);
+            request, RequestActor.GetActor(HttpContext), cancellationToken);
         return CreatedAtAction(nameof(GetById), new { publicId = recipe.Id }, recipe);
     }
 
@@ -100,7 +100,7 @@ public sealed class RecipesController : ControllerBase
         CancellationToken cancellationToken)
     {
         var recipe = await _recipeService.UpdateAsync(
-            publicId, request, RequestActor.GetUserId(HttpContext), cancellationToken);
+            publicId, request, RequestActor.GetActor(HttpContext), cancellationToken);
         return Ok(recipe);
     }
 
@@ -108,7 +108,7 @@ public sealed class RecipesController : ControllerBase
     public async Task<IActionResult> Archive(Guid publicId, CancellationToken cancellationToken)
     {
         await _recipeService.ArchiveAsync(
-            publicId, RequestActor.GetUserId(HttpContext), cancellationToken);
+            publicId, RequestActor.GetActor(HttpContext), cancellationToken);
         return NoContent();
     }
 
@@ -116,7 +116,7 @@ public sealed class RecipesController : ControllerBase
     public async Task<ActionResult<RecipeDetailResponse>> Activate(
         Guid publicId,
         CancellationToken cancellationToken) => Ok(await _recipeService.ActivateAsync(
-            publicId, RequestActor.GetUserId(HttpContext), cancellationToken));
+            publicId, RequestActor.GetActor(HttpContext), cancellationToken));
 
     [HttpPost("{publicId:guid}/copy")]
     public async Task<ActionResult<RecipeDetailResponse>> Copy(
@@ -125,7 +125,7 @@ public sealed class RecipesController : ControllerBase
         CancellationToken cancellationToken)
     {
         var recipe = await _recipeService.CopyAsync(
-            publicId, request, RequestActor.GetUserId(HttpContext), cancellationToken);
+            publicId, request, RequestActor.GetActor(HttpContext), cancellationToken);
         return CreatedAtAction(nameof(GetById), new { publicId = recipe.Id }, recipe);
     }
 
@@ -136,7 +136,7 @@ public sealed class RecipesController : ControllerBase
         CancellationToken cancellationToken)
     {
         var recipe = await _recipeService.PublishAsync(
-            publicId, versionId, RequestActor.GetUserId(HttpContext), cancellationToken);
+            publicId, versionId, RequestActor.GetActor(HttpContext), cancellationToken);
         return Ok(recipe);
     }
 }

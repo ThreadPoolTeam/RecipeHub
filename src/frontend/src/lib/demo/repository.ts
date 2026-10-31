@@ -799,10 +799,6 @@ export class DemoRepository {
     return updated;
   }
 
-  async getAuditLogs(): Promise<AuditEntry[]> {
-    const logs = await getAll<AuditEntry>('auditLogs');
-    return logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }
 
   async resetSystem(actor: SessionInfo): Promise<void> {
     await resetDatabase();

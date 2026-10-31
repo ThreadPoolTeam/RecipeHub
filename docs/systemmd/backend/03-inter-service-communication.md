@@ -25,6 +25,8 @@ Dùng cho các trường hợp cần dữ liệu ngay lập tức, kiểm tra t�
   - Xác thực phiên: Mọi request vào `/api/v1/content/*` đều được xác thực bằng cách gọi gRPC `IdentitySession.Validate` tới Identity Service (5011) với deadline 5s. Khi Identity không sẵn sàng: fail-closed ném `ContentDependencyException` map thành HTTP 503, không trả 401 giả.
   - Truy vấn ngữ cảnh & kiểm tra quyền: Forward Bearer token của caller qua header metadata `authorization: Bearer <token>` khi gọi `RecipeAiContextQuery` và `QuizRecipeQuery.GetQuizRecipeVersions` để kiểm tra recipe published/active cho Viewer.
 
+- **Audit Service**:
+  - Xác thực phiên: Mọi request vào `/api/v1/audit/*` đều được xác thực bằng cách gọi gRPC `IdentitySession.Validate` tới Identity Service (5011) với deadline 5s. Khi Identity không sẵn sàng: fail-closed ném `AuditDependencyException` map thành HTTP 503, không trả 401 giả. Yêu cầu quyền hạn vai trò `admin`.
 ---
 
 ## 2. Giao Tiếp Bất Đồng Bộ: Redis Streams
@@ -51,3 +53,12 @@ Dùng cho việc thông báo sự kiện (Domain Events / Integration Events) kh
   - Xác nhận xử lý thành công bằng `XACK`.
 - Background Worker đặt tại `src/backend/Workers/RecipeHub.BackgroundWorker/`.
 - Khi publish tin nhắn, sử dụng cờ `MKSTREAM` để tự động tạo stream nếu chưa tồn tại.
+
+### 2.3. Pipeline Nhật Ký Kiểm Toán (Audit Activity Pipeline)
+- **Stream:** `audit.activities.v1`
+- **Consumer Group:** `recipehub-audit` (thuộc `RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer`).
+- **Các nhà xuất bản (Producers):**
+  - **Identity Service**: `user.created`, `user.updated`, `user.role_changed`, `user.locked`, `user.unlocked`, `user.password_reset`.
+  - **Recipe Service**: `recipe.created`, `recipe.version_created`, `recipe.updated`, `recipe.published`, `recipe.archived`, `recipe.activated`.
+  - **Quiz Service**: `quiz.created`, `quiz.updated`, `quiz.published`, `quiz.archived`, `quiz.deleted`, `quiz.version_deleted`, `quiz.version_cloned`, `quiz.attempt_submitted`.
+- **Nguyên tắc độ tin cậy:** Producer publish best-effort với bounded timeout 3s; lỗi Redis không rollback business transaction đã commit. Consumer xác thực schema drift, ghi append-only vào `audit_logs` với quyền tối thiểu (`audit_user` chỉ có `SELECT` & `INSERT`).

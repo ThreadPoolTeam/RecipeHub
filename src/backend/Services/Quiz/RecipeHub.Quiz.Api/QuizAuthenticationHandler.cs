@@ -52,6 +52,11 @@ public sealed class QuizAuthenticationHandler(
                 new(ClaimTypes.Role, response.Role.ToLowerInvariant())
             };
 
+            if (!string.IsNullOrWhiteSpace(response.DisplayName))
+            {
+                claims.Add(new Claim(ClaimTypes.Name, response.DisplayName));
+            }
+
             var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, Scheme.Name));
             return AuthenticateResult.Success(new AuthenticationTicket(principal, Scheme.Name));
         }

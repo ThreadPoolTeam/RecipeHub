@@ -28,8 +28,8 @@ public class QuizResultsManagementController : ControllerBase
         if (page < 1) page = 1;
         if (pageSize < 1 || pageSize > 100) pageSize = 10;
 
-        var (userId, role, _) = RequestActor.GetActor(HttpContext);
-        var (items, total) = await _attemptService.GetManagementResultsAsync(userRef, quizId, version, userId, role, page, pageSize, ct);
+        var (actor, _) = RequestActor.GetActor(HttpContext);
+        var (items, total) = await _attemptService.GetManagementResultsAsync(userRef, quizId, version, actor.Id, actor.Role, page, pageSize, ct);
 
         return Ok(new
         {
@@ -45,8 +45,8 @@ public class QuizResultsManagementController : ControllerBase
         [FromRoute] Guid attemptId,
         CancellationToken ct = default)
     {
-        var (userId, role, _) = RequestActor.GetActor(HttpContext);
-        var detail = await _attemptService.GetManagementResultDetailAsync(attemptId, userId, role, ct);
+        var (actor, _) = RequestActor.GetActor(HttpContext);
+        var detail = await _attemptService.GetManagementResultDetailAsync(attemptId, actor.Id, actor.Role, ct);
         return Ok(detail);
     }
 }

@@ -1,3 +1,4 @@
+using RecipeHub.BuildingBlocks.Audit;
 using RecipeHub.Quiz.Application.DTOs;
 
 namespace RecipeHub.Quiz.Application.Interfaces;
@@ -11,19 +12,19 @@ public interface IQuizService
         Guid quizId, int versionNumber, Guid actorUserId, string actorRole, CancellationToken ct = default);
 
     Task<QuizManagementDetailDto> CreateQuizAsync(
-        CreateQuizRequest request, Guid actorUserId, string actorRole, string bearerToken, CancellationToken ct = default);
+        CreateQuizRequest request, AuditActor actor, string bearerToken, CancellationToken ct = default);
 
     Task<QuizManagementDetailDto> PatchQuizAsync(
-        Guid quizId, int versionNumber, PatchQuizRequest request, Guid actorUserId, string actorRole, string bearerToken, CancellationToken ct = default);
+        Guid quizId, int versionNumber, PatchQuizRequest request, AuditActor actor, string bearerToken, CancellationToken ct = default);
 
     Task DeleteQuizAsync(
-        Guid quizId, Guid actorUserId, string actorRole, CancellationToken ct = default);
+        Guid quizId, AuditActor actor, CancellationToken ct = default);
 
     Task DeleteDraftVersionAsync(
-        Guid quizId, int versionNumber, Guid actorUserId, string actorRole, CancellationToken ct = default);
+        Guid quizId, int versionNumber, AuditActor actor, CancellationToken ct = default);
 
     Task<QuizManagementDetailDto> CloneQuizVersionAsync(
-        Guid quizId, CloneQuizRequest request, Guid actorUserId, string actorRole, CancellationToken ct = default);
+        Guid quizId, CloneQuizRequest request, AuditActor actor, CancellationToken ct = default);
 
     Task<(List<QuizViewerListItemDto> Items, int Total)> GetViewerQuizzesAsync(
         string bearerToken, int page, int pageSize, CancellationToken ct = default);
