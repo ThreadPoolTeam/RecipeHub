@@ -7,6 +7,7 @@ import { Button, TextInput, Select, Alert, SearchInput } from '@/components/work
 import { DataTable } from '@/components/workspace/data-table';
 import { RoleBadge } from '@/components/workspace/status-badge';
 import { Dialog } from '@/components/workspace/dialog';
+import { Users } from 'lucide-react';
 
 export default function AdminUsersPage() {
   const { session, repo, dataVersion, touch } = useDemo();
@@ -214,8 +215,11 @@ export default function AdminUsersPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E2D9]">
         <div>
-          <h1 className="text-2xl font-bold text-[#1A1917]">Quản lý Tài khoản &amp; Phân quyền</h1>
-          <p className="text-[#706E68] text-xs mt-1">
+          <h1 className="text-2xl font-bold text-[#1A1917] flex items-center gap-2.5">
+            <Users className="w-6 h-6 text-[#B47820]" />
+            Quản lý Tài khoản &amp; Phân quyền
+          </h1>
+          <p className="text-[#706E68] text-sm mt-1">
             Quản lý tài khoản, vai trò R&amp;D / Barista Viewer và quyền truy cập công thức.
           </p>
         </div>
@@ -397,7 +401,7 @@ export default function AdminUsersPage() {
 
           {/* Cho phép chọn recipeIds nếu là Viewer */}
           {newRole === 'viewer' && (
-            <div className="p-3 bg-[#FAF9F5] border border-[#E8E2D9] rounded-lg space-y-2">
+            <div className="p-3 bg-[#FAF9F5] border border-[#E8E2D9] rounded-xl space-y-2">
               <div className="text-xs font-semibold text-[#1A1917]">
                 Phân quyền xem công thức (Viewer Scope)
               </div>
@@ -474,7 +478,7 @@ export default function AdminUsersPage() {
           />
 
           {editRole === 'viewer' && (
-            <div className="p-3 bg-[#FAF9F5] border border-[#E8E2D9] rounded-lg space-y-2">
+            <div className="p-3 bg-[#FAF9F5] border border-[#E8E2D9] rounded-xl space-y-2">
               <div className="text-xs font-semibold text-[#1A1917]">
                 Phân quyền xem công thức (Viewer Scope)
               </div>

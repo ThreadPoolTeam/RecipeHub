@@ -386,7 +386,7 @@ export default function RecipeDetailPage() {
 
       {/* Archived Warning Banner */}
       {recipe.status === 'Archived' && (
-        <div className="p-4 bg-zinc-100 border border-zinc-300 rounded-lg flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+        <div className="p-4 bg-zinc-100 border border-zinc-300 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-2 text-zinc-700 text-sm">
             <Archive className="w-4 h-4 text-zinc-500" />
             <span>Công thức này đang ở trạng thái <strong>Lưu trữ</strong> và đang bị khóa chỉnh sửa.</span>
@@ -542,7 +542,7 @@ export default function RecipeDetailPage() {
               return (
                 <div
                   key={step.id}
-                  className="bg-[#FAF9F5] border border-[#E8E2D9] rounded-lg p-4 space-y-2.5"
+                  className="bg-[#FAF9F5] border border-[#E8E2D9] rounded-xl p-4 space-y-2.5"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">

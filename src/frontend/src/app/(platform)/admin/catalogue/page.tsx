@@ -7,6 +7,7 @@ import { Button, TextInput, Select, TextArea, Alert, SearchInput } from '@/compo
 import { DataTable } from '@/components/workspace/data-table';
 import { Dialog } from '@/components/workspace/dialog';
 import { CatalogItem, UnitItem } from '@/lib/api/backend-repository';
+import { Leaf } from 'lucide-react';
 
 type CatalogueEditor =
   | { kind: 'ingredient-category'; item: CatalogItem | null }
@@ -351,8 +352,11 @@ export default function AdminCataloguePage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E2D9]">
         <div>
-          <h1 className="text-2xl font-bold text-[#1A1917]">Danh mục Đơn vị &amp; Nguyên liệu Toàn cục</h1>
-          <p className="text-[#706E68] text-xs mt-1">
+          <h1 className="text-2xl font-bold text-[#1A1917] flex items-center gap-2.5">
+            <Leaf className="w-6 h-6 text-[#B47820]" />
+            Danh mục Đơn vị &amp; Nguyên liệu Toàn cục
+          </h1>
+          <p className="text-[#706E68] text-sm mt-1">
             Quy chuẩn danh mục nguyên vật liệu R&amp;D BeverageLab, quản lý đơn vị đo lường và định mức chi phí.
           </p>
         </div>
@@ -567,20 +571,20 @@ export default function AdminCataloguePage() {
 
       {/* Metrics Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
-        <div className="bg-white border border-[#E8E2D9] rounded-lg p-3 shadow-xs">
+        <div className="bg-white border border-[#E8E2D9] rounded-xl p-3 shadow-xs">
           <div className="text-[11px] text-[#706E68] uppercase font-semibold">Tổng nguyên liệu</div>
           <div className="text-xl font-bold text-[#1A1917] mt-1">{stats.total}</div>
         </div>
-        <div className="bg-white border border-[#E8E2D9] rounded-lg p-3 shadow-xs">
+        <div className="bg-white border border-[#E8E2D9] rounded-xl p-3 shadow-xs">
           <div className="text-[11px] text-[#706E68] uppercase font-semibold">Đang kích hoạt</div>
           <div className="text-xl font-bold text-emerald-700 mt-1">{stats.active}</div>
         </div>
-        <div className="bg-white border border-[#E8E2D9] rounded-lg p-3 shadow-xs">
+        <div className="bg-white border border-[#E8E2D9] rounded-xl p-3 shadow-xs">
           <div className="text-[11px] text-[#706E68] uppercase font-semibold">Vô hiệu hóa</div>
           <div className="text-xl font-bold text-[#706E68] mt-1">{stats.inactive}</div>
         </div>
         {groups.map((g) => (
-          <div key={g} className="bg-white border border-[#E8E2D9] rounded-lg p-3 shadow-xs">
+          <div key={g} className="bg-white border border-[#E8E2D9] rounded-xl p-3 shadow-xs">
             <div className="text-[11px] text-[#706E68] uppercase font-semibold truncate">{g}</div>
             <div className="text-xl font-bold text-[#B47820] mt-1">{stats.groupCount[g] || 0}</div>
           </div>

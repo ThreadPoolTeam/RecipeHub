@@ -618,7 +618,9 @@ export default function EditRecipePage() {
             <span className="text-[#B47820] font-medium">Biên Tập</span>
           </div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-[#1A1917]">Chỉnh Sửa Công Thức</h1>
+            <h1 className="text-2xl font-bold text-[#1A1917] flex items-center gap-2">
+              <FlaskConical className="w-5 h-5 text-[#B47820]" /> Chỉnh Sửa Công Thức
+            </h1>
           </div>
         </div>
 
