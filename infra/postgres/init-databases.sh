@@ -18,10 +18,11 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
     CREATE DATABASE ${CONTENT_DB_NAME:-recipehub_content} OWNER ${CONTENT_DB_USER:-content_user};
     GRANT ALL PRIVILEGES ON DATABASE ${CONTENT_DB_NAME:-recipehub_content} TO ${CONTENT_DB_USER:-content_user};
 
-    -- 4. Audit Service
+    -- 4. Audit Service: DDL migration role owns DB; runtime role gets least privilege (append/read only)
+    CREATE USER ${AUDIT_MIGRATOR_USER:-audit_migrator} WITH ENCRYPTED PASSWORD '${AUDIT_MIGRATOR_PASSWORD:-audit_migrator_pw}';
     CREATE USER ${AUDIT_DB_USER:-audit_user} WITH ENCRYPTED PASSWORD '${AUDIT_DB_PASSWORD:-audit_pw}';
-    CREATE DATABASE ${AUDIT_DB_NAME:-recipehub_audit} OWNER ${AUDIT_DB_USER:-audit_user};
-    GRANT ALL PRIVILEGES ON DATABASE ${AUDIT_DB_NAME:-recipehub_audit} TO ${AUDIT_DB_USER:-audit_user};
+    CREATE DATABASE ${AUDIT_DB_NAME:-recipehub_audit} OWNER ${AUDIT_MIGRATOR_USER:-audit_migrator};
+    GRANT CONNECT ON DATABASE ${AUDIT_DB_NAME:-recipehub_audit} TO ${AUDIT_DB_USER:-audit_user};
 
     -- 5. Quiz Service: DDL migration role owns DB; runtime role gets least privilege
     CREATE USER ${QUIZ_MIGRATOR_USER:-quiz_migrator} WITH ENCRYPTED PASSWORD '${QUIZ_MIGRATOR_PASSWORD:-quiz_migrator_pw}';
@@ -42,4 +43,17 @@ PGPASSWORD="${QUIZ_MIGRATOR_PASSWORD:-quiz_migrator_pw}" psql -v ON_ERROR_STOP=1
     GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA quiz_db TO ${QUIZ_DB_USER:-quiz_user};
     ALTER DEFAULT PRIVILEGES IN SCHEMA quiz_db GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${QUIZ_DB_USER:-quiz_user};
     ALTER DEFAULT PRIVILEGES IN SCHEMA quiz_db GRANT USAGE, SELECT ON SEQUENCES TO ${QUIZ_DB_USER:-quiz_user};
+EOSQL
+
+# Execute official versioned DDL as audit migration role (sole authority for fresh DB)
+if [ -f "/schema/audit-db/RecipeHub.Audit.postgres" ]; then
+    PGPASSWORD="${AUDIT_MIGRATOR_PASSWORD:-audit_migrator_pw}" psql -v ON_ERROR_STOP=1 --username "${AUDIT_MIGRATOR_USER:-audit_migrator}" --dbname "${AUDIT_DB_NAME:-recipehub_audit}" -f "/schema/audit-db/RecipeHub.Audit.postgres"
+fi
+
+# Grant least-privilege runtime DML to audit_user (SELECT, INSERT only, NO UPDATE/DELETE/DDL)
+PGPASSWORD="${AUDIT_MIGRATOR_PASSWORD:-audit_migrator_pw}" psql -v ON_ERROR_STOP=1 --username "${AUDIT_MIGRATOR_USER:-audit_migrator}" --dbname "${AUDIT_DB_NAME:-recipehub_audit}" <<-EOSQL
+    GRANT USAGE ON SCHEMA audit_db TO ${AUDIT_DB_USER:-audit_user};
+    GRANT SELECT, INSERT ON ALL TABLES IN SCHEMA audit_db TO ${AUDIT_DB_USER:-audit_user};
+    ALTER DEFAULT PRIVILEGES IN SCHEMA audit_db GRANT SELECT, INSERT ON TABLES TO ${AUDIT_DB_USER:-audit_user};
+    REVOKE UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON ALL TABLES IN SCHEMA audit_db FROM ${AUDIT_DB_USER:-audit_user};
 EOSQL

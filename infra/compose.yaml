@@ -20,6 +20,8 @@ services:
       CONTENT_DB_USER: ${CONTENT_DB_USER:-content_user}
       CONTENT_DB_PASSWORD: ${CONTENT_DB_PASSWORD:-content_pw}
       CONTENT_DB_NAME: ${CONTENT_DB_NAME:-recipehub_content}
+      AUDIT_MIGRATOR_USER: ${AUDIT_MIGRATOR_USER:-audit_migrator}
+      AUDIT_MIGRATOR_PASSWORD: ${AUDIT_MIGRATOR_PASSWORD:-audit_migrator_pw}
       AUDIT_DB_USER: ${AUDIT_DB_USER:-audit_user}
       AUDIT_DB_PASSWORD: ${AUDIT_DB_PASSWORD:-audit_pw}
       AUDIT_DB_NAME: ${AUDIT_DB_NAME:-recipehub_audit}
@@ -31,6 +33,7 @@ services:
     volumes:
       - ./postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
       - ../docs/database-schema/quiz-db:/schema/quiz-db:ro
+      - ../docs/database-schema/audit-db:/schema/audit-db:ro
       - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-recipehub_admin}"]
@@ -126,8 +129,11 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__Database=Host=postgres;Port=5432;Database=${AUDIT_DB_NAME:-recipehub_audit};Username=${AUDIT_DB_USER:-audit_user};Password=${AUDIT_DB_PASSWORD:-audit_pw}
+      - Grpc__IdentityServiceUrl=http://identity-service:5011
     depends_on:
       postgres:
+        condition: service_healthy
+      identity-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5004/health/live || exit 1"]
@@ -169,6 +175,7 @@ services:
       - DOTNET_ENVIRONMENT=Development
       - ConnectionStrings__Redis=redis:6379
       - ConnectionStrings__ContentDb=Host=postgres;Port=5432;Database=${CONTENT_DB_NAME:-recipehub_content};Username=${CONTENT_DB_USER:-content_user};Password=${CONTENT_DB_PASSWORD:-content_pw}
+      - ConnectionStrings__AuditDb=Host=postgres;Port=5432;Database=${AUDIT_DB_NAME:-recipehub_audit};Username=${AUDIT_DB_USER:-audit_user};Password=${AUDIT_DB_PASSWORD:-audit_pw}
       - Grpc__RecipeServiceUrl=http://recipe-service:5012
       - TemporaryStorage__BasePath=/app/temp-drafts
     volumes:
