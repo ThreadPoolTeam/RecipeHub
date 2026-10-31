@@ -1,3 +1,4 @@
+using Grpc.Net.Client;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,6 +9,8 @@ using RecipeHub.Content.Infrastructure.Outbox;
 using RecipeHub.Content.Infrastructure.Data;
 using RecipeHub.Content.Infrastructure.Repositories;
 using RecipeHub.Content.Infrastructure.Storage;
+using RecipeHub.GrpcContracts.Content;
+using RecipeHub.GrpcContracts.Recipe;
 
 namespace RecipeHub.Content.Infrastructure;
 
@@ -41,9 +44,12 @@ public static class DependencyInjection
         services.AddHttpClient<IAiImagePromptTranslator, GeminiPromptTranslator>();
         services.AddHttpClient<IAiImageGenerator, CloudflareFluxGenerator>();
 
-        // gRPC Client
+        // gRPC Clients
+        var recipeGrpcUrl = configuration["Grpc:RecipeServiceUrl"] ?? "http://localhost:5012";
+        services.AddSingleton(_ => GrpcChannel.ForAddress(recipeGrpcUrl));
+        services.AddSingleton(sp => new RecipeAiContextQuery.RecipeAiContextQueryClient(sp.GetRequiredService<GrpcChannel>()));
+        services.AddSingleton(sp => new QuizRecipeQuery.QuizRecipeQueryClient(sp.GetRequiredService<GrpcChannel>()));
         services.AddScoped<IRecipeContextClient, RecipeGrpcContextClient>();
-
         // Outbox relay background service
         services.AddHostedService<OutboxProcessorHostedService>();
 
