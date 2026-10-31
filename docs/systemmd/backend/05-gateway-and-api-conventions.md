@@ -40,6 +40,13 @@
 - Bổ sung `ProducesResponseType` trên Action để Swagger hiển thị rõ ràng mã lỗi 200, 400, 404, 409.
 - **Quy định nghiêm ngặt từ AGENTS.md:** CẤM viết comment XML vô hàm controller.
 
+### 2.4. Phân Quyền & Xác Thực (Authorization Policies)
+- Tất cả API nghiệp vụ `/api/v1/{service}/*` bắt buộc yêu cầu xác thực Bearer JWT token từ Identity. Tuyệt đối không chấp nhận fake actor header `X-User-Id`.
+- Endpoint liveness/readiness `/health/live` và `/health/ready` là public (nằm ngoài tiền tố nghiệp vụ `/api/v1/*`).
+- Policies chuẩn hóa:
+  - `ContentEditors`: Yêu cầu role `admin` hoặc `rnd` (quản trị tư liệu, tạo prompt AI, sinh ảnh, duyệt/hủy bản nháp, upload ảnh).
+  - `ContentReaders`: Yêu cầu role `admin`, `rnd` hoặc `viewer` (kèm resource check xác thực quyền xem tư liệu gắn với recipe published/active).
+
 ---
 
 ## 3. Xử Lý Ngoại Lệ Toàn Cục (Global Exception Handling)

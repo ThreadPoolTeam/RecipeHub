@@ -20,6 +20,11 @@ Dùng cho các trường hợp cần dữ liệu ngay lập tức, kiểm tra t�
 2. Fallback hoặc Xử lý ngoại lệ gRPC: Client bắt lỗi `RpcException`, chuyển đổi thành Domain/Application Exception thân thiện.
 3. Không lạm dụng: Chỉ dùng gRPC cho truy vấn đọc dữ liệu cần thiết; cấm dùng gRPC để cập nhật dây chuyền dữ liệu giữa nhiều service (sẽ gây phân tán giao dịch và dễ deadlock).
 
+### 1.3. Xác Thực Danh Tính & Quyền Truy Cập Qua gRPC
+- **Content Service**:
+  - Xác thực phiên: Mọi request vào `/api/v1/content/*` đều được xác thực bằng cách gọi gRPC `IdentitySession.Validate` tới Identity Service (5011) với deadline 5s. Khi Identity không sẵn sàng: fail-closed ném `ContentDependencyException` map thành HTTP 503, không trả 401 giả.
+  - Truy vấn ngữ cảnh & kiểm tra quyền: Forward Bearer token của caller qua header metadata `authorization: Bearer <token>` khi gọi `RecipeAiContextQuery` và `QuizRecipeQuery.GetQuizRecipeVersions` để kiểm tra recipe published/active cho Viewer.
+
 ---
 
 ## 2. Giao Tiếp Bất Đồng Bộ: Redis Streams
