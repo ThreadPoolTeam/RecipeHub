@@ -1,3 +1,6 @@
+using Microsoft.Extensions.Logging;
+using RecipeHub.BuildingBlocks.Audit;
+using RecipeHub.BuildingBlocks.Events;
 using RecipeHub.Quiz.Application.DTOs;
 using RecipeHub.Quiz.Application.Interfaces;
 using RecipeHub.Quiz.Domain.Entities;
@@ -8,11 +11,32 @@ public class QuizService : IQuizService
 {
     private readonly IQuizRepository _quizRepository;
     private readonly IQuizRecipeClient _recipeClient;
+    private readonly IAuditActivityPublisher _auditPublisher;
+    private readonly ILogger<QuizService> _logger;
 
-    public QuizService(IQuizRepository quizRepository, IQuizRecipeClient recipeClient)
+    public QuizService(
+        IQuizRepository quizRepository,
+        IQuizRecipeClient recipeClient,
+        IAuditActivityPublisher auditPublisher,
+        ILogger<QuizService> logger)
     {
         _quizRepository = quizRepository;
         _recipeClient = recipeClient;
+        _auditPublisher = auditPublisher;
+        _logger = logger;
+    }
+
+    private async Task SafePublishAuditAsync(AuditActivityEvent evt)
+    {
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            await _auditPublisher.PublishAsync("quiz", evt, cts.Token);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to publish audit event for action {Action} on {TargetType} {TargetId}", evt.Action, evt.TargetType, evt.TargetId);
+        }
     }
 
     public async Task<(List<QuizDto> Items, int Total)> GetManagementQuizzesAsync(
@@ -63,8 +87,9 @@ public class QuizService : IQuizService
     }
 
     public async Task<QuizManagementDetailDto> CreateQuizAsync(
-        CreateQuizRequest request, Guid actorUserId, string actorRole, string bearerToken, CancellationToken ct = default)
+        CreateQuizRequest request, AuditActor actor, string bearerToken, CancellationToken ct = default)
     {
+        actor.EnsureValid();
         if (string.IsNullOrWhiteSpace(request.Code))
             throw new ArgumentException("Quiz code is required.");
         if (string.IsNullOrWhiteSpace(request.Title))
@@ -91,7 +116,7 @@ public class QuizService : IQuizService
             Code = request.Code.Trim(),
             Title = request.Title.Trim(),
             Description = request.Description?.Trim(),
-            CreatedByUserRef = actorUserId,
+            CreatedByUserRef = actor.Id,
             NextVersionNumber = 2,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -104,7 +129,7 @@ public class QuizService : IQuizService
             RecipeVersionRef = request.RecipeVersionId,
             PassingScore = request.PassingScore,
             State = "draft",
-            CreatedByUserRef = actorUserId,
+            CreatedByUserRef = actor.Id,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -140,12 +165,23 @@ public class QuizService : IQuizService
         await _quizRepository.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
 
+        await SafePublishAuditAsync(new AuditActivityEvent(
+            actor.Id,
+            actor.Name,
+            actor.Role,
+            "quiz.created",
+            "quiz",
+            quiz.PublicId,
+            $"Tạo bài kiểm tra '{quiz.Title}' (mã: {quiz.Code})."
+        ));
+
         return MapToDetailDto(quiz, initialVersion);
     }
 
     public async Task<QuizManagementDetailDto> PatchQuizAsync(
-        Guid quizId, int versionNumber, PatchQuizRequest request, Guid actorUserId, string actorRole, string bearerToken, CancellationToken ct = default)
+        Guid quizId, int versionNumber, PatchQuizRequest request, AuditActor actor, string bearerToken, CancellationToken ct = default)
     {
+        actor.EnsureValid();
         var isStateTransition = request.HasState && !string.IsNullOrWhiteSpace(request.State);
         var hasContentFields = request.HasTitle || request.HasDescription || request.HasRecipeVersionId || request.HasPassingScore || request.HasQuestions;
 
@@ -166,7 +202,7 @@ public class QuizService : IQuizService
         if (quiz is null)
             throw new KeyNotFoundException($"Quiz '{quizId}' was not found.");
 
-        if (actorRole.ToLowerInvariant() != "admin" && quiz.CreatedByUserRef != actorUserId)
+        if (actor.Role != "admin" && quiz.CreatedByUserRef != actor.Id)
             throw new UnauthorizedAccessException("You are not authorized to update this quiz.");
 
         // 2. Lock version
@@ -187,7 +223,7 @@ public class QuizService : IQuizService
                 return MapToDetailDto(quiz, version);
             }
 
-            if (actorRole.ToLowerInvariant() != "admin")
+            if (actor.Role != "admin")
                 throw new UnauthorizedAccessException("Only admin is authorized to publish or archive quiz versions.");
             if (version.State == "draft")
             {
@@ -302,19 +338,52 @@ public class QuizService : IQuizService
         await _quizRepository.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
 
+        string auditAction;
+        string auditSummary;
+        if (isStateTransition)
+        {
+            var targetState = request.State!.Trim().ToLowerInvariant();
+            if (targetState == "published")
+            {
+                auditAction = "quiz.published";
+                auditSummary = $"Xuất bản bài kiểm tra '{quiz.Title}' (v{version.VersionNumber}).";
+            }
+            else
+            {
+                auditAction = "quiz.archived";
+                auditSummary = $"Lưu trữ bài kiểm tra '{quiz.Title}' (v{version.VersionNumber}).";
+            }
+        }
+        else
+        {
+            auditAction = "quiz.updated";
+            auditSummary = $"Cập nhật nội dung bài kiểm tra '{quiz.Title}' (v{version.VersionNumber}).";
+        }
+
+        await SafePublishAuditAsync(new AuditActivityEvent(
+            actor.Id,
+            actor.Name,
+            actor.Role,
+            auditAction,
+            "quiz",
+            quiz.PublicId,
+            auditSummary
+        ));
+
         return MapToDetailDto(quiz, version);
     }
 
     public async Task DeleteQuizAsync(
-        Guid quizId, Guid actorUserId, string actorRole, CancellationToken ct = default)
+        Guid quizId, AuditActor actor, CancellationToken ct = default)
     {
+        actor.EnsureValid();
         await using var tx = await _quizRepository.BeginTransactionAsync(ct);
 
         var quiz = await _quizRepository.GetByPublicIdForUpdateAsync(quizId, ct);
         if (quiz is null)
             throw new KeyNotFoundException($"Quiz '{quizId}' was not found.");
 
-        if (actorRole.ToLowerInvariant() != "admin" && quiz.CreatedByUserRef != actorUserId)
+        if (actor.Role != "admin" && quiz.CreatedByUserRef != actor.Id)
             throw new UnauthorizedAccessException("You are not authorized to delete this quiz.");
 
         // Check: all versions must be draft and have no attempts
@@ -331,18 +400,29 @@ public class QuizService : IQuizService
         await _quizRepository.DeleteQuizAsync(quiz, ct);
         await _quizRepository.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
+
+        await SafePublishAuditAsync(new AuditActivityEvent(
+            actor.Id,
+            actor.Name,
+            actor.Role,
+            "quiz.deleted",
+            "quiz",
+            quiz.PublicId,
+            $"Xóa bài kiểm tra '{quiz.Title}' (mã: {quiz.Code})."
+        ));
     }
 
     public async Task DeleteDraftVersionAsync(
-        Guid quizId, int versionNumber, Guid actorUserId, string actorRole, CancellationToken ct = default)
+        Guid quizId, int versionNumber, AuditActor actor, CancellationToken ct = default)
     {
+        actor.EnsureValid();
         await using var tx = await _quizRepository.BeginTransactionAsync(ct);
 
         var quiz = await _quizRepository.GetByPublicIdForUpdateAsync(quizId, ct);
         if (quiz is null)
             throw new KeyNotFoundException($"Quiz '{quizId}' was not found.");
 
-        if (actorRole.ToLowerInvariant() != "admin" && quiz.CreatedByUserRef != actorUserId)
+        if (actor.Role != "admin" && quiz.CreatedByUserRef != actor.Id)
             throw new UnauthorizedAccessException("You are not authorized to delete versions of this quiz.");
 
         if (quiz.Versions.Count <= 1)
@@ -363,11 +443,22 @@ public class QuizService : IQuizService
         await _quizRepository.DeleteQuizVersionAsync(version, ct);
         await _quizRepository.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
+
+        await SafePublishAuditAsync(new AuditActivityEvent(
+            actor.Id,
+            actor.Name,
+            actor.Role,
+            "quiz.version_deleted",
+            "quiz_version",
+            version.PublicId,
+            $"Xóa bản nháp v{versionNumber} của bài kiểm tra '{quiz.Title}'."
+        ));
     }
 
     public async Task<QuizManagementDetailDto> CloneQuizVersionAsync(
-        Guid quizId, CloneQuizRequest request, Guid actorUserId, string actorRole, CancellationToken ct = default)
+        Guid quizId, CloneQuizRequest request, AuditActor actor, CancellationToken ct = default)
     {
+        actor.EnsureValid();
         if (request.SourceVersion <= 0)
             throw new ArgumentException("Source version must be a positive integer.");
 
@@ -378,7 +469,7 @@ public class QuizService : IQuizService
         if (quiz is null)
             throw new KeyNotFoundException($"Quiz '{quizId}' was not found.");
 
-        if (actorRole.ToLowerInvariant() != "admin" && quiz.CreatedByUserRef != actorUserId)
+        if (actor.Role != "admin" && quiz.CreatedByUserRef != actor.Id)
             throw new UnauthorizedAccessException("You are not authorized to clone this quiz.");
 
         // 2. Lock source version
@@ -398,7 +489,7 @@ public class QuizService : IQuizService
             RecipeVersionRef = sourceVersion.RecipeVersionRef,
             PassingScore = sourceVersion.PassingScore,
             State = "draft",
-            CreatedByUserRef = actorUserId,
+            CreatedByUserRef = actor.Id,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -429,6 +520,16 @@ public class QuizService : IQuizService
         quiz.Versions.Add(newVersion);
         await _quizRepository.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
+
+        await SafePublishAuditAsync(new AuditActivityEvent(
+            actor.Id,
+            actor.Name,
+            actor.Role,
+            "quiz.version_cloned",
+            "quiz_version",
+            newVersion.PublicId,
+            $"Nhân bản v{request.SourceVersion} sang v{newVersionNumber} cho bài kiểm tra '{quiz.Title}'."
+        ));
 
         return MapToDetailDto(quiz, newVersion);
     }

@@ -21,6 +21,10 @@ public sealed class RecipeAuthenticationHandler(IOptionsMonitor<AuthenticationSc
                 deadline: DateTime.UtcNow.AddSeconds(5), cancellationToken: Context.RequestAborted);
             if (!response.Valid) return AuthenticateResult.Fail("Session đã hết hạn hoặc bị thu hồi.");
             var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, response.UserId), new(ClaimTypes.Role, response.Role) };
+            if (!string.IsNullOrWhiteSpace(response.DisplayName))
+            {
+                claims.Add(new Claim(ClaimTypes.Name, response.DisplayName));
+            }
             return AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(new ClaimsIdentity(claims, Scheme.Name)), Scheme.Name));
         }
         catch (RpcException error)

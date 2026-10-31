@@ -1,3 +1,4 @@
+using RecipeHub.BuildingBlocks.Audit;
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
@@ -55,6 +56,12 @@ builder.Services.AddExceptionHandler<QuizExceptionHandler>();
 
 builder.Services.AddQuizApplication();
 builder.Services.AddQuizInfrastructure(builder.Configuration);
+var redisConn = builder.Configuration.GetConnectionString("Redis") ?? builder.Configuration["ConnectionStrings:Redis"];
+if (!string.IsNullOrWhiteSpace(redisConn))
+{
+    builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(_ => StackExchange.Redis.ConnectionMultiplexer.Connect(redisConn));
+}
+builder.Services.AddAuditActivityPublisher();
 
 var app = builder.Build();
 

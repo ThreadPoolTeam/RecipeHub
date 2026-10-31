@@ -15,8 +15,13 @@ public sealed class IdentityAuthenticationHandler(IOptionsMonitor<Authentication
         if (!header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)) return AuthenticateResult.NoResult();
         var session = await auth.ValidateAsync(header[7..].Trim(), Context.RequestAborted);
         if (session is null) return AuthenticateResult.Fail("Session đã hết hạn hoặc bị thu hồi.");
-        var claims = new[] { new Claim(ClaimTypes.NameIdentifier, session.User.Id.ToString()), new Claim(ClaimTypes.Role, session.User.Role),
-            new Claim("session_id", session.SessionId.ToString()) };
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, session.User.Id.ToString()),
+            new Claim(ClaimTypes.Role, session.User.Role),
+            new Claim(ClaimTypes.Name, session.User.FullName),
+            new Claim("session_id", session.SessionId.ToString())
+        };
         return AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(new ClaimsIdentity(claims, Scheme.Name)), Scheme.Name));
     }
 }

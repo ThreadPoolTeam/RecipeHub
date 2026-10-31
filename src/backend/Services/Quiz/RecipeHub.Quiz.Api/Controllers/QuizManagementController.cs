@@ -55,8 +55,8 @@ public class QuizManagementController : ControllerBase
         if (page < 1) page = 1;
         if (pageSize < 1 || pageSize > 100) pageSize = 10;
 
-        var (userId, role, _) = RequestActor.GetActor(HttpContext);
-        var (items, total) = await _quizService.GetManagementQuizzesAsync(code, title, state, userId, role, page, pageSize, ct);
+        var (actor, _) = RequestActor.GetActor(HttpContext);
+        var (items, total) = await _quizService.GetManagementQuizzesAsync(code, title, state, actor.Id, actor.Role, page, pageSize, ct);
 
         return Ok(new
         {
@@ -72,8 +72,8 @@ public class QuizManagementController : ControllerBase
         [FromBody] CreateQuizRequest request,
         CancellationToken ct = default)
     {
-        var (userId, role, token) = RequestActor.GetActor(HttpContext);
-        var result = await _quizService.CreateQuizAsync(request, userId, role, token, ct);
+        var (actor, token) = RequestActor.GetActor(HttpContext);
+        var result = await _quizService.CreateQuizAsync(request, actor, token, ct);
         return StatusCode(StatusCodes.Status201Created, result);
     }
 
@@ -85,8 +85,8 @@ public class QuizManagementController : ControllerBase
         if (ValidateVersionQuery(out var version) is { } error)
             return error;
 
-        var (userId, role, _) = RequestActor.GetActor(HttpContext);
-        var detail = await _quizService.GetManagementQuizDetailAsync(quizId, version, userId, role, ct);
+        var (actor, _) = RequestActor.GetActor(HttpContext);
+        var detail = await _quizService.GetManagementQuizDetailAsync(quizId, version, actor.Id, actor.Role, ct);
         return Ok(detail);
     }
 
@@ -199,8 +199,8 @@ public class QuizManagementController : ControllerBase
             patchReq.State = sProp.GetString();
         }
 
-        var (userId, role, token) = RequestActor.GetActor(HttpContext);
-        var result = await _quizService.PatchQuizAsync(quizId, version, patchReq, userId, role, token, ct);
+        var (actor, token) = RequestActor.GetActor(HttpContext);
+        var result = await _quizService.PatchQuizAsync(quizId, version, patchReq, actor, token, ct);
         return Ok(result);
     }
 
@@ -209,8 +209,8 @@ public class QuizManagementController : ControllerBase
         [FromRoute] Guid quizId,
         CancellationToken ct = default)
     {
-        var (userId, role, _) = RequestActor.GetActor(HttpContext);
-        await _quizService.DeleteQuizAsync(quizId, userId, role, ct);
+        var (actor, _) = RequestActor.GetActor(HttpContext);
+        await _quizService.DeleteQuizAsync(quizId, actor, ct);
         return NoContent();
     }
 
@@ -222,8 +222,8 @@ public class QuizManagementController : ControllerBase
         if (ValidateVersionQuery(out var version) is { } error)
             return error;
 
-        var (userId, role, _) = RequestActor.GetActor(HttpContext);
-        await _quizService.DeleteDraftVersionAsync(quizId, version, userId, role, ct);
+        var (actor, _) = RequestActor.GetActor(HttpContext);
+        await _quizService.DeleteDraftVersionAsync(quizId, version, actor, ct);
         return NoContent();
     }
 
@@ -233,8 +233,8 @@ public class QuizManagementController : ControllerBase
         [FromBody] CloneQuizRequest request,
         CancellationToken ct = default)
     {
-        var (userId, role, _) = RequestActor.GetActor(HttpContext);
-        var result = await _quizService.CloneQuizVersionAsync(quizId, request, userId, role, ct);
+        var (actor, _) = RequestActor.GetActor(HttpContext);
+        var result = await _quizService.CloneQuizVersionAsync(quizId, request, actor, ct);
         return StatusCode(StatusCodes.Status201Created, result);
     }
 }

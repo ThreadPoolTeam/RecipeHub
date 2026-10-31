@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using System.Globalization;
 using RecipeHub.Recipe.Application.DTOs;
 using RecipeHub.Recipe.Application.Interfaces;
@@ -11,14 +12,21 @@ public sealed class RecipeService : IRecipeService
     private readonly IRecipeRepository _recipeRepository;
     private readonly IIngredientRepository _ingredientRepository;
     private readonly IUnitRepository _unitRepository;
+    private readonly RecipeHub.BuildingBlocks.Audit.IAuditActivityPublisher? _audit;
+    private readonly Microsoft.Extensions.Logging.ILogger<RecipeService>? _logger;
+
     public RecipeService(
         IRecipeRepository recipeRepository,
         IIngredientRepository ingredientRepository,
-        IUnitRepository unitRepository)
+        IUnitRepository unitRepository,
+        RecipeHub.BuildingBlocks.Audit.IAuditActivityPublisher? audit = null,
+        Microsoft.Extensions.Logging.ILogger<RecipeService>? logger = null)
     {
         _recipeRepository = recipeRepository;
         _ingredientRepository = ingredientRepository;
         _unitRepository = unitRepository;
+        _audit = audit;
+        _logger = logger;
     }
 
     public async Task<GeneratedRecipeCodeResponse> GenerateCodeAsync(CancellationToken cancellationToken)
@@ -65,8 +73,9 @@ public sealed class RecipeService : IRecipeService
     }
 
     public async Task<RecipeDetailResponse> CreateAsync(
-        CreateRecipeRequest request, Guid actorUserId, CancellationToken cancellationToken)
+        CreateRecipeRequest request, RecipeHub.BuildingBlocks.Audit.AuditActor actor, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(actor);
         var content = ValidateDraftContent(
             request.Code, request.Name, request.Description, request.PrimaryMediaAssetRef, request.YieldQuantity, request.YieldUnitId,
             request.YieldNote, request.Ingredients, request.Steps?.Select(step => (UpdateRecipeStepRequest)step).ToArray());
@@ -77,18 +86,30 @@ public sealed class RecipeService : IRecipeService
         var recipe = new RecipeEntity
         {
             PublicId = Guid.NewGuid(), Code = content.Code, NormalizedCode = content.NormalizedCode,
-            CreatedByUserRef = actorUserId, UpdatedByUserRef = actorUserId, CreatedAt = now, UpdatedAt = now
+            CreatedByUserRef = actor.Id, UpdatedByUserRef = actor.Id, CreatedAt = now, UpdatedAt = now
         };
-        var version = await CreateVersionAsync(recipe, 1, content, actorUserId, now, cancellationToken);
+        var version = await CreateVersionAsync(recipe, 1, content, actor.Id, now, cancellationToken);
         recipe.RecipeVersions.Add(version);
         await _recipeRepository.AddRecipeAsync(recipe, cancellationToken);
         await _recipeRepository.SaveChangesAsync(cancellationToken);
+
+        await SafePublishAuditAsync(new RecipeHub.BuildingBlocks.Events.AuditActivityEvent(
+            actor.Id,
+            actor.Name,
+            actor.Role,
+            "recipe.created",
+            "recipe_version",
+            version.PublicId,
+            $"Tạo công thức mới '{version.Name}' ({recipe.Code}) phiên bản v{version.VersionNumber}."
+        ));
+
         return MapDetail(version);
     }
 
     public async Task<RecipeDetailResponse> UpdateAsync(
-        Guid publicId, UpdateRecipeRequest request, Guid actorUserId, CancellationToken cancellationToken)
+        Guid publicId, UpdateRecipeRequest request, RecipeHub.BuildingBlocks.Audit.AuditActor actor, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(actor);
         var content = ValidateDraftContent(
             request.Code, request.Name, request.Description, request.PrimaryMediaAssetRef, request.YieldQuantity, request.YieldUnitId,
             request.YieldNote, request.Ingredients, request.Steps);
@@ -104,28 +125,79 @@ public sealed class RecipeService : IRecipeService
         var now = DateTime.UtcNow;
         current.Recipe.Code = content.Code;
         current.Recipe.NormalizedCode = content.NormalizedCode;
-        current.Recipe.UpdatedByUserRef = actorUserId;
+        current.Recipe.UpdatedByUserRef = actor.Id;
         current.Recipe.UpdatedAt = now;
 
         RecipeVersion draft;
-        if (current.Status == "published")
+        bool isNewVersion = current.Status == "published";
+        string? semanticChanges = null;
+
+        if (isNewVersion)
         {
-            draft = await CreateVersionAsync(current.Recipe, current.VersionNumber + 1, content, actorUserId, now, cancellationToken);
+            draft = await CreateVersionAsync(current.Recipe, current.VersionNumber + 1, content, actor.Id, now, cancellationToken);
             current.Recipe.RecipeVersions.Add(draft);
         }
         else
         {
-            await ReplaceVersionContentAsync(current, content, actorUserId, now, cancellationToken);
+            var oldName = current.Name;
+            var oldDesc = current.Description;
+            var oldYield = current.RecipeYield?.Quantity;
+            var oldIngredients = current.RecipeIngredients.Select(i => $"{i.Ingredient.PublicId}:{i.Quantity}:{i.Unit.PublicId}").ToList();
+            var oldSteps = current.RecipeSteps.Select(s => $"{s.Title}:{s.DurationSeconds}").ToList();
+
+            await ReplaceVersionContentAsync(current, content, actor.Id, now, cancellationToken);
             draft = current;
+
+            var newIngredients = content.Ingredients.Select(i => $"{i.IngredientId}:{i.Quantity}:{i.UnitId}").ToList();
+            var newSteps = content.Steps.Select(s => $"{s.Title}:{s.DurationSeconds}").ToList();
+
+            var diffs = new List<string>();
+            if (oldName != content.Name) diffs.Add("tên công thức");
+            if (oldDesc != content.Description) diffs.Add("mô tả");
+            if (oldYield != content.YieldQuantity) diffs.Add("định lượng khẩu phần");
+            if (!oldIngredients.SequenceEqual(newIngredients)) diffs.Add("danh sách nguyên liệu");
+            if (!oldSteps.SequenceEqual(newSteps)) diffs.Add("các bước pha chế");
+
+            if (diffs.Count > 0)
+            {
+                semanticChanges = string.Join(", ", diffs);
+            }
         }
 
         await _recipeRepository.SaveChangesAsync(cancellationToken);
+
+        if (isNewVersion)
+        {
+            await SafePublishAuditAsync(new RecipeHub.BuildingBlocks.Events.AuditActivityEvent(
+                actor.Id,
+                actor.Name,
+                actor.Role,
+                "recipe.version_created",
+                "recipe_version",
+                draft.PublicId,
+                $"Tạo bản sửa đổi v{draft.VersionNumber} cho công thức '{draft.Name}' ({draft.Recipe.Code})."
+            ));
+        }
+        else if (!string.IsNullOrEmpty(semanticChanges))
+        {
+            await SafePublishAuditAsync(new RecipeHub.BuildingBlocks.Events.AuditActivityEvent(
+                actor.Id,
+                actor.Name,
+                actor.Role,
+                "recipe.updated",
+                "recipe_version",
+                draft.PublicId,
+                $"Cập nhật công thức '{draft.Name}' ({draft.Recipe.Code}) v{draft.VersionNumber}: thay đổi {semanticChanges}."
+            ));
+        }
+
         return MapDetail(draft);
     }
 
     public async Task<RecipeDetailResponse> PublishAsync(
-        Guid publicId, Guid versionId, Guid actorUserId, CancellationToken cancellationToken)
+        Guid publicId, Guid versionId, RecipeHub.BuildingBlocks.Audit.AuditActor actor, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(actor);
         var version = await GetVersionEntityAsync(publicId, versionId, cancellationToken);
         EnsureActiveRecipe(version.Recipe);
         if (version.Status != "draft")
@@ -135,42 +207,81 @@ public sealed class RecipeService : IRecipeService
         var now = DateTime.UtcNow;
         version.Status = "published";
         version.PublishedAt = now;
-        version.PublishedByUserRef = actorUserId;
+        version.PublishedByUserRef = actor.Id;
         version.UpdatedAt = now;
-        version.UpdatedByUserRef = actorUserId;
+        version.UpdatedByUserRef = actor.Id;
         version.Recipe.UpdatedAt = now;
-        version.Recipe.UpdatedByUserRef = actorUserId;
+        version.Recipe.UpdatedByUserRef = actor.Id;
         await _recipeRepository.SaveChangesAsync(cancellationToken);
+
+        await SafePublishAuditAsync(new RecipeHub.BuildingBlocks.Events.AuditActivityEvent(
+            actor.Id,
+            actor.Name,
+            actor.Role,
+            "recipe.published",
+            "recipe_version",
+            version.PublicId,
+            $"Phát hành công thức '{version.Name}' ({version.Recipe.Code}) phiên bản v{version.VersionNumber}."
+        ));
+
         return MapDetail(version);
     }
 
-    public async Task ArchiveAsync(Guid publicId, Guid actorUserId, CancellationToken cancellationToken)
+    public async Task ArchiveAsync(Guid publicId, RecipeHub.BuildingBlocks.Audit.AuditActor actor, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(actor);
         var recipe = await _recipeRepository.GetRecipeAsync(publicId, cancellationToken)
             ?? throw new NotFoundException($"Recipe '{publicId}' was not found.");
         if (recipe.ArchivedAt.HasValue) return;
         var now = DateTime.UtcNow;
         recipe.ArchivedAt = now;
-        recipe.UpdatedByUserRef = actorUserId;
+        recipe.UpdatedByUserRef = actor.Id;
         recipe.UpdatedAt = now;
         await _recipeRepository.SaveChangesAsync(cancellationToken);
+
+        await SafePublishAuditAsync(new RecipeHub.BuildingBlocks.Events.AuditActivityEvent(
+            actor.Id,
+            actor.Name,
+            actor.Role,
+            "recipe.archived",
+            "recipe",
+            recipe.PublicId,
+            $"Lưu trữ công thức '{recipe.Code}'."
+        ));
     }
 
     public async Task<RecipeDetailResponse> ActivateAsync(
-        Guid publicId, Guid actorUserId, CancellationToken cancellationToken)
+        Guid publicId, RecipeHub.BuildingBlocks.Audit.AuditActor actor, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(actor);
         var version = await _recipeRepository.GetLatestTrackedRecipeVersionAsync(publicId, cancellationToken)
             ?? throw new NotFoundException($"Recipe '{publicId}' was not found.");
+        var wasArchived = version.Recipe.ArchivedAt.HasValue;
         version.Recipe.ArchivedAt = null;
-        version.Recipe.UpdatedByUserRef = actorUserId;
+        version.Recipe.UpdatedByUserRef = actor.Id;
         version.Recipe.UpdatedAt = DateTime.UtcNow;
         await _recipeRepository.SaveChangesAsync(cancellationToken);
+
+        if (wasArchived)
+        {
+            await SafePublishAuditAsync(new RecipeHub.BuildingBlocks.Events.AuditActivityEvent(
+                actor.Id,
+                actor.Name,
+                actor.Role,
+                "recipe.activated",
+                "recipe",
+                version.Recipe.PublicId,
+                $"Kích hoạt lại công thức '{version.Recipe.Code}'."
+            ));
+        }
+
         return MapDetail(version);
     }
 
     public async Task<RecipeDetailResponse> CopyAsync(
-        Guid publicId, CopyRecipeRequest request, Guid actorUserId, CancellationToken cancellationToken)
+        Guid publicId, CopyRecipeRequest request, RecipeHub.BuildingBlocks.Audit.AuditActor actor, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(actor);
         var source = await _recipeRepository.GetLatestRecipeVersionAsync(publicId, cancellationToken)
             ?? throw new NotFoundException($"Recipe '{publicId}' was not found.");
         var createRequest = new CreateRecipeRequest(
@@ -184,7 +295,21 @@ public sealed class RecipeService : IRecipeService
                     step.Equipment, step.SafetyNote, step.CompletionCriteria,
                     step.RecipeStepMedia.OrderBy(media => media.SortOrder).Select(media =>
                         new CreateRecipeStepMediaRequest(media.MediaAssetRef, media.IsPrimary, media.Caption)).ToArray(), null)).ToArray());
-        return await CreateAsync(createRequest, actorUserId, cancellationToken);
+        return await CreateAsync(createRequest, actor, cancellationToken);
+    }
+
+    private async Task SafePublishAuditAsync(RecipeHub.BuildingBlocks.Events.AuditActivityEvent activity)
+    {
+        if (_audit is null) return;
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            await _audit.PublishAsync("recipe", activity, cts.Token);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Failed to publish audit event {Action} for {TargetType} {TargetId}", activity.Action, activity.TargetType, activity.TargetId);
+        }
     }
 
     private async Task<RecipeVersion> CreateVersionAsync(
