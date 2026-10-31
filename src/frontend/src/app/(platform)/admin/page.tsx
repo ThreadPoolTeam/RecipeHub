@@ -5,10 +5,8 @@ import Link from 'next/link';
 import {
   Users,
   Leaf,
-  Cpu,
   ShieldCheck,
   Image,
-  Settings,
   ArrowRight,
 } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
@@ -78,14 +76,6 @@ export default function AdminPage() {
       tag: 'Global Catalogue',
     },
     {
-      title: 'Cấu hình & Mô phỏng AI Demo',
-      desc: 'Kiểm soát bộ mô phỏng Gemini / Flux, công tắc lỗi giả lập (503 Service Unavailable, DeleteFailed), idle timeout.',
-      href: '/admin/ai-settings',
-      icon: Cpu,
-      count: 'Simulation Controls',
-      tag: 'AI Simulation',
-    },
-    {
       title: 'Nhật ký kiểm toán',
       desc: 'Truy vết toàn diện mọi hành động: tạo, sửa, phát hành công thức, khóa tài khoản và xuất bản tài liệu.',
       href: '/admin/logs',
@@ -117,13 +107,6 @@ export default function AdminPage() {
             <p className="text-[#706E68] text-sm mt-1 max-w-2xl">
               Giám sát nhân sự, danh mục nguyên vật liệu, cơ chế mô phỏng AI và lịch sử thay đổi phiên bản công thức theo tiêu chuẩn BeverageLab.
             </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/admin/ai-settings">
-              <Button variant="gold" size="sm">
-                <Settings className="w-3.5 h-3.5 mr-1" /> Cấu hình AI &amp; Lỗi giả lập
-              </Button>
-            </Link>
           </div>
         </div>
 
