@@ -59,7 +59,7 @@ export async function requestJson(
   const headers = new Headers(init.headers);
   if (init.body && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json');
   const response = await execute(path, actorId, { ...init, headers });
-  return response.status === 204 ? null : response.json();
+  return response.status === 204 ? null : await response.json();
 }
 
 export async function requestBlob(
@@ -67,14 +67,15 @@ export async function requestBlob(
   actorId: string | null,
   init: RequestInit
 ): Promise<Blob> {
-  return (await execute(path, actorId, init)).blob();
+  const response = await execute(path, actorId, init);
+  return await response.blob();
 }
 
-export async function requestExternalBlob(url: string): Promise<Blob> {
-  const response = await fetch(url, { cache: 'no-store' });
+export async function requestExternalBlob(url: string, signal?: AbortSignal): Promise<Blob> {
+  const response = await fetch(url, { cache: 'no-store', signal });
   if (!response.ok) {
     const body = await response.text();
     throw new ApiError(response.status, parseProblem(body, response.status), body);
   }
-  return response.blob();
+  return await response.blob();
 }

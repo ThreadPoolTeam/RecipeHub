@@ -35,7 +35,10 @@ export default function RndIngredientsPage() {
       setIngredients(data);
     } catch (err: unknown) {
       const e = err as Error;
-      setAlertNotice({ type: 'error', message: e.message || 'Lỗi tải nguyên liệu' });
+      const isAbort = e && (e.name === 'AbortError' || e.message?.includes('abort'));
+      if (!isAbort) {
+        setAlertNotice({ type: 'error', message: e.message || 'Lỗi tải nguyên liệu' });
+      }
     } finally {
       setLoading(false);
     }
@@ -54,7 +57,10 @@ export default function RndIngredientsPage() {
       })
       .catch((error: unknown) => {
         if (isMounted) {
-          setAlertNotice({ type: 'error', message: error instanceof Error ? error.message : 'Không thể tải phân nhóm nguyên liệu.' });
+          const isAbort = error instanceof Error && (error.name === 'AbortError' || error.message?.includes('abort'));
+          if (!isAbort) {
+            setAlertNotice({ type: 'error', message: error instanceof Error ? error.message : 'Không thể tải phân nhóm nguyên liệu.' });
+          }
         }
       });
     return () => {

@@ -130,7 +130,11 @@ export default function EditRecipePage() {
 
         const previews: Record<string, string> = {};
         mediaList.forEach((m) => {
-          previews[m.id] = URL.createObjectURL(m.blob);
+          if (m.blob && m.blob.size > 0) {
+            previews[m.id] = URL.createObjectURL(m.blob);
+          } else if (m.deliveryUrl) {
+            previews[m.id] = m.deliveryUrl;
+          }
         });
         setCoverPreviews(previews);
       })
@@ -484,9 +488,8 @@ export default function EditRecipePage() {
   };
 
   const handleSelectMediaForStep = (asset: MediaAsset) => {
-    const url = URL.createObjectURL(asset.blob);
+    const url = asset.blob && asset.blob.size > 0 ? URL.createObjectURL(asset.blob) : (asset.deliveryUrl || '');
     setCoverPreviews((prev) => ({ ...prev, [asset.id]: url }));
-
     if (isPickingHeroCover) {
       setPrimaryMediaAssetId(asset.id);
       setIsPickingHeroCover(false);

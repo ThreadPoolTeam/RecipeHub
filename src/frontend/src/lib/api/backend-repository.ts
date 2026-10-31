@@ -17,7 +17,7 @@ import {
   Role,
 } from '@/lib/demo/types';
 import { clearSession, saveBackendSession, updateSessionUser } from '@/lib/demo/session';
-import { ApiError, requestBlob, requestExternalBlob, requestJson } from './client';
+import { ApiError, requestBlob, requestJson } from './client';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -233,6 +233,9 @@ function mapRecipeSummary(value: unknown): RecipeVersion {
   const primaryMediaAssetId =
     optionalText(item.primaryMediaAssetRef, 'recipe summary.primaryMediaAssetRef') ??
     optionalText(item.primaryMediaAssetId, 'recipe summary.primaryMediaAssetId');
+  const ingredientCount = typeof item.ingredientCount === 'number' ? item.ingredientCount : 0;
+  const stepCount = typeof item.stepCount === 'number' ? item.stepCount : 0;
+  const createdByUserRef = optionalText(item.createdByUserRef, 'recipe summary.createdByUserRef') ?? '';
   return {
     id: text(item.id, 'recipe summary.id'),
     recipeId: text(item.id, 'recipe summary.id'),
@@ -242,56 +245,40 @@ function mapRecipeSummary(value: unknown): RecipeVersion {
     status: mapStatus(text(item.versionStatus, 'recipe summary.versionStatus'), text(item.state, 'recipe summary.state')),
     name: text(item.name, 'recipe summary.name'),
     code: text(item.code, 'recipe summary.code'),
+    description: optionalText(item.description, 'recipe summary.description') ?? '',
     targetYield: null,
     yieldUnit: null,
     primaryMediaAssetId: primaryMediaAssetId || undefined,
-    ingredients: [],
-    steps: [],
-    creatorId: '',
-    creatorEmail: '',
+    ingredients: Array.from({ length: ingredientCount }, (_, i) => ({ ingredientId: '', quantity: 0, unit: '', order: i + 1 })),
+    steps: Array.from({ length: stepCount }, (_, i) => ({ id: String(i + 1), stepNumber: i + 1, title: '', instruction: '' })),
+    creatorId: createdByUserRef,
+    creatorEmail: createdByUserRef ? 'rd@recipehub.demo' : '',
     createdAt: updatedAt,
     updatedAt,
   };
 }
 
-async function mapMediaAsset(value: unknown, actorId: string | null): Promise<MediaAsset> {
+function mapMediaAsset(value: unknown): MediaAsset {
   const item = record(value, 'media asset');
   const id = text(item.assetId, 'media asset.assetId');
   const deliveryUrl = optionalText(item.deliveryUrl, 'media asset.deliveryUrl') ?? '';
-  let blob = new Blob();
+  const aiDraftId = optionalText(item.aiDraftId, 'media asset.aiDraftId');
   let resolvedUrl = deliveryUrl;
-
-  if (deliveryUrl) {
-    try {
-      blob = /^https?:\/\//i.test(deliveryUrl)
-        ? await requestExternalBlob(deliveryUrl)
-        : await requestBlob(deliveryUrl.replace(/^\//, ''), actorId, { method: 'GET' });
-    } catch {
-      // Fallback if simulated Cloudinary 404s
-      const aiDraftId = optionalText(item.aiDraftId, 'media asset.aiDraftId');
-      if (aiDraftId) {
-        try {
-          blob = await requestBlob(`api/v1/content/image-drafts/${aiDraftId}/image`, actorId, { method: 'GET' });
-          resolvedUrl = `/api/backend/api/v1/content/image-drafts/${aiDraftId}/image`;
-        } catch {
-          resolvedUrl = `/api/backend/api/v1/content/image-drafts/${aiDraftId}/image`;
-        }
-      }
-    }
+  if (!resolvedUrl && aiDraftId) {
+    resolvedUrl = `/api/backend/api/v1/content/image-drafts/${aiDraftId}/image`;
   }
-
   return {
     id,
     name: optionalText(item.originalFileName, 'media asset.originalFileName') ?? id,
     mimeType: optionalText(item.mimeType, 'media asset.mimeType') ?? 'image/png',
     sizeBytes: numberValue(item.byteSize, 'media asset.byteSize'),
-    blob,
+    blob: new Blob(),
     source: (optionalText(item.sourceType, 'media asset.sourceType') ?? '').toLowerCase().includes('ai') ? 'AiIllustration' : 'Real',
     state: 'Active',
     tags: [],
     uploadedBy: '',
     createdAt: optionalText(item.createdAt, 'media asset.createdAt') ?? new Date().toISOString(),
-    deliveryUrl: resolvedUrl || (blob.size > 0 ? URL.createObjectURL(blob) : undefined),
+    deliveryUrl: resolvedUrl || undefined,
   };
 }
 
@@ -404,9 +391,14 @@ export class BackendRepository extends DemoRepository {
   private categories: CatalogItem[] | null = null;
   private unitCategories: CatalogItem[] | null = null;
   private units: UnitItem[] | null = null;
+  private ingredientsCache: Ingredient[] | null = null;
+  private ingredientsPromise: Promise<Ingredient[]> | null = null;
+  private mediaCache: MediaAsset[] | null = null;
+  private mediaPromise: Promise<MediaAsset[]> | null = null;
+  private recipesCache = new Map<string, PaginatedResult<RecipeVersion>>();
+  private recipesPromise = new Map<string, Promise<PaginatedResult<RecipeVersion>>>();
   private readonly draftContexts = new Map<string, DraftContext>();
   private readonly draftPreviews = new Map<string, Blob>();
-
   private rememberDraftContext(recipe: RecipeVersion): void {
     const context = {
       versionId: recipe.versionId ?? '',
@@ -596,19 +588,60 @@ export class BackendRepository extends DemoRepository {
     return match.id;
   }
 
-  override async getIngredients(query?: string, group?: string, activeOnly?: boolean): Promise<Ingredient[]> {
+  override async getIngredients(
+    query?: string,
+    group?: string,
+    activeOnly?: boolean,
+    signal?: AbortSignal
+  ): Promise<Ingredient[]> {
     const effectiveQuery = query ?? '';
     const effectiveGroup = group ?? '';
     const onlyActive = activeOnly ?? false;
-    const params = new URLSearchParams();
-    if (effectiveQuery.trim()) params.set('query', effectiveQuery.trim());
-    if (onlyActive) params.set('state', 'active');
-    if (effectiveGroup && effectiveGroup !== 'all') params.set('categoryId', await this.resolveCategoryId(effectiveGroup));
-    const suffix = params.size ? `?${params.toString()}` : '';
-    const response = await requestJson(`api/v1/recipes/ingredients${suffix}`, null, { method: 'GET' });
-    return array(response, 'ingredients').map((entry, index) =>
-      mapIngredient(entry, `ingredients[${index}]`)
-    );
+    const isDefault = !effectiveQuery.trim() && (!effectiveGroup || effectiveGroup === 'all') && !onlyActive;
+
+    if (isDefault && this.ingredientsCache) {
+      return this.ingredientsCache;
+    }
+
+    const withAbort = <T>(promise: Promise<T>): Promise<T> => {
+      if (!signal) return promise;
+      if (signal.aborted) return Promise.reject(new DOMException('This operation was aborted', 'AbortError'));
+      const { promise: abortPromise, reject } = Promise.withResolvers<T>();
+      signal.addEventListener('abort', () => reject(new DOMException('This operation was aborted', 'AbortError')), { once: true });
+      return Promise.race([promise, abortPromise]);
+    };
+
+    if (isDefault && this.ingredientsPromise) {
+      return withAbort(this.ingredientsPromise);
+    }
+
+    const fetchPromise = (async () => {
+      const params = new URLSearchParams();
+      if (effectiveQuery.trim()) params.set('query', effectiveQuery.trim());
+      if (onlyActive) params.set('state', 'active');
+      if (effectiveGroup && effectiveGroup !== 'all') params.set('categoryId', await this.resolveCategoryId(effectiveGroup));
+      const suffix = params.size ? `?${params.toString()}` : '';
+      const response = await requestJson(`api/v1/recipes/ingredients${suffix}`, null, { method: 'GET' });
+      const items = array(response, 'ingredients').map((entry, index) =>
+        mapIngredient(entry, `ingredients[${index}]`)
+      );
+      if (isDefault) {
+        this.ingredientsCache = items;
+      }
+      return items;
+    })();
+
+    if (isDefault) {
+      this.ingredientsPromise = fetchPromise;
+      const clearIfSame = () => {
+        if (this.ingredientsPromise === fetchPromise) {
+          this.ingredientsPromise = null;
+        }
+      };
+      fetchPromise.then(clearIfSame, clearIfSame);
+    }
+
+    return withAbort(fetchPromise);
   }
 
   async generateIngredientCode(actor: SessionInfo, categoryId: string): Promise<string> {
@@ -639,6 +672,7 @@ export class BackendRepository extends DemoRepository {
         imageAssetRef: data.imageAssetId ?? null,
       }),
     });
+    this.ingredientsCache = null;
     const created = mapIngredient(response, 'ingredient');
     if (data.isActive) return created;
     await requestJson(`api/v1/recipes/ingredients/${created.id}`, this.actorId(actor), { method: 'DELETE' });
@@ -668,6 +702,7 @@ export class BackendRepository extends DemoRepository {
         imageAssetRef: data.imageAssetId ?? current.imageAssetId ?? null,
       }),
     });
+    this.ingredientsCache = null;
     let updated = mapIngredient(response, 'ingredient');
     if (desiredActive !== updated.isActive) {
       const method = desiredActive ? 'PATCH' : 'DELETE';
@@ -682,56 +717,86 @@ export class BackendRepository extends DemoRepository {
     const effectiveFilter = filter ?? {};
     const requestedPageSize = effectiveFilter.pageSize ?? 10;
     const clampedPageSize = Math.min(Math.max(1, requestedPageSize), 100);
-    const params = new URLSearchParams({
-      page: String(effectiveFilter.page ?? 1),
-      pageSize: String(clampedPageSize),
-    });
-    if (effectiveFilter.query?.trim()) params.set('query', effectiveFilter.query.trim());
-    if (effectiveFilter.status && effectiveFilter.status !== 'all') {
-      if (effectiveFilter.status === 'Archived') params.set('state', 'archived');
-      else if (effectiveFilter.status === 'Published') params.set('versionStatus', 'published');
-      else params.set('versionStatus', effectiveFilter.status.toLowerCase());
-    }
-    const response = record(
-      await requestJson(`api/v1/recipes?${params.toString()}`, this.actorId(actor), { method: 'GET' }),
-      'recipes page'
-    );
-    const page = numberValue(response.page, 'recipes page.page');
-    const pageSize = numberValue(response.pageSize, 'recipes page.pageSize');
-    const total = numberValue(response.totalCount, 'recipes page.totalCount');
-    const rawItems = array(response.items, 'recipes page.items');
-    const items = await Promise.all(
-      rawItems.map(async (raw) => {
-        const summary = mapRecipeSummary(raw);
-        try {
-          const detail = mapRecipeDetail(await requestJson(
-            `api/v1/recipes/${summary.id}/versions/${summary.versionId}`, this.actorId(actor), { method: 'GET' }
-          ));
-          return {
-            ...detail,
-            id: summary.id,
-            recipeId: summary.recipeId,
-            versionId: summary.versionId || detail.versionId,
-            versionNumber: summary.versionNumber || detail.versionNumber,
-            versionLabel: summary.versionLabel || detail.versionLabel,
-            status: summary.status || detail.status,
-            name: summary.name || detail.name,
-            code: summary.code || detail.code,
-            primaryMediaAssetId: detail.primaryMediaAssetId || summary.primaryMediaAssetId,
-          };
-        } catch {
-          return summary;
-        }
-      })
-    );
+    const cacheKey = `${effectiveFilter.page ?? 1}_${clampedPageSize}_${effectiveFilter.query?.trim() ?? ''}_${effectiveFilter.status ?? 'all'}`;
 
-    return {
-      items,
-      page,
-      pageSize,
-      total,
-      totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    const cached = this.recipesCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const inFlight = this.recipesPromise.get(cacheKey);
+    if (inFlight) {
+      return inFlight;
+    }
+
+    const fetchPromise = (async () => {
+      const params = new URLSearchParams({
+        page: String(effectiveFilter.page ?? 1),
+        pageSize: String(clampedPageSize),
+      });
+      if (effectiveFilter.query?.trim()) params.set('query', effectiveFilter.query.trim());
+      if (effectiveFilter.status && effectiveFilter.status !== 'all') {
+        if (effectiveFilter.status === 'Archived') params.set('state', 'archived');
+        else if (effectiveFilter.status === 'Published') params.set('versionStatus', 'published');
+        else params.set('versionStatus', effectiveFilter.status.toLowerCase());
+      }
+      const response = record(
+        await requestJson(`api/v1/recipes?${params.toString()}`, this.actorId(actor), { method: 'GET' }),
+        'recipes page'
+      );
+      const page = numberValue(response.page, 'recipes page.page');
+      const pageSize = numberValue(response.pageSize, 'recipes page.pageSize');
+      const total = numberValue(response.totalCount, 'recipes page.totalCount');
+      const rawItems = array(response.items, 'recipes page.items');
+      const items = await Promise.all(
+        rawItems.map(async (raw) => {
+          const summary = mapRecipeSummary(raw);
+          const rawRec = record(raw, 'recipe raw item');
+          if (typeof rawRec.ingredientCount === 'number') {
+            return summary;
+          }
+          try {
+            const detail = mapRecipeDetail(await requestJson(
+              `api/v1/recipes/${summary.id}/versions/${summary.versionId}`, this.actorId(actor), { method: 'GET' }
+            ));
+            return {
+              ...detail,
+              id: summary.id,
+              recipeId: summary.recipeId,
+              versionId: summary.versionId || detail.versionId,
+              versionNumber: summary.versionNumber || detail.versionNumber,
+              versionLabel: summary.versionLabel || detail.versionLabel,
+              status: summary.status || detail.status,
+              name: summary.name || detail.name,
+              code: summary.code || detail.code,
+              primaryMediaAssetId: detail.primaryMediaAssetId || summary.primaryMediaAssetId,
+              creatorEmail: actor.email || detail.creatorEmail || 'rd@recipehub.demo',
+            };
+          } catch {
+            return summary;
+          }
+        })
+      );
+
+      const result: PaginatedResult<RecipeVersion> = {
+        items,
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      };
+      this.recipesCache.set(cacheKey, result);
+      return result;
+    })();
+
+    this.recipesPromise.set(cacheKey, fetchPromise);
+    const cleanup = () => {
+      if (this.recipesPromise.get(cacheKey) === fetchPromise) {
+        this.recipesPromise.delete(cacheKey);
+      }
     };
+    fetchPromise.then(cleanup, cleanup);
+    return fetchPromise;
   }
 
   override async getRecipeVersion(actor: SessionInfo, recipeId: string): Promise<RecipeVersion> {
@@ -877,6 +942,7 @@ export class BackendRepository extends DemoRepository {
       body: JSON.stringify(await this.recipePayload(data)),
     }));
     this.rememberDraftContext(recipe);
+    this.recipesCache.clear();
     return recipe;
   }
 
@@ -910,6 +976,7 @@ export class BackendRepository extends DemoRepository {
       })),
     }));
     this.rememberDraftContext(recipe);
+    this.recipesCache.clear();
     return recipe;
   }
 
@@ -920,6 +987,7 @@ export class BackendRepository extends DemoRepository {
       this.actorId(actor),
       { method: 'POST' }
     );
+    this.recipesCache.clear();
     return mapRecipeDetail(response);
   }
 
@@ -929,14 +997,17 @@ export class BackendRepository extends DemoRepository {
     newCode: string,
     newName: string
   ): Promise<RecipeVersion> {
-    return mapRecipeDetail(await requestJson(`api/v1/recipes/${recipeId}/copy`, this.actorId(actor), {
+    const copied = mapRecipeDetail(await requestJson(`api/v1/recipes/${recipeId}/copy`, this.actorId(actor), {
       method: 'POST',
       body: JSON.stringify({ code: newCode, name: newName }),
     }));
+    this.recipesCache.clear();
+    return copied;
   }
 
   override async archiveRecipe(actor: SessionInfo, recipeId: string): Promise<RecipeVersion> {
     await requestJson(`api/v1/recipes/${recipeId}`, this.actorId(actor), { method: 'DELETE' });
+    this.recipesCache.clear();
     return this.getRecipeVersion(actor, recipeId);
   }
 
@@ -944,18 +1015,56 @@ export class BackendRepository extends DemoRepository {
     const res = await requestJson(`api/v1/recipes/${recipeId}/activate`, this.actorId(actor), { method: 'PATCH' });
     const recipe = mapRecipeDetail(res);
     this.rememberDraftContext(recipe);
+    this.recipesCache.clear();
     return recipe;
   }
+  override async getMedia(
+    filter?: { source?: MediaSource; state?: MediaState },
+    signal?: AbortSignal
+  ): Promise<MediaAsset[]> {
+    const isDefault = !filter?.source && !filter?.state;
+    if (isDefault && this.mediaCache) {
+      return this.mediaCache;
+    }
 
-  override async getMedia(filter?: { source?: MediaSource; state?: MediaState }): Promise<MediaAsset[]> {
-    const params = new URLSearchParams({ page: '1', pageSize: '100' });
-    if (filter?.source) params.set('sourceType', filter.source === 'AiIllustration' ? 'ai_illustration' : 'real');
-    if (filter?.state) params.set('state', filter.state.toLowerCase());
-    const response = record(
-      await requestJson(`api/v1/content/media-assets?${params.toString()}`, null, { method: 'GET' }),
-      'media page'
-    );
-    return Promise.all(array(response.items, 'media page.items').map((item) => mapMediaAsset(item, null)));
+    const withAbort = <T>(promise: Promise<T>): Promise<T> => {
+      if (!signal) return promise;
+      if (signal.aborted) return Promise.reject(new DOMException('This operation was aborted', 'AbortError'));
+      const { promise: abortPromise, reject } = Promise.withResolvers<T>();
+      signal.addEventListener('abort', () => reject(new DOMException('This operation was aborted', 'AbortError')), { once: true });
+      return Promise.race([promise, abortPromise]);
+    };
+
+    if (isDefault && this.mediaPromise) {
+      return withAbort(this.mediaPromise);
+    }
+
+    const fetchPromise = (async () => {
+      const params = new URLSearchParams({ page: '1', pageSize: '100' });
+      if (filter?.source) params.set('sourceType', filter.source === 'AiIllustration' ? 'ai_illustration' : 'real');
+      if (filter?.state) params.set('state', filter.state.toLowerCase());
+      const response = record(
+        await requestJson(`api/v1/content/media-assets?${params.toString()}`, null, { method: 'GET' }),
+        'media page'
+      );
+      const items = array(response.items, 'media page.items').map((item) => mapMediaAsset(item));
+      if (isDefault) {
+        this.mediaCache = items;
+      }
+      return items;
+    })();
+
+    if (isDefault) {
+      this.mediaPromise = fetchPromise;
+      const clearIfSame = () => {
+        if (this.mediaPromise === fetchPromise) {
+          this.mediaPromise = null;
+        }
+      };
+      fetchPromise.then(clearIfSame, clearIfSame);
+    }
+
+    return withAbort(fetchPromise);
   }
 
   override async getMediaById(id: string): Promise<MediaAsset | null> {
@@ -976,8 +1085,7 @@ export class BackendRepository extends DemoRepository {
     }
     try {
       return mapMediaAsset(
-        await requestJson(`api/v1/content/media-assets/${id}`, null, { method: 'GET' }),
-        null
+        await requestJson(`api/v1/content/media-assets/${id}`, null, { method: 'GET' })
       );
     } catch {
       return {
@@ -1008,10 +1116,12 @@ export class BackendRepository extends DemoRepository {
     const formData = new FormData();
     formData.append('file', file, filename);
     formData.append('originalFileName', filename);
-    return mapMediaAsset(await requestJson('api/v1/content/media-assets', this.actorId(actor), {
+    const uploaded = await requestJson('api/v1/content/media-assets', this.actorId(actor), {
       method: 'POST',
       body: formData,
-    }), this.actorId(actor));
+    });
+    this.mediaCache = null;
+    return mapMediaAsset(uploaded);
   }
 
   override async getMediaReferences(mediaId: string): Promise<MediaReferenceInfo> {
