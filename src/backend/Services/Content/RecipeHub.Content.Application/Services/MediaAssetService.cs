@@ -22,6 +22,7 @@ public sealed class MediaAssetService : IMediaAssetService
     private readonly IContentUnitOfWork _unitOfWork;
     private readonly IMediaStorage _mediaStorage;
     private readonly IRecipeContextClient _recipeContextClient;
+    private readonly IContentCallerContext _callerContext;
 
     public MediaAssetService(
         IMediaAssetRepository mediaAssetRepository,
@@ -29,7 +30,8 @@ public sealed class MediaAssetService : IMediaAssetService
         IOutboxRepository outboxRepository,
         IContentUnitOfWork unitOfWork,
         IMediaStorage mediaStorage,
-        IRecipeContextClient recipeContextClient)
+        IRecipeContextClient recipeContextClient,
+        IContentCallerContext callerContext)
     {
         _mediaAssetRepository = mediaAssetRepository;
         _draftRepository = draftRepository;
@@ -37,16 +39,20 @@ public sealed class MediaAssetService : IMediaAssetService
         _unitOfWork = unitOfWork;
         _mediaStorage = mediaStorage;
         _recipeContextClient = recipeContextClient;
+        _callerContext = callerContext;
     }
-
     public async Task<MediaAssetDetailResponse> UploadMediaAssetAsync(
         Stream fileStream,
         string fileName,
         string contentType,
         long length,
-        Guid userId,
         CancellationToken ct = default)
     {
+        var userId = _callerContext.UserId;
+        if (userId == Guid.Empty)
+        {
+            throw new UnauthorizedAccessException("Cần JWT session Identity hợp lệ.");
+        }
         if (length <= 0)
         {
             throw new ValidationException("Uploaded file cannot be empty.");
@@ -165,8 +171,29 @@ public sealed class MediaAssetService : IMediaAssetService
             return null;
         }
 
+        var isViewer = _callerContext.Role.Equals("viewer", StringComparison.OrdinalIgnoreCase);
+        if (isViewer)
+        {
+            var usages = await _recipeContextClient.GetMediaUsagesAsync(assetId, ct);
+            if (usages.Count == 0)
+            {
+                throw new ForbiddenException("Viewer không có quyền truy cập media asset này.");
+            }
+
+            var versionIds = usages
+                .Select(u => u.RecipeVersionId)
+                .Distinct()
+                .Take(100)
+                .ToList();
+
+            var eligibleVersions = await _recipeContextClient.GetRecipeVersionsEligibilityAsync(versionIds, ct);
+            if (!eligibleVersions.Any(v => v.IsEligible))
+            {
+                throw new ForbiddenException("Viewer không có quyền truy cập media asset này.");
+            }
+        }
         Guid? aiDraftPublicId = null;
-        if (asset.AiImageDraftId.HasValue)
+        if (!isViewer && asset.AiImageDraftId.HasValue)
         {
             var draft = await _draftRepository.GetByIdAsync(asset.AiImageDraftId.Value, ct);
             aiDraftPublicId = draft?.PublicId;

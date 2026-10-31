@@ -4,18 +4,18 @@ namespace RecipeHub.Content.Application.Interfaces;
 
 public interface IImageDraftService
 {
-    Task<DraftDetailResponse> CreateDraftAsync(CreateDraftRequest request, Guid userId, CancellationToken ct = default);
+    Task<DraftDetailResponse> CreateDraftAsync(CreateDraftRequest request, CancellationToken ct = default);
     Task<DraftDetailResponse?> GetDraftByIdAsync(Guid draftId, CancellationToken ct = default);
     Task<(Stream Stream, string MimeType)?> GetDraftImageStreamAsync(Guid draftId, CancellationToken ct = default);
     Task<PagedResult<DraftSummaryResponse>> GetDraftsAsync(Guid? recipeVersionId, Guid? recipeStepId, string? state, int page, int pageSize, CancellationToken ct = default);
-    Task<DraftDetailResponse> RegenerateDraftAsync(Guid draftId, RegenerateDraftRequest request, Guid userId, CancellationToken ct = default);
-    Task<AcceptDraftResponse> AcceptDraftAsync(Guid draftId, Guid userId, CancellationToken ct = default);
-    Task<DraftDetailResponse> DiscardDraftAsync(Guid draftId, Guid userId, CancellationToken ct = default);
+    Task<DraftDetailResponse> RegenerateDraftAsync(Guid draftId, RegenerateDraftRequest request, CancellationToken ct = default);
+    Task<AcceptDraftResponse> AcceptDraftAsync(Guid draftId, CancellationToken ct = default);
+    Task<DraftDetailResponse> DiscardDraftAsync(Guid draftId, CancellationToken ct = default);
 }
 
 public interface IMediaAssetService
 {
-    Task<MediaAssetDetailResponse> UploadMediaAssetAsync(Stream fileStream, string fileName, string contentType, long length, Guid userId, CancellationToken ct = default);
+    Task<MediaAssetDetailResponse> UploadMediaAssetAsync(Stream fileStream, string fileName, string contentType, long length, CancellationToken ct = default);
     Task<PagedResult<MediaAssetSummaryResponse>> GetMediaAssetsAsync(string? sourceType, string? state, string? search, int page, int pageSize, CancellationToken ct = default);
     Task<MediaAssetDetailResponse?> GetMediaAssetByIdAsync(Guid assetId, CancellationToken ct = default);
     Task<MediaAssetUsagesResponse> GetMediaAssetUsagesAsync(Guid assetId, CancellationToken ct = default);
@@ -69,8 +69,11 @@ public sealed record RecipeAiContextResult(
     IReadOnlyList<RecipeIngredientSnapshot> Ingredients
 );
 
+public sealed record RecipeVersionEligibilityItem(Guid RecipeVersionId, bool IsEligible, string Status);
+
 public interface IRecipeContextClient
 {
-    Task<RecipeAiContextResult> GetRecipeAiContextAsync(Guid recipeVersionId, Guid? recipeStepId, string targetKind, Guid actorId, CancellationToken ct = default);
+    Task<RecipeAiContextResult> GetRecipeAiContextAsync(Guid recipeVersionId, Guid? recipeStepId, string targetKind, CancellationToken ct = default);
     Task<IReadOnlyList<MediaAssetUsageItem>> GetMediaUsagesAsync(Guid assetId, CancellationToken ct = default);
+    Task<IReadOnlyList<RecipeVersionEligibilityItem>> GetRecipeVersionsEligibilityAsync(IEnumerable<Guid> recipeVersionIds, CancellationToken ct = default);
 }
