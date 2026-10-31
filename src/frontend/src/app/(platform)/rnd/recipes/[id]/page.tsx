@@ -405,9 +405,7 @@ export default function RecipeDetailPage() {
           if (!coverUrl && typeof window !== 'undefined') {
             coverUrl = localStorage.getItem(`recipehub_media_url_${recipe.primaryMediaAssetId}`) || null;
           }
-          if (!coverUrl) {
-            coverUrl = `/api/backend/api/v1/content/image-drafts/${recipe.primaryMediaAssetId}/image`;
-          }
+
         }
         if (!coverUrl) {
           const versionId = recipe.versionId || recipe.id;

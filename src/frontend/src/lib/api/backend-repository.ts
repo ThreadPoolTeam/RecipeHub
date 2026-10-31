@@ -263,10 +263,6 @@ function mapMediaAsset(value: unknown): MediaAsset {
   const id = text(item.assetId, 'media asset.assetId');
   const deliveryUrl = optionalText(item.deliveryUrl, 'media asset.deliveryUrl') ?? '';
   const aiDraftId = optionalText(item.aiDraftId, 'media asset.aiDraftId');
-  let resolvedUrl = deliveryUrl;
-  if (!resolvedUrl && aiDraftId) {
-    resolvedUrl = `/api/backend/api/v1/content/image-drafts/${aiDraftId}/image`;
-  }
   return {
     id,
     name: optionalText(item.originalFileName, 'media asset.originalFileName') ?? id,
@@ -278,7 +274,7 @@ function mapMediaAsset(value: unknown): MediaAsset {
     tags: [],
     uploadedBy: '',
     createdAt: optionalText(item.createdAt, 'media asset.createdAt') ?? new Date().toISOString(),
-    deliveryUrl: resolvedUrl || undefined,
+    deliveryUrl: deliveryUrl || undefined,
   };
 }
 
@@ -1087,20 +1083,11 @@ export class BackendRepository extends DemoRepository {
       return mapMediaAsset(
         await requestJson(`api/v1/content/media-assets/${id}`, null, { method: 'GET' })
       );
-    } catch {
-      return {
-        id,
-        name: `ai-draft-${id}.png`,
-        mimeType: 'image/png',
-        sizeBytes: 0,
-        blob: new Blob(),
-        deliveryUrl: `/api/backend/api/v1/content/image-drafts/${id}/image`,
-        source: 'AiIllustration',
-        state: 'Active',
-        tags: [],
-        uploadedBy: '',
-        createdAt: new Date().toISOString(),
-      };
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) {
+        return null;
+      }
+      throw err;
     }
   }
 
@@ -1116,7 +1103,7 @@ export class BackendRepository extends DemoRepository {
     const formData = new FormData();
     formData.append('file', file, filename);
     formData.append('originalFileName', filename);
-    const uploaded = await requestJson('api/v1/content/media-assets', this.actorId(actor), {
+    const uploaded = await requestJson('api/v1/content/media-assets', null, {
       method: 'POST',
       body: formData,
     });
@@ -1176,7 +1163,7 @@ export class BackendRepository extends DemoRepository {
       throw new Error('Không xác định được recipe version. Hãy tải lại trang.');
     }
 
-    const created = record(await requestJson('api/v1/content/image-drafts', this.actorId(actor), {
+    const created = record(await requestJson('api/v1/content/image-drafts', null, {
       method: 'POST',
       body: JSON.stringify({
         recipeVersionId: resolvedVersionId,
@@ -1209,22 +1196,21 @@ export class BackendRepository extends DemoRepository {
       });
       await new Promise<void>((resolve) => window.setTimeout(resolve, 1000));
       current = record(
-        await requestJson(`api/v1/content/image-drafts/${draftId}`, this.actorId(actor), { method: 'GET' }),
+        await requestJson(`api/v1/content/image-drafts/${draftId}`, null, { method: 'GET' }),
         'image draft'
       );
       if (attempt === 100) throw new Error('Quá thời gian chờ (100 giây). AI chưa hoàn tất sinh ảnh, vui lòng thử lại.');
     }
-    this.draftPreviews.set(
-      draftId,
-      await requestBlob(`api/v1/content/image-drafts/${draftId}/image`, this.actorId(actor), { method: 'GET' })
-    );
+    const blob = await requestBlob(`api/v1/content/image-drafts/${draftId}/image`, null, { method: 'GET' });
+    this.draftPreviews.set(draftId, blob);
+    const previewUrl = typeof window !== 'undefined' ? URL.createObjectURL(blob) : '';
     return {
       id: draftId,
       stepId: stepId ?? '',
       targetKind,
       prompt,
       mediaAssetId: draftId,
-      previewUrl: `/api/backend/api/v1/content/image-drafts/${draftId}/image`,
+      previewUrl,
       state: 'Generated',
       expiresAt: optionalText(current.expiresAt, 'image draft.expiresAt') ?? new Date(Date.now() + 1_800_000).toISOString(),
       createdAt: text(current.createdAt, 'image draft.createdAt'),
@@ -1238,18 +1224,18 @@ export class BackendRepository extends DemoRepository {
     stepId?: string | null
   ): Promise<string> {
     const accepted = record(
-      await requestJson(`api/v1/content/image-drafts/${candidateId}/accept`, this.actorId(actor), { method: 'POST' }),
+      await requestJson(`api/v1/content/image-drafts/${candidateId}/accept`, null, { method: 'POST' }),
       'accepted image draft'
     );
     const mediaAssetId = text(accepted.mediaAssetId, 'accepted image draft.mediaAssetId');
+    const deliveryUrl = optionalText(accepted.deliveryUrl, 'accepted image draft.deliveryUrl');
     const previewBlob = this.draftPreviews.get(candidateId);
     if (previewBlob) {
       this.draftPreviews.set(mediaAssetId, previewBlob);
     }
-    if (typeof window !== 'undefined') {
-      const draftUrl = `/api/backend/api/v1/content/image-drafts/${candidateId}/image`;
-      localStorage.setItem(`recipehub_media_url_${mediaAssetId}`, draftUrl);
-      localStorage.setItem(`recipehub_media_url_${candidateId}`, draftUrl);
+    if (typeof window !== 'undefined' && deliveryUrl) {
+      localStorage.setItem(`recipehub_media_url_${mediaAssetId}`, deliveryUrl);
+      localStorage.setItem(`recipehub_media_url_${candidateId}`, deliveryUrl);
     }
     const current = await this.getRecipeVersion(actor, recipeId);
 
@@ -1273,9 +1259,19 @@ export class BackendRepository extends DemoRepository {
   }
 
   override async discardAiCandidate(actor: SessionInfo, candidateId: string): Promise<void> {
-    await requestJson(`api/v1/content/image-drafts/${candidateId}/discard`, this.actorId(actor), { method: 'POST' });
+    await requestJson(`api/v1/content/image-drafts/${candidateId}/discard`, null, { method: 'POST' });
     this.draftPreviews.delete(candidateId);
+  }
+
+  clearPreviews(): void {
+    this.draftPreviews.clear();
   }
 }
 
 export const backendRepo = new BackendRepository();
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('recipehub:session-cleared', () => {
+    backendRepo.clearPreviews();
+  });
+}

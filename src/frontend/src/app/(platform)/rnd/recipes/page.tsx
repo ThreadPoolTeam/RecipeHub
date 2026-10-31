@@ -174,9 +174,7 @@ function RecipeListContent() {
           if (!coverUrl && typeof window !== 'undefined') {
             coverUrl = localStorage.getItem(`recipehub_media_url_${item.primaryMediaAssetId}`) || null;
           }
-          if (!coverUrl) {
-            coverUrl = `/api/backend/api/v1/content/image-drafts/${item.primaryMediaAssetId}/image`;
-          }
+
         }
         if (!coverUrl) {
           const versionId = item.versionId || item.id;

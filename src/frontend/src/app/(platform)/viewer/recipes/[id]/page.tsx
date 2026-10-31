@@ -49,8 +49,8 @@ export default function ViewerRecipeDetailPage() {
 
   useEffect(() => {
     let isMounted = true;
+    const createdBlobUrls: string[] = [];
     if (!id || !session) return;
-
     setLoading(true);
     setPermissionDenied(false);
     setErrorMsg(null);
@@ -59,13 +59,9 @@ export default function ViewerRecipeDetailPage() {
     Promise.all([
       repo.getRecipeVersion(session, id),
       repo.getIngredients(),
-      repo.getMedia().catch(() => {
-        if (isMounted) setMediaWarning('Chưa tải được media. Bạn vẫn có thể xem SOP và tính định lượng.');
-        return [] as MediaAsset[];
-      }),
       repo.getPublishedDocument(id),
     ])
-      .then(([rec, ings, mediaList, pubDoc]) => {
+      .then(async ([rec, ings, pubDoc]) => {
         if (!isMounted) return;
 
         setRecipe(rec);
@@ -75,19 +71,47 @@ export default function ViewerRecipeDetailPage() {
           ingMap[ing.id] = ing;
         });
         setIngredientsMap(ingMap);
+        setPublishedDoc(pubDoc);
+
+        const mediaIds = new Set<string>();
+        if (rec.primaryMediaAssetId) mediaIds.add(rec.primaryMediaAssetId);
+        rec.steps?.forEach((step) => {
+          if (step.coverMediaAssetId) mediaIds.add(step.coverMediaAssetId);
+          step.mediaAssetIds?.forEach((mId) => mediaIds.add(mId));
+        });
 
         const mMap: Record<string, MediaAsset> = {};
         const urls: Record<string, string> = {};
-        mediaList.forEach((m) => {
-          mMap[m.id] = m;
-          if (m.blob) {
-            urls[m.id] = URL.createObjectURL(m.blob);
+
+
+        if (mediaIds.size > 0) {
+          const results = await Promise.allSettled(
+            Array.from(mediaIds).map((mId) => repo.getMediaById(mId))
+          );
+          if (!isMounted) return;
+          results.forEach((res) => {
+            if (res.status === 'fulfilled' && res.value) {
+              const m = res.value;
+              mMap[m.id] = m;
+              if (m.blob && m.blob.size > 0) {
+                const bUrl = URL.createObjectURL(m.blob);
+                createdBlobUrls.push(bUrl);
+                urls[m.id] = bUrl;
+              } else if (m.deliveryUrl) {
+                urls[m.id] = m.deliveryUrl;
+              }
+            }
+          });
+          if (results.some((res) => res.status === 'rejected') && isMounted) {
+            setMediaWarning('Chưa tải được một số hình ảnh. Bạn vẫn có thể xem SOP và tính định lượng.');
           }
-        });
+        }
+        if (!isMounted) {
+          createdBlobUrls.forEach((url) => URL.revokeObjectURL(url));
+          return;
+        }
         setMediaMap(mMap);
         setMediaUrls(urls);
-
-        setPublishedDoc(pubDoc);
       })
       .catch((err) => {
         if (!isMounted) return;
@@ -103,7 +127,9 @@ export default function ViewerRecipeDetailPage() {
 
     return () => {
       isMounted = false;
-      Object.values(mediaUrls).forEach((url) => URL.revokeObjectURL(url));
+      createdBlobUrls.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
     };
   }, [id, session, repo, dataVersion]);
 

@@ -354,24 +354,19 @@ export default function EditRecipePage() {
       );
 
       // Determine reliable preview URL
-      let previewUrl = cand.previewUrl;
+      let previewUrl = cand.previewUrl || '';
       if (!previewUrl) {
         const asset = await repo.getMediaById(cand.mediaAssetId);
         if (asset) {
           previewUrl = asset.deliveryUrl || (asset.blob ? URL.createObjectURL(asset.blob) : '');
         }
       }
-      if (!previewUrl) {
-        previewUrl = `/api/backend/api/v1/content/image-drafts/${cand.id}/image`;
-      }
-
       const candidateWithPreview: AiCandidate = {
         ...cand,
         previewUrl,
       };
       setGeneratedCandidate(candidateWithPreview);
-      setCandidateAssetUrl(previewUrl);
-
+      setCandidateAssetUrl(previewUrl || null);
       // Save to persistent storage (survives refresh, auto expires after 30 mins)
       const persistentDraft: PersistentAiDraft = {
         id: cand.id,
@@ -380,7 +375,7 @@ export default function EditRecipePage() {
         stepId: targetStepId ?? null,
         prompt: imagePrompt,
         mediaAssetId: cand.mediaAssetId,
-        previewUrl,
+        previewUrl: previewUrl || '',
         state: 'Generated',
         createdAt: cand.createdAt || new Date().toISOString(),
         expiresAt: cand.expiresAt || new Date(Date.now() + 1_800_000).toISOString(),

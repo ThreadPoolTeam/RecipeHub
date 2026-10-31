@@ -69,5 +69,6 @@ export function clearSession(): void {
   if (typeof window === 'undefined') return;
   window.sessionStorage.removeItem(SESSION_KEY);
   window.sessionStorage.removeItem('recipehub_demo_session');
+  window.localStorage.removeItem('recipehub_ai_drafts');
   window.dispatchEvent(new Event('recipehub:session-cleared'));
 }
