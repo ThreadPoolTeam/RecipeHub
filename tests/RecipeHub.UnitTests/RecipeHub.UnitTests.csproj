@@ -25,6 +25,7 @@
     <ProjectReference Include="..\..\src\backend\Services\Content\RecipeHub.Content.Api\RecipeHub.Content.Api.csproj" />
     <ProjectReference Include="..\..\src\backend\Services\Recipe\RecipeHub.Recipe.Domain\RecipeHub.Recipe.Domain.csproj" />
     <ProjectReference Include="..\..\src\backend\Services\Recipe\RecipeHub.Recipe.Application\RecipeHub.Recipe.Application.csproj" />
+    <ProjectReference Include="..\..\src\backend\BuildingBlocks\RecipeHub.BuildingBlocks\RecipeHub.BuildingBlocks.csproj" />
   </ItemGroup>
 
 </Project>

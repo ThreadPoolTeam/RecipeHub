@@ -1,3 +1,4 @@
+using RecipeHub.BuildingBlocks.Audit;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.Extensions.Configuration;
 using RecipeHub.Identity.Application.DTOs;
@@ -17,10 +18,11 @@ public sealed class IdentityTests
     private readonly TokenService tokens = new(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         { ["Jwt:SigningKey"] = "test-only-key-012345678901234567890123456789" }).Build(), false);
     private IAuthService Auth => new AuthService(store, passwords, tokens);
-    private IUserService Users => new UserService(store, passwords);
+    private IUserService Users => new UserService(store, passwords, NullAuditActivityPublisher.Instance);
+    private static readonly AuditActor AdminActor = new(Guid.NewGuid(), "Admin Test", "admin");
 
     private async Task<UserResponse> Create(string role = "rnd", string email = "test@example.com") =>
-        await Users.CreateUserAsync(new(email, "Test User", role, "Test@1234"), default);
+        await Users.CreateUserAsync(AdminActor, new(email, "Test User", role, "Test@1234"), default);
 
     [Fact]
     public async Task Login_ValidatesSignedTokenAndStoresOnlyRefreshHash()
@@ -48,9 +50,9 @@ public sealed class IdentityTests
     {
         var user = await Create();
         var result = await Auth.LoginAsync(new(user.Email, "Test@1234"), default);
-        await Users.SetStatusAsync(Guid.NewGuid(), user.Id, false, default);
+        await Users.SetStatusAsync(AdminActor, user.Id, false, default);
         Assert.Equal(403, (await Assert.ThrowsAsync<IdentityException>(() => Auth.LoginAsync(new(user.Email, "Test@1234"), default))).StatusCode);
-        await Users.SetStatusAsync(Guid.NewGuid(), user.Id, true, default);
+        await Users.SetStatusAsync(AdminActor, user.Id, true, default);
         Assert.Null(await Auth.ValidateAsync(result.AccessToken, default));
         Assert.All(store.Sessions, session => Assert.NotNull(session.RevokedAt));
     }
@@ -74,7 +76,7 @@ public sealed class IdentityTests
     {
         var user = await Create();
         var login = await Auth.LoginAsync(new(user.Email, "Test@1234"), default);
-        await Users.ResetPasswordAsync(user.Id, new("Reset@1234"), default);
+        await Users.ResetPasswordAsync(AdminActor, user.Id, new("Reset@1234"), default);
         Assert.Null(await Auth.ValidateAsync(login.AccessToken, default));
         await Assert.ThrowsAsync<IdentityException>(() => Auth.RefreshAsync(new(login.RefreshToken), default));
     }
@@ -104,8 +106,9 @@ public sealed class IdentityTests
     public async Task Admin_CannotLockOrDemoteSelf()
     {
         var admin = await Create("admin");
-        Assert.Equal(409, (await Assert.ThrowsAsync<IdentityException>(() => Users.SetStatusAsync(admin.Id, admin.Id, false, default))).StatusCode);
-        await Assert.ThrowsAsync<IdentityException>(() => Users.UpdateUserAsync(admin.Id, admin.Id, new("Admin", "viewer"), default));
+        var adminActor = new AuditActor(admin.Id, "Admin", "admin");
+        Assert.Equal(409, (await Assert.ThrowsAsync<IdentityException>(() => Users.SetStatusAsync(adminActor, admin.Id, false, default))).StatusCode);
+        await Assert.ThrowsAsync<IdentityException>(() => Users.UpdateUserAsync(adminActor, admin.Id, new("Admin", "viewer"), default));
     }
 
     [Theory]
@@ -114,7 +117,7 @@ public sealed class IdentityTests
     [InlineData("ALLUPPERCASE1")]
     [InlineData("NoNumbersHere")]
     public async Task Create_RejectsWeakPassword(string password) =>
-        Assert.Equal(400, (await Assert.ThrowsAsync<IdentityException>(() => Users.CreateUserAsync(new("test@example.com", "Test", "rnd", password), default))).StatusCode);
+        Assert.Equal(400, (await Assert.ThrowsAsync<IdentityException>(() => Users.CreateUserAsync(AdminActor, new("test@example.com", "Test", "rnd", password), default))).StatusCode);
 
     [Fact]
     public async Task Create_NormalizesEmailAndRejectsDuplicatesAndInvalidRole()
@@ -130,7 +133,7 @@ public sealed class IdentityTests
     {
         var user = await Create("viewer");
         var login = await Auth.LoginAsync(new(user.Email, "Test@1234"), default);
-        var updated = await Users.UpdateUserAsync(Guid.NewGuid(), user.Id, new("Updated", "admin"), default);
+        var updated = await Users.UpdateUserAsync(AdminActor, user.Id, new("Updated", "admin"), default);
         Assert.Equal("admin", updated.Role);
         Assert.Null(await Auth.ValidateAsync(login.AccessToken, default));
         var next = await Auth.LoginAsync(new(user.Email, "Test@1234"), default);
@@ -144,7 +147,7 @@ public sealed class IdentityTests
         var user = await Create("viewer");
         store.Roles.RemoveAll(role => role.Code == "admin");
         var error = await Assert.ThrowsAsync<IdentityException>(() =>
-            Users.UpdateUserAsync(Guid.NewGuid(), user.Id, new("Changed", "admin"), default));
+            Users.UpdateUserAsync(AdminActor, user.Id, new("Changed", "admin"), default));
         Assert.Equal(400, error.StatusCode);
         Assert.Equal("Test User", store.Users.Single().FullName);
         Assert.Equal("viewer", store.Users.Single().Role.Code);
