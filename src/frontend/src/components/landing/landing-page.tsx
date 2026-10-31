@@ -86,7 +86,7 @@ export function LandingPage({ manifest }: LandingPageProps) {
                   tone === 'dark' ? 'text-[#C9A84C]' : 'text-[#B47820]'
                 }`}
               />
-              <span className="font-extrabold tracking-tight">RecipeHub</span>
+              <span className="font-extrabold tracking-tight"><span className={tone === 'dark' ? 'text-[#F2F0EB]' : 'text-[#1A1917]'}>Recipe</span><span className="text-[#B47820]">Hub</span></span>
             </Link>
 
             <nav
@@ -536,7 +536,7 @@ export function LandingPage({ manifest }: LandingPageProps) {
           <div className="space-y-1 text-center sm:text-left">
             <div className="font-bold text-sm text-[#1A1917] flex items-center justify-center sm:justify-start gap-1.5">
               <Coffee className="w-4 h-4 text-[#B47820]" />
-              <span className="font-extrabold tracking-tight">RecipeHub</span>
+              <span className="font-extrabold tracking-tight"><span className="text-[#1A1917]">Recipe</span><span className="text-[#B47820]">Hub</span></span>
               <span className="text-[10px] px-2 py-0.5 rounded bg-[#B47820]/15 text-[#B47820] font-semibold">
               </span>
             </div>

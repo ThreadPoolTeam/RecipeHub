@@ -160,7 +160,7 @@ export function DocumentWorkspace({ recipe, readOnly = false }: DocumentWorkspac
 
       {/* Published Status Banner */}
       {publishedDoc ? (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex flex-wrap items-center justify-between gap-3 text-xs shadow-xs">
+        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs shadow-xs">
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
@@ -181,7 +181,7 @@ export function DocumentWorkspace({ recipe, readOnly = false }: DocumentWorkspac
           </Button>
         </div>
       ) : (
-        <div className="p-3.5 bg-white border border-[#E8E2D9] rounded-lg text-xs text-[#706E68] flex items-center justify-between shadow-xs">
+        <div className="p-3.5 bg-white border border-[#E8E2D9] rounded-2xl text-xs text-[#706E68] flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
             <span>Chưa có ấn bản tài liệu chính thức được phát hành cho phiên bản này.</span>
@@ -282,7 +282,7 @@ export function DocumentWorkspace({ recipe, readOnly = false }: DocumentWorkspac
                 Chú thích ảnh theo từng bước (Step Captions):
               </h5>
               {recipe.steps.map((step) => (
-                <div key={step.id} className="p-3 bg-[#FAF9F5] rounded-lg border border-[#E8E2D9] space-y-1">
+                <div key={step.id} className="p-3 bg-[#FAF9F5] rounded-xl border border-[#E8E2D9] space-y-1">
                   <div className="text-xs font-medium text-[#1A1917]">
                     Bước {step.stepNumber}: {step.title}
                   </div>
@@ -319,7 +319,7 @@ export function DocumentWorkspace({ recipe, readOnly = false }: DocumentWorkspac
         {/* Action & Preview Column */}
         {/* Export & Preview Column */}
         <div className="space-y-4">
-          <div className="p-5 bg-white border border-[#E8E2D9] rounded-xl space-y-4 shadow-xs">
+          <div className="p-5 bg-white border border-[#E8E2D9] rounded-2xl space-y-4 shadow-xs">
             <h4 className="text-sm font-bold text-[#1A1917] uppercase tracking-wider border-b border-[#E8E2D9] pb-3">
               Tác vụ xuất bản tài liệu PDF
             </h4>
@@ -328,7 +328,7 @@ export function DocumentWorkspace({ recipe, readOnly = false }: DocumentWorkspac
             </p>
 
             <div className="space-y-3 pt-1">
-              <div className="p-3 bg-[#FAF9F5] rounded-lg border border-[#E8E2D9] text-xs space-y-1">
+              <div className="p-3 bg-[#FAF9F5] rounded-xl border border-[#E8E2D9] text-xs space-y-1">
                 <span className="font-semibold text-[#1A1917]">1. Xuất Bản Thử Nghiệm</span>
                 <p className="text-[#706E68]">
                   Có đóng dấu watermark &quot;BẢN NHÁP — CHƯA PHÁT HÀNH&quot;. Dành cho chuyên viên kiểm tra trước.
@@ -346,7 +346,7 @@ export function DocumentWorkspace({ recipe, readOnly = false }: DocumentWorkspac
                 </div>
               </div>
 
-              <div className="p-3 bg-[#FAF9F5] rounded-lg border border-[#E8E2D9] text-xs space-y-1">
+              <div className="p-3 bg-[#FAF9F5] rounded-xl border border-[#E8E2D9] text-xs space-y-1">
                 <span className="font-semibold text-[#1A1917]">2. Xuất Bản Phát Hành Chính Thức</span>
                 <p className="text-[#706E68]">
                   Bản sạch không có watermark. Chỉ kích hoạt khi công thức đạt trạng thái{' '}

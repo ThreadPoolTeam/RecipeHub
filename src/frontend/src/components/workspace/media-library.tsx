@@ -312,7 +312,7 @@ export function MediaLibrary({
           <p className="text-xs">Đang tải danh mục tư liệu hình ảnh...</p>
         </div>
       ) : filteredMedia.length === 0 ? (
-        <div className="p-12 text-center text-[#706E68] bg-white border border-[#E8E2D9] rounded-lg">
+        <div className="p-12 text-center text-[#706E68] bg-white border border-[#E8E2D9] rounded-2xl">
           Không có tệp hình ảnh nào trong mục này.
         </div>
       ) : (
@@ -326,7 +326,7 @@ export function MediaLibrary({
                 key={item.id}
                 className={`group relative bg-white border ${
                   isSelected ? 'border-[#B47820] ring-2 ring-[#B47820]/30' : 'border-[#E8E2D9] hover:border-[#B47820]'
-                } rounded-lg overflow-hidden flex flex-col transition shadow-xs hover:shadow-sm`}
+                } rounded-xl overflow-hidden flex flex-col transition shadow-xs hover:shadow-sm`}
               >
                 {/* Thumbnail Preview */}
                 <div className="aspect-video w-full bg-[#F5F0E8] flex items-center justify-center overflow-hidden relative">

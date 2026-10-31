@@ -23,6 +23,8 @@ import {
   ChevronRight,
   ChevronUp,
   HelpCircle,
+  Award,
+  GraduationCap,
 } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { isPathAllowedForUser } from '@/lib/demo/permissions';
@@ -92,9 +94,14 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
 
   // Helper for active link styles (optimistic response)
   const activePath = pendingPath ?? pathname;
-  const isLinkActive = (path: string, exact = false) => {
-    if (exact) return activePath === path;
-    return activePath.startsWith(path);
+  const isLinkActive = (path: string, options?: { exact?: boolean; exclude?: string[] }) => {
+    if (options?.exact) return activePath === path;
+    const matches = activePath === path || activePath.startsWith(path.endsWith('/') ? path : `${path}/`);
+    if (!matches) return false;
+    if (options?.exclude?.some((ex) => activePath === ex || activePath.startsWith(ex.endsWith('/') ? ex : `${ex}/`))) {
+      return false;
+    }
+    return true;
   };
 
   const handleNavClick = (href: string, e: React.MouseEvent) => {
@@ -130,7 +137,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             href="/rnd"
             prefetch={true}
             onClick={(e) => handleNavClick('/rnd', e)}
-            className={navLinkStyle(isLinkActive('/rnd', true), isCollapsed)}
+            className={navLinkStyle(isLinkActive('/rnd', { exact: true }), isCollapsed)}
             title="Tổng quan R&D"
           >
             <LayoutDashboard className="w-5 h-5 text-[#B47820]" />
@@ -170,11 +177,21 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             href="/rnd/quizzes"
             prefetch={true}
             onClick={(e) => handleNavClick('/rnd/quizzes', e)}
-            className={navLinkStyle(isLinkActive('/rnd/quizzes'), isCollapsed)}
+            className={navLinkStyle(isLinkActive('/rnd/quizzes', { exclude: ['/rnd/quizzes/results'] }), isCollapsed)}
             title="Bộ Quiz"
           >
-            <FileText className="w-5 h-5 text-[#706E68]" />
+            <GraduationCap className="w-5 h-5 text-[#706E68]" />
             {!isCollapsed && <span>Bộ Quiz</span>}
+          </Link>
+          <Link
+            href="/rnd/quizzes/results"
+            prefetch={true}
+            onClick={(e) => handleNavClick('/rnd/quizzes/results', e)}
+            className={navLinkStyle(isLinkActive('/rnd/quizzes/results'), isCollapsed)}
+            title="Kết quả làm bài"
+          >
+            <Award className="w-5 h-5 text-[#706E68]" />
+            {!isCollapsed && <span>Kết quả làm bài</span>}
           </Link>
         </div>
       )}
@@ -191,7 +208,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             href="/viewer"
             prefetch={true}
             onClick={(e) => handleNavClick('/viewer', e)}
-            className={navLinkStyle(isLinkActive('/viewer'), isCollapsed)}
+            className={navLinkStyle(isLinkActive('/viewer', { exclude: ['/viewer/quizzes'] }), isCollapsed)}
             title="Tra cứu SOP đồ uống"
           >
             <BookOpen className="w-5 h-5 text-[#B47820]" />
@@ -201,11 +218,21 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             href="/viewer/quizzes"
             prefetch={true}
             onClick={(e) => handleNavClick('/viewer/quizzes', e)}
-            className={navLinkStyle(isLinkActive('/viewer/quizzes'), isCollapsed)}
+            className={navLinkStyle(isLinkActive('/viewer/quizzes', { exclude: ['/viewer/quizzes/history'] }), isCollapsed)}
             title="Bài kiểm tra"
           >
-            <FileText className="w-5 h-5 text-[#706E68]" />
+            <GraduationCap className="w-5 h-5 text-[#706E68]" />
             {!isCollapsed && <span>Bài kiểm tra</span>}
+          </Link>
+          <Link
+            href="/viewer/quizzes/history"
+            prefetch={true}
+            onClick={(e) => handleNavClick('/viewer/quizzes/history', e)}
+            className={navLinkStyle(isLinkActive('/viewer/quizzes/history'), isCollapsed)}
+            title="Lịch sử làm bài"
+          >
+            <Award className="w-5 h-5 text-[#706E68]" />
+            {!isCollapsed && <span>Lịch sử làm bài</span>}
           </Link>
         </div>
       )}
@@ -222,7 +249,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             href="/admin"
             prefetch={true}
             onClick={(e) => handleNavClick('/admin', e)}
-            className={navLinkStyle(isLinkActive('/admin', true), isCollapsed)}
+            className={navLinkStyle(isLinkActive('/admin', { exact: true }), isCollapsed)}
             title="Tổng quan Admin"
           >
             <Settings className="w-5 h-5 text-[#B47820]" />
@@ -272,11 +299,21 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             href="/admin/quizzes"
             prefetch={true}
             onClick={(e) => handleNavClick('/admin/quizzes', e)}
-            className={navLinkStyle(isLinkActive('/admin/quizzes'), isCollapsed)}
+            className={navLinkStyle(isLinkActive('/admin/quizzes', { exclude: ['/admin/quizzes/results'] }), isCollapsed)}
             title="Bộ Quiz"
           >
-            <FileText className="w-5 h-5 text-[#706E68]" />
+            <GraduationCap className="w-5 h-5 text-[#706E68]" />
             {!isCollapsed && <span>Bộ Quiz</span>}
+          </Link>
+          <Link
+            href="/admin/quizzes/results"
+            prefetch={true}
+            onClick={(e) => handleNavClick('/admin/quizzes/results', e)}
+            className={navLinkStyle(isLinkActive('/admin/quizzes/results'), isCollapsed)}
+            title="Kết quả làm bài"
+          >
+            <Award className="w-5 h-5 text-[#706E68]" />
+            {!isCollapsed && <span>Kết quả làm bài</span>}
           </Link>
         </div>
       )}
@@ -515,8 +552,10 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
 
             {/* Clean Section Title */}
             <h1 className="font-semibold text-sm sm:text-base text-[#1A1917]">
-              {pathname.includes('/quizzes')
-                ? (session?.role === 'viewer' ? 'Bài kiểm tra' : 'Bộ Quiz')
+              {pathname.includes('/quizzes/results') || pathname.includes('/quizzes/history')
+                ? 'Kết Quả & Lịch Sử Quiz'
+                : pathname.includes('/quizzes')
+                ? (session?.role === 'viewer' ? 'Bài Kiểm Tra Quiz' : 'Quản Lý Bộ Quiz')
                 : pathname.startsWith('/rnd')
                 ? 'Nghiên Cứu & Phát Triển (R&D)'
                 : pathname.startsWith('/viewer')
@@ -538,7 +577,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Main Child View */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">{children}</main>
+        <main key={pathname} className="workspace-page-anim flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">{children}</main>
 
         {/* Footer */}
         <footer className="border-t border-[#E8E2D9] bg-[#F5F0E8] py-4 px-6 text-center text-xs text-[#706E68]">
