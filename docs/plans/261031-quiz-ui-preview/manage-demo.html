@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RecipeHub · Quản lý hồ sơ bộ Quiz (Warm Editorial)</title>
+<style>
+@font-face {
+  font-family: 'Google Sans'; font-style: normal; font-weight: 400 700; font-display: swap;
+  src: url('/fonts/google-sans-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Google Sans'; font-style: normal; font-weight: 400 700; font-display: swap;
+  src: url('/fonts/google-sans-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Google Sans'; font-style: normal; font-weight: 400 700; font-display: swap;
+  src: url('/fonts/google-sans-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+:root {
+  --canvas: #FAF9F5;
+  --surface: #FFFFFF;
+  --surface-soft: #F5F0E8;
+  --surface-hover: #ECE6DA;
+  --border: #E8E2D9;
+  --border-strong: #D5CEBF;
+  --ink: #1A1917;
+  --muted: #706E68;
+  --muted-soft: #8C887F;
+  --action: #B47820;
+  --action-hover: #9A6416;
+  --approved: #166534;
+  --approved-bg: #F0FDF4;
+  --approved-border: #BBF7D0;
+  --shadow-xs: 0 1px 2px 0 rgba(26,25,23,.05);
+  --shadow-sm: 0 1px 3px 0 rgba(26,25,23,.07), 0 1px 2px -1px rgba(26,25,23,.07);
+  --shadow-md: 0 4px 6px -1px rgba(26,25,23,.08), 0 2px 4px -2px rgba(26,25,23,.06);
+  --shadow-xl: 0 20px 25px -5px rgba(26,25,23,.1), 0 8px 10px -6px rgba(26,25,23,.08);
+  --font: 'Google Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; color: var(--ink); background: var(--canvas); font: 400 15px/1.6 var(--font); }
+button, input, select { font: inherit; }
+button { cursor: pointer; color: inherit; }
+button:focus-visible, input:focus-visible { outline: 2px solid #CC785C; outline-offset: 3px; }
+
+/* Workspace layout */
+.workspace-frame { display: grid; grid-template-columns: 240px minmax(0, 1fr); min-height: 100vh; }
+.outer-sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 24px 16px; display: flex; flex-direction: column; justify-content: space-between; }
+.brand { font-size: 24px; font-weight: 700; letter-spacing: -0.8px; margin-bottom: 24px; }
+.brand span { color: var(--action); }
+.brand small { display: block; font-size: 10px; letter-spacing: 1.5px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+.outer-nav-group-title { font-size: 10px; font-weight: 700; color: var(--muted-soft); letter-spacing: 1.5px; text-transform: uppercase; margin: 16px 0 8px 8px; }
+.outer-nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--muted); text-decoration: none; margin-bottom: 4px; transition: all .14s; }
+.outer-nav-item.active { background: var(--surface-hover); color: var(--ink); font-weight: 700; border-left: 3px solid var(--action); }
+.user-badge { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--surface-soft); border-radius: 12px; font-size: 12px; }
+.user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--action); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+
+/* Main content */
+.workspace-main { padding: 32px 40px; max-width: 1240px; margin: 0 auto; width: 100%; }
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; gap: 20px; flex-wrap: wrap; }
+.page-title-area h1 { font-size: 28px; font-weight: 700; margin: 0 0 6px; letter-spacing: -0.5px; }
+.page-title-area p { margin: 0; color: var(--muted); font-size: 14px; }
+
+/* Controls toolbar */
+.toolbar-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+.search-box { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 9999px; padding: 8px 16px; width: min(360px, 100%); box-shadow: var(--shadow-xs); transition: border-color .15s; }
+.search-box:focus-within { border-color: var(--action); box-shadow: 0 0 0 3px rgba(180, 120, 32, 0.12); }
+.search-input { border: 0; outline: none; background: transparent; width: 100%; font-size: 14px; color: var(--ink); }
+.search-input::placeholder { color: var(--muted-soft); }
+
+.filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.filter-chip { border: 1px solid var(--border); background: var(--surface); border-radius: 9999px; padding: 6px 14px; font-size: 12.5px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all .14s; }
+.filter-chip:hover { border-color: var(--border-strong); color: var(--ink); }
+.filter-chip.active { background: var(--ink); color: #FAF9F5; border-color: var(--ink); }
+
+.btn-create-quiz { background: var(--action); color: #FFFFFF !important; border: 1px solid var(--action); border-radius: 9999px; padding: 9px 20px; font-size: 13.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; box-shadow: var(--shadow-xs); text-decoration: none; transition: all .16s ease; }
+.btn-create-quiz:hover { background: var(--action-hover); border-color: var(--action-hover); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.btn-create-quiz:active { transform: scale(0.98); }
+
+/* Quiz Kits Grid - Clean Warm Editorial Cards */
+.quiz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+.quiz-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px; padding: 20px 22px; box-shadow: var(--shadow-xs); transition: all .18s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; justify-content: space-between; text-decoration: none; color: inherit; position: relative; }
+.quiz-card:hover { border-color: var(--border-strong); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+.card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.card-icon-title { display: flex; align-items: flex-start; gap: 14px; }
+.card-avatar { width: 44px; height: 44px; border-radius: 12px; background: var(--surface-soft); border: 1px solid var(--border); display: grid; place-items: center; font-size: 20px; flex-shrink: 0; }
+.quiz-card:hover .card-avatar { background: #FFF7ED; border-color: #FED7AA; }
+
+.quiz-card-title { font-size: 17px; font-weight: 700; color: var(--ink); margin: 0 0 4px; line-height: 1.35; }
+.quiz-card-recipe { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+
+.badge-status { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 9999px; flex-shrink: 0; }
+.badge-status.draft { background: #FFF7ED; color: #9A3412; border: 1px solid #FED7AA; }
+.badge-status.approved { background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; }
+
+.card-meta-row { display: flex; align-items: center; gap: 16px; padding-top: 14px; border-top: 1px solid var(--surface-hover); font-size: 12.5px; color: var(--muted); margin-top: 14px; }
+.meta-item { display: flex; align-items: center; gap: 6px; font-weight: 500; }
+.meta-item strong { color: var(--ink); font-weight: 700; }
+
+/* Notice bar */
+.notice-pill { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #1A1917; color: #FAF9F5; padding: 8px 18px; border-radius: 9999px; font-size: 12px; box-shadow: var(--shadow-md); z-index: 100; display: flex; align-items: center; gap: 12px; }
+.notice-pill a { color: var(--action); text-decoration: underline; font-weight: 600; }
+
+@media(max-width: 900px) {
+  .workspace-frame { grid-template-columns: 1fr; }
+  .outer-sidebar { display: none; }
+  .workspace-main { padding: 20px 16px; }
+  .quiz-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="workspace-frame">
+  <!-- Outer Sidebar -->
+  <aside class="outer-sidebar">
+    <div>
+      <div class="brand">recipe<span>hub</span><small>WORKSPACE</small></div>
+      <div class="outer-nav-group-title">Không gian R&amp;D</div>
+      <a href="#" class="outer-nav-item">Tổng quan R&amp;D</a>
+      <a href="#" class="outer-nav-item">Công thức đồ uống</a>
+      <a href="/manage" class="outer-nav-item active">Bài kiểm tra (Quiz)</a>
+      <a href="#" class="outer-nav-item">Kho nguyên liệu</a>
+      <a href="#" class="outer-nav-item">Tư liệu hình ảnh</a>
+    </div>
+    <div class="user-badge">
+      <div class="user-avatar">R</div>
+      <div>
+        <div style="font-weight:700">Chuyên viên R&amp;D</div>
+        <div style="color:var(--muted);font-size:11px">rd.specialist@recipehub.vn</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="workspace-main">
+    <div class="page-header">
+      <div class="page-title-area">
+        <h1>Quản lý hồ sơ bài kiểm tra</h1>
+        <p>Hồ sơ các bộ đề đánh giá kiến thức Barista gắn với từng công thức R&amp;D</p>
+      </div>
+      <a href="/editor" class="btn-create-quiz">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        Tạo bộ đề mới
+      </a>
+    </div>
+
+    <!-- Toolbar: Search + Filter -->
+    <div class="toolbar-row">
+      <div class="search-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" color="var(--muted-soft)"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" class="search-input" id="search-input" placeholder="Tìm kiếm bộ đề, công thức liên kết...">
+      </div>
+
+      <div class="filter-group">
+        <button type="button" class="filter-chip active" onclick="filterKits('all')">Tất cả (4)</button>
+        <button type="button" class="filter-chip" onclick="filterKits('approved')">Đã ban hành (2)</button>
+        <button type="button" class="filter-chip" onclick="filterKits('draft')">Bản nháp (2)</button>
+      </div>
+    </div>
+
+    <!-- Quiz Kits Grid -->
+    <div class="quiz-grid" id="quiz-grid"></div>
+  </main>
+</div>
+
+<div class="notice-pill">
+  <span>Hồ sơ bộ Quiz (Quản lý cấp 1)</span>
+  <span>·</span>
+  <a href="/editor">Mở trang soạn đề chi tiết ↗</a>
+  <span>·</span>
+  <a href="/">Mở màn làm bài Barista ↗</a>
+</div>
+
+<script>
+const quizKits = [
+  {
+    id: 1,
+    title: 'Đánh giá tiêu chuẩn Barista Essentials',
+    recipe: 'Cà phê Phin Muối v2.4',
+    icon: '☕',
+    status: 'draft',
+    statusLabel: 'Bản nháp (v1)',
+    questionCount: 4,
+    passScore: 80,
+    updatedAt: '31/10/2026'
+  },
+  {
+    id: 2,
+    title: 'Kỹ thuật đánh sữa Microfoam & Latte Art',
+    recipe: 'Caramel Macchiato nóng v1.2',
+    icon: '🥛',
+    status: 'approved',
+    statusLabel: 'Đã ban hành (v2)',
+    questionCount: 10,
+    passScore: 85,
+    updatedAt: '28/10/2026'
+  },
+  {
+    id: 3,
+    title: 'Quy chuẩn ủ lạnh & định lượng Cold Brew',
+    recipe: 'Cold Brew Trái cây v3.0',
+    icon: '🧊',
+    status: 'approved',
+    statusLabel: 'Đã ban hành (v1)',
+    questionCount: 8,
+    passScore: 75,
+    updatedAt: '25/10/2026'
+  },
+  {
+    id: 4,
+    title: 'An toàn vệ sinh quầy pha chế & Vòi hơi',
+    recipe: 'SOP Tiêu chuẩn quầy Bar',
+    icon: '✨',
+    status: 'draft',
+    statusLabel: 'Bản nháp (v1)',
+    questionCount: 6,
+    passScore: 90,
+    updatedAt: '30/10/2026'
+  }
+];
+
+let activeFilter = 'all';
+
+function renderGrid() {
+  const container = document.getElementById('quiz-grid');
+  const term = document.getElementById('search-input').value.toLowerCase().trim();
+
+  const filtered = quizKits.filter(kit => {
+    const matchFilter = activeFilter === 'all' || kit.status === activeFilter;
+    const matchSearch = kit.title.toLowerCase().includes(term) || kit.recipe.toLowerCase().includes(term);
+    return matchFilter && matchSearch;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted)">Không tìm thấy bộ đề nào phù hợp.</div>';
+    return;
+  }
+
+  container.innerHTML = filtered.map(kit => `
+    <a href="/editor" class="quiz-card">
+      <div>
+        <div class="card-top">
+          <div class="card-icon-title">
+            <div class="card-avatar">${kit.icon}</div>
+            <div>
+              <h3 class="quiz-card-title">${kit.title}</h3>
+              <div class="quiz-card-recipe">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                ${kit.recipe}
+              </div>
+            </div>
+          </div>
+          <span class="badge-status ${kit.status}">${kit.statusLabel}</span>
+        </div>
+      </div>
+
+      <div class="card-meta-row">
+        <div class="meta-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <strong>${kit.questionCount}</strong> câu
+        </div>
+        <div class="meta-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          Đạt: <strong>${kit.passScore}%</strong>
+        </div>
+        <div class="meta-item" style="margin-left:auto">
+          ${kit.updatedAt}
+        </div>
+      </div>
+    </a>
+  `).join('');
+}
+
+function filterKits(status) {
+  activeFilter = status;
+  document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.getAttribute('onclick').includes(status));
+  });
+  renderGrid();
+}
+
+document.getElementById('search-input').oninput = renderGrid;
+
+renderGrid();
+</script>
+</body>
+</html>

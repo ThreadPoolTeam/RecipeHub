@@ -29,6 +29,8 @@ created: 2026-10-19
 - Chọn planning fast: hướng đã chốt, không thêm công nghệ; phân tích source trực tiếp, không cần research hay agent viết lại cùng một plan. Không có `ck` CLI, dùng Markdown canonical.
 - Không thấy `docs/development-rules.md`, codebase-summary/code-standards/design-guidelines trong danh sách docs; dùng quy tắc repo đã cung cấp.
 
+- Cập nhật 2026-10-31: `../261031-quiz-ui/plan.md` kế thừa DESIGN.md cho Quiz production; wordmark Recipe đen/Hub caramel không dấu chấm, giữ badge. Không thay story cinematic hoặc chờ hoàn tất toàn bộ phase kiểm chứng của plan này; không hard blocker.
+
 ## Phases
 
 | Phase | Name | Status |

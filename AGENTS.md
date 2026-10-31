@@ -4,6 +4,7 @@
 
 - **Caveman skill (BẮT BUỘC):** Luôn đọc và sử dụng skill `caveman` khi bắt đầu phiên làm việc; duy trì trong mọi phản hồi. Giao tiếp tiếng Việt, ngắn gọn, giữ nguyên thuật ngữ/code/API/CLI. Dùng `sequential-thinking` khi cần suy luận có cấu trúc.
 - **CodeGraph**: Project indexed with CodeGraph. Use `codegraph_explore` MCP or `codegraph explore` CLI BEFORE `grep` or Read.
+- **Design System (BẮT BUỘC):** Mọi công việc Web FE (trừ mobile) BẮT BUỘC đọc `docs/DESIGN.md` trước khi thiết kế/chỉnh sửa; mọi quyết định UI/UX phải giải thích rõ lý do căn cứ theo DESIGN.md.
 
 ## Project Overview
 - **Project Name:** RecipeHub
@@ -102,3 +103,8 @@ RecipeHub/
     2. *Khóa cứng Visual Elements:* Chỉ trích xuất nguyên liệu thị giác (lát quả, bọt kem, tầng màu); lọc bỏ toàn bộ nguyên liệu hòa tan (đường, muối, siro, bột béo).
     3. *Hố sâu văn hóa (Domain Gap):* Phải quy đổi món Việt (Cà phê muối, Rau má, Mãng cầu...) sang thuộc tính vật lý phổ quát phương Tây, không dịch thô danh từ.
     4. *Ràng buộc kỹ thuật FLUX Schnell:* Cố định `steps: 4`, độ dài vàng 300–600 ký tự (Front-loading chủ thể ly nước vào 77 token đầu), `temperature: 0.2` cho Gemini (loại bỏ tính từ cảm xúc/hoa mỹ).
+
+- **Frontend Design System & DESIGN.md Compliance (BẮT BUỘC cho Web FE, trừ Mobile):**
+  - Khi thiết kế, thêm mới hoặc chỉnh sửa UI/UX trên Web Frontend (`src/frontend/`), **BẮT BUỘC** phải đọc và tuân thủ `docs/DESIGN.md` trước khi thực hiện. Ngoại lệ duy nhất: không áp dụng cho mobile (`src/mobile/`).
+  - Mọi quyết định thay đổi UI/UX (bố cục layout, phân cấp typography, component, màu sắc/token, animation, loading, điều hướng) **BẮT BUỘC** phải giải trình lý do ("vì sao làm vậy") bằng cách đối chiếu cụ thể với quy tắc, mục hoặc token trong `docs/DESIGN.md`.
+  - Tuyệt đối không tự ý viết thêm file CSS biệt lập làm phân mảnh token, không phá vỡ hệ thống Semantic Tokens, và luôn kiểm tra hỗ trợ `prefers-reduced-motion: reduce`.
