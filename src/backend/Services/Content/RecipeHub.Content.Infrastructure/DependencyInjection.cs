@@ -16,7 +16,7 @@ namespace RecipeHub.Content.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddContentInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddContentWorkerInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("ContentDb")
                                ?? configuration.GetConnectionString("Database")
@@ -31,18 +31,26 @@ public static class DependencyInjection
             });
         });
 
+        // Storage for temporary images and AI generation pipelines
+        services.AddSingleton<ITemporaryImageStore, LocalTemporaryImageStore>();
+        services.AddHttpClient<IAiImagePromptTranslator, GeminiPromptTranslator>();
+        services.AddHttpClient<IAiImageGenerator, CloudflareFluxGenerator>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddContentInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddContentWorkerInfrastructure(configuration);
+
         // Repositories & Unit of Work
         services.AddScoped<IImageDraftRepository, ImageDraftRepository>();
         services.AddScoped<IMediaAssetRepository, MediaAssetRepository>();
         services.AddScoped<IOutboxRepository, OutboxRepository>();
         services.AddScoped<IContentUnitOfWork, ContentUnitOfWork>();
 
-        // Storage
-        services.AddSingleton<ITemporaryImageStore, LocalTemporaryImageStore>();
-
+        // Media Storage
         services.AddHttpClient<IMediaStorage, CloudinaryMediaStorage>();
-        services.AddHttpClient<IAiImagePromptTranslator, GeminiPromptTranslator>();
-        services.AddHttpClient<IAiImageGenerator, CloudflareFluxGenerator>();
 
         // gRPC Clients
         var recipeGrpcUrl = configuration["Grpc:RecipeServiceUrl"] ?? "http://localhost:5012";
@@ -50,6 +58,7 @@ public static class DependencyInjection
         services.AddSingleton(sp => new RecipeAiContextQuery.RecipeAiContextQueryClient(sp.GetRequiredService<GrpcChannel>()));
         services.AddSingleton(sp => new QuizRecipeQuery.QuizRecipeQueryClient(sp.GetRequiredService<GrpcChannel>()));
         services.AddScoped<IRecipeContextClient, RecipeGrpcContextClient>();
+
         // Outbox relay background service
         services.AddHostedService<OutboxProcessorHostedService>();
 
