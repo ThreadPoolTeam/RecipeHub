@@ -12,7 +12,6 @@ import {
   Settings,
   Users,
   Package,
-  Bot,
   FileText,
   FolderGit2,
   LogOut,
@@ -27,22 +26,25 @@ import {
 } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { isPathAllowedForUser } from '@/lib/demo/permissions';
+
 import { RoleBadge } from './status-badge';
 import { Button } from './fields';
 import { Dialog } from './dialog';
 import './workspace.css';
-
 export function WorkspaceShell({ children }: { children: React.ReactNode }) {
   const { session, currentUser, loading, logout, repo, touch } = useDemo();
   const pathname = usePathname();
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    setPendingPath(null);
+  }, [pathname]);
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const menuRef = React.useRef<HTMLDivElement>(null);
-
-  // Click outside to close user popover menu
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -88,20 +90,28 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Helper for active link styles
+  // Helper for active link styles (optimistic response)
+  const activePath = pendingPath ?? pathname;
   const isLinkActive = (path: string, exact = false) => {
-    if (exact) return pathname === path;
-    return pathname.startsWith(path);
+    if (exact) return activePath === path;
+    return activePath.startsWith(path);
+  };
+
+  const handleNavClick = (href: string, e: React.MouseEvent) => {
+    setMobileSidebarOpen(false);
+    if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey && href !== pathname) {
+      setPendingPath(href);
+    }
   };
 
   const navLinkStyle = (active: boolean, isCollapsed = false) =>
     isCollapsed
-      ? `w-10 h-10 flex items-center justify-center rounded-xl transition ${
+      ? `w-10 h-10 flex items-center justify-center rounded-xl transition active:scale-[0.98] active:bg-[#ECE6DA] active:transition-none cursor-pointer ${
           active
             ? 'bg-[#ECE6DA] text-[#1A1917] font-semibold shadow-xs'
             : 'text-[#706E68] hover:text-[#1A1917] hover:bg-[#FAF9F5]'
         }`
-      : `flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-medium transition ${
+      : `flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-medium transition active:scale-[0.98] active:bg-[#ECE6DA] active:transition-none cursor-pointer ${
           active
             ? 'bg-[#ECE6DA] text-[#1A1917] font-semibold border-l-2 border-[#B47820]'
             : 'text-[#706E68] hover:text-[#1A1917] hover:bg-[#F5F0E8]'
@@ -118,7 +128,8 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
           )}
           <Link
             href="/rnd"
-            onClick={() => setMobileSidebarOpen(false)}
+            prefetch={true}
+            onClick={(e) => handleNavClick('/rnd', e)}
             className={navLinkStyle(isLinkActive('/rnd', true), isCollapsed)}
             title="Tổng quan R&D"
           >
@@ -127,7 +138,8 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
           </Link>
           <Link
             href="/rnd/recipes"
-            onClick={() => setMobileSidebarOpen(false)}
+            prefetch={true}
+            onClick={(e) => handleNavClick('/rnd/recipes', e)}
             className={navLinkStyle(isLinkActive('/rnd/recipes'), isCollapsed)}
             title="Công thức đồ uống"
           >
@@ -136,7 +148,8 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
           </Link>
           <Link
             href="/rnd/ingredients"
-            onClick={() => setMobileSidebarOpen(false)}
+            prefetch={true}
+            onClick={(e) => handleNavClick('/rnd/ingredients', e)}
             className={navLinkStyle(isLinkActive('/rnd/ingredients'), isCollapsed)}
             title="Kho nguyên liệu"
           >
@@ -145,12 +158,23 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
           </Link>
           <Link
             href="/rnd/media"
-            onClick={() => setMobileSidebarOpen(false)}
+            prefetch={true}
+            onClick={(e) => handleNavClick('/rnd/media', e)}
             className={navLinkStyle(isLinkActive('/rnd/media'), isCollapsed)}
             title="Tư liệu hình ảnh"
           >
             <ImageIcon className="w-5 h-5 text-[#706E68]" />
             {!isCollapsed && <span>Tư liệu hình ảnh</span>}
+          </Link>
+          <Link
+            href="/rnd/quizzes"
+            prefetch={true}
+            onClick={(e) => handleNavClick('/rnd/quizzes', e)}
+            className={navLinkStyle(isLinkActive('/rnd/quizzes'), isCollapsed)}
+            title="Bộ Quiz"
+          >
+            <FileText className="w-5 h-5 text-[#706E68]" />
+            {!isCollapsed && <span>Bộ Quiz</span>}
           </Link>
         </div>
       )}
@@ -165,12 +189,23 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
           )}
           <Link
             href="/viewer"
-            onClick={() => setMobileSidebarOpen(false)}
+            prefetch={true}
+            onClick={(e) => handleNavClick('/viewer', e)}
             className={navLinkStyle(isLinkActive('/viewer'), isCollapsed)}
             title="Tra cứu SOP đồ uống"
           >
             <BookOpen className="w-5 h-5 text-[#B47820]" />
             {!isCollapsed && <span>Tra cứu SOP đồ uống</span>}
+          </Link>
+          <Link
+            href="/viewer/quizzes"
+            prefetch={true}
+            onClick={(e) => handleNavClick('/viewer/quizzes', e)}
+            className={navLinkStyle(isLinkActive('/viewer/quizzes'), isCollapsed)}
+            title="Bài kiểm tra"
+          >
+            <FileText className="w-5 h-5 text-[#706E68]" />
+            {!isCollapsed && <span>Bài kiểm tra</span>}
           </Link>
         </div>
       )}
@@ -185,7 +220,8 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
           )}
           <Link
             href="/admin"
-            onClick={() => setMobileSidebarOpen(false)}
+            prefetch={true}
+            onClick={(e) => handleNavClick('/admin', e)}
             className={navLinkStyle(isLinkActive('/admin', true), isCollapsed)}
             title="Tổng quan Admin"
           >
@@ -194,7 +230,8 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
           </Link>
           <Link
             href="/admin/users"
-            onClick={() => setMobileSidebarOpen(false)}
+            prefetch={true}
+            onClick={(e) => handleNavClick('/admin/users', e)}
             className={navLinkStyle(isLinkActive('/admin/users'), isCollapsed)}
             title="Tài khoản & Quyền"
           >
@@ -203,7 +240,8 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
           </Link>
           <Link
             href="/admin/catalogue"
-            onClick={() => setMobileSidebarOpen(false)}
+            prefetch={true}
+            onClick={(e) => handleNavClick('/admin/catalogue', e)}
             className={navLinkStyle(isLinkActive('/admin/catalogue'), isCollapsed)}
             title="Danh mục đơn vị"
           >
@@ -211,17 +249,9 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             {!isCollapsed && <span>Danh mục đơn vị</span>}
           </Link>
           <Link
-            href="/admin/ai-settings"
-            onClick={() => setMobileSidebarOpen(false)}
-            className={navLinkStyle(isLinkActive('/admin/ai-settings'), isCollapsed)}
-            title="Cấu hình AI Demo"
-          >
-            <Bot className="w-5 h-5 text-[#706E68]" />
-            {!isCollapsed && <span>Cấu hình AI Demo</span>}
-          </Link>
-          <Link
             href="/admin/logs"
-            onClick={() => setMobileSidebarOpen(false)}
+            prefetch={true}
+            onClick={(e) => handleNavClick('/admin/logs', e)}
             className={navLinkStyle(isLinkActive('/admin/logs'), isCollapsed)}
             title="Nhật ký Audit Logs"
           >
@@ -230,12 +260,23 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
           </Link>
           <Link
             href="/admin/media"
-            onClick={() => setMobileSidebarOpen(false)}
+            prefetch={true}
+            onClick={(e) => handleNavClick('/admin/media', e)}
             className={navLinkStyle(isLinkActive('/admin/media'), isCollapsed)}
             title="Quản lý Media"
           >
             <FolderGit2 className="w-5 h-5 text-[#706E68]" />
             {!isCollapsed && <span>Quản lý Media</span>}
+          </Link>
+          <Link
+            href="/admin/quizzes"
+            prefetch={true}
+            onClick={(e) => handleNavClick('/admin/quizzes', e)}
+            className={navLinkStyle(isLinkActive('/admin/quizzes'), isCollapsed)}
+            title="Bộ Quiz"
+          >
+            <FileText className="w-5 h-5 text-[#706E68]" />
+            {!isCollapsed && <span>Bộ Quiz</span>}
           </Link>
         </div>
       )}
@@ -252,7 +293,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
         }`}
       >
         {/* Brand Header */}
-        <div className="h-16 px-3 border-b border-[#E8E2D9] flex items-center justify-between shrink-0">
+        <div className="h-14 px-4 border-b border-[#E8E2D9] flex items-center justify-between shrink-0 gap-2">
           {!sidebarCollapsed && (
             <Link
               href={
@@ -264,13 +305,12 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
                   ? '/admin'
                   : '/platform'
               }
-              className="flex items-center gap-2.5 font-bold text-base tracking-tight text-[#1A1917] hover:opacity-90 transition overflow-hidden"
+              className="flex items-center gap-2.5 font-bold text-base tracking-tight text-[#1A1917] hover:opacity-90 transition min-w-0"
             >
               <Coffee className="w-5 h-5 text-[#B47820] shrink-0" />
-              <div className="flex flex-col truncate">
-                <span className="leading-tight font-extrabold truncate">RecipeHub</span>
-                <span className="text-[10px] text-[#706E68] font-normal truncate">Beverage R&amp;D System</span>
-              </div>
+              <span className="leading-none font-extrabold tracking-tight truncate">
+                <span className="text-[#1A1917]">Recipe</span><span className="text-[#B47820]">Hub</span>
+              </span>
             </Link>
           )}
           <button
@@ -424,7 +464,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             onClick={() => setMobileSidebarOpen(false)}
           />
           <aside className="relative w-64 max-w-[80vw] bg-[#F5F0E8] border-r border-[#E8E2D9] flex flex-col z-10">
-            <div className="h-16 px-4 border-b border-[#E8E2D9] flex items-center justify-between">
+            <div className="h-14 px-4 border-b border-[#E8E2D9] flex items-center justify-between">
               <span className="font-bold text-sm text-[#1A1917] flex items-center gap-2">
                 <Coffee className="w-4 h-4 text-[#B47820]" />
                 <span>RecipeHub Menu</span>
@@ -462,7 +502,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
         }`}
       >
         {/* Topbar */}
-        <header className="h-16 sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-[#E8E2D9] px-4 sm:px-6 flex items-center justify-between shadow-xs">
+        <header className="h-14 sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-[#E8E2D9] px-4 sm:px-6 flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-3">
             {/* Mobile Hamburger (only on mobile) */}
             <button
@@ -475,7 +515,9 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
 
             {/* Clean Section Title */}
             <h1 className="font-semibold text-sm sm:text-base text-[#1A1917]">
-              {pathname.startsWith('/rnd')
+              {pathname.includes('/quizzes')
+                ? (session?.role === 'viewer' ? 'Bài kiểm tra' : 'Bộ Quiz')
+                : pathname.startsWith('/rnd')
                 ? 'Nghiên Cứu & Phát Triển (R&D)'
                 : pathname.startsWith('/viewer')
                 ? 'Tra Cứu SOP Cửa Hàng (Viewer)'
