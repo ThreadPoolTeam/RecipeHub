@@ -49,7 +49,43 @@
   - `ContentEditors`: Yêu cầu role `admin` hoặc `rnd` (quản trị tư liệu, tạo prompt AI, sinh ảnh, duyệt/hủy bản nháp, upload ảnh).
   - `ContentReaders`: Yêu cầu role `admin`, `rnd` hoặc `viewer` (kèm resource check xác thực quyền xem tư liệu gắn với recipe published/active).
 
+  - `PdfManagers`: Yêu cầu role `admin` hoặc `rnd` (xem capabilities, preview PDF nháp/chính thức, xuất PDF, xem lịch sử và tải file mọi bản xuất).
+  - `PdfReaders`: Yêu cầu role `admin`, `rnd` hoặc `viewer` (chỉ xem và tải bản PDF chính thức đã xuất bản gắn với công thức published/active qua `/api/v1/recipes/{versionId}/published-document`; viewer bị từ chối mọi quyền tạo/xem bản nháp hoặc xuất theo bộ).
+
+### 2.5. Quy Định Endpoint Nhị Phân (Binary Endpoints)
+- Các endpoint trả về PDF stream (`/preview`, `/{documentId}/file`):
+  - `Content-Type: application/pdf`
+  - Header `X-Pdf-Snapshot-Hash`: mã SHA-256 của snapshot dữ liệu render.
+  - Không truyền link Cloudinary công khai cho client; backend tải từ Cloudinary qua luồng bảo mật có chữ ký và stream trực tiếp về client.
+  - Cloudinary raw download phải gửi và ký `type=authenticated`, khớp delivery type lúc upload; bỏ tham số này sẽ tìm nhầm asset private.
+  - `Content-Disposition` dùng `ContentDispositionHeaderValue.SetHttpFileName` để sinh fallback ASCII và `filename*` UTF-8; không ghép trực tiếp tên tiếng Việt vào header.
+  - Layout PDF theo mẫu pha chế được quy định tại `docs/DESIGN.md` mục 9: bìa full-bleed hai mảng màu, mục lục có internal links, sidebar và bảng SOP. Logo runtime nhúng từ `Documents/Assets`, không đọc `docs/` hoặc filesystem ngoài image khi chạy container.
 ---
+
+### 2.6. Danh Sách Endpoint Xuất Bản PDF (`/api/v1/recipes/documents`)
+| Phương thức | Tuyến đường (Route) | Quyền hạn (Policy) | Mô tả |
+|---|---|---|---|
+| `GET` | `/api/v1/recipes/documents/capabilities` | `PdfManagers` (admin, rnd) | Lấy giới hạn hệ thống (max 50 công thức, max 10MB/media, timeout 120s, presets). |
+| `POST` | `/api/v1/recipes/documents/preview` | `PdfManagers` (admin, rnd) | Tạo bản xem trước nhị phân A4 landscape tức thì; trả về stream PDF kèm header `X-Pdf-Snapshot-Hash`. |
+| `POST` | `/api/v1/recipes/documents` | `PdfManagers` (admin, rnd) | Khởi tạo yêu cầu xuất bản PDF (single/collection, draft/published); kiểm tra canonical snapshot hash chống stale preview. |
+| `GET` | `/api/v1/recipes/documents` | `PdfManagers` (admin, rnd) | Lấy lịch sử xuất bản tài liệu PDF có lọc và phân trang (search, type, scope, state, date). |
+| `GET` | `/api/v1/recipes/documents/{documentId}` | `PdfManagers` (admin, rnd) | Lấy siêu dữ liệu chi tiết của tài liệu xuất bản và các mục công thức đính kèm (`items`). |
+| `GET` | `/api/v1/recipes/documents/{documentId}/file` | `PdfReaders` (admin, rnd, viewer*) | Tải tệp PDF nhị phân bảo mật từ Cloudinary; viewer chỉ được tải tài liệu `published` gắn với công thức active. |
+| `GET` | `/api/v1/recipes/{versionId}/published-document` | `PdfReaders` (admin, rnd, viewer) | Tra cứu siêu dữ liệu bản PDF chính thức phát hành gần nhất của một phiên bản công thức. |
+
+### 2.7. Lỗi xuất/tải PDF
+- Trả `ProblemDetails` có HTTP status và thông báo an toàn; không đưa response body Cloudinary, chữ ký, URL có credentials hoặc stack trace ra client.
+| Trường hợp | HTTP | Hành động |
+|---|---|---|
+| Tài liệu còn `processing` | 409 | Chờ xử lý rồi tải lại |
+| Tài liệu `failed` hoặc chưa sẵn sàng | 409 | Xuất lại tài liệu |
+| Snapshot khác preview (`PdfSourceChanged`) | 409 | Preview lại trước khi xuất |
+| Không có tài liệu, hoặc Cloudinary báo file download không tồn tại | 404 | Kiểm tra ID hoặc xuất lại file |
+| Storage từ chối, lỗi quyền/chữ ký, lỗi mạng hoặc response upload không hợp lệ | 502 | Thử lại; quản trị viên kiểm tra storage. Không đổi lỗi Cloudinary 401/403 thành lỗi đăng nhập người dùng |
+| Storage chưa cấu hình, upstream 429/503 | 503 | Liên hệ quản trị viên hoặc thử lại sau |
+| Storage timeout, upstream 408/504 | 504 | Thử lại sau |
+- Upload lỗi vẫn chuyển tài liệu sang `failed` và giữ `StorageCleanupRequired=true`; không xóa marker chỉ để trả lỗi đẹp. Lỗi lập trình/DB bất ngờ không được ánh xạ đại trà sang 4xx/502.
+
 
 ## 3. Xử Lý Ngoại Lệ Toàn Cục (Global Exception Handling)
 

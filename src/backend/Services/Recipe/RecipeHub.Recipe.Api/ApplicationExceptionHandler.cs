@@ -22,6 +22,9 @@ public sealed class ApplicationExceptionHandler : IExceptionHandler
             ForbiddenException => (StatusCodes.Status403Forbidden, "Access denied"),
             NotFoundException => (StatusCodes.Status404NotFound, "Resource not found"),
             ConflictException => (StatusCodes.Status409Conflict, "Resource conflict"),
+            PdfStorageException { Failure: PdfStorageFailure.Unavailable } => (StatusCodes.Status503ServiceUnavailable, "PDF storage unavailable"),
+            PdfStorageException { Failure: PdfStorageFailure.Timeout } => (StatusCodes.Status504GatewayTimeout, "PDF storage timeout"),
+            PdfStorageException => (StatusCodes.Status502BadGateway, "PDF storage failed"),
             Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException => (StatusCodes.Status409Conflict, "Concurrency conflict"),
             _ => ((int StatusCode, string Title)?)null
         };
@@ -35,7 +38,14 @@ public sealed class ApplicationExceptionHandler : IExceptionHandler
             {
                 Status = mapping.Value.StatusCode,
                 Title = mapping.Value.Title,
-                Detail = exception.Message
+                Detail = exception is PdfStorageException storageException
+                    ? storageException.Failure switch
+                    {
+                        PdfStorageFailure.Unavailable => "Kho PDF chưa sẵn sàng hoặc đang quá tải. Vui lòng thử lại sau hoặc liên hệ quản trị viên.",
+                        PdfStorageFailure.Timeout => "Kho PDF phản hồi quá thời gian chờ. Vui lòng thử lại sau.",
+                        _ => "Kho PDF không xử lý được yêu cầu. Vui lòng thử lại hoặc liên hệ quản trị viên."
+                    }
+                    : exception.Message
             },
             Exception = exception
         });
