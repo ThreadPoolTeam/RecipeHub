@@ -14,6 +14,7 @@ Hệ thống RecipeHub phục vụ 3 nhóm vai trò rõ ràng, không đè lấn
 | **Quyền Nguyên liệu** | Quản trị danh mục gốc | Tạo mới, định lượng, quản lý kho mẫu | Không có quyền quản lý |
 | **Quyền Quiz** | Quản trị toàn bộ đề & giám sát kết quả chuỗi | Soạn đề thi, ngân hàng câu hỏi, chấm điểm | Làm bài kiểm tra, xem lại bài làm của mình |
 | **Quyền Hệ thống** | Quản trị tài khoản, phân quyền, xem log | Xem tư liệu media cá nhân/nhóm | Cấu hình tài khoản cá nhân |
+| **Quyền Xuất bản PDF** | Toàn quyền xem, xuất PDF đơn/bộ, xem lịch sử xuất | Soạn thảo bộ xuất PDF, xem trước, xuất nháp/chính thức, xem lịch sử | Chỉ tải PDF chính thức của công thức đã duyệt (`published`) |
 
 ## 2. Bản Đồ Điều Hướng Theo Role (Navigation Map)
 
@@ -28,6 +29,7 @@ Hệ thống RecipeHub phục vụ 3 nhóm vai trò rõ ràng, không đè lấn
 - `/admin/quizzes/[quizId]`: Chỉnh sửa câu hỏi, đáp án, cấu hình đề.
 - `/admin/quizzes/results`: Giám sát toàn bộ lượt thi của nhân viên.
 - `/admin/quizzes/results/[attemptId]`: Xem chi tiết bài nộp của thí sinh.
+- `/admin/documents`: Quản lý tài liệu xuất bản PDF, xem lịch sử xuất bản.
 
 ### 2.2. Phân Hệ R&D (`/rnd`)
 - `/rnd`: Dashboard nghiên cứu (công thức đang làm, chờ duyệt).
@@ -42,6 +44,7 @@ Hệ thống RecipeHub phục vụ 3 nhóm vai trò rõ ràng, không đè lấn
 - `/rnd/quizzes/[quizId]`: Biên tập nội dung câu hỏi trắc nghiệm.
 - `/rnd/quizzes/results`: Thống kê kết quả thi theo công thức.
 
+- `/rnd/documents`: Không gian xuất bản PDF (biên tập bộ xuất, xem trước, xuất nháp/chính thức, lịch sử).
 ### 2.3. Phân Hệ Viewer / Barista (`/viewer`)
 - `/viewer`: Tra cứu sổ tay SOP công thức đồ uống chuẩn đã duyệt.
 - `/viewer/quizzes`: Danh sách các bài kiểm tra nghiệp vụ cần hoàn thành.

@@ -338,9 +338,9 @@ export default function RecipeDetailPage() {
             <History className="w-3.5 h-3.5 mr-1 text-[#B47820]" /> Lịch sử ({versions.length})
           </Button>
 
-          <Link href={`/rnd/recipes/${recipe.id}/document`}>
+          <Link href={`/rnd/documents?recipeId=${recipe.recipeId || id}&versionId=${recipe.versionId || id}`}>
             <Button variant="secondary" size="sm">
-              <FileDown className="w-3.5 h-3.5 mr-1 text-[#B47820]" /> Xuất SOP
+              <FileDown className="w-3.5 h-3.5 mr-1 text-[#B47820]" /> Xuất bản PDF
             </Button>
           </Link>
           {recipe.status === 'Archived' ? (

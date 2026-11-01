@@ -173,6 +173,16 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             {!isCollapsed && <span>Tư liệu hình ảnh</span>}
           </Link>
           <Link
+            href="/rnd/documents"
+            prefetch={true}
+            onClick={(e) => handleNavClick('/rnd/documents', e)}
+            className={navLinkStyle(isLinkActive('/rnd/documents'), isCollapsed)}
+            title="Tài liệu PDF"
+          >
+            <FileText className="w-5 h-5 text-[#706E68]" />
+            {!isCollapsed && <span>Tài liệu PDF</span>}
+          </Link>
+          <Link
             href="/rnd/quizzes"
             prefetch={true}
             onClick={(e) => handleNavClick('/rnd/quizzes', e)}
@@ -293,6 +303,16 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
           >
             <ImageIcon className="w-5 h-5 text-[#706E68]" />
             {!isCollapsed && <span>Quản lý Media</span>}
+          </Link>
+          <Link
+            href="/admin/documents"
+            prefetch={true}
+            onClick={(e) => handleNavClick('/admin/documents', e)}
+            className={navLinkStyle(isLinkActive('/admin/documents'), isCollapsed)}
+            title="Tài liệu PDF"
+          >
+            <FileText className="w-5 h-5 text-[#706E68]" />
+            {!isCollapsed && <span>Tài liệu PDF</span>}
           </Link>
           <Link
             href="/admin/quizzes"
