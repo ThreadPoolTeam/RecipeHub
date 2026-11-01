@@ -795,9 +795,12 @@ export class BackendRepository extends DemoRepository {
     return fetchPromise;
   }
 
-  override async getRecipeVersion(actor: SessionInfo, recipeId: string): Promise<RecipeVersion> {
+  override async getRecipeVersion(actor: SessionInfo, recipeId: string, versionId?: string): Promise<RecipeVersion> {
+    const path = versionId
+      ? `api/v1/recipes/${recipeId}/versions/${versionId}`
+      : `api/v1/recipes/${recipeId}`;
     const recipe = mapRecipeDetail(
-      await requestJson(`api/v1/recipes/${recipeId}`, this.actorId(actor), { method: 'GET' })
+      await requestJson(path, this.actorId(actor), { method: 'GET' })
     );
     this.rememberDraftContext(recipe);
     return recipe;
