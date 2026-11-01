@@ -48,6 +48,7 @@
 - Policies chuẩn hóa:
   - `ContentEditors`: Yêu cầu role `admin` hoặc `rnd` (quản trị tư liệu, tạo prompt AI, sinh ảnh, duyệt/hủy bản nháp, upload ảnh).
   - `ContentReaders`: Yêu cầu role `admin`, `rnd` hoặc `viewer` (kèm resource check xác thực quyền xem tư liệu gắn với recipe published/active).
+  - `AuditReaders`: Yêu cầu role `admin` (truy vấn danh sách nhật ký kiểm toán hệ thống `/api/v1/audit/logs`).
 
   - `PdfManagers`: Yêu cầu role `admin` hoặc `rnd` (xem capabilities, preview PDF nháp/chính thức, xuất PDF, xem lịch sử và tải file mọi bản xuất).
   - `PdfReaders`: Yêu cầu role `admin`, `rnd` hoặc `viewer` (chỉ xem và tải bản PDF chính thức đã xuất bản gắn với công thức published/active qua `/api/v1/recipes/{versionId}/published-document`; viewer bị từ chối mọi quyền tạo/xem bản nháp hoặc xuất theo bộ).

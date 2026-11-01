@@ -33,6 +33,7 @@ yarn-error.log*
 *.swp
 *.DS_Store
 Thumbs.db
+.worktrees/
 
 # Local AI session artifacts
 .superpowers/

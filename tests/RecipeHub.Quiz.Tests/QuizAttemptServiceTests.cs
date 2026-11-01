@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging.Abstractions;
+using RecipeHub.BuildingBlocks.Audit;
 using Microsoft.EntityFrameworkCore;
 using RecipeHub.Quiz.Application.DTOs;
 using RecipeHub.Quiz.Application.Services;
@@ -129,7 +131,7 @@ public class QuizAttemptServiceTests
             var quizRepo = new QuizRepository(context);
             var attemptRepo = new QuizAttemptRepository(context);
             var mockRecipe = new MockQuizRecipeClient();
-            var service = new QuizAttemptService(attemptRepo, quizRepo, mockRecipe);
+            var service = new QuizAttemptService(attemptRepo, quizRepo, mockRecipe, NullAuditActivityPublisher.Instance, NullLogger<QuizAttemptService>.Instance);
 
             var viewerId = Guid.NewGuid();
 
@@ -160,7 +162,7 @@ public class QuizAttemptServiceTests
             var quizRepo = new QuizRepository(context);
             var attemptRepo = new QuizAttemptRepository(context);
             var mockRecipe = new MockQuizRecipeClient();
-            var service = new QuizAttemptService(attemptRepo, quizRepo, mockRecipe);
+            var service = new QuizAttemptService(attemptRepo, quizRepo, mockRecipe, NullAuditActivityPublisher.Instance, NullLogger<QuizAttemptService>.Instance);
 
             var viewerId = Guid.NewGuid();
             var start = await service.StartAttemptAsync(quiz.PublicId, 1, viewerId, "token");
@@ -185,7 +187,7 @@ public class QuizAttemptServiceTests
                 }
             };
 
-            var result = await service.SubmitAttemptAsync(start.AttemptId, submitReq, viewerId);
+            var result = await service.SubmitAttemptAsync(start.AttemptId, submitReq, new AuditActor(viewerId, "Viewer", "viewer"));
 
             Assert.Equal("submitted", result.State);
             Assert.Equal(66.67m, result.Score);
@@ -194,7 +196,7 @@ public class QuizAttemptServiceTests
             Assert.Equal(3, result.Answers.Count);
 
             // Double submit returns saved result idempotently
-            var doubleSubmit = await service.SubmitAttemptAsync(start.AttemptId, submitReq, viewerId);
+            var doubleSubmit = await service.SubmitAttemptAsync(start.AttemptId, submitReq, new AuditActor(viewerId, "Viewer", "viewer"));
             Assert.Equal(result.Score, doubleSubmit.Score);
             Assert.Equal(result.SubmittedAt, doubleSubmit.SubmittedAt);
 
@@ -224,7 +226,7 @@ public class QuizAttemptServiceTests
             var quizRepo = new QuizRepository(context);
             var attemptRepo = new QuizAttemptRepository(context);
             var mockRecipe = new MockQuizRecipeClient();
-            var service = new QuizAttemptService(attemptRepo, quizRepo, mockRecipe);
+            var service = new QuizAttemptService(attemptRepo, quizRepo, mockRecipe, NullAuditActivityPublisher.Instance, NullLogger<QuizAttemptService>.Instance);
 
             var viewerId = Guid.NewGuid();
             var start = await service.StartAttemptAsync(quiz.PublicId, 1, viewerId, "token");
@@ -243,7 +245,7 @@ public class QuizAttemptServiceTests
             };
 
             await Assert.ThrowsAsync<ArgumentException>(() =>
-                service.SubmitAttemptAsync(start.AttemptId, maliciousReq, viewerId));
+                service.SubmitAttemptAsync(start.AttemptId, maliciousReq, new AuditActor(viewerId, "Viewer", "viewer")));
         }
         finally
         {
@@ -261,7 +263,7 @@ public class QuizAttemptServiceTests
             var quizRepo = new QuizRepository(context);
             var attemptRepo = new QuizAttemptRepository(context);
             var mockRecipe = new MockQuizRecipeClient();
-            var service = new QuizAttemptService(attemptRepo, quizRepo, mockRecipe);
+            var service = new QuizAttemptService(attemptRepo, quizRepo, mockRecipe, NullAuditActivityPublisher.Instance, NullLogger<QuizAttemptService>.Instance);
 
             var viewerId = Guid.NewGuid();
             await service.StartAttemptAsync(quiz.PublicId, 1, viewerId, "token");
@@ -309,7 +311,7 @@ public class QuizAttemptServiceTests
             var quizRepo = new QuizRepository(context);
             var attemptRepo = new QuizAttemptRepository(context);
             var mockRecipe = new MockQuizRecipeClient();
-            var service = new QuizAttemptService(attemptRepo, quizRepo, mockRecipe);
+            var service = new QuizAttemptService(attemptRepo, quizRepo, mockRecipe, NullAuditActivityPublisher.Instance, NullLogger<QuizAttemptService>.Instance);
 
             var viewerId = Guid.NewGuid();
             // Start attempts on all 4 quizzes with distinct viewers

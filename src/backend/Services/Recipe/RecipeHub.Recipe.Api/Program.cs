@@ -1,3 +1,4 @@
+using RecipeHub.BuildingBlocks.Audit;
 using RecipeHub.Recipe.Api;
 using RecipeHub.Recipe.Api.Swagger;
 using RecipeHub.Recipe.Api.Services;
@@ -43,6 +44,12 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApplicationExceptionHandler>();
 builder.Services.AddRecipeApplication();
 builder.Services.AddRecipeInfrastructure(builder.Configuration);
+var redisConn = builder.Configuration.GetConnectionString("Redis") ?? builder.Configuration["ConnectionStrings:Redis"];
+if (!string.IsNullOrWhiteSpace(redisConn))
+{
+    builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(_ => StackExchange.Redis.ConnectionMultiplexer.Connect(redisConn));
+}
+builder.Services.AddAuditActivityPublisher();
 
 var app = builder.Build();
 

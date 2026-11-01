@@ -52,7 +52,7 @@ public class QuizViewerController : ControllerBase
         if (page < 1) page = 1;
         if (pageSize < 1 || pageSize > 100) pageSize = 10;
 
-        var (_, _, token) = RequestActor.GetActor(HttpContext);
+        var (_, token) = RequestActor.GetActor(HttpContext);
         var (items, total) = await _quizService.GetViewerQuizzesAsync(token, page, pageSize, ct);
 
         return Ok(new
@@ -72,7 +72,7 @@ public class QuizViewerController : ControllerBase
         if (ValidateVersionQuery(out var version) is { } error)
             return error;
 
-        var (_, _, token) = RequestActor.GetActor(HttpContext);
+        var (_, token) = RequestActor.GetActor(HttpContext);
         var preview = await _quizService.GetViewerQuizPreviewAsync(quizId, version, token, ct);
         return Ok(preview);
     }
@@ -85,8 +85,8 @@ public class QuizViewerController : ControllerBase
         if (ValidateVersionQuery(out var version) is { } error)
             return error;
 
-        var (userId, _, token) = RequestActor.GetActor(HttpContext);
-        var response = await _attemptService.StartAttemptAsync(quizId, version, userId, token, ct);
+        var (actor, token) = RequestActor.GetActor(HttpContext);
+        var response = await _attemptService.StartAttemptAsync(quizId, version, actor.Id, token, ct);
         return StatusCode(StatusCodes.Status201Created, response);
     }
 }

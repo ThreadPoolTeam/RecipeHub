@@ -569,7 +569,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Main Child View */}
-        <main key={pathname} className="workspace-page-anim flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">{children}</main>
+        <main key={pathname} className="workspace-page-anim flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto min-w-0">{children}</main>
 
         {/* Footer */}
         <footer className="border-t border-[#E8E2D9] bg-[#F5F0E8] py-4 px-6 text-center text-xs text-[#706E68]">

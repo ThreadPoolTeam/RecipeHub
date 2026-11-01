@@ -12,4 +12,5 @@ message ValidateSessionResponse {
   string role = 3;
   reserved 4;
   reserved "allowed_recipe_ids";
+  string display_name = 5;
 }

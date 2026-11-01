@@ -13,6 +13,7 @@ Frontend tương tác với Backend qua 2 lớp bảo vệ:
      - `quiz-viewer.ts`: Cho Viewer/Barista (lấy đề thi, nộp bài, xem lịch sử).
      - `backend-repository.ts`: Tra cứu công thức, nguyên liệu, media, người dùng.
      - `pdf-documents.ts`: Quản lý xem trước (`preview`), xuất bản (`export`), tra cứu lịch sử (`history`) và tải tệp PDF nhị phân (`requestBinary`).
+     - `audit.ts`: Tra cứu nhật ký kiểm toán hệ thống (`listAuditLogs`), lọc đa chiều và phân trang.
 
 ## 2. Quản Lý Phiên & Quyền (`DemoAuthProvider`)
 

@@ -1,3 +1,6 @@
+using Microsoft.Extensions.Logging;
+using RecipeHub.BuildingBlocks.Audit;
+using RecipeHub.BuildingBlocks.Events;
 using RecipeHub.Quiz.Application.Exceptions;
 using RecipeHub.Quiz.Application.DTOs;
 using RecipeHub.Quiz.Application.Interfaces;
@@ -10,17 +13,35 @@ public class QuizAttemptService : IQuizAttemptService
     private readonly IQuizAttemptRepository _attemptRepository;
     private readonly IQuizRepository _quizRepository;
     private readonly IQuizRecipeClient _recipeClient;
+    private readonly IAuditActivityPublisher _auditPublisher;
+    private readonly ILogger<QuizAttemptService> _logger;
 
     public QuizAttemptService(
         IQuizAttemptRepository attemptRepository,
         IQuizRepository quizRepository,
-        IQuizRecipeClient recipeClient)
+        IQuizRecipeClient recipeClient,
+        IAuditActivityPublisher auditPublisher,
+        ILogger<QuizAttemptService> logger)
     {
         _attemptRepository = attemptRepository;
         _quizRepository = quizRepository;
         _recipeClient = recipeClient;
+        _auditPublisher = auditPublisher;
+        _logger = logger;
     }
 
+    private async Task SafePublishAuditAsync(AuditActivityEvent evt)
+    {
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            await _auditPublisher.PublishAsync("quiz", evt, cts.Token);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to publish audit event for action {Action} on {TargetType} {TargetId}", evt.Action, evt.TargetType, evt.TargetId);
+        }
+    }
     public async Task<StartQuizAttemptResponse> StartAttemptAsync(
         Guid quizId, int versionNumber, Guid userRef, string bearerToken, CancellationToken ct = default)
     {
@@ -175,8 +196,10 @@ public class QuizAttemptService : IQuizAttemptService
     }
 
     public async Task<QuizAttemptResultDto> SubmitAttemptAsync(
-        Guid attemptId, SubmitAnswersRequest request, Guid userRef, CancellationToken ct = default)
+        Guid attemptId, SubmitAnswersRequest request, AuditActor actor, CancellationToken ct = default)
     {
+        actor.EnsureValid();
+        var userRef = actor.Id;
         await using var tx = await _attemptRepository.BeginTransactionAsync(ct);
 
         var attempt = await _attemptRepository.GetByPublicIdForUpdateAsync(attemptId, ct);
@@ -227,6 +250,16 @@ public class QuizAttemptService : IQuizAttemptService
 
         await _attemptRepository.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
+
+        await SafePublishAuditAsync(new AuditActivityEvent(
+            actor.Id,
+            actor.Name,
+            actor.Role,
+            "quiz.attempt_submitted",
+            "quiz_attempt",
+            attempt.PublicId,
+            $"Nộp bài đánh giá '{attempt.QuizVersion.Quiz.Title}' (v{attempt.QuizVersion.VersionNumber}): điểm {attempt.Score}% ({(attempt.IsPassed == true ? "Đạt" : "Không đạt")})."
+        ));
 
         return MapToResultDto(attempt);
     }

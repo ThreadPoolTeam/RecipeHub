@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging.Abstractions;
+using RecipeHub.BuildingBlocks.Audit;
 using Microsoft.EntityFrameworkCore;
 using RecipeHub.Quiz.Application.DTOs;
 using RecipeHub.Quiz.Application.Interfaces;
@@ -89,7 +91,7 @@ public class QuizServiceTests
         using var context = CreateDbContext();
         var repo = new QuizRepository(context);
         var mockRecipe = new MockQuizRecipeClient();
-        var service = new QuizService(repo, mockRecipe);
+        var service = new QuizService(repo, mockRecipe, NullAuditActivityPublisher.Instance, NullLogger<QuizService>.Instance);
 
         var actorId = Guid.NewGuid();
         var recipeVersionId = Guid.NewGuid();
@@ -120,7 +122,7 @@ public class QuizServiceTests
         QuizManagementDetailDto created = null!;
         try
         {
-            created = await service.CreateQuizAsync(req, actorId, "rnd", "mock-token");
+            created = await service.CreateQuizAsync(req, new AuditActor(actorId, "R&D", "rnd"), "mock-token");
 
             Assert.NotNull(created);
             Assert.Equal(req.Code, created.Code);
@@ -148,7 +150,7 @@ public class QuizServiceTests
         using var context = CreateDbContext();
         var repo = new QuizRepository(context);
         var mockRecipe = new MockQuizRecipeClient();
-        var service = new QuizService(repo, mockRecipe);
+        var service = new QuizService(repo, mockRecipe, NullAuditActivityPublisher.Instance, NullLogger<QuizService>.Instance);
 
         var adminId = Guid.NewGuid();
         var req = new CreateQuizRequest
@@ -175,32 +177,32 @@ public class QuizServiceTests
         QuizManagementDetailDto created = null!;
         try
         {
-            created = await service.CreateQuizAsync(req, adminId, "admin", "token");
+            created = await service.CreateQuizAsync(req, new AuditActor(adminId, "Admin", "admin"), "token");
 
             // R&D cannot publish -> 403 Forbidden
             var rndId = Guid.NewGuid();
             var publishPatch = new PatchQuizRequest { HasState = true, State = "published" };
             await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-                service.PatchQuizAsync(created.QuizId, 1, publishPatch, rndId, "rnd", "token"));
+                service.PatchQuizAsync(created.QuizId, 1, publishPatch, new AuditActor(rndId, "R&D", "rnd"), "token"));
 
             // Admin publishes -> state becomes published
-            var published = await service.PatchQuizAsync(created.QuizId, 1, publishPatch, adminId, "admin", "token");
+            var published = await service.PatchQuizAsync(created.QuizId, 1, publishPatch, new AuditActor(adminId, "Admin", "admin"), "token");
             Assert.Equal("published", published.Version.State);
             Assert.NotNull(published.Version.PublishedAt);
 
             // Cannot edit content of published version
             var editPatch = new PatchQuizRequest { HasTitle = true, Title = "New Title" };
             await Assert.ThrowsAsync<InvalidOperationException>(() =>
-                service.PatchQuizAsync(created.QuizId, 1, editPatch, adminId, "admin", "token"));
+                service.PatchQuizAsync(created.QuizId, 1, editPatch, new AuditActor(adminId, "Admin", "admin"), "token"));
 
             // Admin archives -> state becomes archived
             var archivePatch = new PatchQuizRequest { HasState = true, State = "archived" };
-            var archived = await service.PatchQuizAsync(created.QuizId, 1, archivePatch, adminId, "admin", "token");
+            var archived = await service.PatchQuizAsync(created.QuizId, 1, archivePatch, new AuditActor(adminId, "Admin", "admin"), "token");
             Assert.Equal("archived", archived.Version.State);
 
             // Cannot republish archived version
             await Assert.ThrowsAsync<InvalidOperationException>(() =>
-                service.PatchQuizAsync(created.QuizId, 1, publishPatch, adminId, "admin", "token"));
+                service.PatchQuizAsync(created.QuizId, 1, publishPatch, new AuditActor(adminId, "Admin", "admin"), "token"));
         }
         finally
         {
@@ -217,7 +219,7 @@ public class QuizServiceTests
         using var context = CreateDbContext();
         var repo = new QuizRepository(context);
         var mockRecipe = new MockQuizRecipeClient();
-        var service = new QuizService(repo, mockRecipe);
+        var service = new QuizService(repo, mockRecipe, NullAuditActivityPublisher.Instance, NullLogger<QuizService>.Instance);
 
         var adminId = Guid.NewGuid();
         var req = new CreateQuizRequest
@@ -244,19 +246,19 @@ public class QuizServiceTests
         QuizManagementDetailDto created = null!;
         try
         {
-            created = await service.CreateQuizAsync(req, adminId, "admin", "token");
+            created = await service.CreateQuizAsync(req, new AuditActor(adminId, "Admin", "admin"), "token");
             Assert.Equal(1, created.Version.VersionNumber);
 
             // Clone version 1 -> gets version 2
-            var clone1 = await service.CloneQuizVersionAsync(created.QuizId, new CloneQuizRequest { SourceVersion = 1 }, adminId, "admin");
+            var clone1 = await service.CloneQuizVersionAsync(created.QuizId, new CloneQuizRequest { SourceVersion = 1 }, new AuditActor(adminId, "Admin", "admin"));
             Assert.Equal(2, clone1.Version.VersionNumber);
             Assert.Equal("draft", clone1.Version.State);
 
             // Delete version 2
-            await service.DeleteDraftVersionAsync(created.QuizId, 2, adminId, "admin");
+            await service.DeleteDraftVersionAsync(created.QuizId, 2, new AuditActor(adminId, "Admin", "admin"));
 
             // Clone version 1 again -> MUST get version 3, NOT reuse deleted 2!
-            var clone2 = await service.CloneQuizVersionAsync(created.QuizId, new CloneQuizRequest { SourceVersion = 1 }, adminId, "admin");
+            var clone2 = await service.CloneQuizVersionAsync(created.QuizId, new CloneQuizRequest { SourceVersion = 1 }, new AuditActor(adminId, "Admin", "admin"));
             Assert.Equal(3, clone2.Version.VersionNumber);
         }
         finally
@@ -274,7 +276,7 @@ public class QuizServiceTests
         using var context = CreateDbContext();
         var repo = new QuizRepository(context);
         var mockRecipe = new MockQuizRecipeClient();
-        var service = new QuizService(repo, mockRecipe);
+        var service = new QuizService(repo, mockRecipe, NullAuditActivityPublisher.Instance, NullLogger<QuizService>.Instance);
 
         var adminId = Guid.NewGuid();
         var req = new CreateQuizRequest
@@ -288,7 +290,7 @@ public class QuizServiceTests
         QuizManagementDetailDto created = null!;
         try
         {
-            created = await service.CreateQuizAsync(req, adminId, "admin", "token");
+            created = await service.CreateQuizAsync(req, new AuditActor(adminId, "Admin", "admin"), "token");
 
             var mixedPatch = new PatchQuizRequest
             {
@@ -299,7 +301,7 @@ public class QuizServiceTests
             };
 
             await Assert.ThrowsAsync<ArgumentException>(() =>
-                service.PatchQuizAsync(created.QuizId, 1, mixedPatch, adminId, "admin", "token"));
+                service.PatchQuizAsync(created.QuizId, 1, mixedPatch, new AuditActor(adminId, "Admin", "admin"), "token"));
         }
         finally
         {
@@ -316,7 +318,7 @@ public class QuizServiceTests
         using var context = CreateDbContext();
         var repo = new QuizRepository(context);
         var mockRecipe = new MockQuizRecipeClient();
-        var service = new QuizService(repo, mockRecipe);
+        var service = new QuizService(repo, mockRecipe, NullAuditActivityPublisher.Instance, NullLogger<QuizService>.Instance);
 
         var adminId = Guid.NewGuid();
         var req = new CreateQuizRequest
@@ -344,14 +346,14 @@ public class QuizServiceTests
         QuizManagementDetailDto created = null!;
         try
         {
-            created = await service.CreateQuizAsync(req, adminId, "admin", "token");
+            created = await service.CreateQuizAsync(req, new AuditActor(adminId, "Admin", "admin"), "token");
 
             // Draft is not visible to viewer
             var (quizzesBefore, _) = await service.GetViewerQuizzesAsync("token", 1, 10);
             Assert.DoesNotContain(quizzesBefore, q => q.QuizId == created.QuizId);
 
             // Publish quiz
-            await service.PatchQuizAsync(created.QuizId, 1, new PatchQuizRequest { HasState = true, State = "published" }, adminId, "admin", "token");
+            await service.PatchQuizAsync(created.QuizId, 1, new PatchQuizRequest { HasState = true, State = "published" }, new AuditActor(adminId, "Admin", "admin"), "token");
 
             // Now visible to viewer
             var (quizzesAfter, _) = await service.GetViewerQuizzesAsync("token", 1, 10);

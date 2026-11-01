@@ -1,3 +1,4 @@
+using RecipeHub.BuildingBlocks.Audit;
 using RecipeHub.Quiz.Application.DTOs;
 
 namespace RecipeHub.Quiz.Application.Interfaces;
@@ -14,7 +15,7 @@ public interface IQuizAttemptService
         Guid attemptId, SubmitAnswersRequest request, Guid userRef, CancellationToken ct = default);
 
     Task<QuizAttemptResultDto> SubmitAttemptAsync(
-        Guid attemptId, SubmitAnswersRequest request, Guid userRef, CancellationToken ct = default);
+        Guid attemptId, SubmitAnswersRequest request, AuditActor actor, CancellationToken ct = default);
 
     Task<(List<QuizAttemptResultDto> Items, int Total)> GetUserAttemptsAsync(
         Guid userRef, Guid? quizId, int? versionNumber, string? state, int page, int pageSize, CancellationToken ct = default);
