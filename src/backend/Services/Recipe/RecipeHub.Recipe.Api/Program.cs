@@ -31,8 +31,11 @@ builder.Services.AddSwaggerGen(c =>
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme { Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT" });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement { [new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } }] = [] });
 });
-builder.Services.AddSingleton(_ => GrpcChannel.ForAddress(builder.Configuration["Grpc:IdentityServiceUrl"] ?? "http://localhost:5011"));
-builder.Services.AddSingleton(sp => new IdentitySession.IdentitySessionClient(sp.GetRequiredService<GrpcChannel>()));
+builder.Services.AddSingleton(sp =>
+{
+    var identityUrl = builder.Configuration["Grpc:IdentityServiceUrl"] ?? "http://localhost:5011";
+    return new IdentitySession.IdentitySessionClient(GrpcChannel.ForAddress(identityUrl));
+});
 builder.Services.AddAuthentication("Bearer").AddScheme<AuthenticationSchemeOptions, RecipeAuthenticationHandler>("Bearer", _ => { });
 builder.Services.AddAuthorization();
 builder.Services.AddHealthChecks();

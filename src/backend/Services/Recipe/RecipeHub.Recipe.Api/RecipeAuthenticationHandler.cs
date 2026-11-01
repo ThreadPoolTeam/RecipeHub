@@ -17,16 +17,23 @@ public sealed class RecipeAuthenticationHandler(IOptionsMonitor<AuthenticationSc
         if (!header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)) return AuthenticateResult.NoResult();
         try
         {
+            Logger.LogInformation("RecipeAuth: Validating token with Identity gRPC at path {Path}...", Request.Path);
             var response = await identity.ValidateAsync(new ValidateSessionRequest { AccessToken = header[7..].Trim() },
                 deadline: DateTime.UtcNow.AddSeconds(5), cancellationToken: Context.RequestAborted);
+            Logger.LogInformation("RecipeAuth: Identity gRPC response: Valid={Valid}, UserId={UserId}, Role={Role}", response.Valid, response.UserId, response.Role);
             if (!response.Valid) return AuthenticateResult.Fail("Session đã hết hạn hoặc bị thu hồi.");
             var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, response.UserId), new(ClaimTypes.Role, response.Role) };
             return AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(new ClaimsIdentity(claims, Scheme.Name)), Scheme.Name));
         }
         catch (RpcException error)
         {
-            Logger.LogWarning("Identity session validation unavailable: {Status}", error.StatusCode);
+            Logger.LogWarning(error, "Identity session validation RpcException: {Status} - {Detail} | Inner: {Inner}", error.StatusCode, error.Status.Detail, error.InnerException?.Message);
             return AuthenticateResult.Fail("Không thể xác thực session Identity.");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Identity session validation unexpected exception: {Type} - {Message}", ex.GetType().Name, ex.Message);
+            return AuthenticateResult.Fail("Lỗi nội bộ khi xác thực.");
         }
     }
 }

@@ -45,7 +45,7 @@ async function execute(path: string, actorId: string | null, init: RequestInit):
   });
   if (!response.ok) {
     const body = await response.text();
-    if (response.status === 401) clearSession();
+    if (response.status === 401 && path.includes('identity/auth')) clearSession();
     throw new ApiError(response.status, parseProblem(body, response.status), body);
   }
   return response;
