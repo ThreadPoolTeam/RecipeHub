@@ -12,6 +12,8 @@
   - `/api/v1/content/{**catch-all}` -> `http://content-service:5003` (`content-cluster`)
   - `/api/v1/audit/{**catch-all}` -> `http://audit-service:5004` (`audit-cluster`)
   - `/api/v1/quiz/{**catch-all}` -> `http://quiz-service:5005` (`quiz-cluster`)
+- Development: Content REST dùng `http://localhost:5003`; Content gRPC dùng HTTP/2 riêng tại `http://localhost:5013`.
+- Destination `content-cluster` trong `appsettings.Development.json` và cả hai profile `http`/`https` của `Properties/launchSettings.json` phải cùng trỏ `http://localhost:5003`. Biến môi trường của launch profile ghi đè appsettings; không dùng cổng 5256 cũ.
 ---
 
 ## 2. Chuẩn Thiết Kế REST API & Controller
