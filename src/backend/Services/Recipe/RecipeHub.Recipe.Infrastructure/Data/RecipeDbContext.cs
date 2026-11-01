@@ -33,6 +33,10 @@ public partial class RecipeDbContext : DbContext
 
     public virtual DbSet<UnitCategory> UnitCategories { get; set; }
 
+    public virtual DbSet<PdfDocument> PdfDocuments { get; set; }
+
+    public virtual DbSet<PdfDocumentItem> PdfDocumentItems { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Ingredient>(entity =>
@@ -469,6 +473,8 @@ public partial class RecipeDbContext : DbContext
             entity.Property(e => e.UpdatedByUserRef).HasColumnName("updated_by_user_ref");
         });
 
+        modelBuilder.ApplyConfiguration(new Configurations.PdfDocumentConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.PdfDocumentItemConfiguration());
         OnModelCreatingPartial(modelBuilder);
     }
 

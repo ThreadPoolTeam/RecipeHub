@@ -283,3 +283,62 @@ Ref recipe_ingredient_master: recipe_db.recipe_ingredient.ingredient_id > recipe
 Ref recipe_ingredient_unit: recipe_db.recipe_ingredient.unit_id > recipe_db.unit.id [delete: restrict]
 Ref recipe_step_version: recipe_db.recipe_step.recipe_version_id > recipe_db.recipe_version.id [delete: cascade]
 Ref recipe_step_media_step: recipe_db.recipe_step_media.recipe_step_id > recipe_db.recipe_step.id [delete: cascade]
+
+Table recipe_db.pdf_document {
+  id bigint [pk, increment]
+  public_id uuid [not null, unique]
+  title text [not null]
+  document_type text [not null]
+  export_scope text [not null]
+  state text [not null]
+  template_code text [not null]
+  template_version text [not null]
+  presentation_snapshot jsonb [not null]
+  snapshot_sha256 text [not null]
+  created_by_user_ref uuid [not null]
+  created_at timestamptz [not null, default: `now()`]
+  completed_at timestamptz
+  lease_token uuid
+  lease_expires_at timestamptz
+  storage_provider text [not null, default: 'Cloudinary']
+  storage_public_id text [not null, unique]
+  storage_asset_id text
+  storage_version text
+  storage_resource_type text [not null, default: 'raw']
+  storage_delivery_type text [not null, default: 'authenticated']
+  file_name text [not null]
+  byte_size bigint
+  file_sha256 text
+  error_code text
+  storage_cleanup_required boolean [not null, default: false]
+  audit_event_id uuid [not null, unique]
+  audit_published_at timestamptz
+  audit_recorded_at timestamptz
+
+  indexes {
+    (created_at, id) [name: 'pdf_document_history_idx']
+    (created_by_user_ref, created_at) [name: 'pdf_document_user_history_idx']
+  }
+}
+
+Table recipe_db.pdf_document_item {
+  id bigint [pk, increment]
+  document_id bigint [not null]
+  recipe_version_id bigint [not null]
+  sort_order integer [not null]
+  source_snapshot jsonb [not null]
+
+  indexes {
+    (document_id, sort_order) [unique, name: 'pdf_document_item_doc_sort_order_key']
+    (document_id, recipe_version_id) [unique, name: 'pdf_document_item_doc_recipe_version_key']
+    recipe_version_id [name: 'pdf_document_item_version_idx']
+    (document_id, sort_order) [name: 'pdf_document_item_document_idx']
+  }
+
+  checks {
+    `sort_order > 0` [name: 'pdf_document_item_sort_order_check']
+  }
+}
+
+Ref pdf_document_item_document: recipe_db.pdf_document_item.document_id > recipe_db.pdf_document.id [delete: restrict]
+Ref pdf_document_item_recipe_version: recipe_db.pdf_document_item.recipe_version_id > recipe_db.recipe_version.id [delete: restrict]

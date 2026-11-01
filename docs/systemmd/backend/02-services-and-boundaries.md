@@ -42,7 +42,7 @@ Ngoài ra còn có:
 | Microservice | Trách Nhiệm Chính | Dữ Liệu Sở Hữu | Không Được Làm |
 |---|---|---|---|
 | **Identity** | Tài khoản, mật khẩu, JWT token, gán role cho user | `users`, `roles`, `user_roles` | Không quản lý dữ liệu công thức hay đề thi |
-| **Recipe** | Công thức đồ uống, phiên bản, thành phần định lượng | `recipes`, `recipe_versions`, `ingredients`, `categories` | Không lưu thông tin chấm điểm thi hay media nhị phân |
+| **Recipe** | Công thức đồ uống, phiên bản, thành phần định lượng, siêu dữ liệu xuất bản PDF (`pdf_document`, `pdf_document_item`) | `recipes`, `recipe_versions`, `ingredients`, `categories`, `pdf_document`, `pdf_document_item` | Không lưu thông tin chấm điểm thi hay file binary PDF/ảnh trong DB |
 | **Quiz** | Bộ đề thi kiểm tra, câu hỏi trắc nghiệm, lượt thi, bảng điểm | `quizzes`, `quiz_versions`, `quiz_questions`, `quiz_options`, `quiz_attempts`, `quiz_answers` | Không trực tiếp sửa công thức; chỉ đọc thông tin recipe qua gRPC |
 | **Content** | Quản lý media URLs, tags, prompt AI FLUX/Gemini | `media_assets`, `image_drafts`, `prompts` | Không lưu mật khẩu user hay nghiệp vụ công thức |
 | **Audit** | Lưu nhật ký thay đổi dữ liệu, hành động của actor | `audit_logs` | Không chứa logic nghiệp vụ sửa đổi dữ liệu |
