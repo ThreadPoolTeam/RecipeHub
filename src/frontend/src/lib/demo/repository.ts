@@ -201,10 +201,14 @@ export class DemoRepository {
     };
   }
 
-  async getRecipeVersion(actor: SessionInfo, versionId: string): Promise<RecipeVersion> {
-    const recipe = await getById<RecipeVersion>('recipes', versionId);
+  async getRecipeVersion(actor: SessionInfo, idOrRecipeId: string, versionId?: string): Promise<RecipeVersion> {
+    const targetId = versionId || idOrRecipeId;
+    let recipe = await getById<RecipeVersion>('recipes', targetId);
+    if (!recipe) {
+      const all = await getAll<RecipeVersion>('recipes');
+      recipe = all.find((r) => r.id === targetId || r.versionId === targetId || r.recipeId === targetId) ?? null;
+    }
     if (!recipe) throw new DemoError('NotFound', 'Không tìm thấy công thức');
-
     if (actor.role === 'viewer') {
       const user = await getById<User>('users', actor.userId);
       const allowed = new Set(user?.allowedRecipeIds || []);

@@ -30,5 +30,23 @@ public partial class RecipeDbContext
             table.HasCheckConstraint("recipe_step_duration_check", "duration_seconds IS NULL OR duration_seconds >= 0");
         });
         modelBuilder.Entity<RecipeStepMedia>().ToTable("recipe_step_media", "recipe_db", table => table.HasCheckConstraint("recipe_step_media_sort_order_check", "sort_order > 0"));
+        modelBuilder.Entity<PdfDocument>().ToTable("pdf_document", "recipe_db", table => {
+            table.HasCheckConstraint("pdf_document_type_check", "document_type IN ('draft', 'published')");
+            table.HasCheckConstraint("pdf_document_export_scope_check", "export_scope IN ('single', 'collection')");
+            table.HasCheckConstraint("pdf_document_state_check", "state IN ('processing', 'ready', 'failed')");
+            table.HasCheckConstraint("pdf_document_storage_resource_type_check", "storage_resource_type = 'raw'");
+            table.HasCheckConstraint("pdf_document_storage_delivery_type_check", "storage_delivery_type = 'authenticated'");
+            table.HasCheckConstraint("pdf_document_template_code_check", "length(trim(template_code)) > 0");
+            table.HasCheckConstraint("pdf_document_template_version_check", "length(trim(template_version)) > 0");
+            table.HasCheckConstraint("pdf_document_title_check", "length(trim(title)) > 0");
+            table.HasCheckConstraint("pdf_document_snapshot_sha256_check", "snapshot_sha256 ~ '^[0-9a-f]{64}$'");
+            table.HasCheckConstraint("pdf_document_file_sha256_check", "file_sha256 IS NULL OR file_sha256 ~ '^[0-9a-f]{64}$'");
+            table.HasCheckConstraint("pdf_document_byte_size_check", "byte_size IS NULL OR byte_size > 0");
+            table.HasCheckConstraint("pdf_document_ready_state_check", "state <> 'ready' OR (completed_at IS NOT NULL AND storage_asset_id IS NOT NULL AND storage_version IS NOT NULL AND byte_size IS NOT NULL AND file_sha256 IS NOT NULL AND error_code IS NULL)");
+            table.HasCheckConstraint("pdf_document_failed_state_check", "state <> 'failed' OR (completed_at IS NOT NULL AND error_code IS NOT NULL)");
+        });
+        modelBuilder.Entity<PdfDocumentItem>().ToTable("pdf_document_item", "recipe_db", table => {
+            table.HasCheckConstraint("pdf_document_item_sort_order_check", "sort_order > 0");
+        });
     }
 }

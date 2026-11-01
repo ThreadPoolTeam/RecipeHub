@@ -1,7 +1,9 @@
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.OpenApi.Models;
 using RecipeHub.Content.Api;
+using RecipeHub.Content.Api.Services;
 using RecipeHub.Content.Application;
 using RecipeHub.Content.Application.Interfaces;
 using RecipeHub.Content.Infrastructure;
@@ -11,6 +13,16 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.WebHost.ConfigureKestrel(options =>
+{
+    // Cổng 5003: HTTP/1.1 phục vụ REST API & Swagger UI
+    options.ListenAnyIP(5003, o => o.Protocols = HttpProtocols.Http1);
+
+    // Cổng 5013: HTTP/2 dành riêng cho các service gọi gRPC nội bộ
+    options.ListenAnyIP(5013, o => o.Protocols = HttpProtocols.Http2);
+});
+
+builder.Services.AddGrpc();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -89,6 +101,7 @@ app.UseExceptionHandler();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapGrpcService<ContentPdfMediaQueryServiceImpl>();
 app.MapControllers().RequireAuthorization();
 
 app.MapGet("/", () => Results.Ok(new

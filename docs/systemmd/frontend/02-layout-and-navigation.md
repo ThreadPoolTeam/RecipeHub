@@ -39,6 +39,10 @@ Tất cả các trang thuộc không gian làm việc `(platform)` được qu�
   - Admin: `QUẢN TRỊ HỆ THỐNG`
   - R&D: `KHÔNG GIAN R&D`
   - Viewer: `VẬN HÀNH CỬA HÀNG`
+  - Menu "Tài liệu PDF" (`FileText` icon):
+    - Admin: `/admin/documents` (quản trị, xuất PDF, tra cứu lịch sử xuất bản).
+    - R&D: `/rnd/documents` (không gian xuất PDF đơn/bộ, xem trước, lịch sử).
+    - Viewer: Không hiển thị menu tài liệu; chỉ có nút tải PDF chính thức trực tiếp trên trang chi tiết công thức `/viewer/recipes/[id]`.
 
 ### 2.3. Menu Item & Active State
 - **Item thường:** Text `#706E68`, hover nền `#F5F0E8`, text `#1A1917`, icon cùng màu.

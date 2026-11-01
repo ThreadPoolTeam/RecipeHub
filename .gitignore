@@ -6,6 +6,8 @@ obj/
 *.userosscache
 *.sln.docstates
 
+**/.backend-pids.json
+
 temp-drafts/
 *.rdb
 dump.rdb

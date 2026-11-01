@@ -24,9 +24,16 @@ Dùng cho các trường hợp cần dữ liệu ngay lập tức, kiểm tra t�
 - **Content Service**:
   - Xác thực phiên: Mọi request vào `/api/v1/content/*` đều được xác thực bằng cách gọi gRPC `IdentitySession.Validate` tới Identity Service (5011) với deadline 5s. Khi Identity không sẵn sàng: fail-closed ném `ContentDependencyException` map thành HTTP 503, không trả 401 giả.
   - Truy vấn ngữ cảnh & kiểm tra quyền: Forward Bearer token của caller qua header metadata `authorization: Bearer <token>` khi gọi `RecipeAiContextQuery` và `QuizRecipeQuery.GetQuizRecipeVersions` để kiểm tra recipe published/active cho Viewer.
-
 - **Audit Service**:
   - Xác thực phiên: Mọi request vào `/api/v1/audit/*` đều được xác thực bằng cách gọi gRPC `IdentitySession.Validate` tới Identity Service (5011) với deadline 5s. Khi Identity không sẵn sàng: fail-closed ném `AuditDependencyException` map thành HTTP 503, không trả 401 giả. Yêu cầu quyền hạn vai trò `admin`.
+
+### 1.4. Media Metadata Lookup Cho Xuất PDF (`ContentPdfMediaQuery`)
+- **Recipe Service -> Content Service**:
+  - Protobuf: `content_pdf_media.proto`.
+  - Phương thức: `BatchGetMediaForPdf(BatchGetMediaForPdfRequest) returns (BatchGetMediaForPdfResponse)`.
+  - Server đặt tại `Content.Api` (`ContentPdfMediaQueryServiceImpl`), Client tại `Recipe.Infrastructure` (`ContentPdfMediaResolver`).
+  - Forward Bearer token của caller qua metadata `authorization: Bearer <token>`, deadline 5s. Không gọi ngược lại Recipe Service để tránh cycle Recipe -> Content -> Recipe.
+
 ---
 
 ## 2. Giao Tiếp Bất Đồng Bộ: Redis Streams

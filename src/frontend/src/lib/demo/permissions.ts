@@ -85,3 +85,8 @@ export function canViewRecipe(user: User, recipe: RecipeVersion): boolean {
   }
   return false;
 }
+
+export function canManagePdf(user: User | SessionInfo | null): boolean {
+  if (!user) return false;
+  return user.role === 'admin' || user.role === 'rnd';
+}
