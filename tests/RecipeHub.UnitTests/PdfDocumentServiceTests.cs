@@ -29,9 +29,14 @@ public class PdfDocumentServiceTests
 
         public Task CreateDraftDocumentAsync(PdfDocument document, CancellationToken ct = default) => Task.CompletedTask;
 
-        public Task ReserveAsync(PdfDocument document, IEnumerable<PdfDocumentItem> items, CancellationToken ct = default)
+        public Task ReserveAsync(PdfDocument document, IEnumerable<PdfDocumentItem> items, PdfDocumentStorage? storage = null, CancellationToken ct = default)
         {
             document.Id = 1;
+            if (storage != null)
+            {
+                storage.DocumentId = 1;
+                document.Storage = storage;
+            }
             return Task.CompletedTask;
         }
 
@@ -74,6 +79,11 @@ public class PdfDocumentServiceTests
             FailedFinalizeCalled = true;
             LastStorageCleanupRequired = storageCleanupRequired;
             return Task.FromResult(FinalizeFailedResult);
+        }
+        public Task<bool> FencedFinalizeExpiredLeaseAsync(Guid publicId, Guid leaseToken, DateTime now, CancellationToken ct = default)
+        {
+            FailedFinalizeCalled = true;
+            return Task.FromResult(true);
         }
 
         public Task<bool> MarkFailedAsync(Guid documentId, string leaseToken, string errorCode, CancellationToken ct = default)
@@ -195,7 +205,7 @@ public class PdfDocumentServiceTests
             VersionToReturn = new RecipeVersion
             {
                 PublicId = versionGuid,
-                Status = "Approved",
+                Status = "published",
                 Name = "Cà phê muối",
                 Recipe = new RecipeHub.Recipe.Domain.Entities.Recipe { PublicId = recipeGuid, Code = "REC-01", NormalizedCode = "REC-01" },
                 RecipeIngredients = new List<RecipeIngredient>(),
@@ -228,7 +238,7 @@ public class PdfDocumentServiceTests
     }
 
     [Fact]
-    public async Task ExportDocumentAsync_ThrowsInvalidOperation_WhenPublishingDraftRecipeVersion()
+    public async Task PreviewAndExport_ThrowsInvalidOperation_WhenRecipeVersionIsNotPublished()
     {
         var recipeGuid = Guid.NewGuid();
         var versionGuid = Guid.NewGuid();
@@ -237,7 +247,7 @@ public class PdfDocumentServiceTests
             VersionToReturn = new RecipeVersion
             {
                 PublicId = versionGuid,
-                Status = "Draft", // Unapproved version!
+                Status = "draft", // Unapproved draft version!
                 Name = "Trà sữa Ô Long",
                 Recipe = new RecipeHub.Recipe.Domain.Entities.Recipe { PublicId = recipeGuid, Code = "REC-02", NormalizedCode = "REC-02" },
                 RecipeIngredients = new List<RecipeIngredient>(),
@@ -252,8 +262,7 @@ public class PdfDocumentServiceTests
             new FakeMediaResolver(),
             NullLogger<PdfDocumentService>.Instance);
 
-        // Compute preview first to get the correct hash
-        var preview = await service.GeneratePreviewAsync(new PreviewPdfRequest
+        var previewRequest = new PreviewPdfRequest
         {
             Title = "Tài liệu",
             DocumentType = "published",
@@ -261,23 +270,87 @@ public class PdfDocumentServiceTests
             {
                 new() { RecipeId = recipeGuid, RecipeVersionId = versionGuid }
             }
-        }, "token", CancellationToken.None);
+        };
 
-        var request = new ExportPdfRequest
+        var previewEx = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.GeneratePreviewAsync(previewRequest, "token", CancellationToken.None));
+        Assert.Contains("chưa được duyệt phát hành", previewEx.Message);
+
+        var exportRequest = new ExportPdfRequest
         {
             Title = "Tài liệu",
-            DocumentType = "published", // Attempting official publish
+            DocumentType = "published",
             Items = new List<PdfDocumentRequestItem>
             {
                 new() { RecipeId = recipeGuid, RecipeVersionId = versionGuid }
             },
-            ExpectedSnapshotHash = preview.SnapshotHash
+            ExpectedSnapshotHash = "dummy_hash"
         };
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            service.ExportDocumentAsync(request, Guid.NewGuid(), "token", CancellationToken.None));
+        var exportEx = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.ExportDocumentAsync(exportRequest, Guid.NewGuid(), "token", CancellationToken.None));
+        Assert.Contains("chưa được duyệt phát hành", exportEx.Message);
+    }
 
-        Assert.Contains("chưa được duyệt phát hành", ex.Message);
+    [Fact]
+    public async Task PreviewAndExport_ThrowsInvalidOperation_WhenRecipeIsArchived()
+    {
+        var recipeGuid = Guid.NewGuid();
+        var versionGuid = Guid.NewGuid();
+        var repo = new FakeRepository
+        {
+            VersionToReturn = new RecipeVersion
+            {
+                PublicId = versionGuid,
+                Status = "published",
+                Name = "Trà đào cam sả",
+                Recipe = new RecipeHub.Recipe.Domain.Entities.Recipe
+                {
+                    PublicId = recipeGuid,
+                    Code = "REC-03",
+                    NormalizedCode = "REC-03",
+                    ArchivedAt = DateTime.UtcNow
+                },
+                RecipeIngredients = new List<RecipeIngredient>(),
+                RecipeSteps = new List<RecipeStep>()
+            }
+        };
+
+        var service = new PdfDocumentService(
+            repo,
+            new FakeRenderer(),
+            new FakeStorage(),
+            new FakeMediaResolver(),
+            NullLogger<PdfDocumentService>.Instance);
+
+        var previewRequest = new PreviewPdfRequest
+        {
+            Title = "Tài liệu lưu trữ",
+            DocumentType = "published",
+            Items = new List<PdfDocumentRequestItem>
+            {
+                new() { RecipeId = recipeGuid, RecipeVersionId = versionGuid }
+            }
+        };
+
+        var previewEx = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.GeneratePreviewAsync(previewRequest, "token", CancellationToken.None));
+        Assert.Contains("đã bị lưu trữ", previewEx.Message);
+
+        var exportRequest = new ExportPdfRequest
+        {
+            Title = "Tài liệu lưu trữ",
+            DocumentType = "published",
+            Items = new List<PdfDocumentRequestItem>
+            {
+                new() { RecipeId = recipeGuid, RecipeVersionId = versionGuid }
+            },
+            ExpectedSnapshotHash = "dummy_hash"
+        };
+
+        var exportEx = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.ExportDocumentAsync(exportRequest, Guid.NewGuid(), "token", CancellationToken.None));
+        Assert.Contains("đã bị lưu trữ", exportEx.Message);
     }
 
     [Fact]
@@ -461,8 +534,12 @@ public class PdfDocumentServiceTests
                 {
                     PublicId = docGuid,
                     State = "failed",
-                    StorageCleanupRequired = true,
-                    StoragePublicId = $"pdf_documents/{docGuid:N}.pdf"
+                    Storage = new PdfDocumentStorage
+                    {
+                        CleanupRequired = true,
+                        StoragePublicId = $"pdf_documents/{docGuid:N}.pdf",
+                        FileName = "test.pdf"
+                    }
                 }
             }
         };

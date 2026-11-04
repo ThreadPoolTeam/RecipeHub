@@ -12,8 +12,6 @@ public class FrozenPdfModel
     public string ExportScope { get; set; } = "single"; // single | collection
     public string Title { get; set; } = null!;
     public string? Subtitle { get; set; }
-    public string TemplateCode { get; set; } = "detailed-landscape";
-    public string TemplateVersion { get; set; } = "1";
     public string AuthorName { get; set; } = null!;
     public DateTime RenderedAtUtc { get; set; } = DateTime.UtcNow;
     public List<FrozenRecipeItemModel> Recipes { get; set; } = new();

@@ -18,11 +18,6 @@ public class PdfDocumentItemConfiguration : IEntityTypeConfiguration<PdfDocument
         builder.Property(e => e.RecipeVersionId).HasColumnName("recipe_version_id").IsRequired();
         builder.Property(e => e.SortOrder).HasColumnName("sort_order").IsRequired();
 
-        builder.Property(e => e.SourceSnapshot)
-            .HasColumnName("source_snapshot")
-            .HasColumnType("jsonb")
-            .IsRequired();
-
         builder.HasIndex(e => new { e.DocumentId, e.SortOrder }, "pdf_document_item_doc_sort_order_key").IsUnique();
         builder.HasIndex(e => new { e.DocumentId, e.RecipeVersionId }, "pdf_document_item_doc_recipe_version_key").IsUnique();
         builder.HasIndex(e => e.RecipeVersionId, "pdf_document_item_version_idx");

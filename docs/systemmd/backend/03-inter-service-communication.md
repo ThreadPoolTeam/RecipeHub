@@ -30,9 +30,9 @@ Dùng cho các trường hợp cần dữ liệu ngay lập tức, kiểm tra t�
 ### 1.4. Media Metadata Lookup Cho Xuất PDF (`ContentPdfMediaQuery`)
 - **Recipe Service -> Content Service**:
   - Protobuf: `content_pdf_media.proto`.
-  - Phương thức: `BatchGetMediaForPdf(BatchGetMediaForPdfRequest) returns (BatchGetMediaForPdfResponse)`.
+  - RPC: `GetPdfMediaBatch(GetPdfMediaBatchRequest) returns (GetPdfMediaBatchResponse)`.
   - Server đặt tại `Content.Api` (`ContentPdfMediaQueryServiceImpl`), Client tại `Recipe.Infrastructure` (`ContentPdfMediaResolver`).
-  - Forward Bearer token của caller qua metadata `authorization: Bearer <token>`, deadline 5s. Không gọi ngược lại Recipe Service để tránh cycle Recipe -> Content -> Recipe.
+  - Forward Bearer token của caller qua metadata `authorization: Bearer <token>`. Không gọi ngược lại Recipe Service để tránh cycle Recipe -> Content -> Recipe.
 
 ---
 
@@ -41,17 +41,7 @@ Dùng cho các trường hợp cần dữ liệu ngay lập tức, kiểm tra t�
 Dùng cho việc thông báo sự kiện (Domain Events / Integration Events) khi trạng thái thay đổi, kích hoạt tác vụ chạy nền (Background Tasks, AI generation, Audit logging).
 
 ### 2.1. Cấu Trúc Phong Bì Sự Kiện (`EventEnvelope<T>`)
-Được cung cấp bởi `RecipeHub.BuildingBlocks`. Mọi sự kiện phát ra Redis Streams bắt buộc đóng gói trong phong bì:
-```json
-{
-  "eventId": "uuid-v4",
-  "eventType": "recipe.approved.v1",
-  "timestamp": "2026-11-01T10:00:00Z",
-  "aggregateId": "recipe-uuid",
-  "producer": "RecipeHub.Recipe.Api",
-  "payload": { ... }
-}
-```
+Được cung cấp bởi `RecipeHub.BuildingBlocks`. Sự kiện dùng chung tuân theo [`EventEnvelope<T>`](../../../src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Events/EventEnvelope.cs): `EventId`, `EventType`, `OccurredAtUtc`, `CorrelationId`, `Source`, `SchemaVersion`, `Payload`. Không tự thêm envelope khác cho cùng contract; Content outbox có contract job riêng.
 
 ### 2.2. Cơ Chế Tiêu Thụ (Consumer Groups)
 - Dùng Redis Consumer Groups (`XREADGROUP`) đảm bảo:
@@ -59,7 +49,7 @@ Dùng cho việc thông báo sự kiện (Domain Events / Integration Events) kh
   - Phục hồi tin nhắn chưa hoàn thành khi worker gặp sự cố (`XPENDING` / `XCLAIM`).
   - Xác nhận xử lý thành công bằng `XACK`.
 - Background Worker đặt tại `src/backend/Workers/RecipeHub.BackgroundWorker/`.
-- Khi publish tin nhắn, sử dụng cờ `MKSTREAM` để tự động tạo stream nếu chưa tồn tại.
+- Khi tạo consumer group, sử dụng `MKSTREAM` để tự động tạo stream nếu chưa tồn tại.
 
 ### 2.3. Pipeline Nhật Ký Kiểm Toán (Audit Activity Pipeline)
 - **Stream:** `audit.activities.v1`
@@ -68,4 +58,9 @@ Dùng cho việc thông báo sự kiện (Domain Events / Integration Events) kh
   - **Identity Service**: `user.created`, `user.updated`, `user.role_changed`, `user.locked`, `user.unlocked`, `user.password_reset`.
   - **Recipe Service**: `recipe.created`, `recipe.version_created`, `recipe.updated`, `recipe.published`, `recipe.archived`, `recipe.activated`.
   - **Quiz Service**: `quiz.created`, `quiz.updated`, `quiz.published`, `quiz.archived`, `quiz.deleted`, `quiz.version_deleted`, `quiz.version_cloned`, `quiz.attempt_submitted`.
-- **Nguyên tắc độ tin cậy:** Producer publish best-effort với bounded timeout 3s; lỗi Redis không rollback business transaction đã commit. Consumer xác thực schema drift, ghi append-only vào `audit_logs` với quyền tối thiểu (`audit_user` chỉ có `SELECT` & `INSERT`).
+- **Nguyên tắc độ tin cậy:** Producer publish best-effort; lỗi Redis không rollback business transaction đã commit. Consumer xác thực schema drift, ghi append-only vào `audit_log` với quyền tối thiểu (`audit_user` chỉ có `SELECT` & `INSERT`).
+
+### 2.4. Phân Công Tác Vụ Nền
+
+- Content API relay outbox sang Redis; BackgroundWorker chạy consumer gen ảnh, cleanup file tạm và Audit consumer bên cạnh heartbeat.
+- PDF render/upload trong request Recipe API, recovery chạy cùng Recipe API; không dùng Redis job hoặc audit receipt riêng cho PDF.

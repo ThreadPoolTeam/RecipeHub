@@ -23,6 +23,7 @@ public sealed class PdfDocumentRepository : IPdfDocumentRepository
     {
         return await _dbContext.PdfDocuments
             .AsNoTracking()
+            .Include(d => d.Storage)
             .FirstOrDefaultAsync(d => d.PublicId == publicId, ct);
     }
 
@@ -30,6 +31,7 @@ public sealed class PdfDocumentRepository : IPdfDocumentRepository
     {
         return await _dbContext.PdfDocuments
             .AsNoTracking()
+            .Include(d => d.Storage)
             .Include(d => d.Items.OrderBy(i => i.SortOrder))
                 .ThenInclude(i => i.RecipeVersion)
                     .ThenInclude(v => v.Recipe)
@@ -45,6 +47,7 @@ public sealed class PdfDocumentRepository : IPdfDocumentRepository
     {
         return await _dbContext.PdfDocuments
             .AsNoTracking()
+            .Include(d => d.Storage)
             .Include(d => d.Items)
                 .ThenInclude(i => i.RecipeVersion)
                     .ThenInclude(v => v.Recipe)
@@ -78,7 +81,7 @@ public sealed class PdfDocumentRepository : IPdfDocumentRepository
         if (!string.IsNullOrWhiteSpace(search))
         {
             var term = search.Trim();
-            query = query.Where(d => EF.Functions.ILike(d.Title, $"%{term}%") || EF.Functions.ILike(d.FileName, $"%{term}%"));
+            query = query.Where(d => EF.Functions.ILike(d.Title, $"%{term}%") || (d.Storage != null && EF.Functions.ILike(d.Storage.FileName, $"%{term}%")));
         }
 
         if (!string.IsNullOrWhiteSpace(documentType))
@@ -119,6 +122,7 @@ public sealed class PdfDocumentRepository : IPdfDocumentRepository
         var totalCount = await query.CountAsync(ct);
 
         var items = await query
+            .Include(d => d.Storage)
             .Include(d => d.Items.OrderBy(i => i.SortOrder))
                 .ThenInclude(i => i.RecipeVersion)
                     .ThenInclude(v => v.Recipe)
@@ -127,7 +131,6 @@ public sealed class PdfDocumentRepository : IPdfDocumentRepository
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);
-
         return (items, totalCount);
     }
 
@@ -153,18 +156,24 @@ public sealed class PdfDocumentRepository : IPdfDocumentRepository
         await tx.CommitAsync(ct);
     }
 
-    public async Task ReserveAsync(PdfDocument document, IEnumerable<PdfDocumentItem> items, CancellationToken ct = default)
+    public async Task ReserveAsync(PdfDocument document, IEnumerable<PdfDocumentItem> items, PdfDocumentStorage? storage = null, CancellationToken ct = default)
     {
         using var tx = await _dbContext.Database.BeginTransactionAsync(ct);
-        _dbContext.PdfDocuments.Add(document);
-        await _dbContext.SaveChangesAsync(ct);
+
+        if (storage != null && document.Storage == null)
+        {
+            document.Storage = storage;
+        }
 
         foreach (var item in items)
         {
-            item.DocumentId = document.Id;
-            _dbContext.PdfDocumentItems.Add(item);
+            if (!document.Items.Contains(item))
+            {
+                document.Items.Add(item);
+            }
         }
 
+        _dbContext.PdfDocuments.Add(document);
         await _dbContext.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
     }
@@ -195,20 +204,44 @@ public sealed class PdfDocumentRepository : IPdfDocumentRepository
         DateTime completedAt,
         CancellationToken ct = default)
     {
-        var rowsAffected = await _dbContext.PdfDocuments
-            .Where(d => d.PublicId == publicId && d.State == "processing" && d.LeaseToken == leaseToken)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(d => d.State, "ready")
-                .SetProperty(d => d.CompletedAt, completedAt)
-                .SetProperty(d => d.StorageAssetId, storageAssetId)
-                .SetProperty(d => d.StorageVersion, storageVersion)
-                .SetProperty(d => d.ByteSize, byteSize)
-                .SetProperty(d => d.FileSha256, fileSha256)
-                .SetProperty(d => d.LeaseToken, (Guid?)null)
-                .SetProperty(d => d.LeaseExpiresAt, (DateTime?)null)
-                .SetProperty(d => d.ErrorCode, (string?)null), ct);
+        using var tx = await _dbContext.Database.BeginTransactionAsync(ct);
 
-        return rowsAffected > 0;
+        var doc = await _dbContext.PdfDocuments
+            .FromSqlInterpolated($"SELECT * FROM recipe_db.pdf_document WHERE public_id = {publicId} FOR UPDATE")
+            .FirstOrDefaultAsync(ct);
+
+        if (doc == null ||
+            doc.State != "processing" ||
+            doc.LeaseToken != leaseToken ||
+            doc.LeaseExpiresAt == null ||
+            doc.LeaseExpiresAt <= completedAt)
+        {
+            await tx.RollbackAsync(ct);
+            return false;
+        }
+
+        doc.State = "ready";
+        doc.CompletedAt = completedAt;
+        doc.LeaseToken = null;
+        doc.LeaseExpiresAt = null;
+        doc.ErrorCode = null;
+
+        var storage = await _dbContext.PdfDocumentStorages.FirstOrDefaultAsync(s => s.DocumentId == doc.Id, ct);
+        if (storage == null)
+        {
+            await tx.RollbackAsync(ct);
+            return false;
+        }
+
+        storage.StorageAssetId = storageAssetId;
+        storage.StorageVersion = storageVersion;
+        storage.ByteSize = byteSize;
+        storage.FileSha256 = fileSha256;
+        storage.CleanupRequired = false;
+
+        await _dbContext.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+        return true;
     }
 
     public Task<bool> FinalizeReadyDocumentAsync(
@@ -241,17 +274,75 @@ public sealed class PdfDocumentRepository : IPdfDocumentRepository
         DateTime completedAt,
         CancellationToken ct = default)
     {
-        var rowsAffected = await _dbContext.PdfDocuments
-            .Where(d => d.PublicId == publicId && d.State == "processing" && d.LeaseToken == leaseToken)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(d => d.State, "failed")
-                .SetProperty(d => d.CompletedAt, completedAt)
-                .SetProperty(d => d.ErrorCode, errorCode)
-                .SetProperty(d => d.StorageCleanupRequired, storageCleanupRequired)
-                .SetProperty(d => d.LeaseToken, (Guid?)null)
-                .SetProperty(d => d.LeaseExpiresAt, (DateTime?)null), ct);
+        using var tx = await _dbContext.Database.BeginTransactionAsync(ct);
 
-        return rowsAffected > 0;
+        var doc = await _dbContext.PdfDocuments
+            .FromSqlInterpolated($"SELECT * FROM recipe_db.pdf_document WHERE public_id = {publicId} FOR UPDATE")
+            .FirstOrDefaultAsync(ct);
+
+        if (doc == null || doc.State != "processing" || doc.LeaseToken != leaseToken)
+        {
+            await tx.RollbackAsync(ct);
+            return false;
+        }
+
+        doc.State = "failed";
+        doc.CompletedAt = completedAt;
+        doc.ErrorCode = errorCode;
+        doc.LeaseToken = null;
+        doc.LeaseExpiresAt = null;
+
+        if (storageCleanupRequired)
+        {
+            var storage = await _dbContext.PdfDocumentStorages.FirstOrDefaultAsync(s => s.DocumentId == doc.Id, ct);
+            if (storage != null)
+            {
+                storage.CleanupRequired = true;
+            }
+        }
+
+        await _dbContext.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+        return true;
+    }
+
+    public async Task<bool> FencedFinalizeExpiredLeaseAsync(
+        Guid publicId,
+        Guid leaseToken,
+        DateTime now,
+        CancellationToken ct = default)
+    {
+        using var tx = await _dbContext.Database.BeginTransactionAsync(ct);
+
+        var doc = await _dbContext.PdfDocuments
+            .FromSqlInterpolated($"SELECT * FROM recipe_db.pdf_document WHERE public_id = {publicId} FOR UPDATE")
+            .FirstOrDefaultAsync(ct);
+
+        if (doc == null ||
+            doc.State != "processing" ||
+            doc.LeaseToken != leaseToken ||
+            doc.LeaseExpiresAt == null ||
+            doc.LeaseExpiresAt > now)
+        {
+            await tx.RollbackAsync(ct);
+            return false;
+        }
+
+        doc.State = "failed";
+        doc.CompletedAt = now;
+        doc.ErrorCode = "LEASE_EXPIRED";
+        doc.LeaseToken = null;
+        doc.LeaseExpiresAt = null;
+
+        var storage = await _dbContext.PdfDocumentStorages.FirstOrDefaultAsync(s => s.DocumentId == doc.Id, ct);
+        if (storage != null)
+        {
+            storage.CleanupRequired = true;
+        }
+
+        await _dbContext.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+        return true;
     }
 
     public Task<bool> MarkFailedAsync(
@@ -272,9 +363,13 @@ public sealed class PdfDocumentRepository : IPdfDocumentRepository
 
     public async Task<bool> ClearStorageCleanupRequiredAsync(Guid publicId, CancellationToken ct = default)
     {
-        var rowsAffected = await _dbContext.PdfDocuments
-            .Where(d => d.PublicId == publicId)
-            .ExecuteUpdateAsync(s => s.SetProperty(d => d.StorageCleanupRequired, false), ct);
+        var doc = await _dbContext.PdfDocuments.FirstOrDefaultAsync(d => d.PublicId == publicId, ct);
+        if (doc == null)
+            return false;
+
+        var rowsAffected = await _dbContext.PdfDocumentStorages
+            .Where(s => s.DocumentId == doc.Id)
+            .ExecuteUpdateAsync(s => s.SetProperty(d => d.CleanupRequired, false), ct);
 
         return rowsAffected > 0;
     }
@@ -282,7 +377,8 @@ public sealed class PdfDocumentRepository : IPdfDocumentRepository
     public async Task<IReadOnlyList<PdfDocument>> GetDocumentsNeedingStorageCleanupAsync(int limit, CancellationToken ct = default)
     {
         return await _dbContext.PdfDocuments
-            .Where(d => d.StorageCleanupRequired && d.State == "failed")
+            .Include(d => d.Storage)
+            .Where(d => d.State == "failed" && d.Storage != null && d.Storage.CleanupRequired)
             .OrderBy(d => d.CreatedAt)
             .Take(limit)
             .ToListAsync(ct);
@@ -291,7 +387,8 @@ public sealed class PdfDocumentRepository : IPdfDocumentRepository
     public async Task<IReadOnlyList<PdfDocument>> GetExpiredProcessingLeasesAsync(DateTime now, int limit, CancellationToken ct = default)
     {
         return await _dbContext.PdfDocuments
-            .Where(d => d.State == "processing" && d.LeaseExpiresAt != null && d.LeaseExpiresAt < now)
+            .Include(d => d.Storage)
+            .Where(d => d.State == "processing" && d.LeaseExpiresAt != null && d.LeaseExpiresAt <= now)
             .OrderBy(d => d.LeaseExpiresAt)
             .Take(limit)
             .ToListAsync(ct);

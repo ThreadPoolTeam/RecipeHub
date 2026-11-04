@@ -62,19 +62,18 @@ public sealed class PdfDocumentRecoveryService : BackgroundService
         var expiredDocs = await repository.GetExpiredProcessingLeasesAsync(DateTime.UtcNow, 20, ct);
         foreach (var doc in expiredDocs)
         {
-            _logger.LogWarning("Phát hiện lease xuất PDF hết hạn cho tài liệu {DocumentId} (StoragePublicId: {StoragePublicId}).", doc.PublicId, doc.StoragePublicId);
+            var storagePublicId = doc.Storage?.StoragePublicId;
+            _logger.LogWarning("Phát hiện lease xuất PDF hết hạn cho tài liệu {DocumentId} (StoragePublicId: {StoragePublicId}).", doc.PublicId, storagePublicId);
 
-            var markedFailed = await repository.FencedFinalizeFailedAsync(
+            var markedFailed = await repository.FencedFinalizeExpiredLeaseAsync(
                 doc.PublicId,
                 doc.LeaseToken ?? Guid.Empty,
-                "LEASE_EXPIRED",
-                storageCleanupRequired: true,
                 DateTime.UtcNow,
                 ct);
 
-            if (markedFailed && !string.IsNullOrWhiteSpace(doc.StoragePublicId))
+            if (markedFailed && !string.IsNullOrWhiteSpace(storagePublicId))
             {
-                await CleanupStorageAsync(repository, storage, doc.PublicId, doc.StoragePublicId, ct);
+                await CleanupStorageAsync(repository, storage, doc.PublicId, storagePublicId, ct);
             }
         }
 
@@ -82,9 +81,10 @@ public sealed class PdfDocumentRecoveryService : BackgroundService
         var cleanupDocs = await repository.GetDocumentsNeedingStorageCleanupAsync(20, ct);
         foreach (var doc in cleanupDocs)
         {
-            if (!string.IsNullOrWhiteSpace(doc.StoragePublicId))
+            var storagePublicId = doc.Storage?.StoragePublicId;
+            if (!string.IsNullOrWhiteSpace(storagePublicId))
             {
-                await CleanupStorageAsync(repository, storage, doc.PublicId, doc.StoragePublicId, ct);
+                await CleanupStorageAsync(repository, storage, doc.PublicId, storagePublicId, ct);
             }
         }
     }

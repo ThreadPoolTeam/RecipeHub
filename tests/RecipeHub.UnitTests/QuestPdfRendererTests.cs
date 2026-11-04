@@ -77,8 +77,6 @@ public sealed class QuestPdfRendererTests
             Subtitle = "Tài liệu đào tạo và quy chuẩn pha chế nội bộ",
             DocumentType = docType,
             ExportScope = recipeCount > 1 ? "collection" : "single",
-            TemplateCode = "detailed-landscape",
-            TemplateVersion = "1",
             AuthorName = "R&D Specialist",
             RenderedAtUtc = DateTime.UtcNow,
             Recipes = recipes

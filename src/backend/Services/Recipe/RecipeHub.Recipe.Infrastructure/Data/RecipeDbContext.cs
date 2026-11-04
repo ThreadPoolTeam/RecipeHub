@@ -37,6 +37,8 @@ public partial class RecipeDbContext : DbContext
 
     public virtual DbSet<PdfDocumentItem> PdfDocumentItems { get; set; }
 
+    public virtual DbSet<PdfDocumentStorage> PdfDocumentStorages { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Ingredient>(entity =>
@@ -475,6 +477,7 @@ public partial class RecipeDbContext : DbContext
 
         modelBuilder.ApplyConfiguration(new Configurations.PdfDocumentConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.PdfDocumentItemConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.PdfDocumentStorageConfiguration());
         OnModelCreatingPartial(modelBuilder);
     }
 

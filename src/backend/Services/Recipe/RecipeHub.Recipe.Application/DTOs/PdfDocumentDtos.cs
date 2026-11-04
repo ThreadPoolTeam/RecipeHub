@@ -8,8 +8,6 @@ public class PreviewPdfRequest
     public string DocumentType { get; set; } = "draft"; // draft | published
     public string Title { get; set; } = null!;
     public string? Subtitle { get; set; }
-    public string TemplateCode { get; set; } = "detailed-landscape";
-    public string TemplateVersion { get; set; } = "1";
     public List<PdfDocumentRequestItem> Items { get; set; } = new();
 }
 
@@ -19,8 +17,6 @@ public class ExportPdfRequest
     public string DocumentType { get; set; } = "draft"; // draft | published
     public string Title { get; set; } = null!;
     public string? Subtitle { get; set; }
-    public string TemplateCode { get; set; } = "detailed-landscape";
-    public string TemplateVersion { get; set; } = "1";
     public List<PdfDocumentRequestItem> Items { get; set; } = new();
 }
 
@@ -52,8 +48,6 @@ public class PdfDocumentResponse
     public string DocumentType { get; set; } = null!; // draft | published
     public string ExportScope { get; set; } = null!; // single | collection
     public string State { get; set; } = null!; // processing | ready | failed
-    public string TemplateCode { get; set; } = null!;
-    public string TemplateVersion { get; set; } = null!;
     public Guid CreatedByUserId { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
@@ -81,8 +75,6 @@ public class PdfDocumentSummaryResponse
     public string DocumentType { get; set; } = null!;
     public string ExportScope { get; set; } = null!;
     public string State { get; set; } = null!;
-    public string TemplateCode { get; set; } = null!;
-    public string TemplateVersion { get; set; } = null!;
     public Guid CreatedByUserId { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
@@ -95,9 +87,6 @@ public class PdfDocumentSummaryResponse
 
 public class PdfCapabilitiesResponse
 {
-    public List<string> Templates { get; set; } = new() { "detailed-landscape" };
-    public string DefaultTemplate { get; set; } = "detailed-landscape";
-    public string TemplateVersion { get; set; } = "1";
     public string Orientation { get; set; } = "landscape";
     public int MaxItems { get; set; } = 50;
     public long MaxPdfBytes { get; set; } = 52428800; // 50 MiB

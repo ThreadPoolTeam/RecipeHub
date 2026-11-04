@@ -29,7 +29,7 @@ public interface IPdfDocumentRepository
     Task<IReadOnlyList<RecipeVersion>> GetRecipeVersionsForPdfAsync(IEnumerable<Guid> versionPublicIds, CancellationToken ct = default);
 
     Task CreateDraftDocumentAsync(PdfDocument document, CancellationToken ct = default);
-    Task ReserveAsync(PdfDocument document, IEnumerable<PdfDocumentItem> items, CancellationToken ct = default);
+    Task ReserveAsync(PdfDocument document, IEnumerable<PdfDocumentItem> items, PdfDocumentStorage? storage = null, CancellationToken ct = default);
     Task<bool> ReserveLeaseAsync(Guid documentId, string leaseToken, TimeSpan duration, CancellationToken ct = default);
 
     Task<bool> FencedFinalizeReadyAsync(
@@ -58,6 +58,12 @@ public interface IPdfDocumentRepository
         string errorCode,
         bool storageCleanupRequired,
         DateTime completedAt,
+        CancellationToken ct = default);
+
+    Task<bool> FencedFinalizeExpiredLeaseAsync(
+        Guid publicId,
+        Guid leaseToken,
+        DateTime now,
         CancellationToken ct = default);
 
     Task<bool> MarkFailedAsync(

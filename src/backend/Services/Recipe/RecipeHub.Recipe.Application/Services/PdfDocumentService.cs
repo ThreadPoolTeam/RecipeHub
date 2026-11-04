@@ -46,14 +46,12 @@ public sealed class PdfDocumentService : IPdfDocumentService
         string? userSessionToken,
         CancellationToken ct = default)
     {
-        ValidateRequest(request.Title, request.TemplateCode, request.Items);
+        ValidateRequest(request.Title, request.Items);
 
-        var (frozenModel, snapshotHash, _, _) = await BuildFrozenModelAndSnapshotAsync(
+        var (frozenModel, snapshotHash, _) = await BuildFrozenModelAndSnapshotAsync(
             request.DocumentType,
             request.Title,
             request.Subtitle,
-            request.TemplateCode,
-            request.TemplateVersion,
             request.Items,
             "Người dùng hệ thống",
             userSessionToken,
@@ -72,19 +70,17 @@ public sealed class PdfDocumentService : IPdfDocumentService
         string? userSessionToken,
         CancellationToken ct = default)
     {
-        ValidateRequest(request.Title, request.TemplateCode, request.Items);
+        ValidateRequest(request.Title, request.Items);
 
         if (string.IsNullOrWhiteSpace(request.ExpectedSnapshotHash))
         {
             throw new ArgumentException("Thiếu ExpectedSnapshotHash từ bản xem trước.", nameof(request.ExpectedSnapshotHash));
         }
 
-        var (frozenModel, snapshotHash, versionEntities, sourceSnapshots) = await BuildFrozenModelAndSnapshotAsync(
+        var (frozenModel, snapshotHash, versionEntities) = await BuildFrozenModelAndSnapshotAsync(
             request.DocumentType,
             request.Title,
             request.Subtitle,
-            request.TemplateCode,
-            request.TemplateVersion,
             request.Items,
             $"User-{userId:N}",
             userSessionToken,
@@ -97,39 +93,13 @@ public sealed class PdfDocumentService : IPdfDocumentService
             throw new ConflictException("PdfSourceChanged: Dữ liệu công thức hoặc tùy chọn hiển thị đã thay đổi kể từ lần xem trước. Vui lòng xem trước lại.");
         }
 
-        // 2. Official publish check
         var isPublished = string.Equals(request.DocumentType, "published", StringComparison.OrdinalIgnoreCase);
-        if (isPublished)
-        {
-            foreach (var v in versionEntities)
-            {
-                if (!string.Equals(v.Status, "published", StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new InvalidOperationException($"Không thể xuất bản chính thức vì công thức '{v.Name}' (v{v.VersionNumber}) chưa được duyệt phát hành (Status={v.Status}).");
-                }
-                if (v.Recipe.ArchivedAt.HasValue)
-                {
-                    throw new InvalidOperationException($"Không thể xuất bản chính thức vì công thức '{v.Name}' đã bị lưu trữ.");
-                }
-            }
-        }
 
         var documentPublicId = Guid.NewGuid();
         var leaseToken = Guid.NewGuid();
-        var auditEventId = Guid.NewGuid();
         var storagePublicId = $"pdf_documents/{documentPublicId:N}.pdf";
         var exportScope = request.Items.Count > 1 ? "collection" : "single";
         var fileName = $"{SanitizeFileName(request.Title)}-{DateTime.UtcNow:yyyyMMdd}-{documentPublicId:N}.pdf";
-
-        var presentationSnapshotJson = JsonSerializer.Serialize(new
-        {
-            request.DocumentType,
-            request.Title,
-            request.Subtitle,
-            request.TemplateCode,
-            request.TemplateVersion,
-            request.Items
-        });
 
         var pdfDoc = new PdfDocument
         {
@@ -138,22 +108,22 @@ public sealed class PdfDocumentService : IPdfDocumentService
             DocumentType = isPublished ? "published" : "draft",
             ExportScope = exportScope,
             State = "processing",
-            TemplateCode = request.TemplateCode,
-            TemplateVersion = request.TemplateVersion,
-            PresentationSnapshot = presentationSnapshotJson,
-            SnapshotSha256 = snapshotHash,
             CreatedByUserRef = userId,
             CreatedAt = DateTime.UtcNow,
             LeaseToken = leaseToken,
             LeaseExpiresAt = DateTime.UtcNow.AddMinutes(5),
-            StorageProvider = "Cloudinary",
-            StoragePublicId = storagePublicId,
-            StorageResourceType = "raw",
-            StorageDeliveryType = "authenticated",
-            FileName = fileName,
-            AuditEventId = auditEventId,
-            StorageCleanupRequired = false
+            ErrorCode = null
         };
+
+        var storage = new PdfDocumentStorage
+        {
+            Document = pdfDoc,
+            Provider = "Cloudinary",
+            StoragePublicId = storagePublicId,
+            FileName = fileName,
+            CleanupRequired = false
+        };
+        pdfDoc.Storage = storage;
 
         var docItems = new List<PdfDocumentItem>();
         for (int i = 0; i < versionEntities.Count; i++)
@@ -162,19 +132,23 @@ public sealed class PdfDocumentService : IPdfDocumentService
             docItems.Add(new PdfDocumentItem
             {
                 RecipeVersionId = v.Id,
-                SortOrder = i + 1,
-                SourceSnapshot = sourceSnapshots[i]
+                SortOrder = i + 1
             });
         }
 
-        // 3. Reserve draft document in DB
-        await _repository.ReserveAsync(pdfDoc, docItems, ct);
+        // 2. Reserve document & storage
+        await _repository.ReserveAsync(pdfDoc, docItems, storage, ct);
+
+        // 3. Deadline for render + upload + finalize (120s limit)
+        using var deadlineCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        deadlineCts.CancelAfter(TimeSpan.FromSeconds(120));
+        var opCt = deadlineCts.Token;
 
         // 4. Render PDF
         byte[] pdfBytes;
         try
         {
-            pdfBytes = await _renderer.RenderAsync(frozenModel, ct);
+            pdfBytes = await _renderer.RenderAsync(frozenModel, opCt);
         }
         catch (Exception ex)
         {
@@ -190,7 +164,7 @@ public sealed class PdfDocumentService : IPdfDocumentService
         try
         {
             using var uploadStream = new MemoryStream(pdfBytes);
-            uploadResult = await _storage.UploadPdfAsync(storagePublicId, uploadStream, ct);
+            uploadResult = await _storage.UploadPdfAsync(storagePublicId, uploadStream, opCt);
         }
         catch (Exception ex)
         {
@@ -201,7 +175,7 @@ public sealed class PdfDocumentService : IPdfDocumentService
             throw new InvalidOperationException("Không thể lưu trữ file PDF vào hệ thống lưu trữ đám mây.", ex);
         }
 
-        // 6. Finalize in DB
+        // 6. Finalize in DB (atomic predicate with parent lock & storage update)
         var finalized = await _repository.FencedFinalizeReadyAsync(
             documentPublicId,
             leaseToken,
@@ -216,7 +190,6 @@ public sealed class PdfDocumentService : IPdfDocumentService
         {
             _logger.LogError("Không thể chốt trạng thái ready cho PDF document {DocumentId} (có thể đã hết lease).", documentPublicId);
 
-            // Atomic conditional transition to failed under this leaseToken with storageCleanupRequired = true
             var transitionedToFailed = await _repository.FencedFinalizeFailedAsync(
                 documentPublicId,
                 leaseToken,
@@ -225,13 +198,11 @@ public sealed class PdfDocumentService : IPdfDocumentService
                 DateTime.UtcNow,
                 ct);
 
-            // ONLY if atomic update succeeded (exactly 1 row committed to failed), we know ready did not win
             if (transitionedToFailed)
             {
                 try
                 {
                     await _storage.DestroyAsync(storagePublicId, ct);
-                    // Clear the cleanup marker only after successful deletion
                     await _repository.ClearStorageCleanupRequiredAsync(documentPublicId, ct);
                 }
                 catch (Exception cleanupEx)
@@ -250,12 +221,10 @@ public sealed class PdfDocumentService : IPdfDocumentService
             DocumentType = pdfDoc.DocumentType,
             ExportScope = pdfDoc.ExportScope,
             State = "ready",
-            TemplateCode = pdfDoc.TemplateCode,
-            TemplateVersion = pdfDoc.TemplateVersion,
             CreatedByUserId = userId,
             CreatedAt = pdfDoc.CreatedAt,
             CompletedAt = DateTime.UtcNow,
-            FileName = pdfDoc.FileName,
+            FileName = storage.FileName,
             ByteSize = uploadResult.ByteSize > 0 ? uploadResult.ByteSize : pdfBytes.Length,
             Sha256 = fileSha256,
             ItemCount = docItems.Count,
@@ -303,14 +272,12 @@ public sealed class PdfDocumentService : IPdfDocumentService
             DocumentType = d.DocumentType,
             ExportScope = d.ExportScope,
             State = d.State,
-            TemplateCode = d.TemplateCode,
-            TemplateVersion = d.TemplateVersion,
             CreatedByUserId = d.CreatedByUserRef,
             CreatedAt = d.CreatedAt,
             CompletedAt = d.CompletedAt,
-            FileName = d.FileName,
-            ByteSize = d.ByteSize,
-            Sha256 = d.FileSha256,
+            FileName = d.Storage?.FileName ?? d.Title,
+            ByteSize = d.Storage?.ByteSize,
+            Sha256 = d.Storage?.FileSha256,
             ItemCount = d.Items.Count,
             ErrorCode = d.ErrorCode
         }).ToList();
@@ -331,14 +298,12 @@ public sealed class PdfDocumentService : IPdfDocumentService
             DocumentType = doc.DocumentType,
             ExportScope = doc.ExportScope,
             State = doc.State,
-            TemplateCode = doc.TemplateCode,
-            TemplateVersion = doc.TemplateVersion,
             CreatedByUserId = doc.CreatedByUserRef,
             CreatedAt = doc.CreatedAt,
             CompletedAt = doc.CompletedAt,
-            FileName = doc.FileName,
-            ByteSize = doc.ByteSize,
-            Sha256 = doc.FileSha256,
+            FileName = doc.Storage?.FileName ?? doc.Title,
+            ByteSize = doc.Storage?.ByteSize,
+            Sha256 = doc.Storage?.FileSha256,
             ItemCount = doc.Items.Count,
             ErrorCode = doc.ErrorCode,
             Items = doc.Items.OrderBy(i => i.SortOrder).Select(i => new PdfDocumentItemResponse
@@ -373,9 +338,9 @@ public sealed class PdfDocumentService : IPdfDocumentService
             Id = doc.PublicId,
             RecipeVersionId = singleItem.RecipeVersion.PublicId,
             Title = doc.Title,
-            FileName = doc.FileName,
-            ByteSize = doc.ByteSize ?? 0,
-            Sha256 = doc.FileSha256 ?? string.Empty,
+            FileName = doc.Storage?.FileName ?? doc.Title,
+            ByteSize = doc.Storage?.ByteSize ?? 0,
+            Sha256 = doc.Storage?.FileSha256 ?? string.Empty,
             CompletedAt = doc.CompletedAt ?? doc.CreatedAt
         };
     }
@@ -420,20 +385,20 @@ public sealed class PdfDocumentService : IPdfDocumentService
             throw new UnauthorizedAccessException("Không có quyền truy cập tài liệu PDF.");
         }
 
-        var stream = await _storage.OpenDownloadStreamAsync(doc.StoragePublicId, ct);
-        return new PdfFileDownloadResult(stream, doc.FileName, "application/pdf");
+        if (doc.Storage == null || string.IsNullOrWhiteSpace(doc.Storage.StoragePublicId))
+        {
+            throw new InvalidOperationException("Không tìm thấy thông tin tệp PDF được lưu trữ.");
+        }
+
+        var stream = await _storage.OpenDownloadStreamAsync(doc.Storage.StoragePublicId, ct);
+        return new PdfFileDownloadResult(stream, doc.Storage.FileName, "application/pdf");
     }
 
-    private static void ValidateRequest(string title, string templateCode, List<PdfDocumentRequestItem> items)
+    private static void ValidateRequest(string title, List<PdfDocumentRequestItem> items)
     {
         if (string.IsNullOrWhiteSpace(title) || title.Trim().Length > 200)
         {
             throw new ArgumentException("Tiêu đề tài liệu bắt buộc từ 1 đến 200 ký tự.", nameof(title));
-        }
-
-        if (!string.Equals(templateCode, "detailed-landscape", StringComparison.OrdinalIgnoreCase))
-        {
-            throw new ArgumentException($"Mẫu tài liệu '{templateCode}' không được hỗ trợ. Chỉ hỗ trợ 'detailed-landscape'.", nameof(templateCode));
         }
 
         if (items == null || items.Count == 0)
@@ -453,12 +418,10 @@ public sealed class PdfDocumentService : IPdfDocumentService
         }
     }
 
-    private async Task<(FrozenPdfModel Model, string SnapshotHash, List<RecipeVersion> Versions, List<string> SourceSnapshots)> BuildFrozenModelAndSnapshotAsync(
+    private async Task<(FrozenPdfModel Model, string SnapshotHash, List<RecipeVersion> Versions)> BuildFrozenModelAndSnapshotAsync(
         string documentType,
         string title,
         string? subtitle,
-        string templateCode,
-        string templateVersion,
         List<PdfDocumentRequestItem> requestItems,
         string authorName,
         string? userSessionToken,
@@ -471,7 +434,7 @@ public sealed class PdfDocumentService : IPdfDocumentService
 
         var versionMap = versions.ToDictionary(v => v.PublicId);
 
-        // Verify all requested versions exist
+        // Verify all requested versions exist, are published and not archived
         var orderedVersions = new List<RecipeVersion>();
         foreach (var reqItem in requestItems)
         {
@@ -482,6 +445,14 @@ public sealed class PdfDocumentService : IPdfDocumentService
             if (versionEntity.Recipe.PublicId != reqItem.RecipeId)
             {
                 throw new ArgumentException($"Phiên bản {reqItem.RecipeVersionId} không thuộc công thức {reqItem.RecipeId}.");
+            }
+            if (!string.Equals(versionEntity.Status, "published", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException($"Không thể tạo tài liệu PDF vì công thức '{versionEntity.Name}' (v{versionEntity.VersionNumber}) chưa được duyệt phát hành (Status={versionEntity.Status}). Chỉ công thức đã phát hành mới đủ điều kiện xuất PDF.");
+            }
+            if (versionEntity.Recipe.ArchivedAt.HasValue)
+            {
+                throw new InvalidOperationException($"Không thể tạo tài liệu PDF vì công thức '{versionEntity.Name}' đã bị lưu trữ.");
             }
             orderedVersions.Add(versionEntity);
         }
@@ -510,9 +481,8 @@ public sealed class PdfDocumentService : IPdfDocumentService
         // 3. Resolve media via Content RPC
         var resolvedMedia = await _mediaResolver.ResolveBatchAsync(mediaAssetIds, userSessionToken, ct);
 
-        // 4. Construct Frozen Models and Source Snapshots
+        // 4. Construct Frozen Models
         var frozenRecipes = new List<FrozenRecipeItemModel>();
-        var sourceSnapshots = new List<string>();
 
         for (int i = 0; i < requestItems.Count; i++)
         {
@@ -603,28 +573,6 @@ public sealed class PdfDocumentService : IPdfDocumentService
             };
 
             frozenRecipes.Add(frozenRecipe);
-
-            var sourceSnapshotJson = JsonSerializer.Serialize(new
-            {
-                recipeCode = version.Recipe.Code,
-                recipeName = version.Name,
-                versionNumber = version.VersionNumber,
-                versionStatus = version.Status,
-                yield = frozenYield,
-                ingredients = frozenIngredients,
-                steps = frozenSteps.Select(s => new
-                {
-                    s.StepOrder,
-                    s.Instruction,
-                    s.DurationSeconds,
-                    s.Temperature,
-                    s.Equipment,
-                    s.SafetyNote,
-                    s.CompletionCriteria,
-                    media = s.Media.Select(m => new { m.AssetId, m.Caption, m.IsAiIllustration, m.ImageChecksum })
-                })
-            });
-            sourceSnapshots.Add(sourceSnapshotJson);
         }
 
         var frozenPdfModel = new FrozenPdfModel
@@ -633,8 +581,6 @@ public sealed class PdfDocumentService : IPdfDocumentService
             ExportScope = requestItems.Count > 1 ? "collection" : "single",
             Title = title.Trim(),
             Subtitle = subtitle?.Trim(),
-            TemplateCode = templateCode,
-            TemplateVersion = templateVersion,
             AuthorName = authorName,
             RenderedAtUtc = DateTime.UtcNow,
             Recipes = frozenRecipes
@@ -646,8 +592,6 @@ public sealed class PdfDocumentService : IPdfDocumentService
             documentType = frozenPdfModel.DocumentType.ToLowerInvariant(),
             title = frozenPdfModel.Title,
             subtitle = frozenPdfModel.Subtitle,
-            templateCode = frozenPdfModel.TemplateCode,
-            templateVersion = frozenPdfModel.TemplateVersion,
             recipes = frozenRecipes.Select(r => new
             {
                 r.RecipeId,
@@ -692,7 +636,7 @@ public sealed class PdfDocumentService : IPdfDocumentService
         var canonicalJson = JsonSerializer.Serialize(canonicalData);
         var snapshotHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonicalJson))).ToLowerInvariant();
 
-        return (frozenPdfModel, snapshotHash, orderedVersions, sourceSnapshots);
+        return (frozenPdfModel, snapshotHash, orderedVersions);
     }
 
     private static string SanitizeFileName(string title)
