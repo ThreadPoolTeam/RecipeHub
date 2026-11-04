@@ -11,6 +11,7 @@ Mọi tính năng mới hoặc refactor BẮT BUỘC tuân thủ các quy chuẩ
 docs/systemmd/
 ├── README.md                            # Tổng quan hệ thống & mục lục điều hướng
 ├── governance.md                        # Quy tắc bắt buộc cho Dev & AI, checklist tính năng mới
+├── technical-inventory.md               # Kiểm kê source/API/DB/topology/config; snapshot tham chiếu, không thêm chuẩn
 ├── frontend/
 │   ├── 01-architecture-and-folders.md   # Cấu trúc Next.js App Router, quy tắc đặt tên & file
 │   ├── 02-layout-and-navigation.md      # Chuẩn WorkspaceShell, Sidebar thu gọn, Topbar, layout 3 tầng
@@ -47,3 +48,4 @@ docs/systemmd/
 - Đọc quy chuẩn Frontend: [Frontend Index](frontend/01-architecture-and-folders.md)
 - Đọc quy chuẩn Backend: [Backend Index](backend/01-clean-architecture-layers.md)
 - Quy tắc bắt buộc khi code mới: [Governance & Checklist](governance.md)
+- Tra cứu số liệu và bản đồ kỹ thuật: [Technical Inventory](technical-inventory.md) — phạm vi/cách đếm ghi ngay trong báo cáo; không thay thế chuẩn hoặc trạng thái runtime.
