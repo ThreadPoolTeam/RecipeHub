@@ -2,6 +2,8 @@
 
 > **Dành cho kỹ sư phát triển RecipeHub Content Service.**  
 > Tài liệu tổng hợp toàn bộ nguyên lý, điểm chết (pitfalls), quy tắc Nên / Không nên và mẫu System Prompt chuẩn hóa cho pipeline sinh ảnh đồ uống R&D sử dụng **Google Gemini** (Prompt Compiler) và **FLUX.1 Schnell** (Diffusion Generator qua Cloudflare Workers AI).
+>
+> **Quy chuẩn mục tiêu, không phải mô tả toàn bộ runtime:** `GeminiPromptTranslator.cs` hiện dùng `temperature = 0.7`, `maxOutputTokens = 500` và system instruction khác mẫu mục 5; chưa thực thi đầy đủ positive framing, lọc nguyên liệu hay nhánh target. `CloudflareFluxGenerator.cs` cố định 4 steps nhưng trả ảnh giả lập khi thiếu credentials, không có điều kiện môi trường Development. Không lấy đường fallback làm bằng chứng sinh ảnh thật.
 
 ---
 
@@ -125,9 +127,9 @@ $$\text{Prompt} = \underbrace{\text{[Chủ thể \& Trạng thái]}}_{\text{Ưu 
 
 ---
 
-## 5. Mẫu System Prompt Chuẩn Hóa Triển Khai (Production Ready)
+## 5. Mẫu System Prompt Đề Xuất
 
-Đây là System Instruction chuẩn hóa nạp vào `GeminiPromptTranslator.cs`:
+Đây là mẫu chuẩn hóa để triển khai vào `GeminiPromptTranslator.cs`, **chưa phải** system instruction đang được nạp trong source:
 
 ```text
 You are an expert commercial beverage photographer and technical prompt compiler for FLUX Schnell.
@@ -175,6 +177,6 @@ Khi triển khai code tại `RecipeHub.Content.Infrastructure`:
 - [ ] **Cloudflare FLUX Client (`CloudflareFluxGenerator.cs`):**
   - Giữ cố định `steps: 4` cho profile `@cf/black-forest-labs/flux-1-schnell`.
   - Kiểm tra Content-Type: Phân biệt phản hồi nhị phân trực tiếp (`image/png`) vs phản hồi Base64 (`application/json`).
-  - Duy trì dummy image fallback trong môi trường Local Dev khi chưa nạp API Token Cloudflare.
+  - Phân biệt fallback ảnh giả lập hiện có với kết quả gọi FLUX thật; source hiện chưa giới hạn fallback theo môi trường. Không nghiệm thu provider từ ảnh giả lập.
 - [ ] **Database & Outbox Logging:**
-  - Luôn lưu trường `PromptSnapshot` vào bảng `ai_image_drafts` sau khi Gemini sinh xong để phục vụ kiểm toán (audit) và đo lường chất lượng visual prompt.
+  - Lưu `PromptSnapshot` vào `content_db.ai_image_draft.prompt_snapshot` sau khi Gemini sinh xong để truy vết prompt; metadata file tạm thuộc `ai_image_draft_file`.
