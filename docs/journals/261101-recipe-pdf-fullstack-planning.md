@@ -7,6 +7,8 @@ plan: ../plans/261101-recipe-pdf-fullstack/plan.md
 
 # Recipe PDF — phiên lập kế hoạch
 
+> Ghi nhận riêng phiên lập kế hoạch 01/11; không mô tả trạng thái triển khai hiện tại. Snapshot/template/audit PDF và mô hình 2 bảng đã được thay sau đó; xem [nhật ký đơn giản hóa](261104-pdf-storage-simplification-implementation.md) và [schema/runbook hiện tại](../database-schema/recipe-db/README.md). Audit 05/11 không đọc lại plan hoặc xác nhận runtime.
+
 ## Context
 
 Người dùng yêu cầu plan BE+FE+ERD cùng lúc sau trao đổi scope. Admin/rnd tạo PDF đơn/bộ có thứ tự, landscape-only, nội dung chi tiết, preview/lịch sử, Cloudinary, hai bảng nghiệp vụ trong Recipe DB. Không triển khai source hoặc SQL trong phiên này.

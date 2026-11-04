@@ -7,6 +7,8 @@ plan: ../plans/261101-recipe-pdf-fullstack/plan.md
 
 # Recipe PDF — Nhật ký thực thi Full-Stack
 
+> Nhật ký lịch sử, giữ kết quả được ghi trong các phiên trước; không phải xác nhận runtime hiện tại. Thiết kế snapshot/template/audit PDF bên dưới đã được thay bằng cấu trúc 3 bảng, hash preview trong bộ nhớ và không có PDF audit relay từ ngày 04/11. Xem [nhật ký thay đổi](261104-pdf-storage-simplification-implementation.md) và [runbook Recipe DB](../database-schema/recipe-db/README.md). Audit 05/11 không chạy lại các phép đo/test cũ; gate ban đầu phải đọc cùng các cập nhật về sau trong nhật ký này.
+
 ## Bối cảnh
 Người dùng gọi `/ck:cook --parallel "docs/plans/261101-recipe-pdf-fullstack/plan.md"`.
 Triển khai toàn diện chức năng xuất bản PDF đơn và bộ (A4 landscape), preview kèm snapshot hash, draft watermark, seam lưu trữ Cloudinary raw authenticated, và tab lịch sử tài liệu theo phân quyền Admin / R&D / Viewer.
@@ -25,7 +27,7 @@ Triển khai toàn diện chức năng xuất bản PDF đơn và bộ (A4 lands
    - `PdfDocumentRepository`: Cài đặt chuyển đổi trạng thái lease nguyên tử (`ExecuteUpdateAsync` kiểm tra `public_id`, `state='processing'`, và `lease_token == leaseToken`).
    - `QuestPdfRenderer`: A4 Landscape (841.89 x 595.28 pt), margin 24pt, Warm Editorial palette, bảng thành phần lặp tiêu đề trang, SOP cards với media thumbnail/AI badge, watermark "BẢN NHÁP — DRAFT" cho bản nháp.
    - `CloudinaryPdfStorage`: Streaming không buffer `ToArray()`, tính SHA-256 từ stream, xóa logging response body chứa credentials, kiểm tra chặt chẽ metadata từ provider.
-   - `ContentPdfMediaResolver`: Ngăn chặn SSRF hoàn toàn — HTTPS only, allowlist host Cloudinary CDN, `AllowAutoRedirect = false` với kiểm tra từng hop redirect, giới hạn dung lượng 10MB trước và trong khi stream, không log delivery URL nhạy cảm.
+   - `ContentPdfMediaResolver`: Guard SSRF bằng HTTPS, allowlist host Cloudinary CDN, `AllowAutoRedirect = false` với kiểm tra từng hop redirect, giới hạn dung lượng 10MB trước và trong khi stream, không chủ động log delivery URL. Đây không phải bảo đảm chặn mọi SSRF hoặc rò URL qua exception; chưa có kiểm chứng bảo mật đầy đủ trong audit.
    - `PdfDocumentService`: Tính toán canonical snapshot SHA-256, kiểm tra `expectedSnapshotHash` chống stale preview, chặn xuất bản chính thức từ bản nháp/lưu trữ, dọn dẹp storage bền vững (chỉ xóa Cloudinary khi transition failed atomic đã commit; lưu marker `storage_cleanup_required` nếu xóa gặp lỗi).
    - `PdfDocumentsController`: Cung cấp đầy đủ REST endpoints theo hợp đồng OpenAPI/Swagger (không dùng XML comments).
    - Đăng ký DI trong `Recipe.Application` và `Recipe.Infrastructure`.
