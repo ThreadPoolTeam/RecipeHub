@@ -168,7 +168,7 @@ Table recipe_db.recipe_version {
     `(status = 'draft' AND published_at IS NULL AND published_by_user_ref IS NULL) OR (status = 'published' AND published_at IS NOT NULL AND published_by_user_ref IS NOT NULL)` [name: 'recipe_version_publication_check']
   }
 
-  Note: 'Một Recipe chỉ có tối đa một draft; published versions là bất biến.'
+  Note: 'Một Recipe chỉ có tối đa một draft qua partial unique index recipe_one_active_version_uidx trên recipe_id WHERE status = draft trong PostgreSQL. Published versions được bảo vệ bất biến tại application.'
 }
 
 // Standard output produced by one recipe version.
@@ -269,7 +269,7 @@ Table recipe_db.recipe_step_media {
     `sort_order > 0` [name: 'recipe_step_media_sort_order_check']
   }
 
-  Note: 'PostgreSQL migration cần partial unique index trên recipe_step_id WHERE is_primary = true. Content Service kiểm tra tham chiếu qua media_asset_ref trước khi xóa file.'
+  Note: 'PostgreSQL có partial unique index recipe_step_one_primary_media_uidx trên recipe_step_id WHERE is_primary = true. Content Service kiểm tra tham chiếu qua media_asset_ref trước khi xóa file.'
 }
 
 Ref unit_category: recipe_db.unit.category_id > recipe_db.unit_category.id [delete: restrict]
@@ -284,6 +284,8 @@ Ref recipe_ingredient_unit: recipe_db.recipe_ingredient.unit_id > recipe_db.unit
 Ref recipe_step_version: recipe_db.recipe_step.recipe_version_id > recipe_db.recipe_version.id [delete: cascade]
 Ref recipe_step_media_step: recipe_db.recipe_step_media.recipe_step_id > recipe_db.recipe_step.id [delete: cascade]
 
+// PDF schema in the current bootstrap and C# model (2026-11-04).
+// Forward SQL adds bootstrap guards; live cutover and server parity require verification. See README.md.
 Table recipe_db.pdf_document {
   id bigint [pk, increment]
   public_id uuid [not null, unique]
@@ -291,34 +293,31 @@ Table recipe_db.pdf_document {
   document_type text [not null]
   export_scope text [not null]
   state text [not null]
-  template_code text [not null]
-  template_version text [not null]
-  presentation_snapshot jsonb [not null]
-  snapshot_sha256 text [not null]
   created_by_user_ref uuid [not null]
   created_at timestamptz [not null, default: `now()`]
   completed_at timestamptz
   lease_token uuid
   lease_expires_at timestamptz
-  storage_provider text [not null, default: 'Cloudinary']
-  storage_public_id text [not null, unique]
-  storage_asset_id text
-  storage_version text
-  storage_resource_type text [not null, default: 'raw']
-  storage_delivery_type text [not null, default: 'authenticated']
-  file_name text [not null]
-  byte_size bigint
-  file_sha256 text
   error_code text
-  storage_cleanup_required boolean [not null, default: false]
-  audit_event_id uuid [not null, unique]
-  audit_published_at timestamptz
-  audit_recorded_at timestamptz
 
   indexes {
-    (created_at, id) [name: 'pdf_document_history_idx']
-    (created_by_user_ref, created_at) [name: 'pdf_document_user_history_idx']
+    (created_at, id) [name: 'pdf_document_history_idx', note: 'PostgreSQL: created_at DESC, id DESC']
+    (created_by_user_ref, created_at) [name: 'pdf_document_user_history_idx', note: 'PostgreSQL: created_by_user_ref ASC, created_at DESC']
+    lease_expires_at [name: 'pdf_document_processing_lease_idx', note: 'partial index WHERE state = processing']
   }
+
+  checks {
+    `document_type IN ('draft', 'published')` [name: 'pdf_document_type_check']
+    `export_scope IN ('single', 'collection')` [name: 'pdf_document_export_scope_check']
+    `state IN ('processing', 'ready', 'failed')` [name: 'pdf_document_state_check']
+    `length(trim(title)) > 0` [name: 'pdf_document_title_check']
+    `state <> 'ready' OR (completed_at IS NOT NULL AND error_code IS NULL)` [name: 'pdf_document_ready_state_check']
+    `state <> 'failed' OR (completed_at IS NOT NULL AND error_code IS NOT NULL)` [name: 'pdf_document_failed_state_check']
+    `state <> 'processing' OR (lease_token IS NOT NULL AND lease_expires_at IS NOT NULL AND completed_at IS NULL AND error_code IS NULL)` [name: 'pdf_document_processing_state_check']
+    `state = 'processing' OR (lease_token IS NULL AND lease_expires_at IS NULL)` [name: 'pdf_document_terminal_lease_check']
+  }
+
+  Note: 'Hồ sơ xuất PDF. Lease thuộc document; bootstrap và SQL bổ sung 20261105 có constraint trigger yêu cầu ready có storage đầy đủ và trigger bảo vệ document/items ready. Chỉ nguồn published cho cả PDF nháp/chính thức; kiểm tại BE. Trạng thái DB live chưa xác minh; xem README.md.'
 }
 
 Table recipe_db.pdf_document_item {
@@ -326,7 +325,6 @@ Table recipe_db.pdf_document_item {
   document_id bigint [not null]
   recipe_version_id bigint [not null]
   sort_order integer [not null]
-  source_snapshot jsonb [not null]
 
   indexes {
     (document_id, sort_order) [unique, name: 'pdf_document_item_doc_sort_order_key']
@@ -342,3 +340,31 @@ Table recipe_db.pdf_document_item {
 
 Ref pdf_document_item_document: recipe_db.pdf_document_item.document_id > recipe_db.pdf_document.id [delete: restrict]
 Ref pdf_document_item_recipe_version: recipe_db.pdf_document_item.recipe_version_id > recipe_db.recipe_version.id [delete: restrict]
+
+Table recipe_db.pdf_document_storage {
+  document_id bigint [pk, not null]
+  provider text [not null, default: 'Cloudinary']
+  storage_public_id text [not null, unique]
+  storage_asset_id text
+  storage_version text
+  file_name text [not null]
+  byte_size bigint
+  file_sha256 text
+  cleanup_required boolean [not null, default: false]
+
+  indexes {
+    document_id [name: 'pdf_document_storage_cleanup_idx', note: 'partial index WHERE cleanup_required = true']
+  }
+
+  checks {
+    `length(trim(provider)) > 0` [name: 'pdf_document_storage_provider_check']
+    `length(trim(storage_public_id)) > 0` [name: 'pdf_document_storage_public_id_check']
+    `length(trim(file_name)) > 0` [name: 'pdf_document_storage_file_name_check']
+    `byte_size IS NULL OR byte_size > 0` [name: 'pdf_document_storage_byte_size_check']
+    `file_sha256 IS NULL OR file_sha256 ~ '^[0-9a-f]{64}$'` [name: 'pdf_document_storage_file_sha256_check']
+  }
+
+  Note: 'Một file mỗi document; raw/authenticated cố định tại Cloudinary adapter. Bootstrap có constraint trigger yêu cầu ready có asset_id/version/byte_size/file_sha256 và trigger bảo vệ storage ready. Không chứa credentials/signed URL/binary. Không suy ra schema live từ thiết kế này; xem README.md.'
+}
+
+Ref pdf_document_storage_document: recipe_db.pdf_document_storage.document_id - recipe_db.pdf_document.id [delete: restrict]
