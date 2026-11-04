@@ -100,7 +100,7 @@ Table quiz_db.quiz_attempt {
   indexes {
     (user_ref, quiz_version_id) [name: 'quiz_attempt_user_version_idx']
     state [name: 'quiz_attempt_state_idx']
-    (user_ref, quiz_version_id) [name: 'quiz_attempt_in_progress_uidx', note: 'unique partial index WHERE state = in_progress']
+    (user_ref, quiz_version_id) [name: 'quiz_attempt_in_progress_uidx', note: 'SQL unique partial index WHERE state = in_progress; không đánh dấu unique toàn cặp vì các lượt submitted được phép lặp. DDL triển khai theo file .postgres.']
   }
 
   checks {

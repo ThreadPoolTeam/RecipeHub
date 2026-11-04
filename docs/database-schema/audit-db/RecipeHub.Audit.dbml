@@ -16,9 +16,9 @@ Table audit_db.audit_log {
   occurred_at timestamptz [not null, note: 'Thời điểm source commit và phát sinh sự kiện (UTC)']
 
   indexes {
-    (occurred_at, id) [name: 'audit_log_occurred_at_id_idx']
-    (actor_id, occurred_at, id) [name: 'audit_log_actor_occurred_idx']
-    (target_type, target_id, occurred_at, id) [name: 'audit_log_target_occurred_idx']
+    (occurred_at, id) [name: 'audit_log_occurred_at_id_idx', note: 'SQL: occurred_at DESC, id DESC']
+    (actor_id, occurred_at, id) [name: 'audit_log_actor_occurred_idx', note: 'SQL: actor_id ASC, occurred_at DESC, id DESC']
+    (target_type, target_id, occurred_at, id) [name: 'audit_log_target_occurred_idx', note: 'SQL: target_type ASC, target_id ASC, occurred_at DESC, id DESC']
   }
 
   checks {
