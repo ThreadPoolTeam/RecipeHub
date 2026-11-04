@@ -21,6 +21,7 @@ Table identity_db.users {
   created_at timestamptz [not null, default: `now()`]
   updated_at timestamptz [not null, default: `now()`]
   indexes {
+    `lower(btrim(email))` [unique, name: 'users_email_unique_idx']
     (role_id, is_active) [name: 'users_role_active_idx']
   }
   checks {
@@ -32,10 +33,10 @@ Table identity_db.users {
 Table identity_db.auth_sessions {
   id uuid [pk]
   user_id uuid [not null]
-  refresh_token_hash varchar(64) [not null, unique, note: 'SHA256; token thô không lưu DB. Concurrency token khi rotate.']
+  refresh_token_hash varchar(64) [not null, unique, note: 'SHA256; token thô không lưu DB.']
   created_at timestamptz [not null, default: `now()`]
   expires_at timestamptz [not null]
-  revoked_at timestamptz
+  revoked_at timestamptz [note: 'EF concurrency token khi revoke/rotate session.']
   indexes {
     user_id [name: 'auth_sessions_user_idx']
   }

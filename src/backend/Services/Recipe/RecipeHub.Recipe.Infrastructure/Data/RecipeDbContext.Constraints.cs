@@ -30,5 +30,25 @@ public partial class RecipeDbContext
             table.HasCheckConstraint("recipe_step_duration_check", "duration_seconds IS NULL OR duration_seconds >= 0");
         });
         modelBuilder.Entity<RecipeStepMedia>().ToTable("recipe_step_media", "recipe_db", table => table.HasCheckConstraint("recipe_step_media_sort_order_check", "sort_order > 0"));
+        modelBuilder.Entity<PdfDocument>().ToTable("pdf_document", "recipe_db", table => {
+            table.HasCheckConstraint("pdf_document_type_check", "document_type IN ('draft', 'published')");
+            table.HasCheckConstraint("pdf_document_export_scope_check", "export_scope IN ('single', 'collection')");
+            table.HasCheckConstraint("pdf_document_state_check", "state IN ('processing', 'ready', 'failed')");
+            table.HasCheckConstraint("pdf_document_title_check", "length(trim(title)) > 0");
+            table.HasCheckConstraint("pdf_document_ready_state_check", "state <> 'ready' OR (completed_at IS NOT NULL AND error_code IS NULL)");
+            table.HasCheckConstraint("pdf_document_failed_state_check", "state <> 'failed' OR (completed_at IS NOT NULL AND error_code IS NOT NULL)");
+            table.HasCheckConstraint("pdf_document_processing_state_check", "state <> 'processing' OR (lease_token IS NOT NULL AND lease_expires_at IS NOT NULL AND completed_at IS NULL AND error_code IS NULL)");
+            table.HasCheckConstraint("pdf_document_terminal_lease_check", "state = 'processing' OR (lease_token IS NULL AND lease_expires_at IS NULL)");
+        });
+        modelBuilder.Entity<PdfDocumentStorage>().ToTable("pdf_document_storage", "recipe_db", table => {
+            table.HasCheckConstraint("pdf_document_storage_provider_check", "length(trim(provider)) > 0");
+            table.HasCheckConstraint("pdf_document_storage_public_id_check", "length(trim(storage_public_id)) > 0");
+            table.HasCheckConstraint("pdf_document_storage_file_name_check", "length(trim(file_name)) > 0");
+            table.HasCheckConstraint("pdf_document_storage_byte_size_check", "byte_size IS NULL OR byte_size > 0");
+            table.HasCheckConstraint("pdf_document_storage_file_sha256_check", "file_sha256 IS NULL OR file_sha256 ~ '^[0-9a-f]{64}$'");
+        });
+        modelBuilder.Entity<PdfDocumentItem>().ToTable("pdf_document_item", "recipe_db", table => {
+            table.HasCheckConstraint("pdf_document_item_sort_order_check", "sort_order > 0");
+        });
     }
 }

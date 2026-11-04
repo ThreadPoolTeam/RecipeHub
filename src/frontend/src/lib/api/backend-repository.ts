@@ -354,6 +354,15 @@ export class BackendRepository extends DemoRepository {
     await requestJson('api/v1/identity/auth/password', null, { method: 'PUT', body: JSON.stringify({ currentPassword, newPassword }) });
     clearSession();
   }
+  override async updateProfile(actor: SessionInfo, fullName: string): Promise<User> {
+    const user = mapUser(await requestJson('api/v1/identity/auth/profile', this.actorId(actor), {
+      method: 'PUT',
+      body: JSON.stringify({ fullName }),
+    }));
+    updateSessionUser(user);
+    return user;
+  }
+
 
   async scaleRecipe(ingredients: RecipeIngredient[], standardYield: number, targetYield: number, signal?: AbortSignal): Promise<ScaleResult> {
     const response = record(await requestJson('api/v1/recipes/calculate/scale', null, {
@@ -795,9 +804,12 @@ export class BackendRepository extends DemoRepository {
     return fetchPromise;
   }
 
-  override async getRecipeVersion(actor: SessionInfo, recipeId: string): Promise<RecipeVersion> {
+  override async getRecipeVersion(actor: SessionInfo, recipeId: string, versionId?: string): Promise<RecipeVersion> {
+    const path = versionId
+      ? `api/v1/recipes/${recipeId}/versions/${versionId}`
+      : `api/v1/recipes/${recipeId}`;
     const recipe = mapRecipeDetail(
-      await requestJson(`api/v1/recipes/${recipeId}`, this.actorId(actor), { method: 'GET' })
+      await requestJson(path, this.actorId(actor), { method: 'GET' })
     );
     this.rememberDraftContext(recipe);
     return recipe;

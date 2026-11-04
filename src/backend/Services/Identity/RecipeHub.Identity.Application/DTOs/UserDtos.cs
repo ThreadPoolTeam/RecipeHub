@@ -7,3 +7,4 @@ public sealed record UpdateUserRequest(string? FullName, string? Role);
 public sealed record UserStatusRequest(bool IsActive);
 public sealed record ChangePasswordRequest(string? CurrentPassword, string? NewPassword);
 public sealed record ResetPasswordRequest(string? NewPassword);
+public sealed record UpdateProfileRequest(string? FullName);

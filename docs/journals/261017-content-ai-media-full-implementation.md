@@ -3,6 +3,8 @@
 - **Thời gian:** 2026-10-17
 - **Phạm vi triển khai:** Triển khai toàn bộ mã nguồn backend theo kiến trúc Clean Architecture .NET 8 cho Content Service, Recipe Service extensions, gRPC context service, transactional outbox và worker xử lý nền.
 
+> Nhật ký lịch sử, không phải xác nhận runtime hiện tại. Schema Content nay có thêm `ai_image_draft_file`; xem [Content DB](../database-schema/content-db/README.md) và [nhật ký tách file](261104-content-draft-db-refactor-implementation.md). RowVersion phía Recipe đã được bỏ ở đợt sau; ghi nhận dưới đây không yêu cầu khôi phục. Kết quả build/export cũ không chứng minh migration đã áp dụng hoặc concurrency đã an toàn.
+
 ---
 
 ## 1. Kết quả Triển khai Chi tiết
@@ -47,7 +49,7 @@
    - `Program.cs`: Mapped gRPC service.
 
 ### 1.3 BackgroundWorker (`src/backend/Workers/RecipeHub.BackgroundWorker/`)
-- Bổ sung `ContentDraftProcessingWorker`: Lắng nghe Redis Streams `content.image-drafts.v1` với consumer group `recipehub-content-workers`, claim lease token, điều phối Gemini và Cloudflare Schnell, lưu file tạm và chuyển trạng thái draft sang `generated`.
+- Bổ sung `ContentDraftProcessingWorker`: Lắng nghe Redis Streams `content.image-drafts.v1`; consumer group trong source hiện tại là `content-draft-workers`. Worker ghi lease token, điều phối Gemini và Cloudflare Schnell, lưu file tạm và chuyển trạng thái draft sang `generated`; chưa có token fencing bảo vệ ghi kết quả.
 
 ---
 

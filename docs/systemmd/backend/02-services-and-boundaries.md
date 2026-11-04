@@ -41,8 +41,10 @@ Ngoài ra còn có:
 
 | Microservice | Trách Nhiệm Chính | Dữ Liệu Sở Hữu | Không Được Làm |
 |---|---|---|---|
-| **Identity** | Tài khoản, mật khẩu, JWT token, gán role cho user | `users`, `roles`, `user_roles` | Không quản lý dữ liệu công thức hay đề thi |
-| **Recipe** | Công thức đồ uống, phiên bản, thành phần định lượng | `recipes`, `recipe_versions`, `ingredients`, `categories` | Không lưu thông tin chấm điểm thi hay media nhị phân |
-| **Quiz** | Bộ đề thi kiểm tra, câu hỏi trắc nghiệm, lượt thi, bảng điểm | `quizzes`, `quiz_versions`, `quiz_questions`, `quiz_options`, `quiz_attempts`, `quiz_answers` | Không trực tiếp sửa công thức; chỉ đọc thông tin recipe qua gRPC |
-| **Content** | Quản lý media URLs, tags, prompt AI FLUX/Gemini | `media_assets`, `image_drafts`, `prompts` | Không lưu mật khẩu user hay nghiệp vụ công thức |
-| **Audit** | Lưu nhật ký thay đổi dữ liệu, hành động của actor | `audit_logs` | Không chứa logic nghiệp vụ sửa đổi dữ liệu |
+| **Identity** | Tài khoản, mật khẩu, JWT token, role và phiên đăng nhập | `users`, `roles`, `auth_sessions` | Không quản lý dữ liệu công thức hay đề thi |
+| **Recipe** | Công thức, phiên bản, định lượng và hồ sơ PDF | `recipe`, `recipe_version`, `ingredient`, các catalog đơn vị/nguyên liệu, `pdf_document`, `pdf_document_item`, `pdf_document_storage` | Không lưu thông tin chấm điểm thi hay file binary PDF/ảnh trong DB |
+| **Quiz** | Bộ đề thi kiểm tra, câu hỏi trắc nghiệm, lượt thi, bảng điểm | `quiz`, `quiz_version`, `quiz_question`, `quiz_option`, `quiz_attempt`, `quiz_answer` | Không trực tiếp sửa công thức; chỉ đọc thông tin recipe qua gRPC |
+| **Content** | Media, bản nháp ảnh AI, file tạm và outbox gen ảnh | `media_asset`, `ai_image_draft`, `ai_image_draft_file`, `outbox_message` | Không lưu mật khẩu user hay nghiệp vụ công thức |
+| **Audit** | Lưu nhật ký thay đổi dữ liệu, hành động của actor | `audit_log` | Không chứa logic nghiệp vụ sửa đổi dữ liệu |
+
+Recipe sở hữu cả hồ sơ và metadata file PDF; binary lưu tại Cloudinary raw/authenticated, không qua Content. Content sở hữu media ảnh dùng làm nguồn render. Chi tiết bảng nằm tại [Recipe schema](../../database-schema/recipe-db/README.md) và [Content schema](../../database-schema/content-db/README.md).

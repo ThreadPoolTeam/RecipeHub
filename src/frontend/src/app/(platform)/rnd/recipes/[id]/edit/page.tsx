@@ -37,6 +37,7 @@ import {
   removeStoredAiDraft,
   syncBackendAiDrafts,
 } from '@/lib/ai-draft-storage';
+import { requestBlob } from '@/lib/api/client';
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const PROMPT_CHIPS = [
@@ -237,19 +238,31 @@ export default function EditRecipePage() {
     return Math.max(0, Math.ceil(diff / (60 * 1000)));
   };
 
-  const handleSelectDraft = (draft: PersistentAiDraft) => {
+  const handleSelectDraft = async (draft: PersistentAiDraft) => {
+    let preview = draft.previewUrl;
+    if (!preview) {
+      try {
+        const blob = await requestBlob(`api/v1/content/image-drafts/${draft.id}/image`, null, { method: 'GET' });
+        preview = URL.createObjectURL(blob);
+        draft.previewUrl = preview;
+        setActiveDrafts((prev) => prev.map((item) => (item.id === draft.id ? { ...item, previewUrl: preview } : item)));
+      } catch (err) {
+        console.error('Failed to load blob preview for draft', draft.id, err);
+      }
+    }
+
     setGeneratedCandidate({
       id: draft.id,
       stepId: draft.stepId || undefined,
       targetKind: draft.targetKind,
       prompt: draft.prompt,
       mediaAssetId: draft.mediaAssetId,
-      previewUrl: draft.previewUrl,
+      previewUrl: preview,
       state: 'Generated',
       expiresAt: draft.expiresAt,
       createdAt: draft.createdAt,
     });
-    setCandidateAssetUrl(draft.previewUrl);
+    setCandidateAssetUrl(preview || null);
     setImagePrompt(draft.prompt);
   };
 
@@ -274,15 +287,16 @@ export default function EditRecipePage() {
     setIsAiImageModalOpen(true);
 
     if (versionId) {
-      syncBackendAiDrafts(versionId, 'final_product').then((remote) => {
-        if (remote.length > 0) {
-          const refreshed = getStoredAiDrafts(versionId, 'final_product');
-          setActiveDrafts(refreshed);
-          if (!generatedCandidate && refreshed.length > 0) {
-            handleSelectDraft(refreshed[0]);
+      syncBackendAiDrafts(versionId, 'final_product')
+        .then((remote) => {
+          if (remote.length > 0) {
+            setActiveDrafts(remote);
+            handleSelectDraft(remote[0]);
           }
-        }
-      });
+        })
+        .catch((err) => {
+          console.error('Failed to sync backend AI drafts for hero', err);
+        });
     }
   };
 
@@ -317,15 +331,16 @@ export default function EditRecipePage() {
     setIsAiImageModalOpen(true);
 
     if (versionId) {
-      syncBackendAiDrafts(versionId, 'step_instruction', step.id).then((remote) => {
-        if (remote.length > 0) {
-          const refreshed = getStoredAiDrafts(versionId, 'step_instruction', step.id);
-          setActiveDrafts(refreshed);
-          if (!generatedCandidate && refreshed.length > 0) {
-            handleSelectDraft(refreshed[0]);
+      syncBackendAiDrafts(versionId, 'step_instruction', step.id)
+        .then((remote) => {
+          if (remote.length > 0) {
+            setActiveDrafts(remote);
+            handleSelectDraft(remote[0]);
           }
-        }
-      });
+        })
+        .catch((err) => {
+          console.error('Failed to sync backend AI drafts for step', err);
+        });
     }
   };
 
@@ -1282,7 +1297,14 @@ export default function EditRecipePage() {
                           }`}
                           title={`Prompt: ${d.prompt}\nCòn lại: ~${mins} phút`}
                         >
-                          <img src={d.previewUrl} alt={d.prompt} className="w-full h-full object-cover" />
+                          {d.previewUrl ? (
+                            <img src={d.previewUrl} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-[#F5F0E8] flex flex-col items-center justify-center text-[#B47820] p-1">
+                              <Sparkles className="w-3.5 h-3.5 motion-safe:animate-pulse text-[#B47820]" />
+                              <span className="text-[9px] font-medium text-[#706E68] mt-0.5">Đang tải...</span>
+                            </div>
+                          )}
                           <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[9px] font-mono py-0.5 text-center">
                             {mins}p
                           </div>

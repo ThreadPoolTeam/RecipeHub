@@ -59,25 +59,11 @@ public sealed class AiImageDraftConfiguration : IEntityTypeConfiguration<AiImage
             .HasDefaultValue(AiImageDraft.DefaultGeometryMode)
             .IsRequired();
 
-        builder.Property(e => e.Width)
-            .HasColumnName("width");
-
-        builder.Property(e => e.Height)
-            .HasColumnName("height");
 
         builder.Property(e => e.State)
             .HasColumnName("state")
             .HasDefaultValue(AiImageDraft.StateQueued)
             .IsRequired();
-
-        builder.Property(e => e.TemporaryImagePath)
-            .HasColumnName("temporary_image_path");
-
-        builder.Property(e => e.MimeType)
-            .HasColumnName("mime_type");
-
-        builder.Property(e => e.ByteSize)
-            .HasColumnName("byte_size");
 
         builder.Property(e => e.ErrorCode)
             .HasColumnName("error_code");
@@ -118,6 +104,12 @@ public sealed class AiImageDraftConfiguration : IEntityTypeConfiguration<AiImage
             .HasColumnName("decided_by_user_ref");
 
         // Indexes
+        // Relationship with AiImageDraftFile (1-1)
+        builder.HasOne(e => e.File)
+            .WithOne(f => f.Draft)
+            .HasForeignKey<AiImageDraftFile>(f => f.DraftId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasIndex(e => new { e.RecipeVersionRef, e.TargetKind })
             .HasDatabaseName("ai_image_draft_recipe_target_idx");
 
@@ -159,10 +151,6 @@ public sealed class AiImageDraftConfiguration : IEntityTypeConfiguration<AiImage
             t.HasCheckConstraint(
                 "ai_image_draft_generated_time_check",
                 "state NOT IN ('generated', 'accepting', 'accepted', 'expired') OR (generated_at IS NOT NULL AND expires_at IS NOT NULL AND prompt_snapshot IS NOT NULL)");
-
-            t.HasCheckConstraint(
-                "ai_image_draft_generated_file_check",
-                "state NOT IN ('generated', 'accepting') OR (temporary_image_path IS NOT NULL AND width > 0 AND height > 0 AND byte_size > 0)");
 
             t.HasCheckConstraint(
                 "ai_image_draft_decision_check",

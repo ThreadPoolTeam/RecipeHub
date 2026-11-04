@@ -11,6 +11,7 @@ public interface IUserService
     Task<UserResponse> UpdateUserAsync(AuditActor actor, Guid id, UpdateUserRequest request, CancellationToken ct);
     Task<UserResponse> SetStatusAsync(AuditActor actor, Guid id, bool active, CancellationToken ct);
     Task ChangePasswordAsync(Guid id, ChangePasswordRequest request, CancellationToken ct);
+    Task<UserResponse> UpdateProfileAsync(Guid id, UpdateProfileRequest request, CancellationToken ct);
     Task ResetPasswordAsync(AuditActor actor, Guid id, ResetPasswordRequest request, CancellationToken ct);
     Task SeedUserAsync(string email, string fullName, string roleCode, string password, CancellationToken ct);
 }

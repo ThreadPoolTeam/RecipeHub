@@ -7,16 +7,16 @@ Tất cả các trang thuộc không gian làm việc `(platform)` được qu�
 
 ```text
 +-----------------------------------------------------------------------------------+
-| Fixed Desktop Sidebar               | Topbar / Header (Breadcrumb, Role, Switcher)|
+| Fixed Desktop Sidebar               | Content (mobile: topbar mở sidebar)         |
 | (w-64 expanded / w-16 collapsed)    |---------------------------------------------|
 |                                     | Page Header:                                |
 | - Header Logo & Toggle              |   [Title h1] [Subtitle/Meta]  [Action Btn]  |
 | - Role Section Header               |---------------------------------------------|
 | - Navigation Items (Active State)   | Filter Toolbar:                             |
-| - Common Items (Settings, Help)     |   [SearchInput] [Filter Dropdowns] [Stats]  |
+| - Account Menu (Profile, Settings, Help) | [SearchInput] [Filter Dropdowns] [Stats] |
 | - Footer User Bar (Avatar, Menu)    |---------------------------------------------|
 |                                     | Main Content Area                           |
-|                                     |   (Transition animate-workspace-enter)      |
+|                                     |   (Transition workspace-page-anim)          |
 |                                     |   - DataTable / Cards Grid / Form Editor    |
 +-----------------------------------------------------------------------------------+
 ```
@@ -39,6 +39,10 @@ Tất cả các trang thuộc không gian làm việc `(platform)` được qu�
   - Admin: `QUẢN TRỊ HỆ THỐNG`
   - R&D: `KHÔNG GIAN R&D`
   - Viewer: `VẬN HÀNH CỬA HÀNG`
+  - Menu "Tài liệu PDF" (`FileText` icon):
+    - Admin: Không có menu PDF; route `/admin/documents` và `/admin/documents/new` vẫn dành cho admin.
+    - R&D: Menu `/rnd/documents` mở kho tài liệu; nút tạo mới dẫn `/rnd/documents/new`.
+    - Viewer: Không hiển thị menu tài liệu; chỉ có nút tải PDF chính thức trực tiếp trên trang chi tiết công thức `/viewer/recipes/[id]`.
 
 ### 2.3. Menu Item & Active State
 - **Item thường:** Text `#706E68`, hover nền `#F5F0E8`, text `#1A1917`, icon cùng màu.
@@ -49,15 +53,13 @@ Tất cả các trang thuộc không gian làm việc `(platform)` được qu�
 
 ### 2.4. Footer Sidebar (User Profile)
 - Avatar: Ký tự đầu tên người dùng trên nền caramel nhạt.
-- Thông tin: Tên hiển thị, email rút gọn, đi kèm `RoleBadge`.
-- Menu popover: Khi click avatar/tên, mở popover chứa: Đổi vai trò (cho môi trường demo), Thông tin quyền, Đăng xuất.
+- Thông tin: Tên hiển thị và nhãn vai trò; email hiển thị trong menu mobile.
+- Menu popover: Hồ sơ cá nhân (`/profile`), Cài đặt (`/settings`), Trợ giúp (`/help`), Đăng xuất. Không có chuyển role phía client.
 
 ## 3. Quy Chuẩn Topbar (Header Trên Cùng)
-- Chiều cao cố định: `h-14` (56px).
-- Nền: Canvas trong suốt kết hợp làm mờ `backdrop-blur-sm`, viền đáy `#E8E2D9`.
-- Thành phần:
-  - Trái: Hamburger menu (mobile), breadcrumbs phân cấp đường dẫn.
-  - Phải: Quick Role Switcher (tiện ích chuyển vai trò), thông báo, tài liệu SOP.
+- Chỉ hiển thị trên mobile (`md:hidden`), cao `h-14` (56px), sticky phía trên.
+- Nền trắng mờ `bg-white/90 backdrop-blur`, viền đáy `#E8E2D9`.
+- Chứa nút hamburger mở sidebar; desktop không có breadcrumb, thông báo hoặc role switcher cố định.
 
 ## 4. Bố Cục Trang Nghiệp Vụ 3 Tầng (3-Tier Page Structure)
 Mọi trang con trong workspace bắt buộc tổ chức 3 tầng:
@@ -71,4 +73,4 @@ Mọi trang con trong workspace bắt buộc tổ chức 3 tầng:
    - Thẻ thống kê nhanh (nếu có: số lượng, tổng điểm, tỷ lệ đạt).
 3. **Tầng 3 - Main Content:**
    - Bảng dữ liệu `DataTable` hoặc lưới thẻ `Cards Grid`.
-   - Toàn bộ khối nội dung bọc animation `animate-workspace-enter`.
+   - Shell bọc nội dung bằng `workspace-page-anim`, key theo pathname, hỗ trợ reduced motion.

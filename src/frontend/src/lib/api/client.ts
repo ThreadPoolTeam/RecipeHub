@@ -45,7 +45,7 @@ async function execute(path: string, actorId: string | null, init: RequestInit):
   });
   if (!response.ok) {
     const body = await response.text();
-    if (response.status === 401) clearSession();
+    if (response.status === 401 && path.includes('identity/auth')) clearSession();
     throw new ApiError(response.status, parseProblem(body, response.status), body);
   }
   return response;
@@ -67,8 +67,26 @@ export async function requestBlob(
   actorId: string | null,
   init: RequestInit
 ): Promise<Blob> {
-  const response = await execute(path, actorId, init);
+  const headers = new Headers(init.headers);
+  if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+  const response = await execute(path, actorId, { ...init, headers });
   return await response.blob();
+}
+
+export async function requestBinary(
+  path: string,
+  actorId: string | null,
+  init: RequestInit
+): Promise<{ blob: Blob; headers: Headers }> {
+  const headers = new Headers(init.headers);
+  if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+  const response = await execute(path, actorId, { ...init, headers });
+  const blob = await response.blob();
+  return { blob, headers: response.headers };
 }
 
 export async function requestExternalBlob(url: string, signal?: AbortSignal): Promise<Blob> {

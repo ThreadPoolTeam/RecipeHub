@@ -2,6 +2,9 @@
 
 # PROJECT KNOWLEDGE BASE
 
+- **Đọc hướng dẫn trước khi làm (BẮT BUỘC):** Mọi agent, kể cả subagent/Git manager, phải đọc `AGENTS.md` trước khi khảo sát, sửa file hoặc commit; đọc lại khi file thay đổi. Truyền quy định này khi giao việc, không chỉ dựa vào bản tóm tắt phiên trước.
+- **Giữ `docs/systemmd/` tinh gọn (BẮT BUỘC):** Đây là bộ chuẩn dùng chung để thống nhất hệ thống, không phải nơi ghi mọi tính năng, kế hoạch, nhật ký, kết quả test hay chi tiết triển khai. Luôn đọc mục liên quan để tuân thủ; chỉ sửa khi có sai lệch đã đối chiếu với code/schema hoặc thay đổi thật sự đối với chuẩn kiến trúc, ownership, quyền, điều hướng hay contract dùng chung. Ưu tiên sửa đúng mục hiện có, nội dung ngắn và dẫn link nguồn chuyên biệt; chỉ bổ sung mục/file khi thật sự cần và chưa có nơi phù hợp. Không chép lại schema/API/runbook, không thêm quy định hoặc mở rộng phạm vi chỉ để “đủ tài liệu”. Tính năng tuân thủ chuẩn hiện hữu không bắt buộc sửa `docs/systemmd/`.
+
 - **Caveman skill (BẮT BUỘC):** Luôn đọc và sử dụng skill `caveman` khi bắt đầu phiên làm việc; duy trì trong mọi phản hồi. Giao tiếp tiếng Việt, ngắn gọn, giữ nguyên thuật ngữ/code/API/CLI. Dùng `sequential-thinking` khi cần suy luận có cấu trúc.
 - **CodeGraph**: Project indexed with CodeGraph. Use `codegraph_explore` MCP or `codegraph explore` CLI BEFORE `grep` or Read.
 - **Design System (BẮT BUỘC):** Mọi công việc Web FE (trừ mobile) BẮT BUỘC đọc `docs/DESIGN.md` trước khi thiết kế/chỉnh sửa; mọi quyết định UI/UX phải giải thích rõ lý do căn cứ theo DESIGN.md.
@@ -11,7 +14,7 @@
 - **Project Name:** RecipeHub
 - **Domain:** Coffee & Beverage R&D Formula Management System (Hệ thống quản lý công thức R&D chuỗi đồ uống)
 - **Target Course:** PRN232 / PRM Semester 8 (FPT University)
-- **Architecture:** .NET 8 Microservices Clean Architecture, YARP Reverse Proxy Gateway, PostgreSQL (database-per-service), Redis Streams, gRPC, Next.js 14 App Router, Docker Compose.
+- **Architecture:** .NET 8 Microservices Clean Architecture, YARP Reverse Proxy Gateway, PostgreSQL (database-per-service), Redis Streams, gRPC, Next.js 16 App Router, Docker Compose.
 
 ---
 
@@ -32,7 +35,7 @@ RecipeHub/
 │   │   │   └── Quiz/     (Domain, Application, Infrastructure, Api)
 │   │   └── Workers/
 │   │       └── RecipeHub.BackgroundWorker/                  # Redis Streams consumer with MKSTREAM & ACK
-│   └── frontend/                                            # Next.js 14 App Router (Standalone)
+│   └── frontend/                                            # Next.js 16 App Router (Standalone)
 ├── infra/
 │   ├── compose.yaml                                         # Full-stack Docker Compose
 │   └── postgres/init-databases.sh                           # 5 independent databases bootstrap
@@ -64,8 +67,8 @@ RecipeHub/
    - Separate credentials per database service defined in `.env`.
 4. **Deferred Scope (Do NOT implement unless explicitly planned):**
    - Complex formula calculation logic.
-   - Production JWT token issuance / OAuth2 flows.
-   - AI/Gemini formula assistants.
+   - OAuth2 / đăng nhập liên kết; không coi luồng JWT/session hiện hữu của Identity là chưa triển khai.
+   - AI/Gemini trợ lý thiết kế công thức; không bao gồm pipeline tạo ảnh Content hiện hữu.
    - Cloudflare R2 file storage.
 5. **API Documentation (Swagger/OpenAPI):**
    - Mọi backend API service (`Api` projects) BẮT BUỘC phải tích hợp Swagger (`Swashbuckle.AspNetCore`).
@@ -114,3 +117,8 @@ RecipeHub/
   - **CẢNH BÁO ĐỎ:** Bộ tài liệu tại `docs/systemmd/` là Nguồn Sự Thật Duy Nhất (SSOT) về kiến trúc hệ thống và giao diện. Cả lập trình viên lẫn AI Agent tuyệt đối không được tự ý sáng tạo layout dị biệt, không tự chế sidebar/menu lệch luồng, không phá vỡ Clean Architecture hoặc nguyên tắc DB-First.
   - Khi làm tính năng mới: BẮT BUỘC mở `docs/systemmd/governance.md` để đối chiếu checklist trước khi code.
   - **Nếu có thay đổi/mở rộng chuẩn kiến trúc:** Khi thêm Role mới, thêm Service mới, thay đổi layout hay cấu hình route Gateway, **BẮT BUỘC PHẢI CẬP NHẬT CÁC FILE TƯƠNG ỨNG TRONG `docs/systemmd/` NGAY TRONG CÙNG COMMIT** với code thay đổi. Không bao giờ để code đi trước tài liệu hoặc tài liệu lệch chuẩn với code thực tế.
+
+- **Tư Duy Thiết Kế UI Cho Người Dùng (BẮT BUỘC):**
+  - Khi thiết kế hoặc chỉnh sửa UI, **BẮT BUỘC phải đóng vai người dùng thực tế** — xây dựng giao diện cho **NGƯỜI ĐỌC chứ KHÔNG PHẢI MÁY ĐỌC**. Giao diện web phải thân thiện, trực quan, tinh gọn và dễ dùng.
+  - **TUYỆT ĐỐI KHÔNG** hiển thị raw UUIDs, GUID máy sinh, mã hash nội bộ, lease token, ID cơ sở dữ liệu thô, hay các chuỗi kỹ thuật vô nghĩa đối với người dùng (ví dụ: `8d4a7660-84c4-...`). Nếu không tìm thấy thông tin liên kết (ví dụ tài khoản người dùng), phải hiển thị fallback lịch sự và rõ nghĩa như `"Không xác định"` hoặc `"Chưa cập nhật"`, tuyệt đối không in chuỗi ID thô ra màn hình.
+  - **Phân biệt mã nghiệp vụ và mã kỹ thuật:** Cho phép hiển thị các **mã định danh nghiệp vụ có ý nghĩa** (Business Codes như `Mã công thức: REC-MAT-01`, `Mã bộ đề: QZ-001`, `Mã tài liệu`, `Phiên bản v1.0`) vì chúng hỗ trợ người dùng tra cứu, phân biệt và chọn lựa. Mọi dữ liệu kỹ thuật còn lại phải được quy đổi thành tên gọi tiếng Việt, nhãn phân loại, huy hiệu trạng thái, hoặc định dạng ngày giờ/dung lượng chuẩn người đọc.

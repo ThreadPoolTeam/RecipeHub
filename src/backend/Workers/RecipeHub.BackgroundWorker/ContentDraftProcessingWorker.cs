@@ -166,7 +166,7 @@ public sealed class ContentDraftProcessingWorker : BackgroundService
         var generator = scope.ServiceProvider.GetRequiredService<IAiImageGenerator>();
         var tempStore = scope.ServiceProvider.GetRequiredService<ITemporaryImageStore>();
 
-        var draft = await dbContext.AiImageDrafts.FirstOrDefaultAsync(d => d.PublicId == draftId, ct);
+        var draft = await dbContext.AiImageDrafts.Include(d => d.File).FirstOrDefaultAsync(d => d.PublicId == draftId, ct);
         if (draft == null)
         {
             _logger.LogWarning("Draft {DraftId} not found in database. Acknowledging message.", draftId);

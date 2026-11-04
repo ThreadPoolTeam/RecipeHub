@@ -11,6 +11,7 @@ builder.Services.AddAuditConsumer();
 
 builder.Services.AddHostedService<StreamConsumerWorker>();
 builder.Services.AddHostedService<ContentDraftProcessingWorker>();
+builder.Services.AddHostedService<ContentDraftCleanupWorker>();
 
 var host = builder.Build();
 host.Run();

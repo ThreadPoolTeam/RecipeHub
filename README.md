@@ -1,10 +1,10 @@
 # RecipeHub - Coffee R&D Formula Management System
 
-Dự án môn học PRN232 / PRM Semester 8: Khung kiến trúc kỹ thuật microservices nền tảng (Foundation Skeleton).
+Dự án môn học PRN232 / PRM Semester 8: Hệ thống microservices quản lý công thức đồ uống, SOP, media/ảnh AI, PDF, quiz và nhật ký kiểm toán.
 
-Tasks 1.1–1.8 có JWT session thật, Users RBAC/khóa/mật khẩu, catalog/nguyên liệu, SOP, scale mẻ, totals và quy đổi đơn vị qua Gateway. Xem [đối chiếu và triển khai](docs/plans/261028-tasks-1.1-1.8/implementation.md). Frontend hiện dùng Next.js 16 / React 19.
+Backend .NET 8, YARP, PostgreSQL database-per-service, Redis Streams và gRPC. Frontend Next.js 16 / React 19. Chuẩn kiến trúc và quyền: [System Design](docs/systemmd/README.md).
 
-Development: `admin@recipehub.demo`, `rd@recipehub.demo`, `viewer@recipehub.demo` dùng `Demo@1234` khi bật seed. Sáu tài khoản legacy giữ email/password hash cũ; Viewer chỉ xem công thức đã publish và được Admin cấp quyền. Production phải cấu hình `Jwt__SigningKey` ít nhất 32 bytes và áp dụng SQL phù hợp với trạng thái DB trước khi khởi động; không bật seed demo.
+Development: `admin@recipehub.demo`, `rd@recipehub.demo`, `viewer@recipehub.demo` dùng `Demo@1234` khi bật seed. Tài khoản legacy phụ thuộc dữ liệu DB hiện có; Viewer chỉ xem công thức `published`, chưa archive. Production phải cấu hình `Jwt__SigningKey` ít nhất 32 bytes và áp dụng SQL phù hợp với trạng thái DB trước khi khởi động; không bật seed demo.
 
 ---
 
@@ -55,23 +55,26 @@ RecipeHub/
    ```bash
    cp .env.example .env
    ```
-2. Khởi động toàn bộ cụm dịch vụ qua Docker Compose:
+2. **Chuẩn bị schema trước khi chạy API:** bootstrap Compose chỉ áp dụng DDL Audit/Quiz; Identity/Recipe/Content cần áp dụng SQL chính thức trong [docs/database-schema](docs/database-schema/). Với DB mới, khởi động PostgreSQL/Redis trước (`docker compose -f infra/compose.yaml up -d postgres redis`), rồi dùng `.postgres` tương ứng; DB có dữ liệu phải chọn migration phù hợp, không chạy lại bootstrap.
+3. Khởi động toàn bộ cụm dịch vụ qua Docker Compose:
    ```bash
    docker compose -f infra/compose.yaml up -d --build
    ```
-3. Sau khi các container đạt trạng thái `healthy`, thực thi script kiểm thử tích hợp (smoke test):
+4. Sau khi schema và cấu hình dịch vụ đầy đủ, thực thi script kiểm thử tích hợp (smoke test):
    ```bash
    bash tests/smoke/smoke-test.sh
    ```
 
 ### Khởi chạy trực tiếp Local (Dev mode)
-1. **Build Backend Solution:**
+1. Chuẩn bị PostgreSQL/Redis, áp dụng SQL theo trạng thái database và cấu hình connection strings/gRPC/AI/storage cho dịch vụ cần dùng. **Build không khởi động API:**
    ```bash
    dotnet build src/backend/RecipeHub.sln
    ```
-2. **Build & Start Frontend:**
+2. Chạy các API cần dùng và Gateway bằng `dotnet run --project <đường-dẫn-project>`. Gateway launch profile mặc định dùng `http://localhost:5262`, khớp proxy frontend; Docker dùng cổng `5000`.
+3. **Cài dependencies, Build & Start Frontend:**
    ```bash
    cd src/frontend
+   npm ci
    npm run build
    npm start
    ```
@@ -98,33 +101,29 @@ RecipeHub/
 | | | - `/api/v1/recipes/*`  -> `Recipe.Api` |
 | | | - `/api/v1/content/*`  -> `Content.Api` |
 | | | - `/api/v1/audit/*`    -> `Audit.Api` |
+| | | - `/api/v1/quiz/*`     -> `Quiz.Api` |
 | **Identity Service** | `5001` REST, `5011` gRPC (nội bộ) | JWT/session, Users RBAC, Swagger Development |
-| **Recipe Service** | `5002` REST, `5012` gRPC (nội bộ) | Catalog, ingredient, recipe/SOP, scale/totals/convert, Swagger Development |
-| **Content Service** | `5003` (nội bộ) | Health & gRPC Client gọi sang Recipe Service (`/api/v1/content/probe-recipe`) |
-| **Audit Service** | `5004` (nội bộ) | Health & Audit log shell |
-| **Background Worker**| - | Lắng nghe & ACK Redis Stream `platform.heartbeat.v1` |
-| **PostgreSQL** | Host `5433` → container `5432` | 4 CSDL: `recipehub_identity`, `recipehub_recipe`, `recipehub_content`, `recipehub_audit` |
+| **Recipe Service** | `5002` REST, `5012` gRPC (nội bộ) | Catalog, ingredient, recipe/SOP, scale/totals/convert, PDF |
+| **Content Service** | `5003` REST, `5013` gRPC (nội bộ) | Media, bản nháp ảnh AI, outbox relay, metadata ảnh cho PDF |
+| **Audit Service** | `5004` (nội bộ) | Truy vấn audit logs, chỉ admin |
+| **Quiz Service** | `5005` (nội bộ) | Quản lý đề, làm bài và kết quả |
+| **Background Worker** | - | Heartbeat, Content processing/cleanup, Audit consumer |
+| **PostgreSQL** | Host `5433` → container `5432` | 5 CSDL: `recipehub_identity`, `recipehub_recipe`, `recipehub_content`, `recipehub_audit`, `recipehub_quiz` |
 | **Redis** | Host `6380` → container `6379` | Message broker Redis Streams |
 
 ---
 
-## 4. Backlog trì hoãn (Deferred Work cho các phase sau)
-- Hoàn tất DB First: SQL schema có version, entity và mapping trong `Data` cập nhật theo DB, kiểm chứng cutover theo plan; không dùng EF Code First migrations, không bắt buộc scaffold.
-- Xử lý nghiệp vụ REST CRUD: Quản lý công thức, phiên bản công thức, quy trình phê duyệt R&D.
-- Cơ chế xác thực JWT Login / Refresh Token và Authorize Policies (RBAC) thực tế.
-- Đồng bộ trạng thái ngoại tuyến và messaging reliability dùng chung. Outbox/Redis Streams cho Content đã chọn ở mục 5 nhưng chưa triển khai; không phải hạ tầng outbox toàn nền tảng đã có.
-- Upload file đa phương tiện (PDF, hình ảnh) và tích hợp AI gợi ý công thức.
+## 4. Phạm vi hiện có & giới hạn vận hành
 
-## 5. Content AI & Media — kiến trúc đã chọn, chưa triển khai
+- Source có JWT login/refresh/session, Users RBAC, catalog/nguyên liệu, công thức phiên bản/SOP, scale/totals/convert, quiz và Audit logs.
+- Content có API quản lý media/bản nháp ảnh AI, transactional outbox relay trong Content API, consumer gen ảnh và cleanup trong BackgroundWorker. Worker và API dùng chung kho file tạm; Accept lưu ảnh chính thức lên Cloudinary.
+- Xóa cứng media vẫn trả `501 Not Implemented`. Không coi việc có worker/outbox là bằng chứng mọi tình huống lease, idempotency và xử lý đồng thời đã an toàn. Xem [Content schema & trạng thái triển khai](docs/database-schema/content-db/README.md).
+- SQL/schema và source trong repository không chứng minh DB đang chạy đã áp dụng migration, backup/restore thành công hoặc cấu hình AI/storage sẵn sàng. Phải kiểm chứng môi trường triển khai riêng.
 
-Quyết định: **PostgreSQL + transactional outbox + Redis Streams** cho gen ảnh bất đồng bộ. API ghi draft và outbox trong cùng transaction; relay chuyển job sang Redis; worker gen ảnh, lưu kết quả rồi mới ACK. PostgreSQL giữ trạng thái, Redis vận chuyển job, kho tạm giữ ảnh chờ duyệt 30 phút; Accept mới lưu ảnh chính thức lên Cloudinary.
+## 5. PDF — Quản lý hồ sơ xuất
 
-Patterns chính:
-- **Transactional outbox:** tránh draft đã lưu nhưng mất yêu cầu gửi job; không tạo transaction nguyên tử giữa PostgreSQL và Redis.
-- **At-least-once + idempotent processing:** message có thể giao lại; cùng request/job không được tạo thêm draft/asset nghiệp vụ. Không hứa AI provider được gọi đúng một lần.
-- **Ports & adapters / Clean Architecture:** Application định nghĩa use case và interface; Infrastructure triển khai DB, Redis, AI, storage và gRPC.
-- **Worker host:** dự kiến tái sử dụng `src/backend/Workers/RecipeHub.BackgroundWorker/` để khởi chạy consumer/relay/cleanup Content, giữ heartbeat hiện có; có thể tách host Content khi cần isolation. Adapter kỹ thuật có thể nằm trong Content.Infrastructure, use case nằm trong Content.Application và rule nằm trong Domain. Worker hiện chỉ xử lý heartbeat, chưa có các nhiệm vụ Content này.
+Chi tiết dữ liệu: [Recipe schema](docs/database-schema/recipe-db/README.md). Contract hiện hành: [`PdfDocumentsController`](src/backend/Services/Recipe/RecipeHub.Recipe.Api/Controllers/PdfDocumentsController.cs).
 
-**Phạm vi plan mới:** 12 API Content + 5 API Recipe quản lý liên kết ảnh, theo code dev `260f673`. Khi triển khai có thể bổ sung schema/DTO/identity Recipe cần thiết, nhưng mỗi service vẫn sở hữu DB riêng; gỡ ảnh khỏi bước không xóa file Cloudinary. Lượt cập nhật này chỉ pull dev và sửa tài liệu, chưa viết API.
-
-Xem [plan Content và Recipe media](docs/plans/261017-content-ai-media/plan.md), [ERD và quy tắc ảnh](docs/database-schema/content-db/README.md). Profile ảnh hiện tại: FLUX.1 Schnell, prompt cuối tối đa 2048 ký tự, 4 steps, native dimensions; không nhận tỷ lệ/kích thước tùy chọn, không thêm provider ảnh thứ hai. Prompt LLM đề xuất Gemini `gemini-2.5-flash`. Mục 16 là self-review có bằng chứng từ dev: auth, schema/state, concurrency, usage/delete và deployment còn là các gate trước triển khai thật. DBML hai bảng hiện chưa đồng bộ đủ các quyết định mới; chưa phải migration đầy đủ.
+- Ba bảng Recipe: hồ sơ `pdf_document`, danh sách version `pdf_document_item`, metadata file `pdf_document_storage` (quan hệ 1-1); file binary nằm tại Cloudinary raw/authenticated.
+- Một mẫu A4 ngang cố định; chỉ chọn nguồn published cho cả PDF nháp lẫn chính thức. Không lưu template metadata, source/presentation snapshots hoặc hash đầu vào trong DB; `X-Pdf-Snapshot-Hash` trả từ preview được gửi lại qua `expectedSnapshotHash` trong body export.
+- Lease nằm trên document; recovery chạy cùng Recipe API (`PdfDocumentRecoveryService`), không dùng Worker hay audit receipt riêng cho PDF.

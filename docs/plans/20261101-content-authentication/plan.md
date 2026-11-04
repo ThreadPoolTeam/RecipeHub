@@ -1,3 +1,11 @@
+---
+title: "Content Authentication Cutover"
+description: "JWT/session bảo vệ Content và caller web; PDF phụ thuộc gate media authentication."
+status: in-progress
+blockedBy: []
+blocks: [261101-recipe-pdf-fullstack]
+---
+
 # Content Authentication Cutover — Implementation Plan
 
 > **For agentic workers:** Dùng skill `executing-plans` khi triển khai; thực hiện theo checkbox, không mở rộng sang subsystem khác. Đây là plan đề xuất, chưa triển khai code.
@@ -9,6 +17,8 @@
 **Tech Stack:** .NET 8, ASP.NET Core authentication/authorization, gRPC contracts hiện có, Next.js web hiện có, smoke API Python.
 
 **Scope do người dùng chốt:** Chỉ Content. Không triển khai các gap SRS khác. Không sửa service Recipe/Quiz/Identity, không làm mobile login, không làm size/PDF/audit mới.
+
+**Cross-plan dependency (2026-11-01):** [Recipe PDF full stack](../261101-recipe-pdf-fullstack/plan.md) chờ gate xác thực Content qua Gateway/browser của plan này trước integration/rollout. Không mở rộng implementation Content-auth sang PDF; PDF sở hữu RPC media-query mới và giữ shared `Content.Api/Program.cs` cho integration owner sau cutover.
 
 ## 1. Hiện trạng đã xác nhận
 

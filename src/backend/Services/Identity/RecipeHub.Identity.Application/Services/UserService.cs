@@ -138,6 +138,30 @@ public sealed class UserService(IIdentityStore store, IPasswordService passwords
             throw new IdentityException(400, "Mật khẩu hiện tại không chính xác.");
         await SetPasswordAsync(user, request.NewPassword, ct);
     }
+    public async Task<UserResponse> UpdateProfileAsync(Guid id, UpdateProfileRequest request, CancellationToken ct)
+    {
+        var user = await RequiredUserAsync(id, ct);
+        var oldName = user.FullName;
+        user.FullName = ValidateName(request.FullName);
+        user.UpdatedAt = DateTime.UtcNow;
+        await store.SaveAsync(ct);
+
+        if (oldName != user.FullName)
+        {
+            await SafePublishAuditAsync("identity", new AuditActivityEvent(
+                user.Id,
+                user.FullName,
+                user.Role.Code,
+                "user.profile_updated",
+                "user",
+                user.Id,
+                $"Người dùng {user.Email} cập nhật họ tên từ '{oldName}' thành '{user.FullName}'."
+            ), ct);
+        }
+
+        return UserMapping.ToResponse(user);
+    }
+
 
     public async Task ResetPasswordAsync(AuditActor actor, Guid id, ResetPasswordRequest request, CancellationToken ct)
     {

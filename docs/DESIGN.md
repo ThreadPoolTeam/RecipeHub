@@ -2,7 +2,7 @@
 
 ## 1. Overview & Scope
 
-Hệ thống thiết kế Warm Editorial của RecipeHub mang phong cách ấn phẩm biên tập ấm áp, thanh lịch và chuẩn mực cho hệ thống quản lý & nghiên cứu công thức đồ uống (Beverage R&D). Hệ thống này thay thế hoàn toàn quy chuẩn NoirLuxe cũ trên toàn bộ ứng dụng, thống nhất một ngôn ngữ thiết kế nhất quán từ trang giới thiệu (landing), phân hệ xác thực (auth), đến các không gian làm việc chuyên môn (R&D, Viewer, Approvals, Admin, Platform).
+Hệ thống thiết kế Warm Editorial của RecipeHub mang phong cách ấn phẩm biên tập ấm áp, thanh lịch và chuẩn mực cho hệ thống quản lý & nghiên cứu công thức đồ uống (Beverage R&D). Quy chuẩn này áp dụng cho ứng dụng Web: landing, auth và các workspace R&D, Viewer, Admin; thay thế NoirLuxe cũ. Mobile dùng bộ chuẩn riêng tại `src/mobile/DESIGN.md`.
 
 ### Cinematic Exception (Ngoại lệ duy nhất)
 Khu vực **ScrollFrameStory** trên Landing page (`#story`) là ngoại lệ duy nhất được phép duy trì nền tối điện ảnh (`#0C0C0E`) và chữ sáng (`#F2F0EB`) cùng overlay tương ứng để bảo đảm trải nghiệm trình diễn khung hình phim nghệ thuật (TVC Phê La). Toàn bộ các phần còn lại của Landing page (từ sau story trở xuống bao gồm #workspace, #features, #cta, footer) và thanh điều hướng (khi cuộn qua story) BẮT BUỘC tuân thủ chuẩn Warm Editorial sáng.
@@ -174,3 +174,28 @@ Hệ thống chuyển động Warm Editorial ưu tiên sự thanh thoát, tĩnh 
 - [ ] Giao diện hoạt động trơn tru trên cả desktop và mobile, không lỗi dấu tiếng Việt.
 - [ ] Story cinematic được cô lập an toàn, không bị ảnh hưởng bởi styles sáng của phần còn lại.
 - [ ] Chuyển động (motion) tuân thủ nhịp độ Warm Editorial; tôn trọng prefers-reduced-motion: reduce trên toàn bộ workspace.
+
+---
+
+## 9. Ấn phẩm in ấn & Xuất bản PDF (Document Print Preset)
+
+### Tiêu chuẩn kỹ thuật tài liệu PDF (A4 Landscape)
+- **Khổ giấy & Định hướng:** Cố định A4 ngang (`841.89 × 595.28 pt`), lề nội dung `24 pt`; bìa full-bleed, khoảng đệm chữ `48 pt`.
+- **Bảng màu ấn phẩm (Print Palette):**
+  - Nền trang (Canvas): Be sáng ấm `#F5F0EB` (trang bìa) và Trắng ngà `#FAF9F5` (nội dung).
+  - Chữ chính (Ink): Nâu rang đậm `#2C1810` (đảm bảo độ tương phản > 7:1 trên nền sáng).
+  - Màu nhấn (Accent): Vàng kim đất `#B47820` và Đất nung `#CC785C`.
+  - Đường viền/Ngăn cách: `#E7E5E4`.
+- **Typography ấn phẩm:** Nhúng trực tiếp font TTF/OTF hỗ trợ đầy đủ bộ dấu tiếng Việt (Google Sans / Be Vietnam Pro). Số lượng/đơn vị dùng tabular numbers.
+- **Nguyên tắc ngắt trang & Dòng chảy:**
+  - Trang bìa riêng biệt (Cover page) cho mọi tài liệu.
+  - Mục lục (Table of Contents) tự động cho ấn phẩm bộ (từ 2 công thức trở lên) kèm số trang thực tế và internal jump links.
+  - Bảng định lượng nguyên liệu tự động lặp lại tiêu đề cột (Repeat Header) khi tràn sang trang sau.
+  - Đánh dấu bản nháp (Watermark): Dòng chữ "BẢN NHÁP - DRAFT" bán trong suốt xoay góc trên tất cả các trang đối với tài liệu loại nháp. Tài liệu chính thức (Official) không có watermark.
+
+### Layout theo PDF mẫu pha chế (2026-11-01)
+- Mẫu đối chiếu: `recipe-collection-20261007-2345.pdf` do người dùng cung cấp. Áp dụng bố cục cho toàn bộ tài liệu, không chỉ bìa.
+- Bìa: hai mảng 58/42; nâu `#3B281E` bên trái, kem `#FAF7F2` bên phải; logo Phê La đơn sắc từ `docs/materials/logo-phe-la/logo-phe-la.svg` được nhúng vào assembly. Tiêu đề trắng hai tầng, đường nhấn vàng mảnh, subtitle và metadata xuất nhỏ. Đây là palette ngoại lệ có chủ đích để khớp mẫu.
+- Mục lục: số thứ tự, tên món và mã/phiên bản phụ, số trang thực tế bên phải; đường phân cách mảnh, internal links. Không dùng bảng quản trị trạng thái.
+- Trang công thức: dải tiêu đề be `#E8C9A5` với đầu nhấn nâu `#965B22`; sidebar ảnh món hoặc monogram P, nhãn “CÔNG THỨC VẬN HÀNH”; bên phải bảng thành phần/định lượng hai cột và bảng SOP có nhãn bên trái, số bước, ảnh, hướng dẫn.
+- Giữ ghi chú nguyên liệu, sản lượng và thông số từng bước; ảnh AI có chú thích rõ. Footer nhỏ ghi tài liệu đào tạo nội bộ và số trang. Nội dung dài tự ngắt trang; dải tên món lặp lại ở trang tiếp theo.

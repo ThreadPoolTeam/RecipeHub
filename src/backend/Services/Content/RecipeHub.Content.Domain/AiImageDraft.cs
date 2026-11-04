@@ -29,12 +29,13 @@ public sealed class AiImageDraft
     public string Provider { get; set; } = DefaultProvider;
     public string Model { get; set; } = DefaultModel;
     public string GeometryMode { get; set; } = DefaultGeometryMode;
-    public int? Width { get; set; }
-    public int? Height { get; set; }
     public string State { get; set; } = StateQueued;
-    public string? TemporaryImagePath { get; set; }
-    public string? MimeType { get; set; }
-    public long? ByteSize { get; set; }
+    public AiImageDraftFile? File { get; set; }
+    public string? TemporaryImagePath => File?.TemporaryImagePath;
+    public string? MimeType => File?.MimeType;
+    public long? ByteSize => File?.ByteSize;
+    public int? Width => File?.Width;
+    public int? Height => File?.Height;
     public string? ErrorCode { get; set; }
     public string? ErrorMessage { get; set; }
     public int AttemptCount { get; set; }
@@ -77,11 +78,15 @@ public sealed class AiImageDraft
         }
 
         PromptSnapshot = promptSnapshot;
-        TemporaryImagePath = temporaryImagePath;
-        MimeType = mimeType;
-        ByteSize = byteSize;
-        Width = width;
-        Height = height;
+        File = new AiImageDraftFile
+        {
+            DraftId = Id,
+            TemporaryImagePath = temporaryImagePath,
+            MimeType = mimeType,
+            ByteSize = byteSize,
+            Width = width,
+            Height = height
+        };
         GeneratedAt = DateTimeOffset.UtcNow;
         ExpiresAt = GeneratedAt.Value.Add(expiryDuration);
         State = StateGenerated;
@@ -138,7 +143,6 @@ public sealed class AiImageDraft
         State = StateAccepted;
         DecidedAt = DateTimeOffset.UtcNow;
         DecidedByUserRef = decidedByUserRef;
-        TemporaryImagePath = null;
         LeaseToken = null;
         LeaseExpiresAt = null;
     }
@@ -153,7 +157,6 @@ public sealed class AiImageDraft
         State = StateDiscarded;
         DecidedAt = DateTimeOffset.UtcNow;
         DecidedByUserRef = decidedByUserRef;
-        TemporaryImagePath = null;
         LeaseToken = null;
         LeaseExpiresAt = null;
     }
@@ -161,8 +164,11 @@ public sealed class AiImageDraft
     public void MarkExpired()
     {
         State = StateExpired;
-        TemporaryImagePath = null;
         LeaseToken = null;
         LeaseExpiresAt = null;
+    }
+    public void RemoveFile()
+    {
+        File = null;
     }
 }

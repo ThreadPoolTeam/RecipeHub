@@ -17,7 +17,7 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "ReverseProxy__Clusters__recipe-cluster__Destinations__destination1__Address": "http://localhost:5002",
-        "ReverseProxy__Clusters__content-cluster__Destinations__destination1__Address": "http://localhost:5256",
+        "ReverseProxy__Clusters__content-cluster__Destinations__destination1__Address": "http://localhost:5003",
         "ReverseProxy__Clusters__identity-cluster__Destinations__destination1__Address": "http://localhost:5001"
       }
     },
@@ -29,7 +29,7 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "ReverseProxy__Clusters__recipe-cluster__Destinations__destination1__Address": "http://localhost:5002",
-        "ReverseProxy__Clusters__content-cluster__Destinations__destination1__Address": "http://localhost:5256",
+        "ReverseProxy__Clusters__content-cluster__Destinations__destination1__Address": "http://localhost:5003",
         "ReverseProxy__Clusters__identity-cluster__Destinations__destination1__Address": "http://localhost:5001"
       }
     },

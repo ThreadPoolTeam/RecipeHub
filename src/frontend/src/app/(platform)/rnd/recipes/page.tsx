@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { BookOpen, Plus, Pencil, RotateCcw, Coffee, History } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { BookOpen, Plus, Pencil, RotateCcw, Coffee, History, FileDown, Layers } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { RecipeVersion, RecipeStatus } from '@/lib/demo/types';
 import { Button, TextInput, Select, SearchInput } from '@/components/workspace/fields';
@@ -26,7 +26,8 @@ function RecipeListContent() {
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
   const [drawerVersions, setDrawerVersions] = useState<RecipeVersion[]>([]);
   const [isLoadingDrawerVersions, setIsLoadingDrawerVersions] = useState(false);
-
+  const router = useRouter();
+  const [selectedRecipeIds, setSelectedRecipeIds] = useState<string[]>([]);
   const handleOpenHistoryDrawer = async (item: RecipeVersion) => {
     setSelectedRecipeForHistory(item);
     setIsHistoryDrawerOpen(true);
@@ -165,6 +166,27 @@ function RecipeListContent() {
   }, [filteredRecipes, page, pageSize]);
 
   const columns = [
+    {
+      header: 'Chọn',
+      render: (item: RecipeVersion) => {
+        const vId = item.versionId || item.id;
+        const isChecked = selectedRecipeIds.includes(vId);
+        return (
+          <div className="flex items-center justify-center">
+            <input
+              type="checkbox"
+              checked={isChecked}
+              onChange={() => {
+                setSelectedRecipeIds((prev) =>
+                  prev.includes(vId) ? prev.filter((id) => id !== vId) : [...prev, vId]
+                );
+              }}
+              className="rounded text-[#B47820] focus:ring-[#B47820] h-4 w-4 cursor-pointer"
+            />
+          </div>
+        );
+      },
+    },
     {
       header: 'Mã & Tên công thức',
       render: (item: RecipeVersion) => {
@@ -314,7 +336,30 @@ function RecipeListContent() {
             Quản lý vòng đời công thức: Nháp, Chờ duyệt, Đã duyệt, Lưu trữ.
           </p>
         </div>
-        <div>
+        <div className="flex items-center gap-2">
+          {selectedRecipeIds.length > 0 && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                if (selectedRecipeIds.length === 1) {
+                  const match = recipes.find(
+                    (r) => (r.versionId || r.id) === selectedRecipeIds[0]
+                  );
+                  if (match) {
+                    router.push(
+                      `/rnd/documents?recipeId=${match.recipeId || match.id}&versionId=${selectedRecipeIds[0]}`
+                    );
+                    return;
+                  }
+                }
+                router.push(`/rnd/documents?recipes=${selectedRecipeIds.join(',')}`);
+              }}
+              title="Chuyển sang không gian xuất bản tài liệu PDF"
+            >
+              <FileDown className="w-4 h-4 mr-1 text-[#B47820]" /> Xuất PDF bộ ({selectedRecipeIds.length})
+            </Button>
+          )}
           <Link href="/rnd/recipes/new">
             <Button variant="gold" size="sm">
               <Plus className="w-4 h-4 mr-1" /> Tạo công thức mới

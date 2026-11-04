@@ -5,7 +5,7 @@
 > **TUYỆT ĐỐI KHÔNG ĐƯỢC TỰ TIỆN:**  
 > 1. Viết code phá vỡ cấu trúc layout, tự tạo sidebar/menu dị biệt, tự tạo style CSS phân mảnh làm sai lệch Warm Editorial (`docs/DESIGN.md`).  
 > 2. Đổi mô hình Clean Architecture, tự dùng EF Code First, tự gọi `MigrateAsync` hoặc tự thay đổi schema DB mà không cập nhật tài liệu `docs/database-schema/`.  
-> 3. Khi có yêu cầu thay đổi chuẩn hoặc kiến trúc, **BẮT BUỘC PHẢI CẬP NHẬT TÀI LIỆU NÀY TRONG CÙNG COMMIT** với code thay đổi.
+> 3. Chỉ cập nhật mục chuẩn liên quan khi có thay đổi chuẩn/kiến trúc hoặc sai lệch đã được đối chiếu; cập nhật cùng commit với code ảnh hưởng. Tính năng tuân thủ chuẩn hiện hữu không cần bổ sung `docs/systemmd/`. Không đưa kế hoạch, nhật ký, kết quả test hay bản sao schema/API/runbook vào bộ chuẩn này; dẫn link nguồn chuyên biệt khi cần.
 
 ---
 
@@ -38,21 +38,22 @@
 ## 2. Checklist Bắt Buộc Trước Khi Hoàn Thành (Definition of Done)
 
 ### 2.1. Phía Frontend:
-- [ ] Màn hình có thuộc 1 trong 3 role (`admin`, `rnd`, `viewer`) và nằm trong `src/frontend/src/app/(platform)/` không?
-- [ ] Đã thêm đường dẫn vào menu tương ứng trong `src/frontend/src/components/workspace/workspace-shell.tsx` chưa?
-- [ ] Đã đăng ký quyền trong `src/frontend/src/lib/demo/permissions.ts` chưa?
+- [ ] Màn hình workspace nằm trong `src/frontend/src/app/(platform)/`, dùng `WorkspaceShell` và áp dụng đúng quyền vai trò hoặc quyền chung của người đã đăng nhập?
+- [ ] Nếu có màn hình cần mục điều hướng mới, đã cập nhật menu đúng vai trò trong `src/frontend/src/components/workspace/workspace-shell.tsx`?
+- [ ] Nếu thay đổi quyền truy cập, đã đồng bộ `src/frontend/src/lib/demo/permissions.ts` và kiểm tra quyền phía backend?
 - [ ] Giao diện có dùng đúng Semantic Color Tokens: Canvas `#FAF9F5`, Surface `#FFFFFF`, viền `#E8E2D9`, nút bấm `#B47820`?
 - [ ] Nút bấm có bo góc viên thuốc `rounded-full` và hiệu ứng `active:scale-[0.98]` không?
 - [ ] Bảng dữ liệu có dùng `DataTable` bo góc `rounded-2xl` viền hairline không?
 - [ ] Số đo định lượng (gram, ml, độ brix) có dùng font monospace kèm `tabular-nums` không?
-- [ ] Nội dung view có animation `animate-workspace-enter` khi chuyển trang không?
+- [ ] Chuyển trang workspace dùng wrapper `workspace-page-anim` hiện hữu và tôn trọng `prefers-reduced-motion`?
 - [ ] Đã chạy kiểm tra `npm run build` thành công, không lỗi TypeScript/JSX?
 
 ### 2.2. Phía Backend:
 - [ ] Có tuân thủ Clean Architecture 4 tầng: `Domain` độc lập -> `Application` -> `Infrastructure` -> `Api`?
-- [ ] Có tuân thủ DB First: Đã cập nhật file `.dbml`, `.postgres` hoặc script trong `migrations/` tại `docs/database-schema/` chưa?
+- [ ] Có tuân thủ DB First: nếu đổi schema, đã đồng bộ `.dbml`, `.postgres` và SQL tăng dần tại `docs/database-schema/`; nếu không đổi schema, đã đối chiếu mapping hiện hữu?
+- [ ] Script migration SQL có viết tối giản, thực dụng, không màu mè triggers/checks rườm rà và bọc transaction khi phù hợp chưa?
 - [ ] Có đảm bảo **KHÔNG** dùng EF migrations, không `MigrateAsync` / `EnsureCreated` trong runtime?
-- [ ] Đã đăng ký route mới trong YARP Gateway (`RecipeHub.Gateway/appsettings.json`) theo chuẩn `/api/v1/{service}/*` chưa?
+- [ ] Route tuân thủ `/api/v1/{service}/*`; chỉ sửa YARP Gateway (`RecipeHub.Gateway/appsettings.json`) nếu route mới chưa được prefix hiện hữu bao phủ?
 - [ ] Đã tích hợp Swagger UI và kiểm tra hiển thị đúng schema chưa? (Nhắc lại: CẤM comment XML trong controller).
 - [ ] Giao tiếp liên dịch vụ: Dùng gRPC cho truy vấn đồng bộ, dùng Redis Streams `EventEnvelope<T>` cho sự kiện bất đồng bộ?
 - [ ] Đã chạy kiểm tra `dotnet build src/backend/RecipeHub.sln` thành công không lỗi?
