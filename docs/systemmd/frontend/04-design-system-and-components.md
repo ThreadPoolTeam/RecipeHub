@@ -56,7 +56,7 @@ Không chỉ dùng màu sắc; bắt buộc có Text + Icon:
   - Bắt buộc dùng font Monospace kết hợp thuộc tính CSS `tabular-nums` để các con số thẳng hàng khi so sánh.
 
 ## 6. Chuyển Động & Easing (Motion System)
-- Mọi trang trong Workspace khi chuyển view bọc class `animate-workspace-enter`:
+- Shell bọc nội dung workspace bằng `workspace-page-anim` (key theo pathname); không cần thêm wrapper animation lặp tại từng trang:
   ```css
   @keyframes workspace-enter {
     from {
