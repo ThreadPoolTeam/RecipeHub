@@ -1,28 +1,85 @@
-using RecipeHub.BuildingBlocks.Events;
+using RecipeHub.BuildingBlocks.Audit;
+using RecipeHub.Recipe.Api;
+using RecipeHub.Recipe.Api.Swagger;
 using RecipeHub.Recipe.Api.Services;
-using StackExchange.Redis;
+using RecipeHub.Recipe.Application;
+using RecipeHub.Recipe.Infrastructure;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.OpenApi.Models;
+using Grpc.Net.Client;
+using RecipeHub.GrpcContracts.Identity;
+using Microsoft.EntityFrameworkCore;
+using RecipeHub.Recipe.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddGrpc();
-builder.Services.AddHealthChecks();
+builder.WebHost.ConfigureKestrel(options =>
+{
+    // Cổng 5002: HTTP/1.1 phục vụ REST API & Swagger UI
+    options.ListenAnyIP(5002, o => o.Protocols = HttpProtocols.Http1);
 
-// Redis connection (optional/graceful fallback)
-var redisConn = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
-IConnectionMultiplexer? redis = null;
-try
+    // Cổng 5012: HTTP/2 dành riêng cho các service gọi gRPC nội bộ
+    options.ListenAnyIP(5012, o => o.Protocols = HttpProtocols.Http2);
+});
+
+builder.Services.AddGrpc();
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
 {
-    redis = ConnectionMultiplexer.Connect(redisConn);
-    builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
-}
-catch
+    c.SwaggerDoc("v1", new() { Title = "RecipeHub.Recipe.Api", Version = "v1" });
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme { Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT" });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement { [new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } }] = [] });
+});
+builder.Services.AddSingleton(sp =>
 {
-    // Redis optional during initial local startup
+    var identityUrl = builder.Configuration["Grpc:IdentityServiceUrl"] ?? "http://localhost:5011";
+    return new IdentitySession.IdentitySessionClient(GrpcChannel.ForAddress(identityUrl));
+});
+builder.Services.AddAuthentication("Bearer").AddScheme<AuthenticationSchemeOptions, RecipeAuthenticationHandler>("Bearer", _ => { });
+builder.Services.AddAuthorization();
+builder.Services.AddHealthChecks();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ApplicationExceptionHandler>();
+builder.Services.AddRecipeApplication();
+builder.Services.AddRecipeInfrastructure(builder.Configuration);
+var redisConn = builder.Configuration.GetConnectionString("Redis") ?? builder.Configuration["ConnectionStrings:Redis"];
+if (!string.IsNullOrWhiteSpace(redisConn))
+{
+    builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(_ => StackExchange.Redis.ConnectionMultiplexer.Connect(redisConn));
 }
+builder.Services.AddAuditActivityPublisher();
 
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "RecipeHub Recipe API v1");
+    });
+}
+
+app.UseExceptionHandler();
+app.UseAuthentication();
+app.UseAuthorization();
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path;
+    var calculation = path.StartsWithSegments("/api/v1/recipes/calculate") || path == "/api/v1/recipes/units/convert";
+    if (path.StartsWithSegments("/api/v1/recipes") && !HttpMethods.IsGet(context.Request.Method) && !calculation)
+    {
+        if (context.User.Identity?.IsAuthenticated != true) { await context.ChallengeAsync(); return; }
+        if (!context.User.IsInRole("rnd") && !context.User.IsInRole("admin")) { await context.ForbidAsync(); return; }
+    }
+    await next();
+});
 app.MapGrpcService<ProbeServiceImpl>();
+app.MapGrpcService<RecipeAiContextQueryServiceImpl>();
+app.MapGrpcService<QuizRecipeQueryServiceImpl>();
+app.MapControllers().RequireAuthorization();
 
 app.MapGet("/", () => Results.Ok(new
 {
@@ -33,50 +90,5 @@ app.MapGet("/", () => Results.Ok(new
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "Live" }));
 app.MapGet("/health/ready", () => Results.Ok(new { status = "Ready" }));
-
-app.MapGet("/api/v1/recipes/info", () => Results.Ok(new
-{
-    service = "RecipeHub.Recipe.Api",
-    version = "1.0.0",
-    status = "Ready",
-    description = "Recipe and Formula R&D Service Skeleton"
-}));
-
-// Gated development-only deterministic heartbeat publish endpoint
-if (app.Environment.IsDevelopment())
-{
-    app.MapPost("/api/v1/recipes/dev/publish-heartbeat", async (IConfiguration config) =>
-    {
-        try
-        {
-            var targetRedisConn = config.GetConnectionString("Redis") ?? "localhost:6379";
-            var multiplexer = await ConnectionMultiplexer.ConnectAsync(targetRedisConn);
-            var db = multiplexer.GetDatabase();
-
-            var heartbeat = new EventEnvelope<PlatformHeartbeatEvent>
-            {
-                Source = "RecipeHub.Recipe.Api",
-                Payload = new PlatformHeartbeatEvent("RecipeHub.Recipe.Api", "Active", "Manual dev heartbeat trigger")
-            };
-
-            var messageId = await db.StreamAddAsync(
-                "platform.heartbeat.v1",
-                [new NameValueEntry("payload", heartbeat.ToJson())]
-            );
-
-            return Results.Ok(new
-            {
-                success = true,
-                stream = "platform.heartbeat.v1",
-                messageId = messageId.ToString(),
-                eventId = heartbeat.EventId
-            });
-        }
-        catch (Exception ex)
-        {
-            return Results.Problem(detail: ex.Message, title: "Failed to publish heartbeat to Redis Stream");
-        }
-    });
-}
 
 app.Run();

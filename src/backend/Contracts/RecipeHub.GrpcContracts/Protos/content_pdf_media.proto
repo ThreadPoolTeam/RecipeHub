@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+option csharp_namespace = "RecipeHub.GrpcContracts.Content";
+
+package recipehub.contracts.v1;
+
+// Service gRPC cho Recipe Service truy vấn metadata hình ảnh an toàn phục vụ render PDF
+service ContentPdfMediaQuery {
+  rpc GetPdfMediaBatch (GetPdfMediaBatchRequest) returns (GetPdfMediaBatchResponse);
+}
+
+message GetPdfMediaBatchRequest {
+  repeated string asset_ids = 1; // Danh sách UUID media_asset cần lấy
+}
+
+message PdfMediaItemDto {
+  string asset_id = 1;
+  string mime_type = 2;
+  int64 byte_size = 3;
+  int32 width = 4;
+  int32 height = 5;
+  string source_type = 6; // "real" hoặc "ai_illustration"
+  string delivery_url = 7;
+  string provider_public_id = 8;
+  string state = 9;
+}
+
+message GetPdfMediaBatchResponse {
+  bool is_success = 1;
+  string error_code = 2;
+  string error_message = 3;
+  repeated PdfMediaItemDto items = 4;
+}

@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.6.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.4">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\backend\Services\Identity\RecipeHub.Identity.Application\RecipeHub.Identity.Application.csproj" />
+    <ProjectReference Include="..\..\src\backend\Services\Identity\RecipeHub.Identity.Infrastructure\RecipeHub.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\backend\Services\Content\RecipeHub.Content.Application\RecipeHub.Content.Application.csproj" />
+    <ProjectReference Include="..\..\src\backend\Services\Content\RecipeHub.Content.Infrastructure\RecipeHub.Content.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\backend\Services\Content\RecipeHub.Content.Api\RecipeHub.Content.Api.csproj" />
+    <ProjectReference Include="..\..\src\backend\Services\Recipe\RecipeHub.Recipe.Domain\RecipeHub.Recipe.Domain.csproj" />
+    <ProjectReference Include="..\..\src\backend\Services\Recipe\RecipeHub.Recipe.Application\RecipeHub.Recipe.Application.csproj" />
+    <ProjectReference Include="..\..\src\backend\Services\Recipe\RecipeHub.Recipe.Infrastructure\RecipeHub.Recipe.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\backend\BuildingBlocks\RecipeHub.BuildingBlocks\RecipeHub.BuildingBlocks.csproj" />
+  </ItemGroup>
+
+</Project>

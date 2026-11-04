@@ -6,6 +6,11 @@ obj/
 *.userosscache
 *.sln.docstates
 
+**/.backend-pids.json
+
+temp-drafts/
+*.rdb
+dump.rdb
 # Node.js / Next.js artifacts
 node_modules/
 .next/
@@ -22,8 +27,14 @@ yarn-error.log*
 .env.production.local
 
 # IDEs & OS files
+.vs/
 .vscode/
 .idea/
 *.swp
 *.DS_Store
 Thumbs.db
+.worktrees/
+
+# Local AI session artifacts
+.superpowers/
+.claude/

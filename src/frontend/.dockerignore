@@ -1,0 +1,8 @@
+node_modules
+.next
+out
+recipehub-web
+.git
+.env*
+*.tsbuildinfo
+npm-debug.log*

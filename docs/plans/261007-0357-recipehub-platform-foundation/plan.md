@@ -17,6 +17,13 @@ created: 2026-10-07
 
 Build only the technical frame shown in the supplied architecture: .NET 8 Clean Architecture service shells, YARP, PostgreSQL, Redis Streams, a .NET worker, gRPC wiring, Next.js, and Docker Compose. One placeholder health/message path proves wiring. Formula rules from the Phê La PDF remain future work.
 
+### Frontend cutover — 2026-10-14
+
+- [Plan FE theo vai trò](../261014-recipehub-frontend-role-flows/plan.md) kế thừa shell hiện có và thay placeholder `/rnd`, `/viewer`, `/admin` bằng trải nghiệm demo có Auth và dữ liệu dùng chung.
+- Các mục “không fake business data/auth” bên dưới mô tả phạm vi plan nền tảng ban đầu, không cấm phạm vi FE mới người dùng đã yêu cầu. Sau cutover không khôi phục placeholder lên các route này.
+- Không phụ thuộc backend runtime để dựng FE mới; hai plan không chặn nhau (`blockedBy`/`blocks` rỗng). File frontend dùng chung chỉ do integration owner sửa, không chạy hai plan ghi đè cùng lúc.
+- Metadata `pending` giữ nguyên: chưa có lần nghiệm thu mới cho toàn bộ nền tảng.
+
 ## Scope Boundary
 
 ### In scope
@@ -42,6 +49,7 @@ Build only the technical frame shown in the supplied architecture: .NET 8 Clean 
 - gRPC contract is a neutral `Ping`/`GetServiceInfo` probe, not fake domain logic.
 - YARP exposes one public origin and forwards versioned route prefixes to service shells.
 - Next.js App Router uses route groups and static placeholders; no fake business data layer.
+- Chính sách database mới từ 2026-10-29: [DB First toàn backend](../261029-db-first-cutover/plan.md). Đây là cutover riêng, không chứng minh plan nền tảng ban đầu đã chọn EF Code First/Database First và không đổi trạng thái nghiệm thu của plan này.
 
 ## Target Shape
 
