@@ -43,6 +43,12 @@ public sealed class AuthController(IAuthService auth, IUserService users) : Cont
         Ok(await users.GetUserAsync(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!), ct));
 
     [Authorize]
+    [HttpPut("profile")]
+    [ProducesResponseType(typeof(UserResponse), 200)]
+    public async Task<ActionResult<UserResponse>> UpdateProfile(UpdateProfileRequest request, CancellationToken ct) =>
+        Ok(await users.UpdateProfileAsync(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!), request, ct));
+
+    [Authorize]
     [HttpPut("password")]
     [ProducesResponseType(204)]
     public async Task<IActionResult> ChangePassword(ChangePasswordRequest request, CancellationToken ct)

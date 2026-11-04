@@ -70,6 +70,19 @@ public sealed class IdentityTests
         await Assert.ThrowsAsync<IdentityException>(() => Auth.LoginAsync(new(user.Email, "Test@1234"), default));
         Assert.NotNull(await Auth.LoginAsync(new(user.Email, "New@1234"), default));
     }
+    [Fact]
+    public async Task UpdateProfile_ChangesFullNameAndValidatesName()
+    {
+        var user = await Create();
+        var updated = await Users.UpdateProfileAsync(user.Id, new("Nguyễn Văn Mới"), default);
+        Assert.Equal("Nguyễn Văn Mới", updated.FullName);
+        var fetched = await Users.GetUserAsync(user.Id, default);
+        Assert.Equal("Nguyễn Văn Mới", fetched.FullName);
+
+        await Assert.ThrowsAsync<IdentityException>(() => Users.UpdateProfileAsync(user.Id, new(""), default));
+        await Assert.ThrowsAsync<IdentityException>(() => Users.UpdateProfileAsync(user.Id, new("   "), default));
+    }
+
 
     [Fact]
     public async Task AdminResetPassword_RevokesSessionAndRefreshToken()

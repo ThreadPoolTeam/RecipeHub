@@ -25,7 +25,7 @@ import {
   resetDatabase,
 } from './database';
 import { DEMO_PASSWORD, createSvgBlob } from './seed';
-import { saveSession, clearSession } from './session';
+import { saveSession, clearSession, updateSessionUser } from './session';
 
 export class DemoRepository {
   // --- AUTH & SESSION ---
@@ -764,6 +764,18 @@ export class DemoRepository {
     });
     return updated;
   }
+  async updateProfile(actor: SessionInfo, fullName: string): Promise<User> {
+    const user = await getById<User>('users', actor.userId);
+    if (!user) throw new DemoError('NotFound', 'Không tìm thấy người dùng');
+    const updated: User = {
+      ...user,
+      fullName: fullName.trim(),
+    };
+    await putRecord('users', updated);
+    updateSessionUser(updated);
+    return updated;
+  }
+
 
   async toggleUserLock(actor: SessionInfo, id: string): Promise<boolean> {
     if (actor.role !== 'admin') throw new DemoError('Forbidden', 'Chỉ Admin mới có quyền khóa/mở khóa');
