@@ -27,8 +27,12 @@ Chỉ áp dụng khi khởi tạo database mới hoặc môi trường phát tri
 
 ```bash
 # Thực thi DDL khởi tạo dưới vai trò migrator
-psql -h localhost -p 5433 -U audit_migrator -d recipehub_audit -f docs/database-schema/audit-db/RecipeHub.Audit.postgres
+psql -X -v ON_ERROR_STOP=1 --single-transaction -h localhost -p 5433 -U audit_migrator -d recipehub_audit -f docs/database-schema/audit-db/RecipeHub.Audit.postgres
 ```
+
+DDL bootstrap không tự provision role, đổi owner hoặc cấp quyền runtime. Docker bootstrap tại `infra/postgres/init-databases.sh` thực hiện các bước đó cho database mới; triển khai thủ công phải bảo đảm cùng quyền tại mục 2 trước khi chạy API/worker.
+
+Database đã tồn tại: backup/restore thử, provision hai role rồi đối chiếu ownership. Khi cần, chạy `migrations/20261101_transfer_audit_ownership.sql` bằng deployment administrator; script đổi owner database bên ngoài transaction rồi tự mở transaction cho schema/table/grants. Sau đó chạy `migrations/20261101_create_audit_log.sql` bằng `audit_migrator`; script tự `BEGIN/COMMIT`, kiểm tra bảng hiện hữu và cấp quyền runtime. Cả hai dùng `psql -X -v ON_ERROR_STOP=1 -f ...`, **không** thêm `--single-transaction`. Các tên database/role trong migration là tên cố định mặc định; không suy ra đã áp dụng lên DB đang chạy.
 
 ---
 

@@ -15,9 +15,13 @@ Tuân thủ nguyên tắc **Database First**: cấu trúc do SQL quyết định
 Chỉ áp dụng khi khởi tạo database mới hoặc môi trường phát triển local trống:
 
 ```bash
-# Đảm bảo database recipehub_quiz đã được tạo
-psql -h localhost -p 5433 -U postgres -d recipehub_quiz -f docs/database-schema/quiz-db/RecipeHub.Quiz.postgres
+# Database trống; role triển khai quiz_migrator đã được provision
+psql -X -v ON_ERROR_STOP=1 --single-transaction -h localhost -p 5433 -U quiz_migrator -d recipehub_quiz -f docs/database-schema/quiz-db/RecipeHub.Quiz.postgres
 ```
+
+Bootstrap DDL không tự tạo role hoặc cấp quyền runtime. `infra/postgres/init-databases.sh` tạo database do `quiz_migrator` sở hữu, cấp `quiz_user` quyền `CONNECT`, `USAGE` schema, DML trên bảng và `USAGE, SELECT` sequence. Khi bootstrap thủ công, deployment role phải cấp các quyền tương ứng; không dùng tài khoản DDL cho API.
+
+Với database đã có schema Quiz trước thay đổi integrity, đối chiếu trạng thái và backup/restore thử trước khi chọn `migrations/20261031120000_quiz_integrity.sql`. Script dùng `LOCK TABLE` nhưng không tự mở transaction; chạy bằng deployment role với `psql -X -v ON_ERROR_STOP=1 --single-transaction -h localhost -p 5433 -U quiz_migrator -d recipehub_quiz -f docs/database-schema/quiz-db/migrations/20261031120000_quiz_integrity.sql`. Không chạy lại bootstrap trên dữ liệu hiện hữu.
 
 ---
 
@@ -43,7 +47,7 @@ Gồm 6 bảng chia thành 2 nhóm:
 4. **`quiz_option`**: Các lựa chọn (A, B, C, D...) và cờ `is_correct` (đáp án đúng).
 
 ### B. Nhóm Làm bài & Kết quả (Viewer / Barista)
-5. **`quiz_attempt`**: Lượt thi của nhân viên, thời điểm bắt đầu/kết thúc, điểm số phần trăm và kết quả `is_passed`. Khi đang làm (`in_progress`), `score` và `submitted_at` là `NULL`.
+5. **`quiz_attempt`**: Lượt thi của nhân viên, thời điểm bắt đầu/kết thúc, điểm số phần trăm và kết quả `is_passed`. Khi đang làm (`in_progress`), `score`, `is_passed` và `submitted_at` đều là `NULL`; khi `submitted`, cả ba bắt buộc có giá trị và thời điểm nộp không trước thời điểm bắt đầu.
 6. **`quiz_answer`**: Chi tiết từng câu trả lời thí sinh đã tick chọn (`selected_option_id`) để đối chiếu lịch sử và chấm điểm.
 
 ---

@@ -2,7 +2,7 @@
 
 ## 1. Overview & Scope
 
-Hệ thống thiết kế Warm Editorial của RecipeHub mang phong cách ấn phẩm biên tập ấm áp, thanh lịch và chuẩn mực cho hệ thống quản lý & nghiên cứu công thức đồ uống (Beverage R&D). Hệ thống này thay thế hoàn toàn quy chuẩn NoirLuxe cũ trên toàn bộ ứng dụng, thống nhất một ngôn ngữ thiết kế nhất quán từ trang giới thiệu (landing), phân hệ xác thực (auth), đến các không gian làm việc chuyên môn (R&D, Viewer, Approvals, Admin, Platform).
+Hệ thống thiết kế Warm Editorial của RecipeHub mang phong cách ấn phẩm biên tập ấm áp, thanh lịch và chuẩn mực cho hệ thống quản lý & nghiên cứu công thức đồ uống (Beverage R&D). Quy chuẩn này áp dụng cho ứng dụng Web: landing, auth và các workspace R&D, Viewer, Admin; thay thế NoirLuxe cũ. Mobile dùng bộ chuẩn riêng tại `src/mobile/DESIGN.md`.
 
 ### Cinematic Exception (Ngoại lệ duy nhất)
 Khu vực **ScrollFrameStory** trên Landing page (`#story`) là ngoại lệ duy nhất được phép duy trì nền tối điện ảnh (`#0C0C0E`) và chữ sáng (`#F2F0EB`) cùng overlay tương ứng để bảo đảm trải nghiệm trình diễn khung hình phim nghệ thuật (TVC Phê La). Toàn bộ các phần còn lại của Landing page (từ sau story trở xuống bao gồm #workspace, #features, #cta, footer) và thanh điều hướng (khi cuộn qua story) BẮT BUỘC tuân thủ chuẩn Warm Editorial sáng.

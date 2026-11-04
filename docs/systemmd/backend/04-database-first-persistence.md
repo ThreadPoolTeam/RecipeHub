@@ -27,6 +27,12 @@ docs/database-schema/<service>-db/
 2. **Không chạy lại DDL khởi tạo trên DB đang có dữ liệu:** Mọi thay đổi schema trên database có dữ liệu phải được thực hiện bằng script SQL tăng dần trong thư mục `migrations/`.
 3. **Không tạo bảng giả:** Service chưa cần bảng thì không tạo schema giả chỉ để đối phó thủ tục.
 
+### 1.1. Tiêu Chuẩn Viết Migration SQL (Tối Giản & Thực Dụng - BẮT BUỘC):
+1. **Viết đơn giản hết sức có thể:** Script migration trong `migrations/` phải tập trung vào thay đổi cốt lõi (`CREATE TABLE`, `ALTER TABLE`, `DROP COLUMN`, chuyển đổi data). Không thêm thắt các thủ tục phức tạp, không tạo màu mè.
+2. **Hạn chế tối đa Trigger/Check rườm rà:** Tránh lạm dụng các function trigger lồng nhau, constraint trigger deferred chéo bảng, hay regex check quá dài dòng khiến script dễ gãy hoặc rollback dây chuyền trên GUI client.
+3. **Transaction nguyên tử:** Bọc script trong `BEGIN; ... COMMIT;` làm mặc định (trừ các câu lệnh PostgreSQL không hỗ trợ transaction block như `CREATE INDEX CONCURRENTLY`).
+4. **Thân thiện với công cụ vận hành:** Đảm bảo script có thể copy-paste chạy mượt mà trên DBeaver, pgAdmin hoặc CLI mà không bị treo khóa (lock timeout) hay lỗi cú pháp môi trường.
+
 ---
 
 ## 2. Quy Định Với Entity Framework Core
@@ -34,15 +40,15 @@ docs/database-schema/<service>-db/
 ### 2.1. Điều Cấm Tuyệt Đối:
 - **CẤM** chạy lệnh `dotnet ef migrations add`.
 - **CẤM** chạy lệnh `dotnet ef database update`.
-- **CẤM** gọi `Database.Migrate()`, `Database.MigrateAsync()`, `EnsureCreated()`, `EnsureDeleted()` trong code API, Background Worker hay Test runner.
+- **CẤM** gọi `Database.Migrate[Async]()`, `EnsureCreated[Async]()` hoặc `EnsureDeleted[Async]()` trong API, Background Worker hay Test runner.
 - **CẤM** dùng C# Model để sinh cấu trúc DB.
 
 ### 2.2. Quy Chuẩn Mapping Trong Infrastructure:
 1. **Tổ chức thư mục:** Toàn bộ mapping đặt trong `RecipeHub.<Service>.Infrastructure/Data/`:
-   - `<Service>DbContext.cs`: Kế thừa `DbContext`.
-   - `Configurations/<Entity>Configuration.cs`: Kế thừa `IEntityTypeConfiguration<T>`.
+   - `<Service>DbContext.cs`: Kế thừa `DbContext`; giữ mapping inline hiện hữu của Identity trong `OnModelCreating`.
+   - Service đã tách mapping dùng `Configurations/<Entity>Configuration.cs` với `IEntityTypeConfiguration<T>`; không tạo bộ mapping song song.
 2. **Cập nhật Mapping Thủ Công hoặc Scaffold có kiểm soát:**
-   - Khi DB thêm/sửa/xóa cột, dev/AI cập nhật Entity C# thuần trong `Domain` và file `Configuration` trong `Infrastructure/Data/Configurations/`.
+   - Khi DB thêm/sửa/xóa cột, dev/AI cập nhật Entity C# thuần trong `Domain` và mapping tương ứng trong `Infrastructure/Data/` theo cấu trúc hiện hữu.
    - Đối chiếu chính xác: Tên bảng (`ToTable`), tên cột (`HasColumnName`), kiểu dữ liệu, nullability (`IsRequired`), giá trị mặc định (`HasDefaultValueSql`), Primary Key (`HasKey`), Foreign Key, Unique Index.
    - Nếu dùng công cụ scaffold: Chỉ sinh ra thư mục tạm để review, không dùng cờ `--force` đè lên Domain hoặc file viết tay.
 3. **Domain Entity Thuần Khiết:**

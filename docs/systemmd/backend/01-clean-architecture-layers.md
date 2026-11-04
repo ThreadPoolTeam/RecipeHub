@@ -9,9 +9,9 @@ Mọi service backend trong `src/backend/Services/<ServiceName>/` đều tuân t
    |            |
    v            v
 [ Infrastructure ] ---> [ Application ] ---> [ Domain ]
-                             |                  ^
-                             v                  |
-                     [ BuildingBlocks ] --------+
+                             |
+                             v
+                     [ BuildingBlocks ]
 ```
 
 ### Chiều Phụ Thuộc Bắt Buộc:
