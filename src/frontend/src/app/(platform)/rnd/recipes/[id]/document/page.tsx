@@ -12,7 +12,7 @@ export default function RecipeDocumentPage() {
   const router = useRouter();
   const id = params?.id as string;
   const { session, repo } = useDemo();
-  const [targetUrl, setTargetUrl] = useState<string>(`/rnd/documents`);
+  const [targetUrl, setTargetUrl] = useState<string>(`/rnd/documents/new`);
 
   useEffect(() => {
     let isMounted = true;
@@ -22,7 +22,7 @@ export default function RecipeDocumentPage() {
         try {
           const item = await repo.getRecipeVersion(session, id);
           if (item && isMounted) {
-            const url = `/rnd/documents?recipeId=${item.recipeId || item.id}&versionId=${item.versionId || item.id}`;
+            const url = `/rnd/documents/new?recipeId=${item.recipeId || item.id}&versionId=${item.versionId || item.id}`;
             setTargetUrl(url);
             router.replace(url);
             return;
@@ -32,7 +32,7 @@ export default function RecipeDocumentPage() {
         }
       }
       if (isMounted) {
-        const fallback = `/rnd/documents?recipeId=${id}&versionId=${id}`;
+        const fallback = `/rnd/documents/new?recipeId=${id}&versionId=${id}`;
         setTargetUrl(fallback);
         router.replace(fallback);
       }

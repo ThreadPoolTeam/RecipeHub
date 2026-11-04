@@ -85,21 +85,16 @@ export function PdfDocumentPreview({
 
   if (!blob || !objectUrl) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[350px] bg-[#FAF9F5] rounded-2xl border border-dashed border-[#D8D0C5] p-8 text-center text-[#706E68] space-y-3">
+      <div className="flex flex-col items-center justify-center h-full min-h-[350px] bg-[#FAF9F5] p-8 text-center text-[#706E68] space-y-3">
         <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-[#E8E2D9] shadow-2xs">
           <FileText className="w-6 h-6 text-[#8C887F]" />
         </div>
         <div className="space-y-1 max-w-sm">
           <h4 className="text-sm font-semibold text-[#1A1917]">Chưa có bản xem trước</h4>
           <p className="text-xs text-[#706E68]">
-            Chọn công thức và nhấn nút &quot;Xem thử tài liệu&quot; để kết xuất trực quan PDF trước khi xuất bản.
+            Chọn công thức bên trái và nhấn &quot;Xem trước&quot; để hiển thị tài liệu SOP.
           </p>
         </div>
-        {onRefreshPreview && (
-          <Button variant="gold" size="sm" onClick={onRefreshPreview}>
-            Xem thử ngay
-          </Button>
-        )}
       </div>
     );
   }
@@ -119,8 +114,8 @@ export function PdfDocumentPreview({
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               Bản xem trước sẵn sàng
               {!isSavedHistory && (
-                <span className="text-amber-800 text-[11px] font-normal">
-                  (Chưa lưu vào lịch sử)
+                <span className="text-[#8C887F] text-[11px] font-normal">
+                  (Bản tạm thời)
                 </span>
               )}
             </span>

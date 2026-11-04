@@ -24,8 +24,6 @@ export interface PreviewPdfRequest {
   documentType: DocumentType;
   title: string;
   subtitle?: string | null;
-  templateCode: string;
-  templateVersion: string;
   items: PreviewPdfItem[];
 }
 
@@ -34,8 +32,6 @@ export interface ExportPdfRequest {
   documentType: DocumentType;
   title: string;
   subtitle?: string | null;
-  templateCode: string;
-  templateVersion: string;
   items: PreviewPdfItem[];
 }
 
@@ -54,15 +50,14 @@ export interface PdfDocumentResponse {
   documentType: DocumentType;
   exportScope: ExportScope;
   state: DocumentState;
-  templateCode: string;
-  templateVersion: string;
   createdByUserId: string;
   createdAt: string;
   completedAt?: string | null;
   fileName: string;
-  byteSize: number;
+  byteSize?: number | null;
   sha256?: string | null;
   itemCount: number;
+  errorCode?: string | null;
   items: PdfDocumentItemSummary[];
 }
 
@@ -72,14 +67,14 @@ export interface PdfDocumentSummaryResponse {
   documentType: DocumentType;
   exportScope: ExportScope;
   state: DocumentState;
-  templateCode: string;
-  templateVersion: string;
   createdByUserId: string;
   createdAt: string;
   completedAt?: string | null;
   fileName: string;
-  byteSize: number;
+  byteSize?: number | null;
+  sha256?: string | null;
   itemCount: number;
+  errorCode?: string | null;
 }
 
 export interface PagedResult<T> {
@@ -90,18 +85,15 @@ export interface PagedResult<T> {
 }
 
 export interface PdfCapabilitiesResponse {
-  allowedTemplates: Array<{
-    code: string;
-    version: string;
-    name: string;
-    description: string;
-  }>;
   orientation: 'landscape';
   maxItems: number;
   maxPdfBytes: number;
   maxMediaBytes: number;
   maxMediaPixels: number;
   maxConcurrentExports: number;
+  maxTitleLength?: number;
+  maxSubtitleLength?: number;
+  maxCaptionLength?: number;
 }
 
 export interface HistoryFilterParams {
@@ -123,5 +115,5 @@ export interface PublishedDocumentLookupResponse {
   recipeVersionId: string;
   fileName: string;
   completedAt: string;
-  byteSize: number;
+  byteSize?: number | null;
 }

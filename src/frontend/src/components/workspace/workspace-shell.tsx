@@ -294,46 +294,6 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             <FileText className="w-5 h-5 text-[#706E68]" />
             {!isCollapsed && <span>Nhật ký Audit Logs</span>}
           </Link>
-          <Link
-            href="/admin/media"
-            prefetch={true}
-            onClick={(e) => handleNavClick('/admin/media', e)}
-            className={navLinkStyle(isLinkActive('/admin/media'), isCollapsed)}
-            title="Quản lý Media"
-          >
-            <ImageIcon className="w-5 h-5 text-[#706E68]" />
-            {!isCollapsed && <span>Quản lý Media</span>}
-          </Link>
-          <Link
-            href="/admin/documents"
-            prefetch={true}
-            onClick={(e) => handleNavClick('/admin/documents', e)}
-            className={navLinkStyle(isLinkActive('/admin/documents'), isCollapsed)}
-            title="Tài liệu PDF"
-          >
-            <FileText className="w-5 h-5 text-[#706E68]" />
-            {!isCollapsed && <span>Tài liệu PDF</span>}
-          </Link>
-          <Link
-            href="/admin/quizzes"
-            prefetch={true}
-            onClick={(e) => handleNavClick('/admin/quizzes', e)}
-            className={navLinkStyle(isLinkActive('/admin/quizzes', { exclude: ['/admin/quizzes/results'] }), isCollapsed)}
-            title="Bộ Quiz"
-          >
-            <GraduationCap className="w-5 h-5 text-[#706E68]" />
-            {!isCollapsed && <span>Bộ Quiz</span>}
-          </Link>
-          <Link
-            href="/admin/quizzes/results"
-            prefetch={true}
-            onClick={(e) => handleNavClick('/admin/quizzes/results', e)}
-            className={navLinkStyle(isLinkActive('/admin/quizzes/results'), isCollapsed)}
-            title="Kết quả làm bài"
-          >
-            <Award className="w-5 h-5 text-[#706E68]" />
-            {!isCollapsed && <span>Kết quả làm bài</span>}
-          </Link>
         </div>
       )}
 
