@@ -16,17 +16,18 @@ public sealed class ImageDraftRepository : IImageDraftRepository
 
     public Task<AiImageDraft?> GetByPublicIdAsync(Guid publicId, CancellationToken ct = default)
     {
-        return _dbContext.AiImageDrafts.FirstOrDefaultAsync(d => d.PublicId == publicId, ct);
+        return _dbContext.AiImageDrafts.Include(d => d.File).FirstOrDefaultAsync(d => d.PublicId == publicId, ct);
     }
 
     public Task<AiImageDraft?> GetByIdAsync(long id, CancellationToken ct = default)
     {
-        return _dbContext.AiImageDrafts.FirstOrDefaultAsync(d => d.Id == id, ct);
+        return _dbContext.AiImageDrafts.Include(d => d.File).FirstOrDefaultAsync(d => d.Id == id, ct);
     }
 
     public Task<AiImageDraft?> GetLatestActiveForTargetAsync(Guid recipeVersionRef, Guid? recipeStepRef, CancellationToken ct = default)
     {
         return _dbContext.AiImageDrafts
+            .Include(d => d.File)
             .Where(d => d.RecipeVersionRef == recipeVersionRef && d.RecipeStepRef == recipeStepRef)
             .OrderByDescending(d => d.CreatedAt)
             .FirstOrDefaultAsync(ct);
@@ -40,7 +41,7 @@ public sealed class ImageDraftRepository : IImageDraftRepository
         int pageSize,
         CancellationToken ct = default)
     {
-        var query = _dbContext.AiImageDrafts.AsNoTracking();
+        IQueryable<AiImageDraft> query = _dbContext.AiImageDrafts.AsNoTracking().Include(d => d.File);
 
         if (recipeVersionRef.HasValue)
         {
@@ -70,6 +71,11 @@ public sealed class ImageDraftRepository : IImageDraftRepository
     public async Task AddAsync(AiImageDraft draft, CancellationToken ct = default)
     {
         await _dbContext.AiImageDrafts.AddAsync(draft, ct);
+    }
+
+    public void RemoveDraftFile(AiImageDraftFile file)
+    {
+        _dbContext.AiImageDraftFiles.Remove(file);
     }
 
     public Task SaveChangesAsync(CancellationToken ct = default)

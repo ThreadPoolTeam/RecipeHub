@@ -10,6 +10,7 @@ public sealed class ContentDbContext : DbContext
     public ContentDbContext(DbContextOptions<ContentDbContext> options) : base(options) { }
 
     public DbSet<AiImageDraft> AiImageDrafts => Set<AiImageDraft>();
+    public DbSet<AiImageDraftFile> AiImageDraftFiles => Set<AiImageDraftFile>();
     public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 

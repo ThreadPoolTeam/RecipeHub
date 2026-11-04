@@ -584,6 +584,7 @@ public class ContentAuthenticationTests
         public Task<AiImageDraft?> GetByPublicIdAsync(Guid publicId, CancellationToken ct = default) => Task.FromResult<AiImageDraft?>(null);
         public Task<AiImageDraft?> GetLatestActiveForTargetAsync(Guid recipeVersionRef, Guid? recipeStepRef, CancellationToken ct = default) => Task.FromResult<AiImageDraft?>(null);
         public Task<(IReadOnlyList<AiImageDraft> Items, int TotalCount)> ListAsync(Guid? recipeVersionRef, Guid? recipeStepRef, string? state, int page, int pageSize, CancellationToken ct = default) => Task.FromResult(((IReadOnlyList<AiImageDraft>)Array.Empty<AiImageDraft>(), 0));
+        public void RemoveDraftFile(AiImageDraftFile file) { }
         public Task SaveChangesAsync(CancellationToken ct = default) => Task.CompletedTask;
     }
 
