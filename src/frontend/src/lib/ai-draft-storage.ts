@@ -1,3 +1,5 @@
+import { requestJson, requestBlob } from '@/lib/api/client';
+
 export interface PersistentAiDraft {
   id: string;
   recipeVersionId: string;
@@ -53,8 +55,12 @@ export function saveStoredAiDraft(draft: PersistentAiDraft): void {
     const raw = localStorage.getItem(STORAGE_KEY);
     const all: PersistentAiDraft[] = raw ? JSON.parse(raw) : [];
     const now = Date.now();
+    const toStore: PersistentAiDraft = {
+      ...draft,
+      previewUrl: draft.previewUrl.startsWith('blob:') ? '' : draft.previewUrl,
+    };
     const updated = [
-      draft,
+      toStore,
       ...all.filter((d) => d.id !== draft.id && new Date(d.expiresAt).getTime() > now),
     ];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
@@ -82,40 +88,37 @@ export async function syncBackendAiDrafts(
   stepId?: string | null
 ): Promise<PersistentAiDraft[]> {
   if (typeof window === 'undefined') return [];
-  try {
-    let url = `/api/backend/api/v1/content/image-drafts?recipeVersionId=${recipeVersionId}&state=generated&pageSize=20`;
-    if (targetKind === 'step_instruction' && stepId) {
-      url += `&recipeStepId=${stepId}`;
-    }
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const items = Array.isArray(data?.items) ? data.items : [];
-    const now = Date.now();
-    const drafts: PersistentAiDraft[] = [];
-
-    for (const item of items) {
-      if (!item.draftId) continue;
-      const expiresAt = item.expiresAt || new Date(now + 1_800_000).toISOString();
-      if (new Date(expiresAt).getTime() <= now) continue;
-
-      const draft: PersistentAiDraft = {
-        id: item.draftId,
-        recipeVersionId,
-        targetKind: item.targetKind || targetKind,
-        stepId: stepId ?? null,
-        prompt: item.prompt || 'Ảnh minh họa AI',
-        mediaAssetId: item.draftId,
-        previewUrl: `/api/backend/api/v1/content/image-drafts/${item.draftId}/image`,
-        state: item.state || 'generated',
-        createdAt: item.createdAt || new Date().toISOString(),
-        expiresAt,
-      };
-      saveStoredAiDraft(draft);
-      drafts.push(draft);
-    }
-    return drafts;
-  } catch {
-    return [];
+  let path = `api/v1/content/image-drafts?recipeVersionId=${recipeVersionId}&state=generated&pageSize=20`;
+  if (targetKind === 'step_instruction' && stepId) {
+    path += `&recipeStepId=${stepId}`;
   }
+  const data = (await requestJson(path, null, { method: 'GET' })) as { items?: Array<any> };
+  const items = Array.isArray(data?.items) ? data.items : [];
+  const now = Date.now();
+  const drafts: PersistentAiDraft[] = [];
+
+  for (const item of items) {
+    if (!item.draftId) continue;
+    const expiresAt = item.expiresAt || new Date(now + 1_800_000).toISOString();
+    if (new Date(expiresAt).getTime() <= now) continue;
+
+    const blob = await requestBlob(`api/v1/content/image-drafts/${item.draftId}/image`, null, { method: 'GET' });
+    const previewUrl = URL.createObjectURL(blob);
+
+    const draft: PersistentAiDraft = {
+      id: item.draftId,
+      recipeVersionId,
+      targetKind: item.targetKind || targetKind,
+      stepId: stepId ?? null,
+      prompt: item.prompt || 'Ảnh minh họa AI',
+      mediaAssetId: item.draftId,
+      previewUrl,
+      state: item.state || 'generated',
+      createdAt: item.createdAt || new Date().toISOString(),
+      expiresAt,
+    };
+    saveStoredAiDraft(draft);
+    drafts.push(draft);
+  }
+  return drafts;
 }

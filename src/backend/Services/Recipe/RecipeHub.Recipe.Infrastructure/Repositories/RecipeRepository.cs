@@ -24,10 +24,14 @@ public sealed class RecipeRepository : IRecipeRepository
         int pageSize,
         CancellationToken cancellationToken)
     {
+        var publishedOnly = string.Equals(versionStatus, "published", StringComparison.OrdinalIgnoreCase);
         var versions = _dbContext.RecipeVersions.AsNoTracking()
             .Include(item => item.Recipe)
+            .Include(item => item.RecipeIngredients)
+            .Include(item => item.RecipeSteps)
             .Where(item => !_dbContext.RecipeVersions.Any(other =>
-                other.RecipeId == item.RecipeId && other.VersionNumber > item.VersionNumber));
+                other.RecipeId == item.RecipeId && other.VersionNumber > item.VersionNumber && (!publishedOnly || other.Status == "published")));
+
 
         if (!string.IsNullOrWhiteSpace(query))
         {

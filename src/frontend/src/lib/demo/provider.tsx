@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { SessionInfo, User, DemoSettings } from './types';
 import { BackendRepository, backendRepo as repo } from '@/lib/api/backend-repository';
 import { getStoredSession, touchSession, clearSession } from './session';
+import { ApiError } from '@/lib/api/client';
 
 interface DemoContextValue {
   session: SessionInfo | null;
@@ -29,27 +30,44 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
-      const activeSettings = await repo.getSettings();
-      setSettings(activeSettings);
+      let idleTimeout = 30;
+      try {
+        const activeSettings = await repo.getSettings();
+        setSettings(activeSettings);
+        idleTimeout = activeSettings.idleTimeoutMinutes;
+      } catch {
+        // Fallback default timeout if settings unavailable temporarily
+      }
 
-      const stored = getStoredSession(activeSettings.idleTimeoutMinutes);
+      const stored = getStoredSession(idleTimeout);
       if (!stored) {
         setSession(null);
         setCurrentUser(null);
         return;
       }
 
-      const freshUser = await repo.getCurrentUser(stored);
-      if (!freshUser || freshUser.isLocked) {
-        setSession(null);
-        setCurrentUser(null);
-        clearSession();
-      } else {
-        setSession(stored);
-        setCurrentUser(freshUser);
+      setSession(stored);
+
+      try {
+        const freshUser = await repo.getCurrentUser(stored);
+        if (!freshUser || freshUser.isLocked) {
+          setSession(null);
+          setCurrentUser(null);
+          clearSession();
+        } else {
+          setSession(getStoredSession(idleTimeout));
+          setCurrentUser(freshUser);
+        }
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 401) {
+          setSession(null);
+          setCurrentUser(null);
+          clearSession();
+        }
+        // Transient network/5xx: keep stored session
       }
     } catch {
-      // Storage or init error
+      // General safety catch
     } finally {
       setDataVersion((v) => v + 1);
       setLoading(false);
@@ -60,6 +78,12 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    const cleared = () => { setSession(null); setCurrentUser(null); };
+    window.addEventListener('recipehub:session-cleared', cleared);
+    return () => window.removeEventListener('recipehub:session-cleared', cleared);
+  }, []);
+
   // Periodic idle check (every 30 seconds)
   useEffect(() => {
     if (!session || !settings) return;
@@ -68,6 +92,18 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       if (!current) {
         setSession(null);
         setCurrentUser(null);
+      } else {
+        void repo.getCurrentUser(current).then(user => {
+          if (!user) { setSession(null); setCurrentUser(null); return; }
+          setCurrentUser(user);
+          setSession(previous => previous && (previous.role !== user.role || previous.fullName !== user.fullName)
+            ? getStoredSession(settings.idleTimeoutMinutes) : previous);
+        }).catch((error) => {
+          if (error instanceof ApiError && error.status === 401) {
+            setSession(null);
+            setCurrentUser(null);
+          }
+        });
       }
     }, 30000);
     return () => clearInterval(interval);
@@ -83,10 +119,12 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(async (): Promise<void> => {
-    await repo.logout(session);
-    setSession(null);
-    setCurrentUser(null);
-    setDataVersion((v) => v + 1);
+    try { await repo.logout(session); }
+    finally {
+      setSession(null);
+      setCurrentUser(null);
+      setDataVersion((v) => v + 1);
+    }
   }, [session]);
 
   const touch = useCallback(() => {

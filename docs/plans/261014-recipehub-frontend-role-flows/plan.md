@@ -21,6 +21,11 @@ Bạn có thể đăng nhập tài khoản demo, tạo công thức, gửi duy�
 - Người dùng yêu cầu ghi đề xuất trực tiếp, không dừng hỏi từng chi tiết; ý tưởng mới sẽ cập nhật các file này. Lựa chọn của trợ lý được ghi là **mặc định đề xuất**, không giả là người dùng đã duyệt.
 - Thuật ngữ được giải thích trong [thiết kế và flow](./design-and-flows.md): smoke là kiểm tra nhanh; handoff là bàn giao; snapshot là nội dung giữ nguyên lúc phát hành.
 
+## Production PDF cutover — 2026-11-01
+
+Phần PDF/IndexedDB trong plan demo này được thay thế bởi [Recipe PDF full stack](../261101-recipe-pdf-fullstack/plan.md): Admin+rnd, xuất đơn/bộ ngang, artifact Cloudinary và lịch sử Recipe DB. Không triển khai lại PDF demo hoặc phát hành chính thức từ Blob trình duyệt. Đây là scope replacement, không là blocker của toàn plan FE. Scope Viewer download trong demo không tự cấp quyền đọc API PDF management mới; cần policy riêng nếu mở sau này.
+
+
 ## Phạm vi
 
 - Auth: đăng nhập tài khoản được cấp, đăng xuất, hết phiên, chặn URL sai quyền.
@@ -46,6 +51,10 @@ Không có quan hệ đầu ra bắt buộc giữa các plan; `blockedBy`/`block
 ### Design cutover — 2026-10-19
 
 [Warm Editorial toàn bộ UI](../261019-warm-editorial-ui/plan.md) kế thừa flow/component đã có, thay quy chuẩn màu và presentation cho mọi route. Không khôi phục NoirLuxe hoặc ghi đè data provider hiện hành theo mô tả demo lịch sử của plan này. Quan hệ kế thừa, không có blocker hoàn thành cả plan; `blocks/blockedBy` vẫn rỗng. Source thực tế phải được đọc lại trước thực thi; không suy ra plan này đã hoàn tất.
+
+### Quiz production — 2026-10-31
+
+`../261031-quiz-ui/plan.md` bổ sung bộ Quiz cho Admin/R&D và làm bài cho Viewer bằng backend thật. Không dùng provider demo làm nguồn dữ liệu Quiz; giữ auth/session/WorkspaceShell hiện có. Đây là mở rộng độc lập, không chờ hoàn tất mọi mục lịch sử của plan này; không có hard blocker hai chiều.
 
 
 ## Các phase

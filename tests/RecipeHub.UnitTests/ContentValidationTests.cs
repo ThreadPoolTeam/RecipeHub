@@ -95,7 +95,12 @@ public class ContentValidationTests
 
         draft.MarkGenerated("A detailed food prompt", "temp/image.png", "image/png", 50000, 1024, 1024, TimeSpan.FromMinutes(30));
         Assert.Equal("generated", draft.State);
-        Assert.Equal("temp/image.png", draft.TemporaryImagePath);
+        Assert.NotNull(draft.File);
+        Assert.Equal("temp/image.png", draft.File.TemporaryImagePath);
+        Assert.Equal("image/png", draft.File.MimeType);
+        Assert.Equal(50000, draft.File.ByteSize);
+        Assert.Equal(1024, draft.File.Width);
+        Assert.Equal(1024, draft.File.Height);
         Assert.NotNull(draft.GeneratedAt);
         Assert.NotNull(draft.ExpiresAt);
 
@@ -106,6 +111,30 @@ public class ContentValidationTests
         draft.MarkAccepted(actor);
         Assert.Equal("accepted", draft.State);
         Assert.Equal(actor, draft.DecidedByUserRef);
-        Assert.Null(draft.TemporaryImagePath); // Cleaned after accept
+        Assert.NotNull(draft.File); // Retained for cleanup
+        draft.RemoveFile();
+        Assert.Null(draft.File); // Cleared after cleanup succeeds
     }
+
+    [Fact]
+    public void AiImageDraft_DiscardAndExpire_ShouldRetainFileUntilCleanup()
+    {
+        var draft = new AiImageDraft
+        {
+            RecipeVersionRef = Guid.NewGuid(),
+            TargetKind = "final_product",
+            CreatedByUserRef = Guid.NewGuid()
+        };
+        draft.StartProcessing(Guid.NewGuid(), TimeSpan.FromMinutes(5));
+        draft.MarkGenerated("prompt", "temp/test.png", "image/png", 1234, 512, 512, TimeSpan.FromMinutes(30));
+
+        var actor = Guid.NewGuid();
+        draft.MarkDiscarded(actor);
+        Assert.Equal("discarded", draft.State);
+        Assert.NotNull(draft.File); // File retained for cleanup
+
+        draft.RemoveFile();
+        Assert.Null(draft.File);
+    }
+
 }

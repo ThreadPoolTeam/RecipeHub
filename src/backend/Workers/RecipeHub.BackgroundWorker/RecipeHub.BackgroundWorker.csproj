@@ -17,5 +17,6 @@
     <ProjectReference Include="..\..\Services\Content\RecipeHub.Content.Infrastructure\RecipeHub.Content.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Services\Content\RecipeHub.Content.Application\RecipeHub.Content.Application.csproj" />
     <ProjectReference Include="..\..\Services\Content\RecipeHub.Content.Domain\RecipeHub.Content.Domain.csproj" />
+    <ProjectReference Include="..\..\Services\Audit\RecipeHub.Audit.Infrastructure\RecipeHub.Audit.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

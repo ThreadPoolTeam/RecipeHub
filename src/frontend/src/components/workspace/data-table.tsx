@@ -37,7 +37,7 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   if (isLoading) {
     return (
-      <div className="w-full bg-white border border-[#E8E2D9] rounded-lg p-12 text-center text-[#706E68]">
+      <div className="w-full bg-white border border-[#E8E2D9] rounded-2xl p-12 text-center text-[#706E68]">
         <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-[#B47820] mb-2"></div>
         <p className="text-xs">Đang tải dữ liệu...</p>
       </div>
@@ -46,7 +46,7 @@ export function DataTable<T>({
 
   if (data.length === 0) {
     return (
-      <div className="w-full bg-white border border-[#E8E2D9] rounded-lg p-12 text-center text-[#706E68] space-y-2">
+      <div className="w-full bg-white border border-[#E8E2D9] rounded-2xl p-12 text-center text-[#706E68] space-y-2">
         <Inbox className="w-8 h-8 text-[#8C887F] mx-auto" />
         <h4 className="text-sm font-semibold text-[#1A1917]">{emptyTitle}</h4>
         <p className="text-xs text-[#706E68] max-w-sm mx-auto">{emptyMessage}</p>
@@ -56,7 +56,7 @@ export function DataTable<T>({
   }
 
   return (
-    <div className="w-full bg-white border border-[#E8E2D9] rounded-lg overflow-hidden flex flex-col shadow-xs">
+    <div className="w-full bg-white border border-[#E8E2D9] rounded-2xl overflow-hidden flex flex-col shadow-xs">
       <div className="overflow-x-auto w-full">
         <table className="w-full text-left text-sm border-collapse min-w-[640px]">
           <thead>

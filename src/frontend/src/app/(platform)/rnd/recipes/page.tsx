@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { BookOpen, Plus, Pencil, RotateCcw, Coffee, History } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { BookOpen, Plus, Pencil, RotateCcw, Coffee, History, FileDown, Layers } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { RecipeVersion, RecipeStatus } from '@/lib/demo/types';
 import { Button, TextInput, Select, SearchInput } from '@/components/workspace/fields';
@@ -26,7 +26,8 @@ function RecipeListContent() {
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
   const [drawerVersions, setDrawerVersions] = useState<RecipeVersion[]>([]);
   const [isLoadingDrawerVersions, setIsLoadingDrawerVersions] = useState(false);
-
+  const router = useRouter();
+  const [selectedRecipeIds, setSelectedRecipeIds] = useState<string[]>([]);
   const handleOpenHistoryDrawer = async (item: RecipeVersion) => {
     setSelectedRecipeForHistory(item);
     setIsHistoryDrawerOpen(true);
@@ -166,6 +167,27 @@ function RecipeListContent() {
 
   const columns = [
     {
+      header: 'Chọn',
+      render: (item: RecipeVersion) => {
+        const vId = item.versionId || item.id;
+        const isChecked = selectedRecipeIds.includes(vId);
+        return (
+          <div className="flex items-center justify-center">
+            <input
+              type="checkbox"
+              checked={isChecked}
+              onChange={() => {
+                setSelectedRecipeIds((prev) =>
+                  prev.includes(vId) ? prev.filter((id) => id !== vId) : [...prev, vId]
+                );
+              }}
+              className="rounded text-[#B47820] focus:ring-[#B47820] h-4 w-4 cursor-pointer"
+            />
+          </div>
+        );
+      },
+    },
+    {
       header: 'Mã & Tên công thức',
       render: (item: RecipeVersion) => {
         let coverUrl: string | null = null;
@@ -174,9 +196,7 @@ function RecipeListContent() {
           if (!coverUrl && typeof window !== 'undefined') {
             coverUrl = localStorage.getItem(`recipehub_media_url_${item.primaryMediaAssetId}`) || null;
           }
-          if (!coverUrl) {
-            coverUrl = `/api/backend/api/v1/content/image-drafts/${item.primaryMediaAssetId}/image`;
-          }
+
         }
         if (!coverUrl) {
           const versionId = item.versionId || item.id;
@@ -253,24 +273,28 @@ function RecipeListContent() {
     },
     {
       header: 'Định lượng & Quy trình',
-      render: (item: RecipeVersion) => (
-        <div className="text-xs text-[#706E68] space-y-0.5">
-          <div>
-            <span className="text-[#8C887F]">Nguyên liệu:</span>{' '}
-            <span className="text-[#1A1917] font-medium">{item.ingredients.length}</span>
+      render: (item: RecipeVersion) => {
+        const hasIngredients = item.ingredients && item.ingredients.length > 0;
+        const hasSteps = item.steps && item.steps.length > 0;
+        return (
+          <div className="text-xs text-[#706E68] space-y-0.5">
+            <div>
+              <span className="text-[#8C887F]">Nguyên liệu:</span>{' '}
+              <span className="text-[#1A1917] font-medium">{hasIngredients ? item.ingredients.length : '—'}</span>
+            </div>
+            <div>
+              <span className="text-[#8C887F]">SOP:</span>{' '}
+              <span className="text-[#1A1917] font-medium">{hasSteps ? `${item.steps.length} bước` : '—'}</span>
+            </div>
           </div>
-          <div>
-            <span className="text-[#8C887F]">SOP:</span>{' '}
-            <span className="text-[#1A1917] font-medium">{item.steps.length} bước</span>
-          </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       header: 'Người tạo',
       render: (item: RecipeVersion) => (
-        <span className="text-xs text-[#706E68] font-mono" title={item.creatorEmail}>
-          {item.creatorEmail.split('@')[0]}
+        <span className="text-xs text-[#706E68] font-mono" title={item.creatorEmail || undefined}>
+          {item.creatorEmail ? item.creatorEmail.split('@')[0] : '—'}
         </span>
       ),
     },
@@ -312,7 +336,30 @@ function RecipeListContent() {
             Quản lý vòng đời công thức: Nháp, Chờ duyệt, Đã duyệt, Lưu trữ.
           </p>
         </div>
-        <div>
+        <div className="flex items-center gap-2">
+          {selectedRecipeIds.length > 0 && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                if (selectedRecipeIds.length === 1) {
+                  const match = recipes.find(
+                    (r) => (r.versionId || r.id) === selectedRecipeIds[0]
+                  );
+                  if (match) {
+                    router.push(
+                      `/rnd/documents?recipeId=${match.recipeId || match.id}&versionId=${selectedRecipeIds[0]}`
+                    );
+                    return;
+                  }
+                }
+                router.push(`/rnd/documents?recipes=${selectedRecipeIds.join(',')}`);
+              }}
+              title="Chuyển sang không gian xuất bản tài liệu PDF"
+            >
+              <FileDown className="w-4 h-4 mr-1 text-[#B47820]" /> Xuất PDF bộ ({selectedRecipeIds.length})
+            </Button>
+          )}
           <Link href="/rnd/recipes/new">
             <Button variant="gold" size="sm">
               <Plus className="w-4 h-4 mr-1" /> Tạo công thức mới

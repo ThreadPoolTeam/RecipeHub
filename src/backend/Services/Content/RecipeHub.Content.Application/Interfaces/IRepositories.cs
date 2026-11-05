@@ -15,6 +15,7 @@ public interface IImageDraftRepository
         int pageSize,
         CancellationToken ct = default);
     Task AddAsync(AiImageDraft draft, CancellationToken ct = default);
+    void RemoveDraftFile(AiImageDraftFile file);
     Task SaveChangesAsync(CancellationToken ct = default);
 }
 

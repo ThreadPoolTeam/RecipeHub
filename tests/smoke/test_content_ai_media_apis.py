@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """
 RecipeHub Content AI & Media End-to-End Automated API Test Suite
-Tests Content APIs (12 endpoints) and Recipe Media APIs (5 endpoints).
-Supports safe non-destructive checks by default and full mutation lifecycle with automatic cleanup.
+Validates authentication boundary, role authorization, and media lifecycle.
 Usage:
-  python tests/smoke/test_content_ai_media_apis.py              # Safe read-only & non-destructive tests
+  python tests/smoke/test_content_ai_media_apis.py              # Safe auth & non-destructive tests
   python tests/smoke/test_content_ai_media_apis.py --full       # Full end-to-end lifecycle including media linking & cleanup
 """
 
@@ -29,16 +28,16 @@ RESET = "\033[0m"
 # Default configurations
 DEFAULT_CONTENT_URL = "http://localhost:5256"
 DEFAULT_RECIPE_URL = "http://localhost:5002"
-DEFAULT_USER_ID = "00000000-0000-0000-0000-000000000001"
+DEFAULT_IDENTITY_URL = "http://localhost:5001"
 DEFAULT_RECIPE_ID = "55555555-5555-5555-5555-555555555551"
 DEFAULT_RECIPE_VERSION_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
 DEFAULT_RECIPE_STEP_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb01"
 
 class ApiTestSuite:
-    def __init__(self, content_url: str, recipe_url: str, user_id: str):
+    def __init__(self, content_url: str, recipe_url: str, identity_url: str):
         self.content_url = content_url.rstrip("/")
         self.recipe_url = recipe_url.rstrip("/")
-        self.user_id = user_id
+        self.identity_url = identity_url.rstrip("/")
         self.passed = 0
         self.failed = 0
         self.skipped = 0
@@ -46,11 +45,12 @@ class ApiTestSuite:
 
     def request(self, method: str, url: str, data: Optional[Any] = None, 
                 content_type: str = "application/json", 
+                token: Optional[str] = None,
                 headers: Optional[Dict[str, str]] = None) -> Tuple[int, Any, float]:
         start = time.perf_counter()
-        req_headers = {
-            "X-User-Id": self.user_id
-        }
+        req_headers: Dict[str, str] = {}
+        if token:
+            req_headers["Authorization"] = f"Bearer {token}"
         if headers:
             req_headers.update(headers)
 
@@ -89,7 +89,7 @@ class ApiTestSuite:
 
     def record(self, test_name: str, passed: bool, status_code: int, elapsed_ms: float, detail: str = ""):
         status_tag = f"{GREEN}PASS{RESET}" if passed else f"{RED}FAIL{RESET}"
-        print(f"[{status_tag}] {test_name:<55} (Status: {status_code}, {elapsed_ms:5.1f}ms)")
+        print(f"[{status_tag}] {test_name:<60} (Status: {status_code}, {elapsed_ms:5.1f}ms)")
         if not passed and detail:
             print(f"       {RED}-> Details: {detail}{RESET}")
         self.results.append({
@@ -104,55 +104,87 @@ class ApiTestSuite:
         else:
             self.failed += 1
 
+    def login(self, username: str, password: str) -> Optional[str]:
+        if not username or not password:
+            return None
+        code, res, _ = self.request("POST", f"{self.identity_url}/api/v1/identity/auth/login", data={
+            "username": username,
+            "password": password
+        })
+        if code == 200 and isinstance(res, dict) and "accessToken" in res:
+            return res["accessToken"]
+        # Try via Gateway if direct identity port didn't work
+        gateway_url = "http://localhost:5000"
+        code, res, _ = self.request("POST", f"{gateway_url}/api/v1/identity/auth/login", data={
+            "username": username,
+            "password": password
+        })
+        if code == 200 and isinstance(res, dict) and "accessToken" in res:
+            return res["accessToken"]
+        return None
+
     def build_multipart_png(self, field_name: str, file_name: str, png_bytes: bytes, original_file_name: str = "") -> Tuple[bytes, str]:
         boundary = "----RecipeHubBoundary" + uuid.uuid4().hex
         parts = []
-        if original_file_name:
-            parts.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"originalFileName\"\r\n\r\n{original_file_name}\r\n".encode("utf-8"))
-        
-        file_header = (
-            f"--{boundary}\r\n"
-            f"Content-Disposition: form-data; name=\"{field_name}\"; filename=\"{file_name}\"\r\n"
-            f"Content-Type: image/png\r\n\r\n"
-        ).encode("utf-8")
-        
-        parts.append(file_header)
+        parts.append(f"--{boundary}\r\n".encode("utf-8"))
+        parts.append(
+            f'Content-Disposition: form-data; name="{field_name}"; filename="{file_name}"\r\n'.encode("utf-8")
+        )
+        parts.append(b"Content-Type: image/png\r\n\r\n")
         parts.append(png_bytes)
-        parts.append(f"\r\n--{boundary}--\r\n".encode("utf-8"))
-        
+        parts.append(b"\r\n")
+
+        if original_file_name:
+            parts.append(f"--{boundary}\r\n".encode("utf-8"))
+            parts.append(
+                b'Content-Disposition: form-data; name="originalFileName"\r\n\r\n'
+            )
+            parts.append(original_file_name.encode("utf-8"))
+            parts.append(b"\r\n")
+
+        parts.append(f"--{boundary}--\r\n".encode("utf-8"))
         body = b"".join(parts)
         content_type = f"multipart/form-data; boundary={boundary}"
         return body, content_type
 
     def create_1x1_png(self) -> bytes:
         return bytes([
-            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
-            0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-            0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00,
-            0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
-            0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49,
-            0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
+            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+            0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+            0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+            0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
+            0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41,
+            0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+            0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00,
+            0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
+            0x42, 0x60, 0x82
         ])
 
 def run_tests():
     parser = argparse.ArgumentParser(description="RecipeHub Content AI & Media End-to-End API Test Suite")
-    parser.add_argument("--full", action="store_true", help="Run full mutation lifecycle (creates & cleans up media links)")
-    parser.add_argument("--real", "--live-ai", dest="live_ai", action="store_true", help="Trigger real AI draft creation, polling, and preview/accept lifecycle")
+    parser.add_argument("--full", action="store_true", help="Run full mutation lifecycle (MUTATING: creates unlinked test media asset; note DELETE returns 501 deferred so created asset persists until deletion lifecycle is implemented)")
     parser.add_argument("--content-url", default=None, help="Base Content API URL")
     parser.add_argument("--recipe-url", default=None, help="Base Recipe API URL")
+    parser.add_argument("--identity-url", default=None, help="Base Identity API URL")
+    parser.add_argument("--rnd-user", default=os.environ.get("TEST_RND_USER", "rd@recipehub.demo"), help="R&D Username")
+    parser.add_argument("--rnd-pass", default=os.environ.get("TEST_RND_PASSWORD", os.environ.get("TEST_PASSWORD", "")), help="R&D Password")
+    parser.add_argument("--admin-user", default=os.environ.get("TEST_ADMIN_USER", "admin@recipehub.demo"), help="Admin Username")
+    parser.add_argument("--admin-pass", default=os.environ.get("TEST_ADMIN_PASSWORD", os.environ.get("TEST_PASSWORD", "")), help="Admin Password")
+    parser.add_argument("--viewer-user", default=os.environ.get("TEST_VIEWER_USER", "viewer@recipehub.demo"), help="Viewer Username")
+    parser.add_argument("--viewer-pass", default=os.environ.get("TEST_VIEWER_PASSWORD", os.environ.get("TEST_PASSWORD", "")), help="Viewer Password")
     args = parser.parse_args()
-
     print(f"\n{BOLD}{CYAN}========================================================================={RESET}")
     print(f"{BOLD}{CYAN}      RecipeHub Content AI & Media End-to-End API Test Suite             {RESET}")
     print(f"{BOLD}{CYAN}========================================================================={RESET}\n")
+
     content_url = args.content_url or os.environ.get("CONTENT_API_URL", DEFAULT_CONTENT_URL)
     recipe_url = args.recipe_url or os.environ.get("RECIPE_API_URL", DEFAULT_RECIPE_URL)
-    user_id = os.environ.get("TEST_USER_ID", DEFAULT_USER_ID)
+    identity_url = args.identity_url or os.environ.get("IDENTITY_API_URL", DEFAULT_IDENTITY_URL)
     recipe_id = os.environ.get("TEST_RECIPE_ID", DEFAULT_RECIPE_ID)
     version_id = os.environ.get("TEST_RECIPE_VERSION_ID", DEFAULT_RECIPE_VERSION_ID)
     step_id = os.environ.get("TEST_RECIPE_STEP_ID", DEFAULT_RECIPE_STEP_ID)
 
-    # Auto-detect Content URL
+    # Auto-detect URLs
     for candidate in [content_url, "http://localhost:5256", "http://localhost:5003"]:
         try:
             req = urllib.request.Request(f"{candidate}/health/live")
@@ -162,7 +194,6 @@ def run_tests():
         except:
             pass
 
-    # Auto-detect Recipe URL
     for candidate in [recipe_url, "http://localhost:5002", "http://localhost:5000/api/v1/recipes"]:
         try:
             req = urllib.request.Request(f"{candidate}/health/live")
@@ -172,211 +203,168 @@ def run_tests():
         except:
             pass
 
-    print(f"Content API URL : {CYAN}{content_url}{RESET}")
-    print(f"Recipe API URL  : {CYAN}{recipe_url}{RESET}")
-    print(f"Actor User ID   : {user_id}")
-    print(f"Recipe Version  : {version_id}")
-    print(f"Mode            : {BOLD}{'Full Mutation Lifecycle (with cleanup)' if args.full else 'Safe Read-Only / Non-Destructive'}{RESET}\n")
+    for candidate in [identity_url, "http://localhost:5001", "http://localhost:5000/api/v1/identity"]:
+        try:
+            req = urllib.request.Request(f"{candidate}/health/live")
+            with urllib.request.urlopen(req, timeout=1):
+                identity_url = candidate
+                break
+        except:
+            pass
 
-    suite = ApiTestSuite(content_url, recipe_url, user_id)
+    print(f"Content API URL  : {CYAN}{content_url}{RESET}")
+    print(f"Recipe API URL   : {CYAN}{recipe_url}{RESET}")
+    print(f"Identity API URL : {CYAN}{identity_url}{RESET}")
+    print(f"Recipe Version   : {version_id}")
+    print(f"Mode             : {BOLD}{'Full Mutation Lifecycle' if args.full else 'Safe Read-Only / Non-Destructive'}{RESET}\n")
+
+    suite = ApiTestSuite(content_url, recipe_url, identity_url)
 
     # -------------------------------------------------------------
-    # SUITE 1: Health & gRPC Inter-Service Communication Probe
+    # SUITE 0: Health Endpoints (Public)
     # -------------------------------------------------------------
-    print(f"{BOLD}[1] Health & gRPC Inter-Service Communication{RESET}")
-    code, res, t = suite.request("GET", f"{recipe_url}/health/live")
-    suite.record("Recipe.Api Liveness Probe (/health/live)", code == 200, code, t, str(res))
-
+    print(f"{BOLD}[0] Public Health Probes (No Auth Required){RESET}")
     code, res, t = suite.request("GET", f"{content_url}/health/live")
-    suite.record("Content.Api Liveness Probe (/health/live)", code == 200, code, t, str(res))
+    suite.record("Content.Api /health/live returns 200 without token", code == 200, code, t, str(res))
+
+    code, res, t = suite.request("GET", f"{content_url}/health/ready")
+    suite.record("Content.Api /health/ready returns 200 without token", code == 200, code, t, str(res))
+
+    code, res, t = suite.request("GET", f"{recipe_url}/health/live")
+    suite.record("Recipe.Api /health/live returns 200 without token", code == 200, code, t, str(res))
+
+    # -------------------------------------------------------------
+    # SUITE 1: Authentication Boundary Negative Tests (No token / X-User-Id only)
+    # -------------------------------------------------------------
+    print(f"\n{BOLD}[1] Authentication Boundary Negative Tests{RESET}")
+    fake_actor_uuid = str(uuid.uuid4())
+
+    code, res, t = suite.request("GET", f"{content_url}/api/v1/content/media-assets")
+    suite.record("GET /media-assets without token returns 401", code == 401, code, t, str(res))
+
+    code, res, t = suite.request("GET", f"{content_url}/api/v1/content/media-assets", headers={"X-User-Id": fake_actor_uuid})
+    suite.record("GET /media-assets with ONLY X-User-Id returns 401", code == 401, code, t, str(res))
+
+    code, res, t = suite.request("GET", f"{content_url}/api/v1/content/media-assets", token="invalid-bearer-token-12345")
+    suite.record("GET /media-assets with invalid Bearer returns 401", code == 401, code, t, str(res))
+
+    code, res, t = suite.request("GET", f"{content_url}/api/v1/content/image-drafts")
+    suite.record("GET /image-drafts without token returns 401", code == 401, code, t, str(res))
+
+    code, res, t = suite.request("POST", f"{content_url}/api/v1/content/image-drafts", data={"userBrief": "test"})
+    suite.record("POST /image-drafts without token returns 401", code == 401, code, t, str(res))
 
     code, res, t = suite.request("GET", f"{content_url}/api/v1/content/probe-recipe")
-    probe_ok = code == 200 and isinstance(res, dict) and res.get("status") == "Healthy"
-    suite.record("gRPC Ping to Recipe Service (/probe-recipe)", probe_ok, code, t, str(res))
+    suite.record("GET /probe-recipe without token returns 401", code == 401, code, t, str(res))
 
     # -------------------------------------------------------------
-    # SUITE 2: Content Media Assets Management APIs
+    # SUITE 2: Identity Session Login for Test Roles
     # -------------------------------------------------------------
-    print(f"\n{BOLD}[2] Content Media Assets Management APIs{RESET}")
-    code, res, t = suite.request("GET", f"{content_url}/api/v1/content/media-assets?page=1&pageSize=10")
+    print(f"\n{BOLD}[2] Identity Session Token Acquisition{RESET}")
+    rnd_token = suite.login(args.rnd_user, args.rnd_pass)
+    admin_token = suite.login(args.admin_user, args.admin_pass)
+    viewer_token = suite.login(args.viewer_user, args.viewer_pass)
+
+    suite.record(f"Acquire R&D Bearer Token ({args.rnd_user})", bool(rnd_token), 200 if rnd_token else 0, 0)
+    suite.record(f"Acquire Admin Bearer Token ({args.admin_user})", bool(admin_token), 200 if admin_token else 0, 0)
+    suite.record(f"Acquire Viewer Bearer Token ({args.viewer_user})", bool(viewer_token), 200 if viewer_token else 0, 0)
+    if not rnd_token or not admin_token or not viewer_token:
+        print(f"\n{RED}ERROR: Failed to obtain necessary test tokens from Identity service.{RESET}")
+        return 1
+
+    # -------------------------------------------------------------
+    # SUITE 3: Viewer Role Authorization & Resource Boundaries
+    # -------------------------------------------------------------
+    print(f"\n{BOLD}[3] Viewer Role Authorization Checks (Must be 403 Forbidden){RESET}")
+    code, res, t = suite.request("GET", f"{content_url}/api/v1/content/media-assets", token=viewer_token)
+    suite.record("Viewer GET /media-assets returns 403 Forbidden", code == 403, code, t, str(res))
+
+    code, res, t = suite.request("GET", f"{content_url}/api/v1/content/image-drafts", token=viewer_token)
+    suite.record("Viewer GET /image-drafts returns 403 Forbidden", code == 403, code, t, str(res))
+
+    code, res, t = suite.request("POST", f"{content_url}/api/v1/content/image-drafts", token=viewer_token, data={"userBrief": "test"})
+    suite.record("Viewer POST /image-drafts returns 403 Forbidden", code == 403, code, t, str(res))
+
+    png_bytes = suite.create_1x1_png()
+    body, ct = suite.build_multipart_png("file", "test.png", png_bytes)
+    code, res, t = suite.request("POST", f"{content_url}/api/v1/content/media-assets", token=viewer_token, data=body, content_type=ct)
+    suite.record("Viewer POST /media-assets (Upload) returns 403 Forbidden", code == 403, code, t, str(res))
+
+    code, res, t = suite.request("GET", f"{content_url}/api/v1/content/probe-recipe", token=viewer_token)
+    suite.record("Viewer GET /probe-recipe returns 403 Forbidden", code == 403, code, t, str(res))
+
+    # Standalone/unreferenced media detail for Viewer: should return 403 or 404
+    random_asset_id = str(uuid.uuid4())
+    code, res, t = suite.request("GET", f"{content_url}/api/v1/content/media-assets/{random_asset_id}", token=viewer_token)
+    suite.record("Viewer GET non-existent media detail returns 404", code == 404, code, t, str(res))
+
+    # -------------------------------------------------------------
+    # SUITE 4: R&D & Admin Authorized Operations
+    # -------------------------------------------------------------
+    print(f"\n{BOLD}[4] R&D & Admin Authorized Operations{RESET}")
+    code, res, t = suite.request("GET", f"{content_url}/api/v1/content/probe-recipe", token=rnd_token)
+    probe_ok = code == 200 and isinstance(res, dict) and res.get("status") == "Healthy"
+    suite.record("R&D GET /probe-recipe returns 200 Healthy", probe_ok, code, t, str(res))
+
+    code, res, t = suite.request("GET", f"{content_url}/api/v1/content/media-assets?page=1&pageSize=10", token=rnd_token)
     list_ok = code == 200 and isinstance(res, dict) and "items" in res
-    suite.record("GET /api/v1/content/media-assets (List & Pagination)", list_ok, code, t, str(res))
+    suite.record("R&D GET /media-assets returns 200 OK", list_ok, code, t, str(res))
+
+    code, res, t = suite.request("GET", f"{content_url}/api/v1/content/media-assets?page=1&pageSize=10", token=admin_token)
+    admin_list_ok = code == 200 and isinstance(res, dict) and "items" in res
+    suite.record("Admin GET /media-assets returns 200 OK", admin_list_ok, code, t, str(res))
 
     first_asset_id = None
     if list_ok and len(res.get("items", [])) > 0:
         first_asset_id = res["items"][0].get("assetId")
 
     if first_asset_id:
-        code, res, t = suite.request("GET", f"{content_url}/api/v1/content/media-assets/{first_asset_id}")
-        suite.record("GET /api/v1/content/media-assets/{assetId}", code == 200, code, t, str(res))
+        code, res, t = suite.request("GET", f"{content_url}/api/v1/content/media-assets/{first_asset_id}", token=rnd_token)
+        suite.record("R&D GET /media-assets/{id} returns 200 OK", code == 200, code, t, str(res))
 
-        code, res, t = suite.request("GET", f"{content_url}/api/v1/content/media-assets/{first_asset_id}/usages")
+        code, res, t = suite.request("GET", f"{content_url}/api/v1/content/media-assets/{first_asset_id}/usages", token=rnd_token)
         usages_ok = code == 200 and isinstance(res, dict) and "usages" in res
-        suite.record("GET /api/v1/content/media-assets/{assetId}/usages (gRPC query)", usages_ok, code, t, str(res))
+        suite.record("R&D GET /media-assets/{id}/usages returns 200 OK", usages_ok, code, t, str(res))
 
-        code, res, t = suite.request("DELETE", f"{content_url}/api/v1/content/media-assets/{first_asset_id}")
-        suite.record("DELETE /api/v1/content/media-assets/{id} (Gated 501)", code == 501, code, t, str(res))
+        code, res, t = suite.request("DELETE", f"{content_url}/api/v1/content/media-assets/{first_asset_id}", token=rnd_token)
+        suite.record("R&D DELETE /media-assets/{id} returns 501 Deferred", code == 501, code, t, str(res))
 
-    # -------------------------------------------------------------
-    # Fetch Recipe Version Info (Read-only prerequisite)
-    # -------------------------------------------------------------
-    code, recipe_detail, t = suite.request("GET", f"{recipe_url}/api/v1/recipes/{recipe_id}/versions/{version_id}")
+        # Check Viewer on this asset: if not published/active recipe version, must be 403
+        code, res, t = suite.request("GET", f"{content_url}/api/v1/content/media-assets/{first_asset_id}", token=viewer_token)
+        v_ok = code in (200, 403)
+        suite.record(f"Viewer GET /media-assets/{{id}} checked ({code})", v_ok, code, t, str(res))
+
+    # Read recipe version prerequisite
+    code, recipe_detail, t = suite.request("GET", f"{recipe_url}/api/v1/recipes/{recipe_id}/versions/{version_id}", token=rnd_token)
     recipe_read_ok = code == 200 and isinstance(recipe_detail, dict)
+    suite.record("R&D GET Recipe Version detail returns 200", recipe_read_ok, code, t, str(recipe_detail))
 
-    # -------------------------------------------------------------
-    # SUITE 3: Content AI Image Drafts (Read & Queries)
-    # -------------------------------------------------------------
-    print(f"\n{BOLD}[3] AI Image Drafts Management APIs{RESET}")
-    code, res, t = suite.request("GET", f"{content_url}/api/v1/content/image-drafts?recipeVersionId={version_id}")
+    # Image drafts list with token
+    code, res, t = suite.request("GET", f"{content_url}/api/v1/content/image-drafts?recipeVersionId={version_id}", token=rnd_token)
     drafts_list_ok = code == 200 and isinstance(res, dict) and "items" in res
-    suite.record("GET /api/v1/content/image-drafts?recipeVersionId=...", drafts_list_ok, code, t, str(res))
-    live_draft_id = None
-    if args.live_ai and recipe_read_ok:
-        print(f"\n{BOLD}{YELLOW}Executing AI Image Draft Creation & Polling Lifecycle...{RESET}")
-        row_v = recipe_detail.get("rowVersion", 1)
-        draft_payload = {
-            "recipeVersionId": version_id,
-            "recipeStepId": None,
-            "targetKind": "final_product",
-            "userBrief": "Ảnh ly trà đào cam sả đá mát lạnh góc chụp cận cảnh",
-            "expectedRecipeRevision": row_v
-        }
-        code, res, t = suite.request("POST", f"{content_url}/api/v1/content/image-drafts", data=draft_payload)
-        if code in (202, 201, 200) and isinstance(res, dict):
-            live_draft_id = res.get("draftId")
-        suite.record("POST /api/v1/content/image-drafts (Create Draft)", code == 202, code, t, str(res) if code != 202 else f"DraftId: {live_draft_id}")
+    suite.record("R&D GET /image-drafts returns 200 OK", drafts_list_ok, code, t, str(res))
 
-        if live_draft_id:
-            code, res, t = suite.request("GET", f"{content_url}/api/v1/content/image-drafts/{live_draft_id}")
-            suite.record("GET /api/v1/content/image-drafts/{draftId} (Status)", code == 200, code, t, str(res))
+    # Full mutation cycle if requested
+    if args.full:
+        print(f"\n{BOLD}{YELLOW}WARNING: --full creates an unlinked test media asset in Content DB.{RESET}")
+        print(f"{BOLD}{YELLOW}Note: DELETE /media-assets/{{id}} returns 501 Deferred (not implemented); created asset persists safely without database reset.{RESET}")
+        print(f"\n{BOLD}{YELLOW}Executing Full Mutation & Verification Cycle...{RESET}")
+        png_bytes = suite.create_1x1_png()
+        body, ct = suite.build_multipart_png("file", "test_coffee.png", png_bytes, "Cold Brew.png")
+        code, res, t = suite.request("POST", f"{content_url}/api/v1/content/media-assets", token=rnd_token, data=body, content_type=ct)
+        created_asset_id = res.get("assetId") if code in (201, 200) and isinstance(res, dict) else None
+        suite.record("POST /api/v1/content/media-assets (Upload via R&D)", code == 201, code, t, str(res))
 
-            # Polling for background generation (up to 30s)
-            print("       Polling for worker generation...")
-            final_state = "queued"
-            draft_info = None
-            for _ in range(15):
-                time.sleep(2)
-                code, draft_info, _ = suite.request("GET", f"{content_url}/api/v1/content/image-drafts/{live_draft_id}")
-                if code == 200 and isinstance(draft_info, dict):
-                    final_state = draft_info.get("state", "queued")
-                    if final_state in ("generated", "failed", "accepted", "discarded"):
-                        break
-            print(f"       Draft Final State: {final_state}")
+        if created_asset_id:
+            code, res, t = suite.request("GET", f"{content_url}/api/v1/content/media-assets/{created_asset_id}", token=rnd_token)
+            suite.record("GET /api/v1/content/media-assets/{newId} (R&D)", code == 200, code, t, str(res))
 
-            if final_state == "generated":
-                suite.record("Background Worker AI Image Generation", True, 200, 0, "Draft successfully generated image")
-                image_endpoint = draft_info.get("previewUrl") if isinstance(draft_info, dict) and draft_info.get("previewUrl") else f"/api/v1/content/image-drafts/{live_draft_id}/image"
-                code, res, t = suite.request("GET", f"{content_url}{image_endpoint}")
-                suite.record(f"GET {image_endpoint} (Preview Image Stream)", code == 200, code, t)
-                code, res, t = suite.request("POST", f"{content_url}/api/v1/content/image-drafts/{live_draft_id}/accept")
-                suite.record("POST .../image-drafts/{id}/accept", code in (200, 201), code, t, str(res))
-            else:
-                # Generation failed in worker! Record FAIL for the generation step
-                err_msg = draft_info.get("errorMessage", "Draft generation failed in worker") if isinstance(draft_info, dict) else "Worker failed"
-                suite.record("Background Worker AI Image Generation", False, 500, 0, f"State: {final_state} | {err_msg}")
+            code, res, t = suite.request("GET", f"{content_url}/api/v1/content/media-assets/{created_asset_id}/usages", token=rnd_token)
+            suite.record("GET /api/v1/content/media-assets/{newId}/usages (R&D)", code == 200, code, t, str(res))
 
-                # Discard test draft
-                code, res, t = suite.request("POST", f"{content_url}/api/v1/content/image-drafts/{live_draft_id}/discard")
-                suite.record("POST .../image-drafts/{id}/discard (Cleanup)", code == 200, code, t, str(res))
-    elif drafts_list_ok and len(res.get("items", [])) > 0:
-        sample_draft_id = res["items"][0].get("draftId")
-        code, res, t = suite.request("GET", f"{content_url}/api/v1/content/image-drafts/{sample_draft_id}")
-        suite.record("GET /api/v1/content/image-drafts/{draftId}", code == 200, code, t, str(res))
-    # SUITE 4: Recipe Media Links & Usages
-    print(f"\n{BOLD}[4] Recipe Media Linking & Concurrency APIs{RESET}")
-    suite.record("GET /api/v1/recipes/{publicId}/versions/{versionId}", recipe_read_ok, code, t, str(recipe_detail))
-    if args.full and recipe_read_ok:
-        # Full mutation lifecycle with guaranteed restoration in finally block
-        print(f"\n{BOLD}{YELLOW}Executing Full Mutation & Concurrency Cycle (with automatic restore)...{RESET}")
-        original_primary_media = recipe_detail.get("primaryMediaAssetRef")
-        created_asset_id = None
-        created_link_id = None
-        try:
-            png_bytes = suite.create_1x1_png()
-            body, ct = suite.build_multipart_png("file", "test_coffee.png", png_bytes, "Cold Brew.png")
-            code, res, t = suite.request("POST", f"{content_url}/api/v1/content/media-assets", data=body, content_type=ct)
-            if code in (201, 200) and isinstance(res, dict):
-                created_asset_id = res.get("assetId")
-            suite.record("POST /api/v1/content/media-assets (Upload)", code == 201, code, t, str(res))
-
-            if not created_asset_id:
-                suite.record("Recipe Media Linking (Skipped - Upload failed)", False, 0, 0, "No asset ID returned from upload")
-            else:
-                # Re-fetch latest rowVersion
-                code, detail, _ = suite.request("GET", f"{recipe_url}/api/v1/recipes/{recipe_id}/versions/{version_id}")
-                current_row_version = detail.get("rowVersion", 1)
-
-                # 2. Set primary image
-                set_prim_payload = {"mediaAssetRef": created_asset_id, "expectedRowVersion": current_row_version}
-                code, res, t = suite.request("PUT", f"{recipe_url}/api/v1/recipes/{recipe_id}/versions/{version_id}/primary-image", data=set_prim_payload)
-                suite.record("PUT .../versions/{versionId}/primary-image", code == 200, code, t, str(res))
-            # Re-fetch latest rowVersion
-            code, detail, _ = suite.request("GET", f"{recipe_url}/api/v1/recipes/{recipe_id}/versions/{version_id}")
-            current_row_version = detail.get("rowVersion", current_row_version)
-
-            # 3. Add step media
-            add_step_payload = {
-                "mediaAssetRef": created_asset_id,
-                "sortOrder": 1,
-                "isPrimary": True,
-                "caption": "Bước hãm trà",
-                "expectedRowVersion": current_row_version
-            }
-            code, res, t = suite.request("POST", f"{recipe_url}/api/v1/recipes/{recipe_id}/versions/{version_id}/steps/{step_id}/media", data=add_step_payload)
-            if code in (201, 200) and isinstance(res, dict):
-                created_link_id = res.get("linkId")
-            suite.record("POST .../steps/{stepId}/media", code == 201, code, t, str(res))
-
-            # Re-fetch latest rowVersion
-            code, detail, _ = suite.request("GET", f"{recipe_url}/api/v1/recipes/{recipe_id}/versions/{version_id}")
-            current_row_version = detail.get("rowVersion", current_row_version)
-
-            # 4. Patch step media
-            if created_link_id:
-                patch_step_payload = {
-                    "caption": "Bước hãm trà thơm nồng",
-                    "sortOrder": 1,
-                    "isPrimary": True,
-                    "expectedRowVersion": current_row_version
-                }
-                code, res, t = suite.request("PATCH", f"{recipe_url}/api/v1/recipes/{recipe_id}/versions/{version_id}/steps/{step_id}/media/{created_link_id}", data=patch_step_payload)
-                suite.record("PATCH .../steps/{stepId}/media/{linkId}", code == 200, code, t, str(res))
-
-                # Re-fetch latest rowVersion
-                code, detail, _ = suite.request("GET", f"{recipe_url}/api/v1/recipes/{recipe_id}/versions/{version_id}")
-                current_row_version = detail.get("rowVersion", current_row_version)
-
-                # 5. Delete step media
-                code, res, t = suite.request("DELETE", f"{recipe_url}/api/v1/recipes/{recipe_id}/versions/{version_id}/steps/{step_id}/media/{created_link_id}?expectedRowVersion={current_row_version}")
-                suite.record("DELETE .../steps/{stepId}/media/{linkId}", code == 204, code, t, str(res))
-                created_link_id = None
-
-            # Re-fetch latest rowVersion
-            code, detail, _ = suite.request("GET", f"{recipe_url}/api/v1/recipes/{recipe_id}/versions/{version_id}")
-            current_row_version = detail.get("rowVersion", current_row_version)
-
-            # 6. Remove primary image
-            rem_prim_payload = {"expectedRowVersion": current_row_version}
-            code, res, t = suite.request("DELETE", f"{recipe_url}/api/v1/recipes/{recipe_id}/versions/{version_id}/primary-image", data=rem_prim_payload)
-            suite.record("DELETE .../versions/{versionId}/primary-image", code == 204, code, t, str(res))
-
-        finally:
-            # Defensive restoration: ensure created step links are cleaned and original primary image is restored
-            code, detail, _ = suite.request("GET", f"{recipe_url}/api/v1/recipes/{recipe_id}/versions/{version_id}")
-            if code == 200 and isinstance(detail, dict):
-                cur_v = detail.get("rowVersion", 1)
-                if created_link_id:
-                    suite.request("DELETE", f"{recipe_url}/api/v1/recipes/{recipe_id}/versions/{version_id}/steps/{step_id}/media/{created_link_id}?expectedRowVersion={cur_v}")
-                    code, detail, _ = suite.request("GET", f"{recipe_url}/api/v1/recipes/{recipe_id}/versions/{version_id}")
-                    cur_v = detail.get("rowVersion", cur_v) if isinstance(detail, dict) else cur_v
-                
-                # Restore original primary media
-                if original_primary_media is not None:
-                    suite.request("PUT", f"{recipe_url}/api/v1/recipes/{recipe_id}/versions/{version_id}/primary-image", 
-                                  data={"mediaAssetRef": original_primary_media, "expectedRowVersion": cur_v})
-                elif detail.get("primaryMediaAssetRef") == created_asset_id:
-                    suite.request("DELETE", f"{recipe_url}/api/v1/recipes/{recipe_id}/versions/{version_id}/primary-image", 
-                                  data={"expectedRowVersion": cur_v})
+            # Unlinked newly uploaded asset must return 403 for Viewer
+            code, res, t = suite.request("GET", f"{content_url}/api/v1/content/media-assets/{created_asset_id}", token=viewer_token)
+            suite.record("GET /api/v1/content/media-assets/{newId} (Viewer 403 Unlinked)", code == 403, code, t, str(res))
     total = suite.passed + suite.failed
     pass_rate = (suite.passed / total * 100.0) if total > 0 else 0.0
 

@@ -48,11 +48,11 @@ export function isPathAllowedForUser(
 export function getDefaultDashboardForRole(role: Role): string {
   switch (role) {
     case 'rnd':
-      return '/rnd';
+      return '/rnd/recipes';
     case 'viewer':
-      return '/viewer';
+      return '/viewer/recipes';
     case 'admin':
-      return '/admin';
+      return '/admin/users';
     default:
       return '/platform';
   }
@@ -84,4 +84,9 @@ export function canViewRecipe(user: User, recipe: RecipeVersion): boolean {
     return recipe.status === 'Published' && (user.allowedRecipeIds || []).includes(recipe.recipeId);
   }
   return false;
+}
+
+export function canManagePdf(user: User | SessionInfo | null): boolean {
+  if (!user) return false;
+  return user.role === 'admin' || user.role === 'rnd';
 }

@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RecipeHub · Quiz Studio Preview</title>
+<style>
+/* RecipeHub Warm Editorial: docs/DESIGN.md. Local font subsets match app/globals.css. */
+@font-face {
+  font-family: 'Google Sans'; font-style: normal; font-weight: 400 700; font-display: swap;
+  src: url('/fonts/google-sans-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Google Sans'; font-style: normal; font-weight: 400 700; font-display: swap;
+  src: url('/fonts/google-sans-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Google Sans'; font-style: normal; font-weight: 400 700; font-display: swap;
+  src: url('/fonts/google-sans-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+:root {
+  --color-canvas: #FAF9F5;
+  --color-surface: #FFFFFF;
+  --color-surface-soft: #F5F0E8;
+  --color-surface-hover: #ECE6DA;
+  --color-border: #E8E2D9;
+  --color-border-strong: #D5CEBF;
+  --color-ink: #1A1917;
+  --color-muted: #706E68;
+  --color-muted-soft: #8C887F;
+  --color-accent: #B47820;
+  --color-accent-highlight: #C9A84C;
+  --color-action: #B47820;
+  --color-action-hover: #9A6416;
+  --color-approved: #166534;
+  --color-approved-bg: #F0FDF4;
+  --color-approved-border: #BBF7D0;
+  --color-failed: #991B1B;
+  --color-failed-bg: #FEF2F2;
+  --color-failed-border: #FECACA;
+  --shadow-xs: 0 1px 2px 0 rgba(26,25,23,.05);
+  --shadow-sm: 0 1px 3px 0 rgba(26,25,23,.07), 0 1px 2px -1px rgba(26,25,23,.07);
+  --shadow-md: 0 4px 6px -1px rgba(26,25,23,.08), 0 2px 4px -2px rgba(26,25,23,.06);
+  --shadow-xl: 0 20px 25px -5px rgba(26,25,23,.1), 0 8px 10px -6px rgba(26,25,23,.08);
+  --font: 'Google Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; color: var(--color-ink); background: var(--color-canvas); font: 400 15px/1.6 var(--font); }
+button, a, input { font: inherit; }
+button { cursor: pointer; color: inherit; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid #CC785C; outline-offset: 4px; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+header { height: 88px; border-bottom: 1px solid var(--color-border); display: flex; align-items: center; justify-content: space-between; padding: 0 5vw; background: var(--color-surface); }
+.brand { font-size: 28px; font-weight: 700; letter-spacing: -1px; line-height: 1.25; }
+.brand span { color: var(--color-action-hover); }
+.brand small { font-size: 10px; font-weight: 500; letter-spacing: 2px; display: block; margin-top: 4px; color: var(--color-muted); }
+.head-right { display: flex; align-items: center; gap: 16px; }
+.badge { font-size: 10px; font-weight: 500; letter-spacing: 1px; padding: 8px 12px; border: 1px solid var(--color-border); border-radius: 9999px; background: var(--color-surface-soft); }
+.avatar { width: 36px; height: 36px; background: var(--color-surface-soft); border: 1px solid var(--color-border); border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+.shell { max-width: 1250px; margin: auto; padding: 32px 32px 24px; }
+.crumb { font-size: 12px; color: var(--color-muted); margin-bottom: 24px; }
+.crumb span { margin: 0 8px; color: var(--color-muted-soft); }
+.title-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 32px; }
+.eyebrow { font-size: 10px; letter-spacing: 1.6px; color: var(--color-action-hover); text-transform: uppercase; font-weight: 700; margin: 0 0 8px; }
+h1 { font-size: 30px; font-weight: 700; line-height: 1.25; margin: 0 0 12px; letter-spacing: -.6px; text-wrap: balance; }
+.subtitle { color: var(--color-muted); font-size: 14px; margin: 0; }
+.title-mark { font-size: 12px; font-weight: 500; color: var(--color-muted); max-width: 190px; text-align: right; line-height: 1.6; }
+.layout { display: grid; grid-template-columns: minmax(0,1fr) 276px; gap: 24px; align-items: start; }
+.card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-sm); }
+.question-top { padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--color-border); }
+.question-count { font-size: 12px; font-weight: 700; letter-spacing: 1px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.question-count span { color: var(--color-muted); font-weight: 400; }
+.flag { border: 1px solid transparent; background: transparent; font-size: 12px; color: var(--color-muted); padding: 8px 12px; border-radius: 9999px; }
+.flag:hover { background: var(--color-surface-soft); }
+.flag[aria-pressed=true] { background: var(--color-surface-soft); border-color: var(--color-border-strong); color: var(--color-action-hover); }
+.question-body { padding: 32px; }
+.question-label { font-size: 10px; font-weight: 500; letter-spacing: 1.6px; color: var(--color-action-hover); display: flex; gap: 8px; align-items: center; }
+.dot { width: 6px; height: 6px; background: var(--color-accent); border-radius: 50%; }
+h2 { font-size: 24px; font-weight: 700; line-height: 1.3; letter-spacing: -.3px; margin: 16px 0 12px; max-width: 650px; text-wrap: pretty; }
+.instruction { font-size: 13px; color: var(--color-muted); margin: 0 0 24px; }
+.options { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.option { position: relative; display: flex; align-items: center; gap: 12px; min-height: 100px; padding: 16px 32px 16px 16px; text-align: left; border: 1px solid var(--color-border-strong); border-radius: 12px; background: var(--color-surface); transition: transform .18s, box-shadow .18s, background .18s, border-color .18s; font-size: 15px; font-weight: 500; line-height: 1.6; }
+.shape { flex-shrink: 0; width: 36px; height: 36px; background: var(--color-surface-soft); border-radius: 12px; color: var(--color-muted); display: grid; place-items: center; font-size: 18px; }
+.option:hover { transform: translateY(-3px); border-color: var(--color-accent); background: var(--color-canvas); box-shadow: var(--shadow-md); }
+.option[aria-checked=true] { border-color: var(--color-accent); background: var(--color-surface-soft); box-shadow: inset 0 0 0 1px var(--color-accent); animation: select .24s ease-out; }
+.option[aria-checked=true] .shape { color: var(--color-action-hover); background: var(--color-surface); }
+.option.wrong { border-color: var(--color-failed); background: var(--color-failed-bg); box-shadow: inset 0 0 0 1px var(--color-failed); opacity: 1; }
+.option.correct { border-color: var(--color-approved); background: var(--color-approved-bg); box-shadow: inset 0 0 0 1px var(--color-approved); opacity: 1; }
+.option:disabled { opacity: 1; }
+.option:disabled:hover { transform: none; }
+.selected-note { min-height: 20px; margin: 16px 0 0; font-size: 12px; color: var(--color-muted); display: flex; align-items: center; gap: 8px; }
+.question-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 24px; gap: 12px; }
+.button { border: 1px solid var(--color-border); background: var(--color-surface); border-radius: 9999px; padding: 12px 24px; font-size: 13px; font-weight: 500; box-shadow: var(--shadow-xs); transition: transform .16s, background .16s, border-color .16s; }
+.button:hover { transform: translateY(-2px); background: var(--color-canvas); border-color: var(--color-border-strong); }
+.primary { background: var(--color-action); border-color: var(--color-action); color: var(--color-ink); font-weight: 700; }
+.primary:hover { background: var(--color-action-hover); border-color: var(--color-action-hover); color: var(--color-surface); }
+.nav-hint { font-size: 12px; color: var(--color-muted); text-align: center; }
+.sidebar { display: grid; gap: 16px; }
+.progress-card { padding: 24px 20px; }
+.side-title { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; font-weight: 700; }
+.live-label { font-size: 10px; color: var(--color-muted); font-weight: 500; letter-spacing: 1px; }
+.progress-track { height: 5px; background: var(--color-surface-hover); border-radius: 9999px; margin: 16px 0 8px; overflow: hidden; }
+.progress-fill { height: 100%; width: 0; background: var(--color-accent); border-radius: 9999px; transition: width .35s ease; }
+.progress-copy { display: flex; justify-content: space-between; font-size: 12px; color: var(--color-muted); margin-bottom: 24px; font-variant-numeric: tabular-nums; }
+.numbers { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+.number { position: relative; aspect-ratio: 1.05; border: 1px solid var(--color-border-strong); border-radius: 12px; background: var(--color-surface); font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; transition: background .2s, transform .2s, border-color .2s; }
+.number:hover { transform: translateY(-2px); border-color: var(--color-accent); }
+.number.answered { background: var(--color-surface-soft); border-color: var(--color-accent); }
+.number.current { background: var(--color-action); color: var(--color-ink); border-color: var(--color-action); box-shadow: var(--shadow-xs); font-weight: 700; }
+.number.flagged:after { content: ''; position: absolute; right: 4px; top: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--color-ink); }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--color-muted); margin: 16px 0 24px; }
+.legend span { display: flex; align-items: center; gap: 4px; }
+.swatch { width: 9px; height: 9px; border: 1px solid var(--color-border-strong); border-radius: 3px; background: var(--color-surface); }
+.swatch.done { background: var(--color-surface-soft); border-color: var(--color-accent); }
+.swatch.mark { border: 0; background: var(--color-ink); border-radius: 50%; width: 6px; height: 6px; }
+.submit { width: 100%; padding: 12px 16px; background: var(--color-surface-soft); border-color: var(--color-border-strong); }
+.submit:hover { background: var(--color-surface-hover); }
+.side-tip { border: 1px solid var(--color-border); border-radius: 16px; padding: 20px; background: var(--color-surface-soft); }
+.tip-title { font-size: 16px; font-weight: 700; margin: 0 0 8px; }
+.side-tip p:last-child { font-size: 13px; color: var(--color-muted); line-height: 1.6; margin: 0; }
+.bottom { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 32px; border-top: 1px solid var(--color-border); padding-top: 16px; font-size: 12px; color: var(--color-muted); }
+.text-button { background: transparent; border: 0; border-radius: 9999px; text-decoration: underline; text-underline-offset: 3px; font-size: 12px; color: var(--color-muted); padding: 8px; }
+.motion-switch { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.motion-switch input { accent-color: var(--color-action); }
+dialog { border: 1px solid var(--color-border); border-radius: 16px; padding: 32px; max-width: 560px; max-height: calc(100dvh - 32px); width: calc(100% - 32px); overflow: auto; color: var(--color-ink); background: var(--color-surface); box-shadow: var(--shadow-xl); }
+dialog::backdrop { background: rgba(26,25,23,.45); backdrop-filter: blur(4px); }
+dialog h2 { margin-top: 0; font-size: 24px; }
+dialog p { font-size: 14px; line-height: 1.6; color: var(--color-muted); }
+.dialog-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; margin-top: 24px; }
+.review-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+.review-list button { min-width: 36px; border: 1px solid var(--color-border-strong); border-radius: 9999px; padding: 8px; background: var(--color-surface-soft); }
+.sources { padding-left: 20px; overflow-wrap: anywhere; }
+.sources a { color: var(--color-action-hover); }
+.sources li { font-size: 13px; line-height: 1.6; margin: 12px 0; }
+.score { font-size: 72px; font-weight: 700; line-height: 1.25; font-variant-numeric: tabular-nums; margin: 24px 0; color: var(--color-ink); }
+.score-total { font-size: 30px; color: var(--color-muted); }
+.result-tag { display: inline-block; padding: 8px 16px; background: var(--color-approved-bg); border: 1px solid var(--color-approved-border); color: var(--color-approved); border-radius: 9999px; font-size: 11px; font-weight: 500; }
+.result-tag.failed { background: var(--color-failed-bg); border-color: var(--color-failed-border); color: var(--color-failed); }
+.result { padding: 32px; text-align: center; position: relative; overflow: hidden; }
+.result h2 { margin: 16px auto; }
+.result p { color: var(--color-muted); font-size: 14px; line-height: 1.6; }
+.result-actions { display: flex; justify-content: center; gap: 12px; margin-top: 24px; }
+.confetti { position: absolute; top: -15px; left: var(--x); width: 7px; height: 12px; background: var(--c); animation: confetti 1.4s ease-in forwards; pointer-events: none; }
+.enter { animation: enter .25s ease-out; }
+button:active:not(:disabled) { transform: scale(.98); }
+@keyframes select { 50% { transform: scale(.98); } 100% { transform: scale(1); } }
+@keyframes enter { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes confetti { to { transform: translateY(450px) rotate(320deg); opacity: 0; } }
+body.reduced *, body.reduced *:before, body.reduced *:after { animation: none!important; transition: none!important; }
+@media(prefers-reduced-motion:reduce) { *, *:before, *:after { animation: none!important; transition: none!important; } }
+@media(min-width:1450px) { .shell { padding-top: 48px; } .question-body { padding-top: 40px; padding-bottom: 40px; } .option { min-height: 116px; } }
+@media(max-width:850px) {
+  header { height: 76px; padding: 0 24px; } .shell { padding: 24px 20px; }
+  .layout { grid-template-columns: 1fr; } .sidebar { grid-template-columns: 1fr; }
+  .side-tip, .title-mark, .nav-hint { display: none; } .numbers { grid-template-columns: repeat(8,1fr); }
+  .title-row { margin-bottom: 24px; } h1 { font-size: 28px; } .progress-card { padding: 20px; }
+  .legend { margin-bottom: 16px; } .bottom { align-items: flex-start; } .question-body { padding: 24px; }
+  .question-top { padding: 16px 20px; }
+}
+@media(max-width:480px) {
+  .badge { display: none; } .options { grid-template-columns: 1fr; } .option { min-height: 80px; }
+  h1 { font-size: 26px; } h2 { font-size: 22px; } .numbers { grid-template-columns: repeat(4,1fr); }
+  .number { aspect-ratio: 1.5; } .question-nav { gap: 8px; } .button { padding: 12px 16px; }
+  .head-right { gap: 8px; } .brand { font-size: 25px; } .result-actions { flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+<header><div class="brand">recipe<span>hub</span><small>THE LEARNING ROOM</small></div><div class="head-right"><span class="badge">BẢN XEM THỬ · KHÔNG LƯU DỮ LIỆU</span><div class="avatar" aria-label="Viewer">V</div></div></header>
+<main class="shell"><div class="crumb">Đào tạo <span>/</span> Kiến thức đồ uống <span>/</span> Bài kiểm tra</div><div class="title-row"><div><p class="eyebrow">BARISTA ESSENTIALS / 01</p><h1>Một chút kiến thức, một ly ngon hơn.</h1><p class="subtitle">Nền tảng pha chế · 8 câu hỏi mẫu · Đạt từ 75%</p></div><div class="title-mark">Brew your skills.<br>One question at a time.</div></div>
+<div class="layout"><section><div class="card" id="question-card"><div class="question-top"><div class="question-count" id="question-count"></div><button class="flag" id="flag" aria-pressed="false">⚑ Đánh dấu xem lại</button></div><div class="question-body" id="question-body"></div></div><div class="question-nav" id="question-nav"><button class="button" id="prev">← Câu trước</button><span class="nav-hint">Chọn đáp án, rồi tiếp tục theo nhịp của bạn.</span><button class="button primary" id="next">Câu tiếp →</button></div></section>
+<aside class="sidebar"><section class="card progress-card"><div class="side-title">Hành trình của bạn <span class="live-label" id="side-mode">ĐANG LÀM</span></div><div class="progress-track" role="progressbar" aria-label="Số câu đã trả lời" aria-valuemin="0" aria-valuemax="8" aria-valuenow="0"><div class="progress-fill" id="progress"></div></div><div class="progress-copy"><span id="progress-copy"></span><span id="percentage"></span></div><nav class="numbers" aria-label="Chọn câu hỏi" id="numbers"></nav><div class="legend"><span><i class="swatch done"></i>Đã trả lời</span><span><i class="swatch"></i>Chưa trả lời</span><span><i class="swatch mark"></i>Xem lại</span></div><button class="button submit" id="submit">Hoàn thành & nộp bài ↗</button></section><section class="side-tip"><p class="tip-title">Cứ bình tĩnh, bạn nhé.</p><p>Bạn có thể đổi đáp án, chuyển câu và quay lại bất cứ lúc nào trước khi nộp bài.</p></section></aside></div>
+<footer class="bottom"><span>RECIPEHUB / QUIZ CONCEPT 01 · Dữ liệu minh họa, không kết nối API</span><label class="motion-switch"><input type="checkbox" id="motion" checked>Chuyển động nhẹ</label><button class="text-button" id="sources">Nguồn tham khảo & thiết kế</button></footer></main>
+<dialog id="confirm-dialog" aria-labelledby="confirm-title"><h2 id="confirm-title">Sẵn sàng nộp bài?</h2><p id="confirm-copy"></p><div class="review-list" id="review-list"></div><p>Đáp án chỉ được chấm sau khi bạn xác nhận. Đây là bài mẫu, kết quả không được gửi lên hệ thống.</p><div class="dialog-actions"><button class="button" id="cancel-submit">Làm tiếp</button><button class="button primary" id="confirm-submit">Xác nhận nộp bài</button></div></dialog>
+<dialog id="sources-dialog" aria-labelledby="sources-title"><h2 id="sources-title">Tham khảo, không sao chép.</h2><ul class="sources"><li><strong>RecipeHub Warm Editorial — <code>docs/DESIGN.md</code>, mục 2–6:</strong> Google Sans local cùng bộ subset tiếng Việt hiện có; canvas #FAF9F5, surface trắng, chữ #1A1917, accent/action caramel #B47820, controls pill và shadow nhẹ. Giữ bố cục bản đầu, thay toàn bộ serif và bảng màu forest/pastel.</li><li><a href="https://askathena.brynmawr.edu/help/moodle-students-take-quizzes" target="_blank" rel="noopener">Moodle / Ask Athena</a>: bố cục câu hỏi và bảng số câu bên phải; đánh dấu và xem lại trước nộp.</li><li><a href="https://kahoot.it/solo?quizId=eccb490d-c8c1-4d08-a978-aba6829e07d7&gameMode=nano&gameId=b0c174a6-10fa-4eb1-b132-bd5895b1623e" target="_blank" rel="noopener">Kahoot Solo / link người dùng cung cấp</a>: trực tiếp quan sát ô đáp án kèm hình học, phản hồi sau chọn và banner chuyển động. Preview giữ card/hình học nhưng dùng màu RecipeHub, không báo đúng/sai trước nộp.</li><li>Gimkit: <code>docs/materials/referance-wweb/www.gimkit.com.zip</code>, đọc HTML và component <code>Question-BtfeZosv.js</code>: card câu hỏi, thao tác sửa/copy. URL kit chuyển về trang chủ; chưa xác minh được giao diện soạn đề trực tiếp. Preview này chỉ làm màn Viewer.</li><li>Animation đề xuất riêng: chọn/chuyển câu 180–250 ms, progress 350 ms và confetti ngắn khi đạt. Không phải thông số đo từ Kahoot. Không âm thanh, không timer giả. Bản xem thử độc lập, chưa tích hợp UI sản phẩm hay API.</li></ul><div class="dialog-actions"><button class="button primary" id="close-sources">Đóng</button></div></dialog>
+<script>
+'use strict';
+// Standalone design prototype. Sample quiz only; no API, authentication, or persistence.
+const questions=[
+{tag:'ESPRESSO',text:'Một shot espresso được chiết xuất từ phương pháp nào?',options:['Nước nóng đi qua cà phê dưới áp suất','Ngâm cà phê trong nước lạnh','Đun sôi cà phê cùng nước','Ủ cà phê bằng hơi nước trong ly'],correct:0,explain:'Espresso sử dụng nước nóng đi qua lớp cà phê xay dưới áp suất.'},
+{tag:'KỸ THUẬT SỮA',text:'Microfoam phù hợp để rót latte art có đặc điểm gì?',options:['Bọt lớn, khô và tách lớp','Mịn, bóng, hòa quyện với sữa','Bọt cứng như kem đánh bông','Chỉ có sữa nóng, hoàn toàn không bọt'],correct:1,explain:'Microfoam có bọt khí nhỏ, bề mặt bóng và cấu trúc hòa quyện để tạo hình.'},
+{tag:'NGUYÊN LIỆU',text:'Trước khi dùng một nguyên liệu mới, cần kiểm tra thông tin nào?',options:['Chỉ màu của bao bì','Chỉ số lượng tồn kho','Hạn dùng và hướng dẫn bảo quản','Chỉ tên nhà cung cấp'],correct:2,explain:'Hạn dùng và hướng dẫn bảo quản là thông tin cần kiểm tra để sử dụng nguyên liệu đúng cách.'},
+{tag:'CÔNG THỨC',text:'Vì sao cần cân nguyên liệu khi pha chế theo công thức?',options:['Để đồ uống luôn có nhiều đá','Để không cần vệ sinh dụng cụ','Để bỏ qua chất lượng nguyên liệu','Để giữ tỷ lệ và chất lượng nhất quán'],correct:3,explain:'Cân nguyên liệu giúp kiểm soát tỷ lệ, độ ổn định và tính lặp lại của công thức.'},
+{tag:'CHIẾT XUẤT',text:'Nếu giữ nguyên điều kiện khác, xay cà phê mịn hơn thường làm dòng espresso thế nào?',options:['Chảy chậm hơn','Luôn chảy nhanh hơn','Không thể thay đổi tốc độ','Tự động tăng lượng cà phê'],correct:0,explain:'Cỡ xay mịn thường tăng sức cản của lớp cà phê, khiến dòng chảy chậm hơn.'},
+{tag:'VỆ SINH',text:'Sau khi đánh sữa, nên xử lý vòi hơi thế nào?',options:['Để nguyên đến cuối ca','Lau bằng khăn phù hợp và xả hơi an toàn','Ngâm cả máy trong nước','Dùng lại ngay mà không làm sạch'],correct:1,explain:'Làm sạch vòi hơi sau sử dụng giúp loại bỏ sữa bám và giữ vệ sinh thiết bị.'},
+{tag:'CẢM QUAN',text:'Khi thử nghiệm hai phiên bản công thức, cách so sánh nào hợp lý?',options:['Thay toàn bộ nguyên liệu và dụng cụ','Chỉ nhìn hình ảnh món nước','Giữ điều kiện thử giống nhau, ghi nhận khác biệt','Chọn phiên bản có tên hay hơn'],correct:2,explain:'Giữ điều kiện thử ổn định giúp xác định khác biệt do thay đổi công thức.'},
+{tag:'QUẢN LÝ PHIÊN BẢN',text:'Khi thực hiện bài kiểm tra gắn với một phiên bản công thức, nên dựa vào đâu?',options:['Một bài đăng bất kỳ trên mạng','Công thức nhớ từ nhiều tháng trước','Phiên bản tự thay đổi theo sở thích','Đúng phiên bản công thức được chỉ định'],correct:3,explain:'Dựa trên đúng phiên bản được chỉ định giúp nội dung kiểm tra có căn cứ nhất quán.'}
+];
+const $=id=>document.getElementById(id);let current=0;let answers=Array(questions.length).fill(null);let flags=new Set();let submitted=false;let review=false;
+const symbols=['A','B','C','D'];
+function animateBody(){const body=$('question-body');body.classList.remove('enter');void body.offsetWidth;body.classList.add('enter')}
+function render(){const q=questions[current];$('question-count').innerHTML=`CÂU ${String(current+1).padStart(2,'0')} <span>/ ${String(questions.length).padStart(2,'0')}</span>`;$('flag').setAttribute('aria-pressed',flags.has(current));$('flag').textContent=flags.has(current)?'⚑ Đã đánh dấu':'⚑ Đánh dấu xem lại';$('flag').disabled=submitted;
+$('question-body').innerHTML=`<div class="question-label"><span class="dot"></span>${q.tag}${review?' · XEM KẾT QUẢ':''}</div><h2 id="question-title" tabindex="-1">${q.text}</h2><p class="instruction">Chọn một đáp án phù hợp nhất.</p><div class="options" role="radiogroup" aria-labelledby="question-title">${q.options.map((a,i)=>`<button class="option ${review&&i===q.correct?'correct':''} ${review&&answers[current]===i&&i!==q.correct?'wrong':''}" role="radio" aria-checked="${answers[current]===i}" tabindex="${i===(answers[current]??0)?0:-1}" data-answer="${i}" ${submitted?'disabled':''}><span class="shape" aria-hidden="true">${symbols[i]}</span><span>${a}</span></button>`).join('')}</div><p class="selected-note" role="status">${review?`${answers[current]===q.correct?'✓ Đúng.':answers[current]===null?'Chưa trả lời.':'Chưa đúng.'} ${q.explain}`:answers[current]===null?'Chưa chọn đáp án. Bạn có thể đánh dấu để quay lại.':'Đã chọn · Có thể thay đổi trước khi nộp bài.'}</p>`;
+$('question-body').querySelectorAll('[data-answer]').forEach(b=>{b.onclick=()=>choose(Number(b.dataset.answer));b.onkeydown=e=>{let i=Number(b.dataset.answer);if(['ArrowRight','ArrowDown','ArrowLeft','ArrowUp'].includes(e.key)){e.preventDefault();const direction=['ArrowRight','ArrowDown'].includes(e.key)?1:-1;choose((i+direction+4)%4);$('question-body').querySelector(`[data-answer="${(i+direction+4)%4}"]`).focus()}}});
+$('prev').disabled=current===0;$('next').textContent=current===questions.length-1?(review?'Xem tổng kết ↗':'Kiểm tra & nộp ↗'):'Câu tiếp →';updateSidebar();animateBody()}
+function choose(i){if(submitted)return;answers[current]=i;document.querySelectorAll('[data-answer]').forEach(b=>{const selected=Number(b.dataset.answer)===i;b.setAttribute('aria-checked',selected);b.tabIndex=selected?0:-1});document.querySelector('.selected-note').textContent='Đã chọn · Có thể thay đổi trước khi nộp bài.';updateSidebar()}
+function updateSidebar(){const done=answers.filter(a=>a!==null).length;$('progress').style.width=`${done/questions.length*100}%`;document.querySelector('[role=progressbar]').setAttribute('aria-valuenow',done);$('progress-copy').textContent=`${done}/${questions.length} câu đã trả lời`;$('percentage').textContent=`${Math.round(done/questions.length*100)}%`;$('numbers').innerHTML=questions.map((_,i)=>`<button class="number ${answers[i]!==null?'answered':''} ${i===current?'current':''} ${flags.has(i)?'flagged':''}" aria-label="Câu ${i+1}, ${answers[i]!==null?'đã trả lời':'chưa trả lời'}${flags.has(i)?', đánh dấu xem lại':''}" ${i===current?'aria-current="step"':''} data-question="${i}">${String(i+1).padStart(2,'0')}</button>`).join('');$('numbers').querySelectorAll('button').forEach(b=>b.onclick=()=>go(Number(b.dataset.question)));$('side-mode').textContent=submitted?'ĐÃ NỘP':'ĐANG LÀM';$('submit').textContent=submitted?'Xem tổng kết ↗':'Hoàn thành & nộp bài ↗'}
+function go(i){restoreCard();current=i;if(submitted)review=true;$('question-nav').hidden=false;render();$('question-title').focus({preventScroll:true})}
+function confirmSubmit(){if(submitted){showResult();return}const missing=answers.map((a,i)=>a===null?i:null).filter(i=>i!==null);$('confirm-copy').textContent=missing.length?`Bạn còn ${missing.length} câu chưa trả lời. Câu bỏ trống tính 0 điểm. Bấm số câu để quay lại hoặc xác nhận nộp.`:`Bạn đã trả lời đủ ${questions.length} câu. Có ${flags.size} câu được đánh dấu xem lại.`;$('review-list').innerHTML=missing.map(i=>`<button data-missing="${i}" aria-label="Quay lại câu ${i+1}">${i+1}</button>`).join('');$('review-list').querySelectorAll('button').forEach(b=>b.onclick=()=>{$('confirm-dialog').close();go(Number(b.dataset.missing))});$('confirm-dialog').showModal()}
+function showResult(celebrate=false){const score=questions.reduce((n,q,i)=>n+(answers[i]===q.correct?1:0),0);const passed=score/questions.length>=.75;review=false;current=-1;$('question-nav').hidden=true;$('question-card').innerHTML=`<div class="result"><span class="result-tag ${passed?'':'failed'}">${passed?'✓ HOÀN THÀNH · ĐẠT':'↻ HOÀN THÀNH · CHƯA ĐẠT'}</span><h2>${passed?'Thêm một bước vững tay nghề.':'Một lần thử, thêm điều để học.'}</h2><div class="score">${score}<span class="score-total"> / ${questions.length}</span></div><p>${Math.round(score/questions.length*100)}% chính xác · Ngưỡng đạt 75%<br>Kết quả minh họa, không lưu lên hệ thống.</p><div class="result-actions"><button class="button" id="review">Xem đáp án & giải thích</button><button class="button primary" id="restart">Thử lại từ đầu ↗</button></div></div>`;$('review').onclick=()=>{restoreCard();go(0)};$('restart').onclick=()=>{answers.fill(null);flags.clear();submitted=false;review=false;restoreCard();go(0)};updateSidebar();if(passed&&celebrate&&!document.body.classList.contains('reduced')&&!matchMedia('(prefers-reduced-motion: reduce)').matches){const colors=['--color-accent','--color-accent-highlight','--color-border-strong','--color-ink'];for(let i=0;i<25;i++){const s=document.createElement('i');s.className='confetti';s.style.cssText=`--x:${(i*37)%100}%;--c:var(${colors[i%4]});animation-delay:${i%5*.08}s`;$('question-card').firstElementChild.append(s);s.addEventListener('animationend',()=>s.remove())}}}
+const cardTemplate=$('question-card').innerHTML;
+function bindFlag(){$('flag').onclick=()=>{if(submitted)return;flags.has(current)?flags.delete(current):flags.add(current);$('flag').setAttribute('aria-pressed',flags.has(current));$('flag').textContent=flags.has(current)?'⚑ Đã đánh dấu':'⚑ Đánh dấu xem lại';updateSidebar()}}
+function restoreCard(){if(!$('question-body')){$('question-card').innerHTML=cardTemplate;bindFlag()}}
+$('prev').onclick=()=>{if(current>0)go(current-1)};$('next').onclick=()=>{if(current<questions.length-1)go(current+1);else confirmSubmit()};$('submit').onclick=confirmSubmit;$('cancel-submit').onclick=()=>$('confirm-dialog').close();$('confirm-submit').onclick=()=>{$('confirm-dialog').close();submitted=true;showResult(true)};$('sources').onclick=()=>$('sources-dialog').showModal();$('close-sources').onclick=()=>$('sources-dialog').close();$('motion').checked=!matchMedia('(prefers-reduced-motion: reduce)').matches;$('motion').onchange=()=>document.body.classList.toggle('reduced',!$('motion').checked);bindFlag();render();
+</script>
+</body>
+</html>

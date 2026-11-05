@@ -1,14 +1,14 @@
 'use client';
 
+import { listAuditLogs } from '@/lib/api/audit';
+
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Users,
   Leaf,
-  Cpu,
   ShieldCheck,
   Image,
-  Settings,
   ArrowRight,
 } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
@@ -19,9 +19,13 @@ export default function AdminPage() {
     userCount: 0,
     activeIngredientsCount: 0,
     totalIngredientsCount: 0,
-    auditCount: 0,
     mediaCount: 0,
     recipeCount: 0,
+  });
+  const [auditStatus, setAuditStatus] = useState<{ loading: boolean; error: boolean; count: number }>({
+    loading: true,
+    error: false,
+    count: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -29,10 +33,9 @@ export default function AdminPage() {
     let mounted = true;
     async function loadStats() {
       try {
-        const [users, ingredients, logs, media, recipes] = await Promise.all([
+        const [users, ingredients, media, recipes] = await Promise.all([
           repo.getUsers(),
           repo.getIngredients('', 'all', false),
-          repo.getAuditLogs(),
           repo.getMedia(),
           repo.getRecipes({ role: 'admin', userId: 'admin', email: 'admin@recipehub.demo', fullName: 'Administrator', lastActiveAt: Date.now() }),
         ]);
@@ -42,10 +45,20 @@ export default function AdminPage() {
             userCount: users.length,
             activeIngredientsCount: ingredients.filter((i) => i.isActive).length,
             totalIngredientsCount: ingredients.length,
-            auditCount: logs.length,
             mediaCount: media.length,
             recipeCount: recipes.total,
           });
+        }
+
+        try {
+          const auditRes = await listAuditLogs({ page: 1, pageSize: 1 });
+          if (mounted) {
+            setAuditStatus({ loading: false, error: false, count: auditRes.totalCount });
+          }
+        } catch {
+          if (mounted) {
+            setAuditStatus({ loading: false, error: true, count: 0 });
+          }
         }
       } catch {
         // demo stats fallback
@@ -78,19 +91,11 @@ export default function AdminPage() {
       tag: 'Global Catalogue',
     },
     {
-      title: 'Cấu hình & Mô phỏng AI Demo',
-      desc: 'Kiểm soát bộ mô phỏng Gemini / Flux, công tắc lỗi giả lập (503 Service Unavailable, DeleteFailed), idle timeout.',
-      href: '/admin/ai-settings',
-      icon: Cpu,
-      count: 'Simulation Controls',
-      tag: 'AI Simulation',
-    },
-    {
       title: 'Nhật ký kiểm toán',
       desc: 'Truy vết toàn diện mọi hành động: tạo, sửa, phát hành công thức, khóa tài khoản và xuất bản tài liệu.',
       href: '/admin/logs',
       icon: ShieldCheck,
-      count: `${stats.auditCount} sự kiện ghi nhận`,
+      count: auditStatus.loading ? '...' : auditStatus.error ? 'Không tải được' : `${auditStatus.count} sự kiện ghi nhận`,
       tag: 'Audit Logs',
     },
     {
@@ -105,50 +110,16 @@ export default function AdminPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header Banner */}
-      <div className="p-6 bg-white rounded-xl border border-[#E8E2D9] shadow-xs relative overflow-hidden">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded text-xs font-semibold bg-[#B47820]/15 text-[#B47820] border border-[#B47820]/30 mb-2">
-              <span className="w-2 h-2 rounded-full bg-[#B47820] animate-pulse" />
-              Bảng điều khiển Quản trị viên Toàn quyền
-            </div>
-            <h1 className="text-2xl font-bold text-[#1A1917]">Hệ thống Quản trị &amp; Điều phối Trung tâm</h1>
-            <p className="text-[#706E68] text-sm mt-1 max-w-2xl">
-              Giám sát nhân sự, danh mục nguyên vật liệu, cơ chế mô phỏng AI và lịch sử thay đổi phiên bản công thức theo tiêu chuẩn BeverageLab.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/admin/ai-settings">
-              <Button variant="gold" size="sm">
-                <Settings className="w-3.5 h-3.5 mr-1" /> Cấu hình AI &amp; Lỗi giả lập
-              </Button>
-            </Link>
-          </div>
-        </div>
-
-        {/* Quick Stat Badges */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-6 pt-6 border-t border-[#E8E2D9]">
-          <div className="bg-[#FAF9F5] border border-[#E8E2D9] rounded-lg p-3">
-            <div className="text-xs text-[#706E68] font-medium">Tài khoản nhân sự</div>
-            <div className="text-xl font-bold text-[#1A1917] mt-1">{loading ? '...' : stats.userCount}</div>
-          </div>
-          <div className="bg-[#FAF9F5] border border-[#E8E2D9] rounded-lg p-3">
-            <div className="text-xs text-[#706E68] font-medium">Nguyên liệu khả dụng</div>
-            <div className="text-xl font-bold text-emerald-700 mt-1">{loading ? '...' : `${stats.activeIngredientsCount}`}</div>
-          </div>
-          <div className="bg-[#FAF9F5] border border-[#E8E2D9] rounded-lg p-3">
-            <div className="text-xs text-[#706E68] font-medium">Phiên bản công thức</div>
-            <div className="text-xl font-bold text-[#B47820] mt-1">{loading ? '...' : stats.recipeCount}</div>
-          </div>
-          <div className="bg-[#FAF9F5] border border-[#E8E2D9] rounded-lg p-3">
-            <div className="text-xs text-[#706E68] font-medium">Tệp Media lưu trữ</div>
-            <div className="text-xl font-bold text-sky-700 mt-1">{loading ? '...' : stats.mediaCount}</div>
-          </div>
-          <div className="bg-[#FAF9F5] border border-[#E8E2D9] rounded-lg p-3">
-            <div className="text-xs text-[#706E68] font-medium">Sự kiện Audit Log</div>
-            <div className="text-xl font-bold text-purple-700 mt-1">{loading ? '...' : stats.auditCount}</div>
-          </div>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E2D9]">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1A1917] flex items-center gap-2.5">
+            <ShieldCheck className="w-6 h-6 text-[#B47820]" />
+            Hệ thống Quản trị &amp; Điều phối Trung tâm
+          </h1>
+          <p className="text-[#706E68] text-sm mt-1 max-w-2xl">
+            Giám sát nhân sự, danh mục nguyên vật liệu, cơ chế mô phỏng AI và lịch sử thay đổi phiên bản công thức theo tiêu chuẩn BeverageLab.
+          </p>
         </div>
       </div>
 
@@ -160,7 +131,7 @@ export default function AdminPage() {
             <Link
               key={card.href}
               href={card.href}
-              className="group p-5 bg-white hover:bg-[#FAF9F5] border border-[#E8E2D9] hover:border-[#B47820] rounded-xl transition duration-200 flex flex-col justify-between shadow-xs"
+              className="group p-5 bg-white hover:bg-[#FAF9F5] border border-[#E8E2D9] hover:border-[#B47820] rounded-2xl transition duration-200 flex flex-col justify-between shadow-xs"
             >
               <div>
                 <div className="flex items-start justify-between gap-2 mb-3">

@@ -6,7 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RecipeHub.Content.Application.Interfaces;
 using RecipeHub.Content.Domain;
-using RecipeHub.Content.Infrastructure.Persistence;
+using RecipeHub.Content.Infrastructure.Data;
 using StackExchange.Redis;
 
 namespace RecipeHub.BackgroundWorker;
@@ -166,7 +166,7 @@ public sealed class ContentDraftProcessingWorker : BackgroundService
         var generator = scope.ServiceProvider.GetRequiredService<IAiImageGenerator>();
         var tempStore = scope.ServiceProvider.GetRequiredService<ITemporaryImageStore>();
 
-        var draft = await dbContext.AiImageDrafts.FirstOrDefaultAsync(d => d.PublicId == draftId, ct);
+        var draft = await dbContext.AiImageDrafts.Include(d => d.File).FirstOrDefaultAsync(d => d.PublicId == draftId, ct);
         if (draft == null)
         {
             _logger.LogWarning("Draft {DraftId} not found in database. Acknowledging message.", draftId);

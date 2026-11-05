@@ -3,6 +3,8 @@
 - **Thời gian:** 2026-10-17
 - **Mục tiêu:** Thực hiện Phase A của plan Content AI & Media (`docs/plans/261017-content-ai-media/plan.md`) nhằm khóa hợp đồng gRPC, thiết kế persistence DBML, đặc tả 17 API endpoints và phân tích các blocker/gate (R1, R2, R4, R5) trước khi viết mã nguồn.
 
+> Nhật ký thiết kế tại thời điểm 2026-10-17, không phải schema/runtime hiện hành. `media_asset_usage_claim` và `idempotent_request` đã bỏ khỏi thiết kế sau đó; hiện dùng `ai_image_draft`, `ai_image_draft_file`, `media_asset`, `outbox_message`. `Idempotency-Key` và token fencing nêu trong contract không đồng nghĩa đã triển khai. Xem [Content DB](../database-schema/content-db/README.md). RowVersion phía Recipe cũng đã bỏ; không khôi phục theo ghi nhận lịch sử bên dưới.
+
 ---
 
 ## 1. Các hạng mục đã hoàn thành trong Phase A

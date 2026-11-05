@@ -62,3 +62,25 @@
   outline: 2px solid var(--accent-gold);
   outline-offset: 1px;
 }
+
+/* Page entrance animation across workspace */
+.workspace-page-anim {
+  animation: workspace-enter 0.22s ease-out;
+}
+
+@keyframes workspace-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-page-anim {
+    animation: none !important;
+  }
+}

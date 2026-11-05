@@ -17,13 +17,18 @@ import {
 import { useDemo } from '@/lib/demo/provider';
 import {
   RecipeVersion,
+  RecipeIngredient,
   Ingredient,
   MediaAsset,
-  PublishedDocument,
 } from '@/lib/demo/types';
 import { Button, Alert } from '@/components/workspace/fields';
 import { StatusBadge, MediaSourceBadge } from '@/components/workspace/status-badge';
-import { downloadPdfBlob } from '@/lib/demo/pdf-export';
+import { RecipeBatchScaler } from '@/components/recipes/RecipeBatchScaler';
+import {
+  getPublishedDocumentByVersion,
+  downloadPdfDocumentFile,
+} from '@/lib/api/pdf-documents';
+import { PublishedDocumentLookupResponse } from '@/lib/api/pdf-document-types';
 
 export default function ViewerRecipeDetailPage() {
   const params = useParams();
@@ -33,31 +38,33 @@ export default function ViewerRecipeDetailPage() {
   const { session, repo, dataVersion } = useDemo();
 
   const [recipe, setRecipe] = useState<RecipeVersion | null>(null);
+  const [scaledIngredients, setScaledIngredients] = useState<RecipeIngredient[] | null>(null);
   const [ingredientsMap, setIngredientsMap] = useState<Record<string, Ingredient>>({});
   const [mediaMap, setMediaMap] = useState<Record<string, MediaAsset>>({});
   const [mediaUrls, setMediaUrls] = useState<Record<string, string>>({});
-  const [publishedDoc, setPublishedDoc] = useState<PublishedDocument | null>(null);
+  const [publishedDoc, setPublishedDoc] = useState<PublishedDocumentLookupResponse | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [mediaWarning, setMediaWarning] = useState<string | null>(null);
+  const [pdfWarning, setPdfWarning] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
-
   useEffect(() => {
     let isMounted = true;
+    const createdBlobUrls: string[] = [];
     if (!id || !session) return;
-
     setLoading(true);
     setPermissionDenied(false);
     setErrorMsg(null);
+    setMediaWarning(null);
 
     Promise.all([
       repo.getRecipeVersion(session, id),
       repo.getIngredients(),
-      repo.getMedia(),
-      repo.getPublishedDocument(id),
+      getPublishedDocumentByVersion(id, session.userId).catch(() => null),
     ])
-      .then(([rec, ings, mediaList, pubDoc]) => {
+      .then(async ([rec, ings, pubDoc]) => {
         if (!isMounted) return;
 
         setRecipe(rec);
@@ -67,23 +74,51 @@ export default function ViewerRecipeDetailPage() {
           ingMap[ing.id] = ing;
         });
         setIngredientsMap(ingMap);
+        setPublishedDoc(pubDoc);
+
+        const mediaIds = new Set<string>();
+        if (rec.primaryMediaAssetId) mediaIds.add(rec.primaryMediaAssetId);
+        rec.steps?.forEach((step) => {
+          if (step.coverMediaAssetId) mediaIds.add(step.coverMediaAssetId);
+          step.mediaAssetIds?.forEach((mId) => mediaIds.add(mId));
+        });
 
         const mMap: Record<string, MediaAsset> = {};
         const urls: Record<string, string> = {};
-        mediaList.forEach((m) => {
-          mMap[m.id] = m;
-          if (m.blob) {
-            urls[m.id] = URL.createObjectURL(m.blob);
+
+
+        if (mediaIds.size > 0) {
+          const results = await Promise.allSettled(
+            Array.from(mediaIds).map((mId) => repo.getMediaById(mId))
+          );
+          if (!isMounted) return;
+          results.forEach((res) => {
+            if (res.status === 'fulfilled' && res.value) {
+              const m = res.value;
+              mMap[m.id] = m;
+              if (m.blob && m.blob.size > 0) {
+                const bUrl = URL.createObjectURL(m.blob);
+                createdBlobUrls.push(bUrl);
+                urls[m.id] = bUrl;
+              } else if (m.deliveryUrl) {
+                urls[m.id] = m.deliveryUrl;
+              }
+            }
+          });
+          if (results.some((res) => res.status === 'rejected') && isMounted) {
+            setMediaWarning('Chưa tải được một số hình ảnh. Bạn vẫn có thể xem SOP và tính định lượng.');
           }
-        });
+        }
+        if (!isMounted) {
+          createdBlobUrls.forEach((url) => URL.revokeObjectURL(url));
+          return;
+        }
         setMediaMap(mMap);
         setMediaUrls(urls);
-
-        setPublishedDoc(pubDoc);
       })
       .catch((err) => {
         if (!isMounted) return;
-        if (err?.code === 'Forbidden' || err?.message?.toLowerCase().includes('quyền')) {
+        if (err?.status === 403 || err?.code === 'Forbidden' || err?.message?.toLowerCase().includes('quyền')) {
           setPermissionDenied(true);
         } else {
           setErrorMsg(err.message || 'Không thể tải chi tiết công thức');
@@ -95,19 +130,43 @@ export default function ViewerRecipeDetailPage() {
 
     return () => {
       isMounted = false;
-      Object.values(mediaUrls).forEach((url) => URL.revokeObjectURL(url));
+      createdBlobUrls.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
     };
   }, [id, session, repo, dataVersion]);
 
-  const handleDownloadPdf = () => {
-    if (!publishedDoc || !publishedDoc.pdfBlob) return;
+  const handleDownloadPdf = async () => {
+    const versionId = recipe?.versionId || id;
     setIsDownloading(true);
+    setPdfWarning(null);
     try {
-      const filename = `SOP_${publishedDoc.recipeCode}_${publishedDoc.versionLabel}.pdf`;
-      downloadPdfBlob(publishedDoc.pdfBlob, filename);
+      let doc = publishedDoc;
+      if (!doc) {
+        doc = await getPublishedDocumentByVersion(versionId, session?.userId || null);
+        if (doc) {
+          setPublishedDoc(doc);
+        }
+      }
+
+      if (!doc) {
+        setPdfWarning('Công thức này chưa có bản PDF chính thức được xuất bản.');
+        return;
+      }
+
+      const { blob, fileName } = await downloadPdfDocumentFile(doc.id, 'attachment', session?.userId || null);
+      const downloadName = fileName || doc.fileName || `SOP_${recipe?.code || 'recipe'}.pdf`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = downloadName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     } catch (e: unknown) {
       const err = e as Error;
-      alert(`Lỗi tải tệp PDF: ${err.message || 'Không xác định'}`);
+      setPdfWarning(err.message || 'Không thể tải tệp PDF chính thức.');
     } finally {
       setIsDownloading(false);
     }
@@ -178,6 +237,13 @@ export default function ViewerRecipeDetailPage() {
           <span>Chế độ Chỉ Đọc (Read-Only SOP)</span>
         </span>
       </div>
+      {pdfWarning && (
+        <Alert
+          type="info"
+          message={pdfWarning}
+          onClose={() => setPdfWarning(null)}
+        />
+      )}
 
       {/* Header Section */}
       <div className="bg-white border border-[#E8E2D9] rounded-2xl p-6 sm:p-8 shadow-xs">
@@ -214,21 +280,28 @@ export default function ViewerRecipeDetailPage() {
                   className="w-full lg:w-auto shadow-xs"
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Tải Bản PDF SOP Đã Phát Hành
+                  Tải bản PDF chính thức
                 </Button>
                 <p className="text-[11px] text-emerald-700 flex items-center justify-end gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  Đã ban hành chính thức ({new Date(publishedDoc.createdAt).toLocaleDateString('vi-VN')})
+                  Đã ban hành chính thức ({new Date(publishedDoc.completedAt).toLocaleDateString('vi-VN')})
                 </p>
               </div>
             ) : (
-              <div className="p-3 bg-[#FAF9F5] border border-[#E8E2D9] rounded-xl text-left lg:text-right max-w-xs">
-                <span className="block text-xs font-semibold text-[#1A1917] mb-0.5">
-                  Chưa có ấn bản PDF
-                </span>
-                <span className="text-[11px] text-[#706E68]">
-                  Bản PDF chính thức sẽ hiển thị tại đây khi Quản lý hoàn tất đóng dấu ban hành.
-                </span>
+              <div className="space-y-2">
+                <Button
+                  variant="secondary"
+                  size="md"
+                  onClick={handleDownloadPdf}
+                  isLoading={isDownloading}
+                  className="w-full lg:w-auto shadow-xs"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Tải bản PDF chính thức
+                </Button>
+                <p className="text-[11px] text-[#706E68]">
+                  Chưa phát hiện bản PDF chính thức được lưu trong phiên. Bấm để kiểm tra và tải từ máy chủ.
+                </p>
               </div>
             )}
           </div>
@@ -271,6 +344,8 @@ export default function ViewerRecipeDetailPage() {
       </div>
 
       {/* Ingredients Section */}
+      {mediaWarning && <Alert variant="warning">{mediaWarning}</Alert>}
+      <RecipeBatchScaler key={recipe.versionId ?? recipe.id} recipe={recipe} onScaled={setScaledIngredients} />
       <div className="bg-white border border-[#E8E2D9] rounded-2xl p-6 sm:p-8 shadow-xs">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2.5">
@@ -296,7 +371,7 @@ export default function ViewerRecipeDetailPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E8E2D9] text-[#1A1917]">
-              {recipe.ingredients.map((item, idx) => {
+              {(scaledIngredients ?? recipe.ingredients).map((item, idx) => {
                 const ingInfo = ingredientsMap[item.ingredientId];
                 return (
                   <tr key={`${item.ingredientId}_${idx}`} className="hover:bg-[#FAF9F5] transition">

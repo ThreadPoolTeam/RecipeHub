@@ -1,12 +1,32 @@
+using System.Security.Claims;
+using RecipeHub.BuildingBlocks.Audit;
+
 namespace RecipeHub.Recipe.Api;
 
 public static class RequestActor
 {
-    public static Guid GetUserId(HttpContext context)
+    public static AuditActor GetActor(HttpContext context)
     {
-        var value = context.Request.Headers["X-User-Id"].ToString();
-        return Guid.TryParse(value, out var userId) && userId != Guid.Empty
-            ? userId
-            : throw new UnauthorizedAccessException("Header 'X-User-Id' must contain a valid non-empty UUID.");
+        var idClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(idClaim, out var userId) || userId == Guid.Empty)
+        {
+            throw new UnauthorizedAccessException("Cần JWT session Identity hợp lệ.");
+        }
+
+        var name = context.User.FindFirst(ClaimTypes.Name)?.Value;
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new UnauthorizedAccessException("Không tìm thấy thông tin tên người dùng trong phiên đăng nhập.");
+        }
+
+        var role = context.User.FindFirst(ClaimTypes.Role)?.Value;
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            throw new UnauthorizedAccessException("Không tìm thấy vai trò người dùng trong phiên đăng nhập.");
+        }
+
+        return new AuditActor(userId, name.Trim(), role.Trim().ToLowerInvariant());
     }
+
+    public static Guid GetUserId(HttpContext context) => GetActor(context).Id;
 }

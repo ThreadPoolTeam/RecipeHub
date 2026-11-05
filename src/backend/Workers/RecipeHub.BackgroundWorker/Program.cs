@@ -1,14 +1,17 @@
 using RecipeHub.BackgroundWorker;
-using RecipeHub.Content.Application;
 using RecipeHub.Content.Infrastructure;
+using RecipeHub.Audit.Infrastructure;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.AddContentApplication();
-builder.Services.AddContentInfrastructure(builder.Configuration);
+builder.Services.AddContentWorkerInfrastructure(builder.Configuration);
+builder.Services.AddAuditInfrastructure(builder.Configuration);
+builder.Services.AddAuditConsumer();
+
 
 builder.Services.AddHostedService<StreamConsumerWorker>();
 builder.Services.AddHostedService<ContentDraftProcessingWorker>();
+builder.Services.AddHostedService<ContentDraftCleanupWorker>();
 
 var host = builder.Build();
 host.Run();

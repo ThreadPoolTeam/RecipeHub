@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace RecipeHub.Recipe.Domain.Entities;
 
 /// <summary>
-/// Display unit grouped by category. Automatic unit conversion is outside MVP scope.
+/// Catalog unit grouped by category; metric conversion is calculated without changing catalog data.
 /// </summary>
 public partial class Unit
 {

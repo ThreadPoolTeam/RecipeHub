@@ -12,6 +12,8 @@ public static class DependencyInjection
         services.AddScoped<IIngredientCategoryService, IngredientCategoryService>();
         services.AddScoped<IIngredientService, IngredientService>();
         services.AddScoped<IRecipeService, RecipeService>();
+        services.AddScoped<RecipeCalculationService>();
+        services.AddScoped<IPdfDocumentService, PdfDocumentService>();
         return services;
     }
 }

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RecipeHub.Content.Application.DTOs;
 using RecipeHub.Content.Application.Interfaces;
@@ -6,6 +7,7 @@ namespace RecipeHub.Content.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/content/media-assets")]
+[Authorize]
 public sealed class MediaAssetsController : ControllerBase
 {
     private readonly IMediaAssetService _mediaAssetService;
@@ -16,6 +18,7 @@ public sealed class MediaAssetsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "ContentEditors")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadMediaAsset(
         [FromForm] UploadMediaAssetRequest request,
@@ -33,7 +36,6 @@ public sealed class MediaAssetsController : ControllerBase
             });
         }
 
-        var userId = RequestActor.GetUserId(HttpContext);
         var effectiveFileName = !string.IsNullOrWhiteSpace(originalFileName) ? originalFileName : file.FileName;
 
         await using var stream = file.OpenReadStream();
@@ -42,13 +44,13 @@ public sealed class MediaAssetsController : ControllerBase
             effectiveFileName,
             file.ContentType,
             file.Length,
-            userId,
             ct);
 
         return Created($"/api/v1/content/media-assets/{response.AssetId}", response);
     }
 
     [HttpGet]
+    [Authorize(Policy = "ContentEditors")]
     public async Task<IActionResult> ListMediaAssets(
         [FromQuery] string? sourceType,
         [FromQuery] string? state,
@@ -62,6 +64,7 @@ public sealed class MediaAssetsController : ControllerBase
     }
 
     [HttpGet("{assetId:guid}")]
+    [Authorize(Policy = "ContentReaders")]
     public async Task<IActionResult> GetMediaAsset(
         [FromRoute] Guid assetId,
         CancellationToken ct)
@@ -75,6 +78,7 @@ public sealed class MediaAssetsController : ControllerBase
     }
 
     [HttpGet("{assetId:guid}/usages")]
+    [Authorize(Policy = "ContentEditors")]
     public async Task<IActionResult> GetMediaAssetUsages(
         [FromRoute] Guid assetId,
         CancellationToken ct)
@@ -84,6 +88,7 @@ public sealed class MediaAssetsController : ControllerBase
     }
 
     [HttpDelete("{assetId:guid}")]
+    [Authorize(Policy = "ContentEditors")]
     public IActionResult DeleteMediaAsset([FromRoute] Guid assetId)
     {
         return StatusCode(StatusCodes.Status501NotImplemented, new ProblemDetails

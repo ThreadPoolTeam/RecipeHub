@@ -60,6 +60,7 @@ public sealed class CatalogsController : ControllerBase
             publicId, RequestActor.GetUserId(HttpContext), cancellationToken));
 
     [HttpGet("units")]
+    [HttpGet("catalogs/units")]
     public async Task<ActionResult<IReadOnlyList<UnitResponse>>> GetUnits(
         CancellationToken cancellationToken) => Ok(await _unitService.GetAllAsync(cancellationToken));
 

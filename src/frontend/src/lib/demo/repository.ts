@@ -25,7 +25,7 @@ import {
   resetDatabase,
 } from './database';
 import { DEMO_PASSWORD, createSvgBlob } from './seed';
-import { saveSession, clearSession } from './session';
+import { saveSession, clearSession, updateSessionUser } from './session';
 
 export class DemoRepository {
   // --- AUTH & SESSION ---
@@ -201,10 +201,14 @@ export class DemoRepository {
     };
   }
 
-  async getRecipeVersion(actor: SessionInfo, versionId: string): Promise<RecipeVersion> {
-    const recipe = await getById<RecipeVersion>('recipes', versionId);
+  async getRecipeVersion(actor: SessionInfo, idOrRecipeId: string, versionId?: string): Promise<RecipeVersion> {
+    const targetId = versionId || idOrRecipeId;
+    let recipe = await getById<RecipeVersion>('recipes', targetId);
+    if (!recipe) {
+      const all = await getAll<RecipeVersion>('recipes');
+      recipe = all.find((r) => r.id === targetId || r.versionId === targetId || r.recipeId === targetId) ?? null;
+    }
     if (!recipe) throw new DemoError('NotFound', 'Không tìm thấy công thức');
-
     if (actor.role === 'viewer') {
       const user = await getById<User>('users', actor.userId);
       const allowed = new Set(user?.allowedRecipeIds || []);
@@ -760,6 +764,18 @@ export class DemoRepository {
     });
     return updated;
   }
+  async updateProfile(actor: SessionInfo, fullName: string): Promise<User> {
+    const user = await getById<User>('users', actor.userId);
+    if (!user) throw new DemoError('NotFound', 'Không tìm thấy người dùng');
+    const updated: User = {
+      ...user,
+      fullName: fullName.trim(),
+    };
+    await putRecord('users', updated);
+    updateSessionUser(updated);
+    return updated;
+  }
+
 
   async toggleUserLock(actor: SessionInfo, id: string): Promise<boolean> {
     if (actor.role !== 'admin') throw new DemoError('Forbidden', 'Chỉ Admin mới có quyền khóa/mở khóa');
@@ -799,10 +815,6 @@ export class DemoRepository {
     return updated;
   }
 
-  async getAuditLogs(): Promise<AuditEntry[]> {
-    const logs = await getAll<AuditEntry>('auditLogs');
-    return logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }
 
   async resetSystem(actor: SessionInfo): Promise<void> {
     await resetDatabase();

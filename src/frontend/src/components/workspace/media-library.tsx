@@ -54,10 +54,11 @@ export function MediaLibrary({
 
   useEffect(() => {
     let isMounted = true;
+    const controller = new AbortController();
     setLoading(true);
 
     repo
-      .getMedia()
+      .getMedia(undefined, controller.signal)
       .then((items) => {
         if (!isMounted) return;
         setMediaList(items);
@@ -65,14 +66,19 @@ export function MediaLibrary({
         // Build object URLs safely
         const urls: Record<string, string> = {};
         for (const item of items) {
-          if (item.blob) {
+          if (item.blob && item.blob.size > 0) {
             urls[item.id] = URL.createObjectURL(item.blob);
+          } else if (item.deliveryUrl) {
+            urls[item.id] = item.deliveryUrl;
           }
         }
         setPreviewUrls(urls);
       })
       .catch((err) => {
-        if (isMounted) setErrorMsg(err.message);
+        if (!isMounted || controller.signal.aborted) return;
+        const isAbort = err instanceof Error && (err.name === 'AbortError' || err.message?.includes('abort'));
+        if (isAbort) return;
+        setErrorMsg(err.message || 'Lỗi tải danh mục media');
       })
       .finally(() => {
         if (isMounted) setLoading(false);
@@ -80,6 +86,7 @@ export function MediaLibrary({
 
     return () => {
       isMounted = false;
+      controller.abort();
       // Revoke created URLs
       Object.values(previewUrls).forEach((url) => URL.revokeObjectURL(url));
     };
@@ -305,7 +312,7 @@ export function MediaLibrary({
           <p className="text-xs">Đang tải danh mục tư liệu hình ảnh...</p>
         </div>
       ) : filteredMedia.length === 0 ? (
-        <div className="p-12 text-center text-[#706E68] bg-white border border-[#E8E2D9] rounded-lg">
+        <div className="p-12 text-center text-[#706E68] bg-white border border-[#E8E2D9] rounded-2xl">
           Không có tệp hình ảnh nào trong mục này.
         </div>
       ) : (
@@ -319,7 +326,7 @@ export function MediaLibrary({
                 key={item.id}
                 className={`group relative bg-white border ${
                   isSelected ? 'border-[#B47820] ring-2 ring-[#B47820]/30' : 'border-[#E8E2D9] hover:border-[#B47820]'
-                } rounded-lg overflow-hidden flex flex-col transition shadow-xs hover:shadow-sm`}
+                } rounded-xl overflow-hidden flex flex-col transition shadow-xs hover:shadow-sm`}
               >
                 {/* Thumbnail Preview */}
                 <div className="aspect-video w-full bg-[#F5F0E8] flex items-center justify-center overflow-hidden relative">

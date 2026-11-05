@@ -27,6 +27,9 @@ export interface SessionInfo {
   fullName: string;
   role: Role;
   lastActiveAt: number; // timestamp in ms
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: string;
 }
 
 export interface Ingredient {

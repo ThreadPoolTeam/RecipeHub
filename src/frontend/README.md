@@ -1,5 +1,34 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Security update: Next.js 16.4.3
+
+Next.js and `eslint-config-next` were upgraded from 16.4.0 to 16.4.3.
+The npm lockfile resolves 16.4.3; existing caret dependency ranges are preserved.
+`experimental.agentUpgrade: "security"` enables security upgrade reminders; it
+does not automatically update dependencies.
+
+Install and verify locally, without Docker:
+
+```bash
+npm ci
+npm exec -- next --version
+npm run build
+npm run start -- --hostname 127.0.0.1 --port 3217
+```
+
+Open `/` and `/login` at `http://127.0.0.1:3217`. The upgrade was verified with
+a production build, HTTP 200 responses, client-side navigation to the login form,
+and no browser runtime errors in that smoke flow. Backend authentication was not
+exercised by this frontend upgrade check.
+
+Security reference: [npm Next.js advisories](https://registry.npmjs.org/-/npm/v1/security/advisories/bulk).
+
+## Navigation & Performance Optimization
+
+- **Sidebar Link Prefetching (`prefetch={true}`):** Main navigation links in `WorkspaceShell` have explicit `prefetch={true}` enabled to ensure browser prefetching of route chunks for instantaneous tab switching.
+- **Platform Loading Boundary (`(platform)/loading.tsx`):** Immediate skeleton feedback inside the platform workspace during route segment compilation and navigation, keeping the sidebar persistent and interactive.
+- **Repository In-Memory Cache:** `BackendRepository` maintains in-memory caching and in-flight deduplication for recipes and ingredients to eliminate redundant network requests on tab revisits.
+
 ## Getting Started
 
 First, run the development server:
@@ -16,9 +45,9 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+You can start editing the landing route at `src/app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The app loads local Google Sans WOFF2 subsets through `src/app/globals.css`, including Vietnamese support. Shared visual rules live in [`docs/DESIGN.md`](../../docs/DESIGN.md).
 
 ## Learn More
 
