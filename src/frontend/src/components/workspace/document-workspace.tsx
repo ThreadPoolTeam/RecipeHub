@@ -1,388 +1,395 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Download,
-  FileText,
-  Save,
   AlertTriangle,
   CheckCircle2,
-  ShieldCheck,
-  FileDown,
+  Download,
+  Eye,
   Image as ImageIcon,
+  Save,
+  ShieldCheck,
 } from 'lucide-react';
-import { RecipeVersion, DocumentDraft, PublishedDocument } from '@/lib/demo/types';
+import { DocumentDraft, Ingredient, MediaAsset, PublishedDocument, RecipeVersion } from '@/lib/demo/types';
 import { useDemo } from '@/lib/demo/provider';
-import { Button, TextInput, TextArea, Select, Alert } from './fields';
-import { generateRecipePdf, downloadPdfBlob } from '@/lib/demo/pdf-export';
-import { MediaLibrary } from './media-library';
+import { downloadPdfBlob, generateRecipePdf, getRecipePdfMediaIds } from '@/lib/demo/pdf-export';
+import { Alert, Button, TextArea, TextInput } from './fields';
 import { Dialog } from './dialog';
+import { MediaLibrary } from './media-library';
+
 interface DocumentWorkspaceProps {
   recipe: RecipeVersion;
   readOnly?: boolean;
+}
+
+interface PdfPreview {
+  blob: Blob;
+  fingerprint: string;
+  objectUrl: string;
+}
+
+function draftFingerprint(draft: DocumentDraft): string {
+  return JSON.stringify({
+    sourceVersionId: draft.sourceVersionId,
+    titleOverride: draft.titleOverride ?? null,
+    coverMediaIdOverride: draft.coverMediaIdOverride ?? null,
+    stepCaptionOverrides: draft.stepCaptionOverrides ?? {},
+    customNotes: draft.customNotes ?? null,
+  });
 }
 
 export function DocumentWorkspace({ recipe, readOnly = false }: DocumentWorkspaceProps) {
   const { session, repo, touch } = useDemo();
   const [draft, setDraft] = useState<DocumentDraft | null>(null);
   const [publishedDoc, setPublishedDoc] = useState<PublishedDocument | null>(null);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
+  const [preview, setPreview] = useState<PdfPreview | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [isExportingDraft, setIsExportingDraft] = useState(false);
+  const [isPreviewing, setIsPreviewing] = useState(false);
   const [isPublishingOfficial, setIsPublishingOfficial] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Cover image picker dialog
-  const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
-
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
-
-    Promise.all([
-      repo.getDocumentDraft(recipe.id),
-      repo.getPublishedDocument(recipe.id),
-    ])
-      .then(([draftData, publishedData]) => {
+    repo.getDocumentDraft(recipe.id)
+      .then(async (draftData) => {
+        const [publishedData, ingredientData, mediaData] = await Promise.all([
+          repo.getPublishedDocument(recipe.id),
+          repo.getIngredients(),
+          Promise.all(getRecipePdfMediaIds(recipe, draftData).map((mediaId) => repo.getMediaById(mediaId))),
+        ]);
+        return {
+          draftData,
+          publishedData,
+          ingredientData,
+          mediaData: mediaData.filter((media): media is MediaAsset => media !== null),
+        };
+      })
+      .then(({ draftData, publishedData, ingredientData, mediaData }) => {
         if (!isMounted) return;
         setDraft(draftData);
         setPublishedDoc(publishedData);
+        setIngredients(ingredientData);
+        setMediaAssets(mediaData);
       })
-      .catch((err) => {
-        if (isMounted) setErrorMsg(err.message);
+      .catch((error: unknown) => {
+        if (!isMounted) return;
+        setErrorMsg(error instanceof Error ? error.message : 'Không thể tải dữ liệu xuất PDF.');
       })
       .finally(() => {
         if (isMounted) setLoading(false);
       });
-
     return () => {
       isMounted = false;
     };
-  }, [repo, recipe.id]);
+  }, [recipe.id, repo]);
 
-  const handleSaveDraft = async () => {
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview.objectUrl);
+    };
+  }, [preview]);
+
+  const fingerprint = useMemo(() => draft ? draftFingerprint(draft) : '', [draft]);
+  const hasCurrentPreview = preview?.fingerprint === fingerprint;
+
+  const updateDraft = (updated: DocumentDraft): void => {
+    setDraft(updated);
+    setSuccessMsg(null);
+  };
+
+  const handleSaveDraft = async (): Promise<void> => {
     if (!session || !draft) return;
     touch();
     setIsSavingDraft(true);
     setErrorMsg(null);
     setSuccessMsg(null);
     try {
-      await repo.saveDocumentDraft(session, draft);
-      setSuccessMsg('Đã lưu cấu hình tài liệu nháp thành công!');
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Lưu thất bại';
-      setErrorMsg(msg);
+      await repo.saveDocumentDraft(session, { ...draft });
+      setSuccessMsg('Đã lưu cấu hình trình bày PDF.');
+    } catch (error: unknown) {
+      setErrorMsg(error instanceof Error ? error.message : 'Không thể lưu cấu hình PDF.');
     } finally {
       setIsSavingDraft(false);
     }
   };
 
-  const handleExportDraftPdf = async () => {
+  const handlePreview = async (): Promise<void> => {
     if (!draft) return;
     touch();
-    setIsExportingDraft(true);
+    setIsPreviewing(true);
     setErrorMsg(null);
     setSuccessMsg(null);
     try {
-      const pdfBlob = await generateRecipePdf(recipe, draft, true);
-      const filename = `NHAP_SOP_${recipe.code}_${recipe.versionLabel}.pdf`;
-      downloadPdfBlob(pdfBlob, filename);
-      setSuccessMsg(`Đã tải xuống ${filename} (Bản thử nghiệm có watermark)`);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Xuất bản thử thất bại';
-      setErrorMsg(msg);
+      const pdfBlob = await generateRecipePdf(
+        recipe,
+        draft,
+        ingredients,
+        mediaAssets,
+        recipe.status !== 'Published'
+      );
+      const nextPreview = {
+        blob: pdfBlob,
+        fingerprint,
+        objectUrl: URL.createObjectURL(pdfBlob),
+      };
+      setPreview(nextPreview);
+      setIsPreviewOpen(true);
+    } catch (error: unknown) {
+      setErrorMsg(error instanceof Error ? error.message : 'Không thể tạo bản xem trước PDF.');
     } finally {
-      setIsExportingDraft(false);
+      setIsPreviewing(false);
     }
   };
 
-  const handlePublishOfficialPdf = async () => {
-    if (!session || !draft) return;
-    if (recipe.status !== 'Published') {
-      setErrorMsg('Chỉ công thức đã phát hành mới được phép xuất bản tài liệu chính thức.');
+  const handleDownloadPreview = (): void => {
+    if (!preview || !hasCurrentPreview) {
+      setErrorMsg('Nội dung đã thay đổi. Hãy tạo lại bản xem trước trước khi tải PDF.');
       return;
     }
+    touch();
+    const prefix = recipe.status === 'Published' ? 'SOP' : 'NHAP_SOP';
+    const filename = `${prefix}_${recipe.code}_${recipe.versionLabel}.pdf`;
+    downloadPdfBlob(preview.blob, filename);
+    setSuccessMsg(`Đã tải ${filename}.`);
+  };
 
+  const handlePublishOfficialPdf = async (): Promise<void> => {
+    if (!session || !preview || !hasCurrentPreview) {
+      setErrorMsg('Hãy xem trước phiên bản hiện tại trước khi xuất bản PDF chính thức.');
+      return;
+    }
+    if (recipe.status !== 'Published') {
+      setErrorMsg('Chỉ công thức đã phát hành mới được xuất bản PDF chính thức.');
+      return;
+    }
     touch();
     setIsPublishingOfficial(true);
     setErrorMsg(null);
     setSuccessMsg(null);
     try {
-      // 1. Generate clean official PDF without watermark
-      const pdfBlob = await generateRecipePdf(recipe, draft, false);
-
-      // 2. Publish snapshot to IndexedDB
-      const published = await repo.publishDocument(session, recipe.id, pdfBlob);
+      const published = await repo.publishDocument(session, recipe.id, preview.blob);
       setPublishedDoc(published);
-
-      // 3. Trigger download
       const filename = `CHINH_THUC_SOP_${recipe.code}_${recipe.versionLabel}.pdf`;
-      downloadPdfBlob(pdfBlob, filename);
-      setSuccessMsg(`Đã xuất bản và tải xuống tài liệu chính thức: ${filename}`);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Xuất bản chính thức thất bại';
-      setErrorMsg(msg);
+      downloadPdfBlob(preview.blob, filename);
+      setSuccessMsg(`Đã xuất bản và tải ${filename}.`);
+      setIsPreviewOpen(false);
+    } catch (error: unknown) {
+      setErrorMsg(error instanceof Error ? error.message : 'Không thể xuất bản PDF chính thức.');
     } finally {
       setIsPublishingOfficial(false);
     }
   };
 
-  const handleDownloadPublishedPdf = () => {
-    if (!publishedDoc || !publishedDoc.pdfBlob) return;
+  const handleDownloadPublishedPdf = (): void => {
+    if (!publishedDoc) return;
     touch();
-    const filename = `SOP_${recipe.code}_${recipe.versionLabel}.pdf`;
-    downloadPdfBlob(publishedDoc.pdfBlob, filename);
-    setSuccessMsg(`Đang tải tệp tài liệu phát hành: ${filename}`);
+    downloadPdfBlob(publishedDoc.pdfBlob, `SOP_${recipe.code}_${recipe.versionLabel}.pdf`);
   };
 
   if (loading || !draft) {
     return (
       <div className="p-8 text-center text-[#706E68]">
-        <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-[#B47820]"></div>
-        <p className="mt-2 text-xs">Đang tải không gian biên tập tài liệu...</p>
+        <div className="inline-block h-6 w-6 animate-spin rounded-full border-b-2 border-[#B47820]" />
+        <p className="mt-2 text-xs">Đang tải dữ liệu trang công thức...</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {errorMsg && (
-        <Alert variant="error" title="Lỗi thao tác">
-          {errorMsg}
-        </Alert>
-      )}
-      {successMsg && (
-        <Alert variant="success" title="Thông báo">
-          {successMsg}
-        </Alert>
-      )}
+      {errorMsg && <Alert variant="error" title="Không thể xử lý PDF">{errorMsg}</Alert>}
+      {successMsg && <Alert variant="success" title="Hoàn tất">{successMsg}</Alert>}
 
-      {/* Published Status Banner */}
       {publishedDoc ? (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex flex-wrap items-center justify-between gap-3 text-xs shadow-xs">
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span className="font-bold text-emerald-900 text-sm">
-                Ấn Bản Chính Thức Đã Được Phát Hành
-              </span>
-              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-mono text-[11px] font-semibold">
-                {publishedDoc.recipeCode}-{publishedDoc.versionLabel}
-              </span>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-xs shadow-xs">
+          <div>
+            <div className="flex items-center gap-2 text-sm font-bold text-emerald-900">
+              <CheckCircle2 className="h-4 w-4" /> PDF chính thức đã phát hành
             </div>
-            <p className="text-xs text-emerald-800">
-              Phát hành bởi: <span className="font-medium text-emerald-950">{publishedDoc.actorEmail}</span> • Thời điểm:{' '}
-              {new Date(publishedDoc.createdAt).toLocaleString('vi-VN')}
+            <p className="mt-1 text-emerald-800">
+              {publishedDoc.recipeCode}-{publishedDoc.versionLabel} • {new Date(publishedDoc.createdAt).toLocaleString('vi-VN')}
             </p>
           </div>
           <Button variant="gold" size="sm" onClick={handleDownloadPublishedPdf}>
-            <Download className="w-3.5 h-3.5 mr-1.5" /> Tải Bản PDF Đã Phát Hành
+            <Download className="mr-1.5 h-3.5 w-3.5" /> Tải bản đã phát hành
           </Button>
         </div>
       ) : (
-        <div className="p-3.5 bg-white border border-[#E8E2D9] rounded-lg text-xs text-[#706E68] flex items-center justify-between shadow-xs">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-            <span>Chưa có ấn bản tài liệu chính thức được phát hành cho phiên bản này.</span>
-          </div>
-          {recipe.status === 'Published' ? (
-            <span className="text-emerald-700 font-medium">Sẵn sàng để xuất bản chính thức</span>
-          ) : (
-            <span className="text-amber-700 font-medium">
-              Cần phát hành công thức trước khi xuất bản chính thức
-            </span>
-          )}
+        <div className="flex items-center gap-2 rounded-lg border border-[#E8E2D9] bg-white p-3.5 text-xs text-[#706E68] shadow-xs">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
+          Chưa có PDF chính thức cho phiên bản công thức này.
         </div>
       )}
 
-      {/* Editor & Actions Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Settings Column */}
-        <div className="lg:col-span-2 space-y-4 bg-white p-5 rounded-xl border border-[#E8E2D9] shadow-xs">
-          <div className="flex items-center justify-between border-b border-[#E8E2D9] pb-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <section className="space-y-5 rounded-xl border border-[#E8E2D9] bg-white p-5 shadow-xs lg:col-span-2">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E8E2D9] pb-3">
             <div>
-              <h4 className="text-sm font-bold text-[#1A1917] uppercase tracking-wider">
-                Cấu hình trình bày tài liệu SOP
-              </h4>
-              <p className="text-xs text-[#706E68] mt-0.5">
-                Các tùy biến hiển thị tại đây không làm thay đổi nội dung công thức gốc.
-              </p>
+              <h2 className="text-sm font-bold uppercase tracking-wider text-[#1A1917]">Cấu hình trang công thức</h2>
+              <p className="mt-1 text-xs text-[#706E68]">Mỗi công thức đúng một trang ngang, font Be Vietnam Pro và tự chọn bố cục.</p>
             </div>
             {!readOnly && (
-              <Button
-                variant="secondary"
-                size="sm"
-                isLoading={isSavingDraft}
-                onClick={handleSaveDraft}
-              >
-                <Save className="w-3.5 h-3.5 mr-1 text-[#706E68]" /> Lưu cấu hình
+              <Button variant="secondary" size="sm" isLoading={isSavingDraft} onClick={handleSaveDraft}>
+                <Save className="mr-1 h-3.5 w-3.5" /> Lưu cấu hình
               </Button>
             )}
           </div>
-          <div className="space-y-4">
-            <Select
-              label="Mẫu bố cục tài liệu (Template)"
-              disabled={readOnly}
-              value={draft.template}
-              onChange={(e) =>
-                setDraft({ ...draft, template: e.target.value as DocumentDraft['template'] })
-              }
+
+          <TextInput
+            label="Tiêu đề trên trang"
+            disabled={readOnly}
+            value={draft.titleOverride || ''}
+            placeholder={recipe.name}
+            onChange={(event) => updateDraft({ ...draft, titleOverride: event.target.value })}
+          />
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-[#1A1917]">Ảnh chính</label>
+            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[#E8E2D9] bg-[#FAF9F5] p-3">
+              <ImageIcon className="h-4 w-4 text-[#B47820]" />
+              <span className="min-w-0 flex-1 truncate text-xs text-[#706E68]">
+                {draft.coverMediaIdOverride ? `Ảnh tùy chỉnh: ${draft.coverMediaIdOverride}` : 'Dùng ảnh đại diện của công thức hoặc bước đầu tiên'}
+              </span>
+              {!readOnly && <Button variant="ghost" size="sm" onClick={() => setIsCoverPickerOpen(true)}>Chọn ảnh</Button>}
+              {draft.coverMediaIdOverride && !readOnly && (
+                <Button variant="ghost" size="sm" onClick={() => updateDraft({ ...draft, coverMediaIdOverride: undefined })}>Dùng mặc định</Button>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-3 border-t border-[#E8E2D9] pt-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#1A1917]">Chú thích ảnh từng bước</h3>
+            {recipe.steps.map((step) => (
+              <div key={step.id} className="rounded-lg border border-[#E8E2D9] bg-[#FAF9F5] p-3">
+                <p className="mb-2 text-xs font-medium text-[#1A1917]">Bước {step.stepNumber}: {step.title}</p>
+                <TextInput
+                  disabled={readOnly}
+                  value={draft.stepCaptionOverrides?.[step.id] || ''}
+                  placeholder={step.coverMediaAssetId ? step.mediaCaptions?.[step.coverMediaAssetId] || 'Nhập chú thích ảnh...' : 'Bước này chưa có ảnh đại diện'}
+                  onChange={(event) => updateDraft({
+                    ...draft,
+                    stepCaptionOverrides: {
+                      ...(draft.stepCaptionOverrides || {}),
+                      [step.id]: event.target.value,
+                    },
+                  })}
+                />
+              </div>
+            ))}
+          </div>
+
+          <TextArea
+            label="Trang lưu ý vận hành"
+            disabled={readOnly}
+            rows={5}
+            value={draft.customNotes || ''}
+            placeholder="Lưu ý sẽ được thu gọn vào khu vực quy trình trên cùng trang..."
+            onChange={(event) => updateDraft({ ...draft, customNotes: event.target.value })}
+          />
+        </section>
+
+        <aside className="space-y-4">
+          <div className="space-y-4 rounded-xl border border-[#E8E2D9] bg-white p-5 shadow-xs">
+            <div>
+              <h2 className="text-sm font-bold uppercase tracking-wider text-[#1A1917]">Xem trước và xuất PDF</h2>
+              <p className="mt-1 text-xs leading-5 text-[#706E68]">PDF chỉ được tải hoặc phát hành sau khi bạn xem trước đúng cấu hình hiện tại.</p>
+            </div>
+
+            <div className="rounded-lg border border-[#E8E2D9] bg-[#FAF9F5] p-3">
+              <p className="text-xs font-semibold text-[#1A1917]">1. Tạo bản xem trước</p>
+              <p className="mt-1 text-xs leading-5 text-[#706E68]">Kiểm tra toàn bộ nguyên liệu, quy trình và ảnh trên một trang duy nhất.</p>
+              <Button
+                variant="gold"
+                size="sm"
+                className="mt-3 w-full"
+                isLoading={isPreviewing}
+                onClick={handlePreview}
+                data-testid="recipe-pdf-preview"
+              >
+                <Eye className="mr-1.5 h-3.5 w-3.5" /> Xem trước PDF
+              </Button>
+            </div>
+
+            <div className="rounded-lg border border-[#E8E2D9] bg-[#FAF9F5] p-3">
+              <p className="text-xs font-semibold text-[#1A1917]">2. Xuất file đã kiểm tra</p>
+              <p className="mt-1 text-xs leading-5 text-[#706E68]">
+                {hasCurrentPreview ? 'Bản xem trước đang khớp với cấu hình hiện tại.' : 'Hãy xem trước lại sau mỗi lần chỉnh nội dung.'}
+              </p>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="mt-3 w-full"
+                disabled={!hasCurrentPreview}
+                onClick={handleDownloadPreview}
+                data-testid="recipe-pdf-download"
+              >
+                <Download className="mr-1.5 h-3.5 w-3.5" /> Tải PDF
+              </Button>
+            </div>
+
+            <Button
+              variant="primary"
+              size="sm"
+              className="w-full"
+              disabled={!hasCurrentPreview || recipe.status !== 'Published' || readOnly}
+              isLoading={isPublishingOfficial}
+              onClick={handlePublishOfficialPdf}
             >
-              <option value="standard-sop">Tiêu chuẩn SOP Cửa Hàng (Đầy đủ quy trình + định lượng)</option>
-              <option value="summary-card">Thẻ Tóm Tắt Barista (Gọn gàng cho quầy pha chế)</option>
-              <option value="barista-handbook">Cẩm Nang Đào Tạo Nội Bộ</option>
-            </Select>
-
-            <TextInput
-              label="Tiêu đề tài liệu tùy chỉnh (Ghi đè tên công thức nếu cần)"
-              disabled={readOnly}
-              value={draft.titleOverride || ''}
-              placeholder={recipe.name}
-              onChange={(e) => setDraft({ ...draft, titleOverride: e.target.value })}
-            />
-
-            {/* Cover photo override */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#1A1917]">
-                Ảnh Bìa Tài Liệu
-              </label>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-[#706E68]">
-                  {draft.coverMediaIdOverride
-                    ? `Đang chọn ảnh tùy chỉnh: ID ${draft.coverMediaIdOverride}`
-                    : 'Đang dùng ảnh đại diện mặc định của bước 1'}
-                </span>
-                {!readOnly && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs text-[#B47820]"
-                    onClick={() => setIsCoverPickerOpen(true)}
-                  >
-                    Đổi ảnh bìa...
-                  </Button>
-                )}
-                {draft.coverMediaIdOverride && !readOnly && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs text-rose-400"
-                    onClick={() => setDraft({ ...draft, coverMediaIdOverride: undefined })}
-                  >
-                    Bỏ ghi đè
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {/* Step Caption Overrides */}
-            <div className="space-y-3 pt-2 border-t border-[#E8E2D9]">
-              <h5 className="text-xs font-semibold uppercase text-[#1A1917]">
-                Chú thích ảnh theo từng bước (Step Captions):
-              </h5>
-              {recipe.steps.map((step) => (
-                <div key={step.id} className="p-3 bg-[#FAF9F5] rounded-lg border border-[#E8E2D9] space-y-1">
-                  <div className="text-xs font-medium text-[#1A1917]">
-                    Bước {step.stepNumber}: {step.title}
-                  </div>
-                  <TextInput
-                    disabled={readOnly}
-                    value={draft.stepCaptionOverrides?.[step.id] || ''}
-                    placeholder={
-                      step.mediaCaptions?.[step.coverMediaAssetId || ''] ||
-                      'Nhập chú thích kỹ thuật hiển thị dưới ảnh trong file PDF...'
-                    }
-                    onChange={(e) => {
-                      const updatedCaptions = {
-                        ...(draft.stepCaptionOverrides || {}),
-                        [step.id]: e.target.value,
-                      };
-                      setDraft({ ...draft, stepCaptionOverrides: updatedCaptions });
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-
-            <TextArea
-              label="Lưu ý vận hành bổ sung"
-              disabled={readOnly}
-              rows={3}
-              value={draft.customNotes || ''}
-              placeholder="Ví dụ: Kiểm tra hạn dùng của nguyên liệu trước mỗi ca mở cửa..."
-              onChange={(e) => setDraft({ ...draft, customNotes: e.target.value })}
-            />
+              <ShieldCheck className="mr-1.5 h-3.5 w-3.5" /> Phát hành PDF chính thức
+            </Button>
           </div>
-        </div>
-
-        {/* Action & Preview Column */}
-        {/* Export & Preview Column */}
-        <div className="space-y-4">
-          <div className="p-5 bg-white border border-[#E8E2D9] rounded-xl space-y-4 shadow-xs">
-            <h4 className="text-sm font-bold text-[#1A1917] uppercase tracking-wider border-b border-[#E8E2D9] pb-3">
-              Tác vụ xuất bản tài liệu PDF
-            </h4>
-            <p className="text-xs text-[#706E68]">
-              Tạo tệp PDF A4 sắc nét phông chữ tiếng Việt với đầy đủ bảng định lượng và quy trình SOP.
-            </p>
-
-            <div className="space-y-3 pt-1">
-              <div className="p-3 bg-[#FAF9F5] rounded-lg border border-[#E8E2D9] text-xs space-y-1">
-                <span className="font-semibold text-[#1A1917]">1. Xuất Bản Thử Nghiệm</span>
-                <p className="text-[#706E68]">
-                  Có đóng dấu watermark &quot;BẢN NHÁP — CHƯA PHÁT HÀNH&quot;. Dành cho chuyên viên kiểm tra trước.
-                </p>
-                <div className="pt-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="w-full"
-                    isLoading={isExportingDraft}
-                    onClick={handleExportDraftPdf}
-                  >
-                    <FileText className="w-3.5 h-3.5 mr-1 text-[#B47820]" /> Tải Xuất Bản Thử (Watermark)
-                  </Button>
-                </div>
-              </div>
-
-              <div className="p-3 bg-[#FAF9F5] rounded-lg border border-[#E8E2D9] text-xs space-y-1">
-                <span className="font-semibold text-[#1A1917]">2. Xuất Bản Phát Hành Chính Thức</span>
-                <p className="text-[#706E68]">
-                  Bản sạch không có watermark. Chỉ kích hoạt khi công thức đạt trạng thái{' '}
-                  <strong className="text-emerald-700">Đã Phát Hành (Published)</strong>.
-                </p>
-                <div className="pt-2">
-                  <Button
-                    variant="gold"
-                    size="sm"
-                    className="w-full"
-                    disabled={recipe.status !== 'Published' || readOnly}
-                    isLoading={isPublishingOfficial}
-                    onClick={handlePublishOfficialPdf}
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5 mr-1" /> Xuất Bản Chính Thức &amp; Tải PDF
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        </aside>
       </div>
 
-      {/* Cover Image Picker Dialog */}
+      {isPreviewOpen && preview && (
+        <Dialog
+          isOpen={true}
+          onClose={() => setIsPreviewOpen(false)}
+          title={`Xem trước: ${draft.titleOverride?.trim() || recipe.name}`}
+          description="Kiểm tra trang công thức hoàn chỉnh trước khi tải hoặc phát hành."
+          size="wide"
+        >
+          <div className="overflow-hidden rounded-lg border border-[#E8E2D9] bg-[#706E68]">
+            <iframe
+              src={`${preview.objectUrl}#toolbar=1&navpanes=0&view=FitH`}
+              title={`Bản xem trước PDF ${recipe.code}`}
+              className="h-[68vh] w-full"
+              data-testid="recipe-pdf-preview-frame"
+            />
+          </div>
+          <div className="mt-3 flex flex-wrap justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={handleDownloadPreview}>
+              <Download className="mr-1.5 h-3.5 w-3.5" /> Tải PDF này
+            </Button>
+            {recipe.status === 'Published' && !readOnly && (
+              <Button variant="gold" size="sm" isLoading={isPublishingOfficial} onClick={handlePublishOfficialPdf}>
+                <ShieldCheck className="mr-1.5 h-3.5 w-3.5" /> Phát hành bản này
+              </Button>
+            )}
+          </div>
+        </Dialog>
+      )}
+
       {isCoverPickerOpen && (
         <Dialog
           isOpen={true}
           onClose={() => setIsCoverPickerOpen(false)}
-          title="Chọn ảnh bìa tài liệu SOP"
-          description="Chọn từ thư viện ảnh R&D hoặc tải lên tệp mới."
+          title="Chọn ảnh chính cho trang công thức"
+          description="Chọn ảnh có sẵn trong thư viện media."
         >
           <MediaLibrary
             mode="picker"
             selectedMediaId={draft.coverMediaIdOverride}
             onSelect={(media) => {
-              setDraft({ ...draft, coverMediaIdOverride: media.id });
+              setMediaAssets((current) => current.some((item) => item.id === media.id) ? current : [...current, media]);
+              updateDraft({ ...draft, coverMediaIdOverride: media.id });
               setIsCoverPickerOpen(false);
             }}
           />

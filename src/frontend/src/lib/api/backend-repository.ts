@@ -14,7 +14,7 @@ import {
   RecipeVersion,
   SessionInfo,
 } from '@/lib/demo/types';
-import { requestBlob, requestExternalBlob, requestJson } from './client';
+import { ApiError, requestBlob, requestExternalBlob, requestJson } from './client';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -29,6 +29,9 @@ export interface CatalogItem {
 export interface UnitItem extends CatalogItem {
   categoryId: string;
   categoryName: string;
+  isBase: boolean;
+  factorToBase: number;
+  offsetToBase: number;
   decimalPlaces: number;
 }
 
@@ -104,6 +107,9 @@ function mapUnit(value: unknown, label: string): UnitItem {
     ...mapCatalog(item, label),
     categoryId: text(item.categoryId, `${label}.categoryId`),
     categoryName: text(item.categoryName, `${label}.categoryName`),
+    isBase: booleanValue(item.isBase, `${label}.isBase`),
+    factorToBase: numberValue(item.factorToBase, `${label}.factorToBase`),
+    offsetToBase: numberValue(item.offsetToBase, `${label}.offsetToBase`),
     decimalPlaces: numberValue(item.decimalPlaces, `${label}.decimalPlaces`),
   };
 }
@@ -418,6 +424,24 @@ export class BackendRepository extends DemoRepository {
     });
     this.units = null;
     return mapUnit(response, 'unit');
+  }
+
+  async updateUnitConversion(
+    actor: SessionInfo,
+    id: string,
+    data: {
+      isBase: boolean;
+      factorToBase: number;
+      offsetToBase: number;
+    }
+  ): Promise<UnitItem> {
+    const response = await requestJson(
+      `api/v1/recipes/units/${id}/conversion`,
+      this.actorId(actor),
+      { method: 'PUT', body: JSON.stringify(data) }
+    );
+    this.units = null;
+    return mapUnit(response, 'unit conversion');
   }
 
   async deactivateUnit(actor: SessionInfo, id: string): Promise<void> {
@@ -750,10 +774,15 @@ export class BackendRepository extends DemoRepository {
         createdAt: new Date().toISOString(),
       };
     }
-    return mapMediaAsset(
-      await requestJson(`api/v1/content/media-assets/${id}`, null, { method: 'GET' }),
-      null
-    );
+    try {
+      return mapMediaAsset(
+        await requestJson(`api/v1/content/media-assets/${id}`, null, { method: 'GET' }),
+        null
+      );
+    } catch (error: unknown) {
+      if (error instanceof ApiError && error.status === 404) return null;
+      throw error;
+    }
   }
 
   override async uploadMedia(

@@ -643,8 +643,8 @@ export class DemoRepository {
   }
 
   async saveDocumentDraft(actor: SessionInfo, draft: DocumentDraft): Promise<void> {
-    draft.updatedAt = new Date().toISOString();
-    await putRecord('documentDrafts', draft);
+    const updatedDraft = { ...draft, updatedAt: new Date().toISOString() };
+    await putRecord('documentDrafts', updatedDraft);
     await this.logAudit(actor.email, actor.role, 'SAVE_DOCUMENT_DRAFT', 'recipe', draft.sourceVersionId);
   }
 
@@ -653,8 +653,8 @@ export class DemoRepository {
     sourceVersionId: string,
     pdfBlob: Blob
   ): Promise<PublishedDocument> {
-    const recipe = await getById<RecipeVersion>('recipes', sourceVersionId);
-    if (!recipe || recipe.status !== 'Published') {
+    const recipe = await this.getRecipeVersion(actor, sourceVersionId);
+    if (recipe.status !== 'Published') {
       throw new DemoError('Conflict', 'Chỉ công thức đã phát hành mới có thể xuất bản tài liệu chính thức');
     }
 

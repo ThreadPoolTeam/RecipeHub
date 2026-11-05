@@ -260,7 +260,7 @@ export default function RecipeDetailPage() {
 
           <Link href={`/rnd/recipes/${recipe.id}/document`}>
             <Button variant="secondary" size="sm">
-              <FileDown className="w-3.5 h-3.5 mr-1 text-[#B47820]" /> Xuất SOP
+              <FileDown className="w-3.5 h-3.5 mr-1 text-[#B47820]" /> Xem trước &amp; Xuất PDF
             </Button>
           </Link>
 

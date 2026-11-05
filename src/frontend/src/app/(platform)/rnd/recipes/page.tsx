@@ -3,20 +3,47 @@
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { BookOpen, Plus, Pencil, RotateCcw, Coffee } from 'lucide-react';
+import { BookOpen, Plus, Pencil, Coffee, Download, Eye } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
-import { RecipeVersion, RecipeStatus } from '@/lib/demo/types';
-import { Button, TextInput, Select, SearchInput } from '@/components/workspace/fields';
+import { MediaAsset, RecipeVersion, RecipeStatus } from '@/lib/demo/types';
+import { Button, Select, SearchInput, Alert } from '@/components/workspace/fields';
 import { StatusBadge } from '@/components/workspace/status-badge';
 import { DataTable } from '@/components/workspace/data-table';
+import { Dialog } from '@/components/workspace/dialog';
+import {
+  downloadPdfBlob,
+  generateRecipeBookPdf,
+  getRecipePdfMediaIds,
+  RecipePdfEntry,
+} from '@/lib/demo/pdf-export';
+
+interface RecipeBookPreview {
+  blob: Blob;
+  objectUrl: string;
+  selectionKey: string;
+}
+
+function toggleSelection(selectedIds: string[], recipeId: string, checked: boolean): string[] {
+  if (checked) return Array.from(new Set([...selectedIds, recipeId]));
+  return selectedIds.filter((id) => id !== recipeId);
+}
+
+function selectionFingerprint(selectedIds: string[]): string {
+  return selectedIds.slice().sort().join('|');
+}
 
 function RecipeListContent() {
-  const { session, repo, dataVersion } = useDemo();
+  const { session, repo, dataVersion, touch } = useDemo();
   const searchParams = useSearchParams();
   const initialStatusParam = searchParams.get('status') as RecipeStatus | null;
 
   const [recipes, setRecipes] = useState<RecipeVersion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedRecipeIds, setSelectedRecipeIds] = useState<string[]>([]);
+  const [bookPreview, setBookPreview] = useState<RecipeBookPreview | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isCreatingPreview, setIsCreatingPreview] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -96,7 +123,112 @@ function RecipeListContent() {
     return filteredRecipes.slice(start, start + pageSize);
   }, [filteredRecipes, page, pageSize]);
 
+  useEffect(() => {
+    return () => {
+      if (bookPreview) URL.revokeObjectURL(bookPreview.objectUrl);
+    };
+  }, [bookPreview]);
+
+  const selectedKey = selectionFingerprint(selectedRecipeIds);
+  const hasCurrentPreview = bookPreview?.selectionKey === selectedKey;
+  const visibleRecipeIds = paginatedData.map((recipe) => recipe.id);
+  const isCurrentPageSelected = visibleRecipeIds.length > 0
+    && visibleRecipeIds.every((id) => selectedRecipeIds.includes(id));
+
+  const handleToggleCurrentPage = (checked: boolean): void => {
+    if (checked) {
+      setSelectedRecipeIds((current) => Array.from(new Set([...current, ...visibleRecipeIds])));
+      return;
+    }
+    const visibleIds = new Set(visibleRecipeIds);
+    setSelectedRecipeIds((current) => current.filter((id) => !visibleIds.has(id)));
+  };
+
+  const handleCreateBookPreview = async (): Promise<void> => {
+    if (!session) {
+      setPdfError('Phiên đăng nhập không hợp lệ. Hãy đăng nhập lại trước khi xuất PDF.');
+      return;
+    }
+    if (selectedRecipeIds.length === 0) {
+      setPdfError('Hãy chọn ít nhất một công thức để tạo PDF.');
+      return;
+    }
+
+    touch();
+    setIsCreatingPreview(true);
+    setPdfError(null);
+    try {
+      const selectedSet = new Set(selectedRecipeIds);
+      const selectedRecipes = recipes.filter((recipe) => selectedSet.has(recipe.id));
+      if (selectedRecipes.length !== selectedRecipeIds.length) {
+        throw new Error('Một số công thức đã chọn không còn trong danh sách. Hãy tải lại trang và chọn lại.');
+      }
+      const mediaRequests = new Map<string, Promise<MediaAsset | null>>();
+      const getMedia = (mediaId: string): Promise<MediaAsset | null> => {
+        const existing = mediaRequests.get(mediaId);
+        if (existing) return existing;
+        const request = repo.getMediaById(mediaId);
+        mediaRequests.set(mediaId, request);
+        return request;
+      };
+      const [ingredients, entries] = await Promise.all([
+        repo.getIngredients(),
+        Promise.all(selectedRecipes.map(async (summary): Promise<RecipePdfEntry> => {
+          const recipe = await repo.getRecipeVersion(session, summary.id);
+          const draft = await repo.getDocumentDraft(recipe.id);
+          const assets = await Promise.all(getRecipePdfMediaIds(recipe, draft).map(getMedia));
+          return {
+            recipe,
+            draft,
+            mediaAssets: assets.filter((asset): asset is MediaAsset => asset !== null),
+          };
+        })),
+      ]);
+      const blob = await generateRecipeBookPdf(entries, ingredients);
+      setBookPreview({ blob, objectUrl: URL.createObjectURL(blob), selectionKey: selectedKey });
+      setIsPreviewOpen(true);
+    } catch (error: unknown) {
+      setPdfError(error instanceof Error ? error.message : 'Không thể tạo bản xem trước bộ công thức.');
+    } finally {
+      setIsCreatingPreview(false);
+    }
+  };
+
+  const handleDownloadBook = (): void => {
+    if (!bookPreview || !hasCurrentPreview) {
+      setPdfError('Danh sách công thức đã thay đổi. Hãy tạo lại bản xem trước trước khi tải PDF.');
+      setIsPreviewOpen(false);
+      return;
+    }
+    touch();
+    const date = new Date().toISOString().slice(0, 10);
+    downloadPdfBlob(bookPreview.blob, `BO_CONG_THUC_RECIPEHUB_${date}.pdf`);
+  };
+
   const columns = [
+    {
+      header: (
+        <input
+          type="checkbox"
+          checked={isCurrentPageSelected}
+          onChange={(event) => handleToggleCurrentPage(event.target.checked)}
+          aria-label="Chọn tất cả công thức trên trang hiện tại"
+          data-testid="recipe-select-page"
+          className="h-4 w-4 cursor-pointer accent-[#B47820]"
+        />
+      ),
+      className: 'w-12 text-center',
+      render: (item: RecipeVersion) => (
+        <input
+          type="checkbox"
+          checked={selectedRecipeIds.includes(item.id)}
+          onChange={(event) => setSelectedRecipeIds((current) => toggleSelection(current, item.id, event.target.checked))}
+          aria-label={`Chọn công thức ${item.code}`}
+          data-testid={`recipe-select-${item.id}`}
+          className="h-4 w-4 cursor-pointer accent-[#B47820]"
+        />
+      ),
+    },
     {
       header: 'Mã & Tên công thức',
       render: (item: RecipeVersion) => (
@@ -202,6 +334,8 @@ function RecipeListContent() {
         </div>
       </div>
 
+      {pdfError && <Alert variant="error" title="Không thể xuất PDF">{pdfError}</Alert>}
+
       {/* Filter Bar */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-white border border-[#E8E2D9] p-3 rounded-2xl shadow-xs">
         <div className="md:col-span-2">
@@ -247,6 +381,32 @@ function RecipeListContent() {
         </div>
       </div>
 
+      {selectedRecipeIds.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#D7C49E] bg-[#FFF9EC] px-4 py-3 shadow-xs">
+          <div className="text-sm text-[#4B3520]">
+            Đã chọn <strong>{selectedRecipeIds.length}</strong> công thức. Mỗi công thức sẽ nằm trên một trang riêng.
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedRecipeIds([])}
+            >
+              Bỏ chọn
+            </Button>
+            <Button
+              variant="gold"
+              size="sm"
+              isLoading={isCreatingPreview}
+              onClick={handleCreateBookPreview}
+              data-testid="recipe-bulk-pdf-preview"
+            >
+              <Eye className="mr-1.5 h-4 w-4" /> Xem trước bộ PDF
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* DataTable */}
       <DataTable
         columns={columns}
@@ -282,6 +442,29 @@ function RecipeListContent() {
           onPageChange: setPage,
         }}
       />
+
+      <Dialog
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        title={`Xem trước bộ công thức (${selectedRecipeIds.length} trang)`}
+        description="Mỗi công thức nằm trọn trên một trang A4 ngang. Trang của công thức chưa phát hành có watermark bản nháp."
+        size="wide"
+        onConfirm={handleDownloadBook}
+        confirmLabel="Tải bộ công thức PDF"
+        confirmTestId="recipe-bulk-pdf-download"
+      >
+        {bookPreview && (
+          <iframe
+            src={bookPreview.objectUrl}
+            title="Xem trước bộ công thức PDF"
+            data-testid="recipe-bulk-pdf-preview-frame"
+            className="h-[68vh] w-full rounded-lg border border-[#E8E2D9] bg-[#F5F0E8]"
+          />
+        )}
+        <div className="mt-3 flex items-center gap-2 text-xs text-[#706E68]">
+          <Download className="h-3.5 w-3.5" /> Kiểm tra đủ số trang và nội dung trước khi tải file.
+        </div>
+      </Dialog>
     </div>
   );
 }

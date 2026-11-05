@@ -88,7 +88,9 @@ public sealed class UnitService : IUnitService
         var unit = new Unit
         {
             PublicId = Guid.NewGuid(), Code = values.Code, NormalizedCode = values.NormalizedCode,
-            Name = values.Name, CategoryId = category.Id, DecimalPlaces = request.DecimalPlaces,
+            Name = values.Name, CategoryId = category.Id, IsBase = false,
+            FactorToBase = 1, OffsetToBase = 0,
+            DecimalPlaces = request.DecimalPlaces,
             State = "active", CreatedByUserRef = actorUserId,
             UpdatedByUserRef = actorUserId, CreatedAt = now, UpdatedAt = now, Category = category
         };
@@ -120,6 +122,33 @@ public sealed class UnitService : IUnitService
         unit.UpdatedByUserRef = actorUserId;
         unit.UpdatedAt = DateTime.UtcNow;
         unit.Category = category;
+        await _unitRepository.SaveChangesAsync(cancellationToken);
+        return MapUnit(unit);
+    }
+
+    public async Task<UnitResponse> UpdateConversionAsync(
+        Guid publicId,
+        UnitConversionRequest request,
+        Guid actorUserId,
+        CancellationToken cancellationToken)
+    {
+        ValidateUnitConversionRequest(request);
+        var unit = await GetUnitAsync(publicId, cancellationToken);
+        await EnsureBaseUnitIsUniqueAsync(request.IsBase, unit.CategoryId, unit.Id, cancellationToken);
+        var conversionChanged = unit.IsBase != request.IsBase ||
+                                unit.FactorToBase != request.FactorToBase ||
+                                unit.OffsetToBase != request.OffsetToBase;
+        var hasUnconfiguredConversion = !unit.IsBase && unit.FactorToBase == 1 && unit.OffsetToBase == 0;
+        if (conversionChanged && !hasUnconfiguredConversion &&
+            await _unitRepository.UnitIsUsedAsync(unit.Id, cancellationToken))
+            throw new ConflictException(
+                "Conversion values of a used unit cannot be changed. Create a new unit and deactivate this one instead.");
+
+        unit.IsBase = request.IsBase;
+        unit.FactorToBase = request.FactorToBase;
+        unit.OffsetToBase = request.OffsetToBase;
+        unit.UpdatedByUserRef = actorUserId;
+        unit.UpdatedAt = DateTime.UtcNow;
         await _unitRepository.SaveChangesAsync(cancellationToken);
         return MapUnit(unit);
     }
@@ -183,8 +212,25 @@ public sealed class UnitService : IUnitService
         var code = RequireText(request.Code, "Unit code");
         var name = RequireText(request.Name, "Unit name");
         if (request.CategoryId == Guid.Empty) throw new ValidationException("Unit category ID is required.");
-        if (request.DecimalPlaces is < 0 or > 8) throw new ValidationException("Decimal places must be between 0 and 8.");
+        if (request.DecimalPlaces is < 0 or > 6) throw new ValidationException("Decimal places must be between 0 and 6.");
         return (code, Normalize(code), name);
+    }
+
+    private static void ValidateUnitConversionRequest(UnitConversionRequest request)
+    {
+        if (request.FactorToBase <= 0) throw new ValidationException("Factor to base must be greater than zero.");
+        if (request.IsBase && (request.FactorToBase != 1 || request.OffsetToBase != 0))
+            throw new ValidationException("A base unit must have factor to base 1 and offset to base 0.");
+    }
+
+    private async Task EnsureBaseUnitIsUniqueAsync(
+        bool isBase,
+        long categoryId,
+        long? excludedUnitId,
+        CancellationToken cancellationToken)
+    {
+        if (isBase && await _unitRepository.BaseUnitExistsAsync(categoryId, excludedUnitId, cancellationToken))
+            throw new ConflictException("The unit category already has a base unit.");
     }
 
     private async Task<UnitCategory> GetActiveCategoryAsync(Guid publicId, CancellationToken cancellationToken)
@@ -209,7 +255,7 @@ public sealed class UnitService : IUnitService
 
     private static UnitResponse MapUnit(Unit unit) => new(
         unit.PublicId, unit.Code, unit.Name, unit.Category.PublicId, unit.Category.Name,
-        unit.DecimalPlaces, unit.State,
+        unit.IsBase, unit.FactorToBase, unit.OffsetToBase, unit.DecimalPlaces, unit.State,
         unit.CreatedAt, unit.UpdatedAt);
 
     private static string RequireText(string? value, string fieldName) =>

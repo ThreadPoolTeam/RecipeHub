@@ -6,7 +6,7 @@ import { Button } from './fields';
 
 interface DataTableProps<T> {
   columns: Array<{
-    header: string;
+    header: React.ReactNode;
     accessor?: keyof T;
     render?: (item: T, index: number) => React.ReactNode;
     className?: string;

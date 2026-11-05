@@ -13,6 +13,8 @@ interface DialogProps {
   confirmLabel?: string;
   confirmVariant?: 'primary' | 'danger' | 'gold';
   isConfirming?: boolean;
+  size?: 'default' | 'wide';
+  confirmTestId?: string;
 }
 
 export function Dialog({
@@ -25,6 +27,8 @@ export function Dialog({
   confirmLabel = 'Xác nhận',
   confirmVariant = 'gold',
   isConfirming = false,
+  size,
+  confirmTestId,
 }: DialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
 
@@ -52,7 +56,7 @@ export function Dialog({
     >
       <div
         ref={dialogRef}
-        className="w-full max-w-lg bg-white border border-[#E8E2D9] rounded-xl shadow-xl p-6 text-[#1A1917] space-y-4"
+        className={`w-full ${size === 'wide' ? 'max-w-6xl' : 'max-w-lg'} bg-white border border-[#E8E2D9] rounded-xl shadow-xl p-6 text-[#1A1917] space-y-4`}
       >
         <div className="flex items-start justify-between">
           <div>
@@ -83,6 +87,7 @@ export function Dialog({
               variant={confirmVariant}
               onClick={onConfirm}
               isLoading={isConfirming}
+              data-testid={confirmTestId}
             >
               {confirmLabel}
             </Button>

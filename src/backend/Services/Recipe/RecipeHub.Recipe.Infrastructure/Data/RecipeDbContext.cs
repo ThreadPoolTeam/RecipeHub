@@ -398,7 +398,18 @@ public partial class RecipeDbContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("unit_pkey");
 
-            entity.ToTable("unit", "recipe_db", tb => tb.HasComment("Đơn vị hiển thị thuộc một nhóm; MVP không tự động quy đổi đơn vị."));
+            entity.ToTable("unit", "recipe_db", tb =>
+            {
+                tb.HasComment("Đơn vị đo được quy đổi về đơn vị gốc trong cùng category.");
+                tb.HasCheckConstraint("unit_factor_check", "factor_to_base > 0");
+                tb.HasCheckConstraint(
+                    "unit_base_conversion_check",
+                    "is_base = false OR (factor_to_base = 1 AND offset_to_base = 0)");
+            });
+
+            entity.HasIndex(e => e.CategoryId, "unit_one_base_per_category_uidx")
+                .IsUnique()
+                .HasFilter("(is_base = true)");
 
             entity.HasIndex(e => new { e.CategoryId, e.State }, "unit_category_usage_state_idx");
 
@@ -417,8 +428,22 @@ public partial class RecipeDbContext : DbContext
                 .HasDefaultValue((short)2)
                 .HasComment("Số chữ số thập phân khi làm tròn.")
                 .HasColumnName("decimal_places");
+            entity.Property(e => e.FactorToBase)
+                .HasPrecision(18, 8)
+                .HasDefaultValueSql("1")
+                .HasComment("base_value = value * factor_to_base + offset_to_base.")
+                .HasColumnName("factor_to_base");
+            entity.Property(e => e.IsBase)
+                .HasDefaultValue(false)
+                .HasComment("Đơn vị gốc duy nhất trong category.")
+                .HasColumnName("is_base");
             entity.Property(e => e.Name).HasColumnName("name");
             entity.Property(e => e.NormalizedCode).HasColumnName("normalized_code");
+            entity.Property(e => e.OffsetToBase)
+                .HasPrecision(18, 8)
+                .HasDefaultValueSql("0")
+                .HasComment("Độ lệch khi quy đổi; phần lớn đơn vị đồ uống dùng 0.")
+                .HasColumnName("offset_to_base");
             entity.Property(e => e.PublicId).HasColumnName("public_id");
             entity.Property(e => e.State)
                 .HasDefaultValueSql("'active'::text")
@@ -438,7 +463,7 @@ public partial class RecipeDbContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("unit_category_pkey");
 
-            entity.ToTable("unit_category", "recipe_db", tb => tb.HasComment("Nhóm phân loại đơn vị hiển thị; MVP không tự động quy đổi đơn vị."));
+            entity.ToTable("unit_category", "recipe_db", tb => tb.HasComment("Nhóm các đơn vị có thể quy đổi với nhau."));
 
             entity.HasIndex(e => e.NormalizedCode, "unit_category_normalized_code_key").IsUnique();
 
