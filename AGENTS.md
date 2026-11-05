@@ -29,8 +29,8 @@ RecipeHub/
 │   │   │   └── Audit/    (Domain, Application, Infrastructure, Api)
 │   │   └── Workers/
 │   │       └── RecipeHub.BackgroundWorker/                  # Redis Streams consumer with MKSTREAM & ACK
-│   └── frontend/
-│       └── recipehub-web/                                   # Next.js 14 App Router (Standalone)
+│   ├── frontend/                                            # Next.js 14 App Router (Standalone)
+│   └── mobile/                                              # Flutter app com.recipehub.mobile (Viewer/Admin, NomadKit)
 ├── infra/
 │   ├── compose.yaml                                         # Full-stack Docker Compose
 │   └── postgres/init-databases.sh                           # 4 independent databases bootstrap
@@ -84,6 +84,10 @@ RecipeHub/
   - Khi thay đổi DB đã tồn tại, bổ sung script migration trong `<service-name>-db/migrations/` theo mẫu hiện có; cập nhật seed hoặc tài liệu liên quan nếu bị ảnh hưởng. DDL schema đầy đủ không thay thế migration cho DB đang có dữ liệu.
   - Nếu thay đổi service không ảnh hưởng DB, vẫn phải đối chiếu schema trước và ghi rõ kết luận không cần sửa schema; không tạo bảng/file rỗng cho đủ thủ tục.
   - Code entity, mapping, migration và DB thực tế phải khớp thiết kế đã cập nhật; giữ database-per-service, không tạo FK xuyên database.
+- **Mobile (`src/mobile/`):**
+  - Flutter, package `com.recipehub.mobile`, 2 vai trò: Viewer (Barista) và Admin (quản lý cửa hàng). Soạn/duyệt công thức, CRUD nguyên liệu, quản trị người dùng và xuất PDF thuộc web.
+  - Nguồn yêu cầu: `requirements-draft.md` mục 10 (M-01 đến M-17). Tài liệu mobile: `src/mobile/README.md`, `DESIGN.md`, `flutter-handoff.md`, `ux/`. Plugin Figma ở `tools/figma-prototype-plugin/` đọc `src/mobile/lib`, nên đổi UI hoặc route phải chạy lại plugin.
+  - Mọi ảnh trong `src/mobile/assets/` phải có tham chiếu trong `lib/`; ảnh không dùng thì xóa.
 - **Language & Style:** Communication in Vietnamese, concise/terse caveman style unless asked otherwise.
 - **Git Workflow:** Atomic commits (no big-bang commits). Include scope prefixes: `feat:`, `fix:`, `docs:`, `refactor:`, `chore:`.
 - **Validation:** Always verify changes (`dotnet build src/backend/RecipeHub.sln`, `npm run build`) before claiming completion.
