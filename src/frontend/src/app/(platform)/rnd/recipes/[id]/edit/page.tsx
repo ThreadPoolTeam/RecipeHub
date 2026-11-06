@@ -51,6 +51,10 @@ const PROMPT_CHIPS = [
   'Bọt kem cheese bồng bềnh',
 ];
 
+// Bản published là bất biến: mở trình biên tập sẽ fork thành draft vN+1.
+// Gom các lần fork trùng (React StrictMode chạy effect 2 lần) để không tạo 2 version cùng số.
+const pendingForks = new Map<string, Promise<RecipeVersion>>();
+
 export default function EditRecipePage() {
   const params = useParams();
   const router = useRouter();
@@ -90,6 +94,7 @@ export default function EditRecipePage() {
   const [generatedCandidate, setGeneratedCandidate] = useState<AiCandidate | null>(null);
   const [candidateAssetUrl, setCandidateAssetUrl] = useState<string | null>(null);
   const [aiImageError, setAiImageError] = useState<string | null>(null);
+  const [forkNotice, setForkNotice] = useState<string | null>(null);
   const [aiTargetType, setAiTargetType] = useState<'hero' | 'step'>('hero');
   const [aiProgressStatus, setAiProgressStatus] = useState<{ attempt: number; state: string; message: string } | null>(null);
   const [activeDrafts, setActiveDrafts] = useState<PersistentAiDraft[]>([]);
@@ -108,8 +113,25 @@ export default function EditRecipePage() {
     let isMounted = true;
     setLoading(true);
 
+    const loadEditableVersion = async () => {
+      const latest = await repo.getRecipeVersion(session, id);
+      if (latest.status !== 'Published') return latest;
+      let fork = pendingForks.get(id);
+      if (!fork) {
+        fork = repo.saveRecipeDraft(session, id, {}, 0).finally(() => pendingForks.delete(id));
+        pendingForks.set(id, fork);
+      }
+      const draft = await fork;
+      if (isMounted) {
+        setForkNotice(
+          `Đã tạo bản nháp ${draft.versionLabel} từ bản phát hành ${latest.versionLabel}. Bản phát hành vẫn giữ nguyên cho cửa hàng cho tới khi bạn phát hành bản nháp này.`
+        );
+      }
+      return draft;
+    };
+
     Promise.all([
-      repo.getRecipeVersion(session, id),
+      loadEditableVersion(),
       repo.getIngredients('', '', true),
       repo.getMedia(),
       repo.getUnits(),
@@ -644,6 +666,9 @@ export default function EditRecipePage() {
         </div>
       </div>
 
+      {forkNotice && (
+        <Alert type="info" message={forkNotice} onClose={() => setForkNotice(null)} />
+      )}
       {successMsg && (
         <Alert type="success" message={successMsg} onClose={() => setSuccessMsg(null)} />
       )}

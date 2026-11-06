@@ -7,13 +7,25 @@ import { useDemo } from '@/lib/demo/provider';
 import { Ingredient } from '@/lib/demo/types';
 import { Button, Select, Alert, SearchInput } from '@/components/workspace/fields';
 import { DataTable } from '@/components/workspace/data-table';
-import { UnitConversionModal } from '@/components/shared/UnitConversionModal';
+import { IngredientCategoryPanel, IngredientCategoryEditing } from '@/components/workspace/ingredient-category-panel';
+import { CatalogPageHeader, CatalogTabs, CodeChip, StateToggle, editIconButtonClass } from '@/components/workspace/catalog-ui';
+import { CatalogItem } from '@/lib/api/backend-repository';
+
+type IngredientTab = 'ingredients' | 'categories';
 
 export default function RndIngredientsPage() {
   const { session, repo, dataVersion, touch } = useDemo();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
-  const [ingredientGroups, setIngredientGroups] = useState<string[]>([]);
+  const [categories, setCategories] = useState<CatalogItem[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<IngredientTab>('ingredients');
+  const [categoryEditing, setCategoryEditing] = useState<IngredientCategoryEditing>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const ingredientGroups = useMemo(
+    () => categories.filter((item) => item.state === 'active').map((item) => item.name),
+    [categories]
+  );
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,12 +60,17 @@ export default function RndIngredientsPage() {
     fetchIngredients();
   }, [repo, dataVersion]);
 
+  const reloadCategories = async () => {
+    setCategories(await repo.getIngredientCategories());
+  };
+
   useEffect(() => {
     let isMounted = true;
+    setCategoriesLoading(true);
     repo.getIngredientCategories()
-      .then((categories) => {
+      .then((items) => {
         if (!isMounted) return;
-        setIngredientGroups(categories.filter((item) => item.state === 'active').map((item) => item.name));
+        setCategories(items);
       })
       .catch((error: unknown) => {
         if (isMounted) {
@@ -62,6 +79,9 @@ export default function RndIngredientsPage() {
             setAlertNotice({ type: 'error', message: error instanceof Error ? error.message : 'Không thể tải phân nhóm nguyên liệu.' });
           }
         }
+      })
+      .finally(() => {
+        if (isMounted) setCategoriesLoading(false);
       });
     return () => {
       isMounted = false;
@@ -106,6 +126,7 @@ export default function RndIngredientsPage() {
   const handleToggleActive = async (ingredient: Ingredient) => {
     if (!session) return;
     try {
+      setTogglingId(ingredient.id);
       const updatedState = !ingredient.isActive;
       await repo.updateIngredient(session, ingredient.id, {
         isActive: updatedState,
@@ -119,6 +140,8 @@ export default function RndIngredientsPage() {
     } catch (err: unknown) {
       const e = err as Error;
       setAlertNotice({ type: 'error', message: e.message || 'Không thể đổi trạng thái' });
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -128,13 +151,7 @@ export default function RndIngredientsPage() {
       render: (item: Ingredient) => (
         <div>
           <div className="flex items-center gap-2">
-            <Link
-              href={`/rnd/ingredients/${item.id}/edit`}
-              className="font-mono text-[11px] font-semibold px-1.5 py-0.5 rounded bg-[#F5F0E8] text-[#B47820] border border-[#E8E2D9] hover:bg-[#EAE3D6] transition"
-              title="Xem & chỉnh sửa nguyên liệu"
-            >
-              {item.code}
-            </Link>
+            <CodeChip>{item.code}</CodeChip>
             <Link
               href={`/rnd/ingredients/${item.id}/edit`}
               className="font-semibold text-[#1A1917] hover:text-[#B47820] text-sm text-left transition truncate"
@@ -151,7 +168,7 @@ export default function RndIngredientsPage() {
       ),
     },
     {
-      header: 'Nhóm',
+      header: 'Loại',
       render: (item: Ingredient) => (
         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#F5F0E8] text-[#706E68] border border-[#E8E2D9]">
           {item.group}
@@ -159,7 +176,7 @@ export default function RndIngredientsPage() {
       ),
     },
     {
-      header: 'Đơn Vị Chuẩn',
+      header: 'Đơn Vị Định Mức',
       render: (item: Ingredient) => (
         <span className="font-mono text-xs text-[#706E68]">{item.defaultUnit}</span>
       ),
@@ -167,22 +184,12 @@ export default function RndIngredientsPage() {
     {
       header: 'Trạng Thái',
       render: (item: Ingredient) => (
-        <button
-          onClick={() => handleToggleActive(item)}
-          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer transition ${
-            item.isActive
-              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
-              : 'bg-zinc-100 text-zinc-600 border border-zinc-200 hover:bg-zinc-200'
-          }`}
-          title="Bấm để bật/tắt hoạt động"
-        >
-          <span
-            className={`w-1.5 h-1.5 rounded-full ${
-              item.isActive ? 'bg-emerald-500' : 'bg-zinc-400'
-            }`}
-          />
-          {item.isActive ? 'Đang dùng' : 'Tạm khóa'}
-        </button>
+        <StateToggle
+          active={item.isActive}
+          disabled={togglingId === item.id}
+          onToggle={() => handleToggleActive(item)}
+          subject={`nguyên liệu "${item.name}"`}
+        />
       ),
     },
     {
@@ -192,7 +199,7 @@ export default function RndIngredientsPage() {
         <div className="flex items-center justify-end">
           <Link
             href={`/rnd/ingredients/${item.id}/edit`}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-[#706E68] hover:text-[#B47820] hover:bg-[#F5F0E8] border border-transparent hover:border-[#E8E2D9] transition"
+            className={editIconButtonClass}
             title="Chỉnh sửa nguyên liệu"
             aria-label="Chỉnh sửa nguyên liệu"
           >
@@ -205,25 +212,24 @@ export default function RndIngredientsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E8E2D9] pb-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#1A1917] flex items-center gap-2">
-            <FlaskConical className="w-5 h-5 text-[#B47820]" /> Kho Nguyên Liệu R&amp;D
-          </h1>
-          <p className="text-xs sm:text-sm text-[#706E68] mt-0.5">
-            Định nghĩa danh mục nguyên liệu tiêu chuẩn và đơn vị đo phục vụ xây dựng công thức.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <UnitConversionModal />
-          <Link href="/rnd/ingredients/new">
-            <Button variant="gold" size="sm">
-              <Plus className="w-4 h-4 mr-1" /> Thêm nguyên liệu
+      <CatalogPageHeader
+        icon={FlaskConical}
+        title={<>Kho Nguyên Liệu R&amp;D</>}
+        description="Quản lý nguyên liệu và loại nguyên liệu dùng để xây dựng công thức."
+        actions={
+          activeTab === 'ingredients' ? (
+            <Link href="/rnd/ingredients/new">
+              <Button variant="gold" size="sm">
+                <Plus className="w-4 h-4 mr-1" /> Thêm nguyên liệu
+              </Button>
+            </Link>
+          ) : (
+            <Button variant="gold" size="sm" onClick={() => setCategoryEditing({ item: null })}>
+              <Plus className="w-4 h-4 mr-1" /> Thêm loại nguyên liệu
             </Button>
-          </Link>
-        </div>
-      </div>
+          )
+        }
+      />
 
       {alertNotice && (
         <Alert
@@ -233,6 +239,28 @@ export default function RndIngredientsPage() {
         />
       )}
 
+      <CatalogTabs
+        label="Kho nguyên liệu"
+        active={activeTab}
+        onChange={setActiveTab}
+        tabs={[
+          { key: 'ingredients', label: 'Nguyên liệu', count: ingredients.length },
+          { key: 'categories', label: 'Loại nguyên liệu', count: categories.length },
+        ]}
+      />
+
+      {activeTab === 'categories' ? (
+        <IngredientCategoryPanel
+          categories={categories}
+          ingredients={ingredients}
+          isLoading={categoriesLoading}
+          editing={categoryEditing}
+          onEditingChange={setCategoryEditing}
+          onChanged={reloadCategories}
+          onNotice={setAlertNotice}
+        />
+      ) : (
+      <>
       {/* Filter Toolbar */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-white border border-[#E8E2D9] p-3 rounded-2xl shadow-xs">
         <div className="md:col-span-2">
@@ -258,7 +286,7 @@ export default function RndIngredientsPage() {
               setCurrentPage(1);
             }}
             options={[
-              { value: 'all', label: 'Tất cả phân nhóm' },
+              { value: 'all', label: 'Tất cả loại' },
               ...ingredientGroups.map((g) => ({ value: g, label: g })),
             ]}
           />
@@ -273,8 +301,8 @@ export default function RndIngredientsPage() {
             }}
             options={[
               { value: 'all', label: 'Tất cả trạng thái' },
-              { value: 'active', label: 'Đang sử dụng' },
-              { value: 'inactive', label: 'Đã tạm khóa' },
+              { value: 'active', label: 'Đang dùng' },
+              { value: 'inactive', label: 'Tạm khóa' },
             ]}
           />
         </div>
@@ -287,7 +315,7 @@ export default function RndIngredientsPage() {
         keyExtractor={(item) => item.id}
         isLoading={loading}
         emptyTitle="Chưa tìm thấy nguyên liệu"
-        emptyMessage="Không có nguyên liệu nào khớp với điều kiện tìm kiếm hoặc phân nhóm hiện tại."
+        emptyMessage="Không có nguyên liệu nào khớp với từ khóa, loại hoặc trạng thái đang lọc."
         emptyAction={
           <Button variant="secondary" size="sm" onClick={() => { setSearchQuery(''); setGroupFilter('all'); setStatusFilter('all'); }}>
             Xóa bộ lọc
@@ -300,6 +328,8 @@ export default function RndIngredientsPage() {
           onPageChange: setCurrentPage,
         }}
       />
+      </>
+      )}
     </div>
   );
 }

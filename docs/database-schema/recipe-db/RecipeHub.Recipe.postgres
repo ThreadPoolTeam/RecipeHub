@@ -23,12 +23,17 @@ CREATE TABLE "recipe_db"."unit" (
   "normalized_code" text UNIQUE NOT NULL,
   "name" text NOT NULL,
   "category_id" bigint NOT NULL,
+  "is_base" boolean NOT NULL DEFAULT false,
+  "factor_to_base" numeric(18,8) NOT NULL DEFAULT 1,
+  "offset_to_base" numeric(18,8) NOT NULL DEFAULT 0,
   "decimal_places" smallint NOT NULL DEFAULT 2,
   "state" text NOT NULL DEFAULT 'active',
   "created_by_user_ref" uuid NOT NULL,
   "updated_by_user_ref" uuid NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "updated_at" timestamptz NOT NULL DEFAULT (now()),
+  CONSTRAINT "unit_factor_check" CHECK (factor_to_base > 0),
+  CONSTRAINT "unit_base_conversion_check" CHECK (is_base = false OR (factor_to_base = 1 AND offset_to_base = 0)),
   CONSTRAINT "unit_decimal_places_check" CHECK (decimal_places BETWEEN 0 AND 6),
   CONSTRAINT "unit_state_check" CHECK (state IN ('active', 'inactive'))
 );
@@ -166,6 +171,8 @@ CREATE INDEX "unit_category_state_idx" ON "recipe_db"."unit_category" ("state");
 
 CREATE INDEX "unit_category_usage_state_idx" ON "recipe_db"."unit" ("category_id", "state");
 
+CREATE UNIQUE INDEX "unit_one_base_per_category_uidx" ON "recipe_db"."unit" ("category_id") WHERE is_base = true;
+
 CREATE INDEX "ingredient_category_state_idx" ON "recipe_db"."ingredient_category" ("state");
 
 CREATE INDEX "ingredient_name_idx" ON "recipe_db"."ingredient" ("normalized_name");
@@ -210,11 +217,17 @@ CREATE INDEX "recipe_step_media_order_idx" ON "recipe_db"."recipe_step_media" ("
 
 CREATE INDEX "recipe_step_media_reference_idx" ON "recipe_db"."recipe_step_media" ("media_asset_ref");
 
-COMMENT ON TABLE "recipe_db"."unit_category" IS 'Nhóm phân loại đơn vị; API quy đổi metric chỉ chấp nhận cùng nhóm và cùng đại lượng vật lý. Phép tính không ghi DB.';
+COMMENT ON TABLE "recipe_db"."unit_category" IS 'Nhóm các đơn vị cùng đại lượng vật lý. API quy đổi metric và cấu hình quy đổi về base unit chỉ chấp nhận các đơn vị trong cùng nhóm.';
 
 COMMENT ON COLUMN "recipe_db"."unit_category"."state" IS 'active hoặc inactive.';
 
-COMMENT ON TABLE "recipe_db"."unit" IS 'Đơn vị thuộc một nhóm. Quy đổi metric mg/g/kg và ml/cl/dl/l dùng hệ số vật lý cố định; đơn vị khác chỉ đổi sang chính nó. Không suy đoán cup/shot hoặc khối lượng sang thể tích.';
+COMMENT ON TABLE "recipe_db"."unit" IS 'Đơn vị được cấu hình quy đổi về base unit trong cùng category; API metric vẫn chỉ quy đổi các đại lượng vật lý tương thích.';
+
+COMMENT ON COLUMN "recipe_db"."unit"."is_base" IS 'Đơn vị gốc duy nhất trong category.';
+
+COMMENT ON COLUMN "recipe_db"."unit"."factor_to_base" IS 'base_value = value * factor_to_base + offset_to_base.';
+
+COMMENT ON COLUMN "recipe_db"."unit"."offset_to_base" IS 'Độ lệch khi quy đổi; phần lớn đơn vị đồ uống dùng 0.';
 
 COMMENT ON COLUMN "recipe_db"."unit"."decimal_places" IS 'Số chữ số thập phân khi làm tròn.';
 
