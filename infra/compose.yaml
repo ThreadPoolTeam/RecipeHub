@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -32,6 +30,9 @@ services:
       QUIZ_DB_NAME: ${QUIZ_DB_NAME:-recipehub_quiz}
     volumes:
       - ./postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+      - ../docs/database-schema/identity-db:/schema/identity-db:ro
+      - ../docs/database-schema/recipe-db:/schema/recipe-db:ro
+      - ../docs/database-schema/content-db:/schema/content-db:ro
       - ../docs/database-schema/quiz-db:/schema/quiz-db:ro
       - ../docs/database-schema/audit-db:/schema/audit-db:ro
       - pgdata:/var/lib/postgresql/data
@@ -62,8 +63,13 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__Database=Host=postgres;Port=5432;Database=${IDENTITY_DB_NAME:-recipehub_identity};Username=${IDENTITY_DB_USER:-identity_user};Password=${IDENTITY_DB_PASSWORD:-identity_pw}
+      - ConnectionStrings__Redis=redis:6379
+      - Identity__SeedDemoUsers=true
+      - Jwt__SigningKey=${JWT_SIGNING_KEY:-dev-only-signing-key-0123456789abcdef}
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5001/health/live || exit 1"]
@@ -82,6 +88,7 @@ services:
       - ConnectionStrings__Database=Host=postgres;Port=5432;Database=${RECIPE_DB_NAME:-recipehub_recipe};Username=${RECIPE_DB_USER:-recipe_user};Password=${RECIPE_DB_PASSWORD:-recipe_pw}
       - ConnectionStrings__Redis=redis:6379
       - Grpc__IdentityServiceUrl=http://identity-service:5011
+      - Grpc__ContentServiceUrl=http://content-service:5013
     depends_on:
       postgres:
         condition: service_healthy
@@ -102,6 +109,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__Database=Host=postgres;Port=5432;Database=${CONTENT_DB_NAME:-recipehub_content};Username=${CONTENT_DB_USER:-content_user};Password=${CONTENT_DB_PASSWORD:-content_pw}
+      - ConnectionStrings__Redis=redis:6379
       - Grpc__IdentityServiceUrl=http://identity-service:5011
       - Grpc__RecipeServiceUrl=http://recipe-service:5012
       - TemporaryStorage__BasePath=/app/temp-drafts
@@ -109,6 +117,8 @@ services:
       - temp-drafts:/app/temp-drafts
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       identity-service:
         condition: service_healthy
@@ -141,7 +151,6 @@ services:
       timeout: 5s
       retries: 5
 
-
   quiz-service:
     build:
       context: ../src/backend
@@ -151,10 +160,13 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__Database=Host=postgres;Port=5432;Database=${QUIZ_DB_NAME:-recipehub_quiz};Username=${QUIZ_DB_USER:-quiz_user};Password=${QUIZ_DB_PASSWORD:-quiz_pw}
+      - ConnectionStrings__Redis=redis:6379
       - Grpc__IdentityServiceUrl=http://identity-service:5011
       - Grpc__RecipeServiceUrl=http://recipe-service:5012
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       identity-service:
         condition: service_healthy
@@ -165,6 +177,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
   worker:
     build:
       context: ../src/backend
@@ -187,6 +200,7 @@ services:
         condition: service_healthy
       recipe-service:
         condition: service_healthy
+
   gateway:
     build:
       context: ../src/backend
@@ -234,6 +248,53 @@ services:
       timeout: 5s
       retries: 5
 
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: recipehub-pgadmin
+    restart: unless-stopped
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@recipehub.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    volumes:
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: recipehub-grafana
+    restart: unless-stopped
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Viewer"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      POSTGRES_USER: ${POSTGRES_USER:-recipehub_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-recipehub_secret_pw}
+      IDENTITY_DB_NAME: ${IDENTITY_DB_NAME:-recipehub_identity}
+      RECIPE_DB_NAME: ${RECIPE_DB_NAME:-recipehub_recipe}
+      CONTENT_DB_NAME: ${CONTENT_DB_NAME:-recipehub_content}
+      AUDIT_DB_NAME: ${AUDIT_DB_NAME:-recipehub_audit}
+      QUIZ_DB_NAME: ${QUIZ_DB_NAME:-recipehub_quiz}
+    volumes:
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   pgdata:
   temp-drafts:
+  pgadmin-data:
+  grafana-data:
