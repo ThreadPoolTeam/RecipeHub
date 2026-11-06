@@ -97,11 +97,17 @@ app.MapGet("/health/ready", async (QuizDbContext dbContext, CancellationToken ct
         : Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
 });
 
-app.MapGet("/api/v1/quiz/info", () => Results.Ok(new
+app.MapGet("/api/v1/quiz/info", async (QuizDbContext dbContext, CancellationToken ct) =>
 {
-    service = "RecipeHub.Quiz.Api",
-    status = "Active",
-    version = "1.0.0"
-}));
+    var canConnect = await dbContext.Database.CanConnectAsync(ct);
+    return Results.Ok(new
+    {
+        service = "RecipeHub.Quiz.Api",
+        version = "1.0.0",
+        status = canConnect ? "Ready" : "Degraded",
+        database = canConnect ? "Connected" : "Unreachable",
+        timestampUtc = DateTime.UtcNow
+    });
+});
 
 app.Run();

@@ -133,11 +133,17 @@ app.MapGet("/health/ready", async (AuditDbContext dbContext, CancellationToken c
     }
 });
 
-app.MapGet("/api/v1/audit/info", () => Results.Ok(new
+app.MapGet("/api/v1/audit/info", async (AuditDbContext dbContext, CancellationToken ct) =>
 {
-    service = "RecipeHub.Audit.Api",
-    version = "1.0.0",
-    status = "Active"
-}));
+    var canConnect = await dbContext.Database.CanConnectAsync(ct);
+    return Results.Ok(new
+    {
+        service = "RecipeHub.Audit.Api",
+        version = "1.0.0",
+        status = canConnect ? "Ready" : "Degraded",
+        database = canConnect ? "Connected" : "Unreachable",
+        timestampUtc = DateTime.UtcNow
+    });
+});
 
 app.Run();
