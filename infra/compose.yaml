@@ -211,6 +211,11 @@ services:
       - "5000:5000"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ReverseProxy__Clusters__identity-cluster__Destinations__destination1__Address=http://identity-service:5001
+      - ReverseProxy__Clusters__recipe-cluster__Destinations__destination1__Address=http://recipe-service:5002
+      - ReverseProxy__Clusters__content-cluster__Destinations__destination1__Address=http://content-service:5003
+      - ReverseProxy__Clusters__audit-cluster__Destinations__destination1__Address=http://audit-service:5004
+      - ReverseProxy__Clusters__quiz-cluster__Destinations__destination1__Address=http://quiz-service:5005
     depends_on:
       identity-service:
         condition: service_healthy
@@ -255,7 +260,7 @@ services:
     ports:
       - "${PGADMIN_PORT:-5050}:80"
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@recipehub.local}
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@recipehub.vn}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
       PGADMIN_CONFIG_SERVER_MODE: "False"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
