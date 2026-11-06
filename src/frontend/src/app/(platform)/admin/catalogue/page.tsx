@@ -165,6 +165,13 @@ export default function AdminCataloguePage() {
       setErrorMsg('Hệ số quy đổi phải lớn hơn 0');
       return;
     }
+    if (
+      catalogueEditor.kind === 'unit' &&
+      (!Number.isInteger(unitDecimalPlaces) || unitDecimalPlaces < 0 || unitDecimalPlaces > 6)
+    ) {
+      setErrorMsg('Số chữ số lẻ phải là số nguyên từ 0 đến 6');
+      return;
+    }
     const categoryBase = unitItems.find(
       (item) => item.categoryId === unitCategoryId && item.isBase && item.id !== catalogueEditor.item?.id
     );
@@ -425,7 +432,7 @@ export default function AdminCataloguePage() {
 
       {activeSection === 'units' && (
         <section className="space-y-4">
-        <div className="card card-bordered bg-white border-[#E8E2D9]">
+        <div className="card card-bordered rounded-2xl bg-white border-[#E8E2D9]">
           <div className="card-body p-5">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div className="flex items-start gap-3">
@@ -504,7 +511,7 @@ export default function AdminCataloguePage() {
           />
         </div>
 
-        <div className="card card-bordered bg-white border-[#E8E2D9]">
+        <div className="card card-bordered rounded-2xl bg-white border-[#E8E2D9]">
           <div className="card-body p-5">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-start gap-3">
@@ -614,7 +621,7 @@ export default function AdminCataloguePage() {
 
       {activeSection === 'ingredients' && (
       <section className="space-y-4">
-      <div className="card card-bordered bg-white border-[#E8E2D9]">
+      <div className="card card-bordered rounded-2xl bg-white border-[#E8E2D9]">
         <div className="card-body p-5">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div className="flex items-start gap-3">
@@ -684,7 +691,7 @@ export default function AdminCataloguePage() {
         />
       </div>
 
-      <div className="card card-bordered bg-white border-[#E8E2D9]">
+      <div className="card card-bordered rounded-2xl bg-white border-[#E8E2D9]">
         <div className="card-body p-5">
           <div className="flex items-start gap-3">
             <span className="badge badge-lg border-[#B47820] bg-[#FFF8EC] text-[#9A6416] font-bold">2</span>

@@ -12,6 +12,11 @@ public sealed record RecipeSummaryResponse(
     int VersionNumber,
     string VersionStatus,
     string Name,
+    string? Description,
+    Guid? PrimaryMediaAssetRef,
+    int IngredientCount,
+    int StepCount,
+    Guid CreatedByUserRef,
     DateTime UpdatedAt);
 
 public sealed record RecipeYieldResponse(decimal Quantity, Guid UnitId, string UnitCode, string? Note);

@@ -12,12 +12,7 @@ CREATE TABLE "content_db"."ai_image_draft" (
   "provider" text NOT NULL DEFAULT 'CloudflareSchnell',
   "model" text NOT NULL DEFAULT '@cf/black-forest-labs/flux-1-schnell',
   "geometry_mode" text NOT NULL DEFAULT 'native',
-  "width" integer,
-  "height" integer,
   "state" text NOT NULL DEFAULT 'queued',
-  "temporary_image_path" text,
-  "mime_type" text,
-  "byte_size" bigint,
   "error_code" text,
   "error_message" text,
   "attempt_count" integer NOT NULL DEFAULT 0,
@@ -35,7 +30,6 @@ CREATE TABLE "content_db"."ai_image_draft" (
   CONSTRAINT "ai_image_draft_geometry_mode_check" CHECK (geometry_mode = 'native'),
   CONSTRAINT "ai_image_draft_expiry_check" CHECK ((generated_at IS NULL AND expires_at IS NULL) OR (generated_at IS NOT NULL AND expires_at IS NOT NULL AND expires_at > generated_at)),
   CONSTRAINT "ai_image_draft_generated_time_check" CHECK (state NOT IN ('generated', 'accepting', 'accepted', 'expired') OR (generated_at IS NOT NULL AND expires_at IS NOT NULL AND prompt_snapshot IS NOT NULL)),
-  CONSTRAINT "ai_image_draft_generated_file_check" CHECK (state NOT IN ('generated', 'accepting') OR (temporary_image_path IS NOT NULL AND width > 0 AND height > 0 AND byte_size > 0)),
   CONSTRAINT "ai_image_draft_decision_check" CHECK (state NOT IN ('accepted', 'discarded') OR (decided_at IS NOT NULL AND decided_by_user_ref IS NOT NULL))
 );
 
@@ -106,17 +100,7 @@ COMMENT ON COLUMN "content_db"."ai_image_draft"."provider" IS 'Nhà cung cấp g
 
 COMMENT ON COLUMN "content_db"."ai_image_draft"."geometry_mode" IS 'FLUX Schnell native resolution; không nhận aspect_ratio tùy ý từ client.';
 
-COMMENT ON COLUMN "content_db"."ai_image_draft"."width" IS 'Kích thước pixel thực tế của ảnh.';
-
-COMMENT ON COLUMN "content_db"."ai_image_draft"."height" IS 'Kích thước pixel thực tế của ảnh.';
-
 COMMENT ON COLUMN "content_db"."ai_image_draft"."state" IS 'queued | processing | generated | failed | accepting | accepted | discarded | expired.';
-
-COMMENT ON COLUMN "content_db"."ai_image_draft"."temporary_image_path" IS 'Đường dẫn tương đối trong kho file tạm dùng chung API/worker; NULL khi chưa có ảnh hoặc đã dọn xong.';
-
-COMMENT ON COLUMN "content_db"."ai_image_draft"."mime_type" IS 'MIME type: image/png, image/jpeg, image/webp.';
-
-COMMENT ON COLUMN "content_db"."ai_image_draft"."byte_size" IS 'Dung lượng bytes của file tạm.';
 
 COMMENT ON COLUMN "content_db"."ai_image_draft"."error_code" IS 'Mã lỗi máy đọc được.';
 
@@ -153,3 +137,32 @@ COMMENT ON COLUMN "content_db"."outbox_message"."processed_at" IS 'NULL khi chư
 COMMENT ON COLUMN "content_db"."outbox_message"."error" IS 'Lỗi gần nhất nếu relay gặp sự cố.';
 
 ALTER TABLE "content_db"."media_asset" ADD CONSTRAINT "media_asset_ai_draft" FOREIGN KEY ("ai_image_draft_id") REFERENCES "content_db"."ai_image_draft" ("id") ON DELETE RESTRICT DEFERRABLE INITIALLY IMMEDIATE;
+
+CREATE TABLE "content_db"."ai_image_draft_file" (
+  "draft_id" BIGINT PRIMARY KEY,
+  "temporary_image_path" text NOT NULL,
+  "mime_type" text NOT NULL,
+  "byte_size" bigint NOT NULL,
+  "width" integer NOT NULL,
+  "height" integer NOT NULL,
+  CONSTRAINT "ai_image_draft_file_byte_size_check" CHECK (byte_size > 0),
+  CONSTRAINT "ai_image_draft_file_dimensions_check" CHECK (width > 0 AND height > 0),
+  CONSTRAINT "ai_image_draft_file_path_check" CHECK (length(trim(temporary_image_path)) > 0),
+  CONSTRAINT "ai_image_draft_file_mime_check" CHECK (length(trim(mime_type)) > 0)
+);
+
+COMMENT ON TABLE "content_db"."ai_image_draft_file" IS 'Metadata file tạm của ảnh AI draft. Tách khỏi ai_image_draft để phân biệt hồ sơ yêu cầu và file vật lý. Khi discard/accept/expire, file được giữ để dọn dẹp và chỉ xóa row khi file vật lý dọn thành công.';
+
+COMMENT ON COLUMN "content_db"."ai_image_draft_file"."draft_id" IS 'PK đồng thời FK tham chiếu ai_image_draft.id. Tối đa một file tạm mỗi draft.';
+
+COMMENT ON COLUMN "content_db"."ai_image_draft_file"."temporary_image_path" IS 'Đường dẫn tương đối trong kho file tạm dùng chung API/worker.';
+
+COMMENT ON COLUMN "content_db"."ai_image_draft_file"."mime_type" IS 'MIME type: image/png, image/jpeg, image/webp.';
+
+COMMENT ON COLUMN "content_db"."ai_image_draft_file"."byte_size" IS 'Dung lượng bytes của file tạm.';
+
+COMMENT ON COLUMN "content_db"."ai_image_draft_file"."width" IS 'Chiều rộng thực tế.';
+
+COMMENT ON COLUMN "content_db"."ai_image_draft_file"."height" IS 'Chiều cao thực tế.';
+
+ALTER TABLE "content_db"."ai_image_draft_file" ADD CONSTRAINT "ai_image_draft_file_draft" FOREIGN KEY ("draft_id") REFERENCES "content_db"."ai_image_draft" ("id") ON DELETE RESTRICT DEFERRABLE INITIALLY IMMEDIATE;

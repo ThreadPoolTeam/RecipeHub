@@ -1,0 +1,28 @@
+CREATE SCHEMA IF NOT EXISTS "audit_db";
+
+CREATE TABLE "audit_db"."audit_log" (
+  "id" uuid PRIMARY KEY,
+  "actor_id" uuid NOT NULL,
+  "actor_name" varchar(200) NOT NULL,
+  "actor_role" varchar(30) NOT NULL,
+  "source" varchar(30) NOT NULL,
+  "action" varchar(100) NOT NULL,
+  "target_type" varchar(50) NOT NULL,
+  "target_id" uuid NOT NULL,
+  "summary" text NOT NULL,
+  "occurred_at" timestamptz NOT NULL,
+  CONSTRAINT "audit_log_id_check" CHECK (id <> '00000000-0000-0000-0000-000000000000'::uuid),
+  CONSTRAINT "audit_log_actor_id_check" CHECK (actor_id <> '00000000-0000-0000-0000-000000000000'::uuid),
+  CONSTRAINT "audit_log_actor_name_check" CHECK (length(btrim(actor_name)) > 0),
+  CONSTRAINT "audit_log_actor_role_check" CHECK (actor_role IN ('admin', 'rnd', 'viewer')),
+  CONSTRAINT "audit_log_source_check" CHECK (source IN ('identity', 'recipe', 'content', 'quiz')),
+  CONSTRAINT "audit_log_action_check" CHECK (length(btrim(action)) > 0),
+  CONSTRAINT "audit_log_target_type_check" CHECK (length(btrim(target_type)) > 0),
+  CONSTRAINT "audit_log_target_id_check" CHECK (target_id <> '00000000-0000-0000-0000-000000000000'::uuid),
+  CONSTRAINT "audit_log_summary_check" CHECK (length(btrim(summary)) > 0)
+);
+
+-- Indexes
+CREATE INDEX "audit_log_occurred_at_id_idx" ON "audit_db"."audit_log" ("occurred_at" DESC, "id" DESC);
+CREATE INDEX "audit_log_actor_occurred_idx" ON "audit_db"."audit_log" ("actor_id", "occurred_at" DESC, "id" DESC);
+CREATE INDEX "audit_log_target_occurred_idx" ON "audit_db"."audit_log" ("target_type", "target_id", "occurred_at" DESC, "id" DESC);

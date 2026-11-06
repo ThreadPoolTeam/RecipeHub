@@ -27,6 +27,9 @@ export interface SessionInfo {
   fullName: string;
   role: Role;
   lastActiveAt: number; // timestamp in ms
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: string;
 }
 
 export interface Ingredient {
@@ -112,8 +115,10 @@ export interface MediaAsset {
 export interface AiCandidate {
   id: string;
   stepId?: string;
+  targetKind?: 'final_product' | 'step_instruction';
   prompt: string;
   mediaAssetId: string;
+  previewUrl?: string;
   state: DraftState;
   expiresAt: string;
   createdAt: string;

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace RecipeHub.Recipe.Domain.Entities;
 
 /// <summary>
-/// Unit of measure with conversion metadata relative to its category's base unit.
+/// Catalog unit with conversion metadata relative to its category's base unit.
 /// </summary>
 public partial class Unit
 {

@@ -22,12 +22,13 @@
 
 ## Xác minh
 
-- `dotnet build src/backend/RecipeHub.sln --no-restore -m:1`: thành công, 0 warning, 0 error.
-- `dotnet test tests/RecipeHub.UnitTests/RecipeHub.UnitTests.csproj --no-build -m:1`: 5/5 test thành công.
+- Sau khi ghép `origin/dev`, `dotnet build src/backend/RecipeHub.sln --no-restore -m:1`: thành công, 0 warning, 0 error.
+- `dotnet test tests/RecipeHub.UnitTests/RecipeHub.UnitTests.csproj --no-build -m:1`: 105 test thành công, 1 integration test được skip theo cấu hình sẵn có.
 - `bash -n tests/smoke/test_recipe_api.sh`: thành công.
 - `git -c core.whitespace=cr-at-eol diff --check`: thành công.
-- `npm run build`: Turbopack bị chặn khi bind cổng nội bộ trong môi trường chạy.
-- `npx --no-install next build --webpack`: thành công, gồm TypeScript và 25 static pages.
+- `npm run build`: Turbopack dừng phản hồi tại bước tạo production build trong môi trường chạy và được dừng thủ công.
+- `npx --no-install next typegen && npx --no-install tsc --noEmit`: thành công sau khi tạo lại cache route types từ `dev`.
+- `npx --no-install next build --webpack`: thành công, gồm TypeScript và 36 routes.
 - Áp `20261105_add_unit_base_conversion.sql` vào PostgreSQL local, database `recipe_db`: thành công.
 - Xác minh ba cột, hai CHECK constraint và partial unique index trên DB thật: thành công.
 - `GET /api/v1/recipes/ingredients`: HTTP 200 sau migration.
@@ -43,4 +44,4 @@
 - Không cho lưu unit thường khi nhóm chưa có base unit hoặc hệ số không hợp lệ.
 - Kiểm tra trực tiếp bằng Playwright với tài khoản Admin demo; quan hệ `THỂ TÍCH → ML` và `SỮA → nguyên liệu` hiển thị rõ, không phát sinh lỗi giao diện.
 - `npx --no-install tsc --noEmit`: thành công.
-- `npx --no-install next build --webpack`: thành công, gồm 25 trang.
+- `npx --no-install next build --webpack`: thành công, gồm 36 routes.

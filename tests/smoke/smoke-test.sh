@@ -56,6 +56,10 @@ echo "  Testing Audit Service via Gateway:"
 curl -s -f "$GATEWAY_URL/api/v1/audit/info" | grep -q "RecipeHub.Audit.Api"
 echo "  [OK] Audit proxied info response verified."
 
+echo "  Testing Quiz Service via Gateway:"
+curl -s -f "$GATEWAY_URL/api/v1/quiz/info" | grep -q "RecipeHub.Quiz.Api"
+echo "  [OK] Quiz proxied info response verified."
+
 # 3. Test gRPC Communication (Content -> Recipe)
 echo "[3/5] Testing gRPC Channel (Content.Api -> Recipe.Api via ServiceProbe.Ping)..."
 GRPC_RES=$(curl -s -f "$GATEWAY_URL/api/v1/content/probe-recipe")

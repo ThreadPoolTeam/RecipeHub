@@ -15,6 +15,7 @@ public sealed class ImageDraftService : IImageDraftService
     private readonly ITemporaryImageStore _temporaryImageStore;
     private readonly IMediaStorage _mediaStorage;
     private readonly IRecipeContextClient _recipeContextClient;
+    private readonly IContentCallerContext _callerContext;
 
     public ImageDraftService(
         IImageDraftRepository draftRepository,
@@ -23,7 +24,8 @@ public sealed class ImageDraftService : IImageDraftService
         IContentUnitOfWork unitOfWork,
         ITemporaryImageStore temporaryImageStore,
         IMediaStorage mediaStorage,
-        IRecipeContextClient recipeContextClient)
+        IRecipeContextClient recipeContextClient,
+        IContentCallerContext callerContext)
     {
         _draftRepository = draftRepository;
         _mediaAssetRepository = mediaAssetRepository;
@@ -32,19 +34,26 @@ public sealed class ImageDraftService : IImageDraftService
         _temporaryImageStore = temporaryImageStore;
         _mediaStorage = mediaStorage;
         _recipeContextClient = recipeContextClient;
+        _callerContext = callerContext;
     }
 
-    public async Task<DraftDetailResponse> CreateDraftAsync(CreateDraftRequest request, Guid userId, CancellationToken ct = default)
+    private Guid GetActorUserId()
     {
+        var userId = _callerContext.UserId;
+        return userId != Guid.Empty
+            ? userId
+            : throw new UnauthorizedAccessException("Cần JWT session Identity hợp lệ.");
+    }
+    public async Task<DraftDetailResponse> CreateDraftAsync(CreateDraftRequest request, CancellationToken ct = default)
+    {
+        var userId = GetActorUserId();
         ValidateCreateRequest(request);
 
         var context = await _recipeContextClient.GetRecipeAiContextAsync(
             request.RecipeVersionId,
             request.RecipeStepId,
             request.TargetKind,
-            userId,
             ct);
-
         if (!context.IsSuccess)
         {
             switch (context.ErrorCode)
@@ -155,18 +164,18 @@ public sealed class ImageDraftService : IImageDraftService
             throw new DraftExpiredException("Draft preview has expired (30-minute limit).");
         }
 
-        if (string.IsNullOrEmpty(draft.TemporaryImagePath) || draft.State != AiImageDraft.StateGenerated)
+        if (draft.File == null || string.IsNullOrEmpty(draft.File.TemporaryImagePath) || draft.State != AiImageDraft.StateGenerated)
         {
             throw new DraftExpiredException("Draft image preview is no longer available.");
         }
 
-        var stream = await _temporaryImageStore.OpenReadAsync(draft.TemporaryImagePath, ct);
+        var stream = await _temporaryImageStore.OpenReadAsync(draft.File.TemporaryImagePath, ct);
         if (stream == null)
         {
             throw new DraftExpiredException("Temporary image file not found on server.");
         }
 
-        return (stream, draft.MimeType ?? "image/png");
+        return (stream, draft.File.MimeType ?? "image/png");
     }
 
     public async Task<PagedResult<DraftSummaryResponse>> GetDraftsAsync(
@@ -204,8 +213,9 @@ public sealed class ImageDraftService : IImageDraftService
         };
     }
 
-    public async Task<DraftDetailResponse> RegenerateDraftAsync(Guid draftId, RegenerateDraftRequest request, Guid userId, CancellationToken ct = default)
+    public async Task<DraftDetailResponse> RegenerateDraftAsync(Guid draftId, RegenerateDraftRequest request, CancellationToken ct = default)
     {
+        var userId = GetActorUserId();
         var existingDraft = await _draftRepository.GetByPublicIdAsync(draftId, ct);
         if (existingDraft == null)
         {
@@ -216,9 +226,7 @@ public sealed class ImageDraftService : IImageDraftService
             existingDraft.RecipeVersionRef,
             existingDraft.RecipeStepRef,
             existingDraft.TargetKind,
-            userId,
             ct);
-
         if (!context.IsSuccess)
         {
             throw new ValidationException(context.ErrorMessage ?? "Failed to acquire recipe AI context for regeneration.");
@@ -268,8 +276,9 @@ public sealed class ImageDraftService : IImageDraftService
         return MapToDetail(newDraft);
     }
 
-    public async Task<AcceptDraftResponse> AcceptDraftAsync(Guid draftId, Guid userId, CancellationToken ct = default)
+    public async Task<AcceptDraftResponse> AcceptDraftAsync(Guid draftId, CancellationToken ct = default)
     {
+        var userId = GetActorUserId();
         var draft = await _draftRepository.GetByPublicIdAsync(draftId, ct);
         if (draft == null)
         {
@@ -318,7 +327,7 @@ public sealed class ImageDraftService : IImageDraftService
         draft.StartAccepting(leaseToken, TimeSpan.FromMinutes(2));
         await _draftRepository.SaveChangesAsync(ct);
 
-        if (string.IsNullOrEmpty(draft.TemporaryImagePath) || !_temporaryImageStore.Exists(draft.TemporaryImagePath))
+        if (draft.File == null || string.IsNullOrEmpty(draft.File.TemporaryImagePath) || !_temporaryImageStore.Exists(draft.File.TemporaryImagePath))
         {
             draft.MarkFailed("IMAGE_NOT_FOUND", "Temporary draft image file is missing.");
             await _draftRepository.SaveChangesAsync(ct);
@@ -326,7 +335,8 @@ public sealed class ImageDraftService : IImageDraftService
         }
 
         StoredMediaResult storedResult;
-        var tempPath = draft.TemporaryImagePath;
+        var tempFile = draft.File;
+        var tempPath = tempFile.TemporaryImagePath;
         try
         {
             await using var stream = await _temporaryImageStore.OpenReadAsync(tempPath, ct);
@@ -337,7 +347,7 @@ public sealed class ImageDraftService : IImageDraftService
 
             var extension = Path.GetExtension(tempPath);
             var fileName = $"ai_{draft.PublicId:N}{extension}";
-            storedResult = await _mediaStorage.UploadAsync(stream, fileName, draft.MimeType ?? "image/png", "ai-illustrations", ct);
+            storedResult = await _mediaStorage.UploadAsync(stream, fileName, tempFile.MimeType ?? "image/png", "ai-illustrations", ct);
         }
         catch (Exception)
         {
@@ -354,10 +364,10 @@ public sealed class ImageDraftService : IImageDraftService
             ProviderPublicId = storedResult.ProviderPublicId,
             DeliveryUrl = storedResult.DeliveryUrl,
             OriginalFileName = $"ai_flux_{draft.PublicId:N}.png",
-            MimeType = draft.MimeType ?? "image/png",
-            ByteSize = storedResult.ByteSize > 0 ? storedResult.ByteSize : (draft.ByteSize ?? 0),
-            Width = storedResult.Width > 0 ? storedResult.Width : (draft.Width ?? 1024),
-            Height = storedResult.Height > 0 ? storedResult.Height : (draft.Height ?? 1024),
+            MimeType = tempFile.MimeType ?? "image/png",
+            ByteSize = storedResult.ByteSize > 0 ? storedResult.ByteSize : tempFile.ByteSize,
+            Width = storedResult.Width > 0 ? storedResult.Width : tempFile.Width,
+            Height = storedResult.Height > 0 ? storedResult.Height : tempFile.Height,
             SourceType = MediaAsset.SourceTypeAiIllustration,
             State = MediaAsset.StateActive,
             CreatedByUserRef = userId,
@@ -392,10 +402,12 @@ public sealed class ImageDraftService : IImageDraftService
         try
         {
             await _temporaryImageStore.DeleteAsync(tempPath, ct);
+            _draftRepository.RemoveDraftFile(tempFile);
+            await _draftRepository.SaveChangesAsync(ct);
         }
         catch
         {
-            // Background cleanup will handle any remaining file
+            // Keep tempFile row in DB if physical delete failed, for background cleanup retry
         }
 
         return new AcceptDraftResponse
@@ -407,8 +419,9 @@ public sealed class ImageDraftService : IImageDraftService
         };
     }
 
-    public async Task<DraftDetailResponse> DiscardDraftAsync(Guid draftId, Guid userId, CancellationToken ct = default)
+    public async Task<DraftDetailResponse> DiscardDraftAsync(Guid draftId, CancellationToken ct = default)
     {
+        var userId = GetActorUserId();
         var draft = await _draftRepository.GetByPublicIdAsync(draftId, ct);
         if (draft == null)
         {
@@ -420,19 +433,21 @@ public sealed class ImageDraftService : IImageDraftService
             throw new ConflictException("Cannot discard an already accepted draft.");
         }
 
-        var tempPath = draft.TemporaryImagePath;
+        var tempFile = draft.File;
         draft.MarkDiscarded(userId);
         await _draftRepository.SaveChangesAsync(ct);
 
-        if (!string.IsNullOrEmpty(tempPath))
+        if (tempFile != null && !string.IsNullOrEmpty(tempFile.TemporaryImagePath))
         {
             try
             {
-                await _temporaryImageStore.DeleteAsync(tempPath, ct);
+                await _temporaryImageStore.DeleteAsync(tempFile.TemporaryImagePath, ct);
+                _draftRepository.RemoveDraftFile(tempFile);
+                await _draftRepository.SaveChangesAsync(ct);
             }
             catch
             {
-                // Ignored
+                // Keep tempFile row in DB if physical delete failed, for background cleanup retry
             }
         }
 
@@ -482,8 +497,8 @@ public sealed class ImageDraftService : IImageDraftService
             StatusUrl = $"/api/v1/content/image-drafts/{draft.PublicId}",
             PreviewUrl = isGeneratedActive ? $"/api/v1/content/image-drafts/{draft.PublicId}/image" : null,
             MediaAssetId = mediaAssetId,
-            Width = draft.Width,
-            Height = draft.Height,
+            Width = draft.File?.Width,
+            Height = draft.File?.Height,
             ErrorCode = draft.ErrorCode,
             ErrorMessage = draft.ErrorMessage
         };

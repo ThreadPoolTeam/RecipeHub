@@ -6,7 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RecipeHub.Content.Application.Interfaces;
 using RecipeHub.Content.Domain;
-using RecipeHub.Content.Infrastructure.Persistence;
+using RecipeHub.Content.Infrastructure.Data;
 using StackExchange.Redis;
 
 namespace RecipeHub.BackgroundWorker;
@@ -88,7 +88,7 @@ public sealed class ContentDraftProcessingWorker : BackgroundService
                     GroupName,
                     _consumerName,
                     ">",
-                    count: 1);
+                    count: 2);
 
                 if (messages == null || messages.Length == 0)
                 {
@@ -96,10 +96,9 @@ public sealed class ContentDraftProcessingWorker : BackgroundService
                     continue;
                 }
 
-                foreach (var message in messages)
-                {
-                    await ProcessStreamMessageAsync(message, db, streamName, stoppingToken);
-                }
+                _logger.LogInformation("Processing {Count} image draft job(s) concurrently from {StreamName}...", messages.Length, streamName);
+                var processingTasks = messages.Select(message => ProcessStreamMessageAsync(message, db, streamName, stoppingToken));
+                await Task.WhenAll(processingTasks);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -167,7 +166,7 @@ public sealed class ContentDraftProcessingWorker : BackgroundService
         var generator = scope.ServiceProvider.GetRequiredService<IAiImageGenerator>();
         var tempStore = scope.ServiceProvider.GetRequiredService<ITemporaryImageStore>();
 
-        var draft = await dbContext.AiImageDrafts.FirstOrDefaultAsync(d => d.PublicId == draftId, ct);
+        var draft = await dbContext.AiImageDrafts.Include(d => d.File).FirstOrDefaultAsync(d => d.PublicId == draftId, ct);
         if (draft == null)
         {
             _logger.LogWarning("Draft {DraftId} not found in database. Acknowledging message.", draftId);

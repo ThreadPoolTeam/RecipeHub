@@ -1,4 +1,4 @@
-const ALLOWED_PREFIXES = ['api/v1/recipes', 'api/v1/content'] as const;
+const ALLOWED_PREFIXES = ['api/v1/identity', 'api/v1/recipes', 'api/v1/content', 'api/v1/quiz', 'api/v1/audit'] as const;
 
 function getGatewayUrl(): string {
   const value = process.env.GATEWAY_INTERNAL_URL ?? 'http://localhost:5262';
@@ -9,9 +9,13 @@ function isAllowedPath(path: string): boolean {
   return ALLOWED_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 
+type RouteContext = {
+  params: Promise<{ path: string[] }>;
+};
+
 async function proxyRequest(
   request: Request,
-  context: RouteContext<'/api/backend/[...path]'>
+  context: RouteContext
 ): Promise<Response> {
   const { path } = await context.params;
   const backendPath = path.join('/');
