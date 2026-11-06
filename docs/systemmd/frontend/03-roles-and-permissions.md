@@ -9,9 +9,9 @@ Hệ thống RecipeHub phục vụ 3 nhóm vai trò rõ ràng, không đè lấn
 | **Đối tượng** | Quản trị viên IT, Ban Giám Đốc | Đội ngũ R&D, Chuyên gia pha chế | Barista, Cửa hàng trưởng, Nhân sự pha chế |
 | **Route gốc** | `/admin` | `/rnd` | `/viewer` |
 | **Phân khu Sidebar** | `QUẢN TRỊ HỆ THỐNG` | `KHÔNG GIAN R&D` | `VẬN HÀNH CỬA HÀNG` |
-| **Mục đích** | Kiểm soát tài khoản, danh mục đơn vị và audit log | Sáng tạo công thức, quản lý nguyên liệu, soạn đề quiz | Tra cứu công thức chuẩn, học tập, làm bài kiểm tra |
+| **Mục đích** | Kiểm soát tài khoản và audit log | Sáng tạo công thức, quản lý nguyên liệu, soạn đề quiz | Tra cứu công thức chuẩn, học tập, làm bài kiểm tra |
 | **Quyền Recipe** | Không có workspace biên tập công thức; API quản trị vẫn có quyền ghi | Soạn/sửa bản `draft`, phát hành thành `published`, tạo phiên bản mới | Chỉ xem `published`, chưa archive |
-| **Quyền Nguyên liệu** | Quản trị danh mục đơn vị | Quản lý danh mục/nguyên liệu và định lượng | Không có quyền quản lý |
+| **Quyền Nguyên liệu** | Không quản lý trên giao diện | Quản lý danh mục/nguyên liệu và định lượng | Không có quyền quản lý |
 | **Quyền Quiz** | Quản trị toàn bộ đề & giám sát kết quả chuỗi | Soạn đề thi, ngân hàng câu hỏi, chấm điểm | Làm bài kiểm tra, xem lại bài làm của mình |
 | **Quyền Hệ thống** | Quản trị tài khoản, phân quyền, xem log | Xem tư liệu media cá nhân/nhóm | Cấu hình tài khoản cá nhân |
 | **Quyền Xuất bản PDF** | Xem, xuất PDF đơn/bộ, xem lịch sử qua route Admin ẩn khỏi sidebar | Xem trước, xuất nháp/chính thức và xem lịch sử | Chỉ tải PDF chính thức dạng `single` có nguồn `published`, chưa archive |
@@ -21,7 +21,6 @@ Hệ thống RecipeHub phục vụ 3 nhóm vai trò rõ ràng, không đè lấn
 ### 2.1. Phân Hệ Admin (`/admin`)
 - `/admin`: Dashboard quản trị tổng quan (chỉ số users, log, quiz).
 - `/admin/users`: Quản lý danh sách tài khoản, khóa/mở, gán vai trò.
-- `/admin/catalogue`: Quản lý nhóm đơn vị và đơn vị đo.
 - `/admin/logs`: Xem nhật ký Audit Logs truy vết thao tác.
 - `/admin/media`, `/admin/quizzes/*`, `/admin/documents` và `/admin/documents/new`: admin vẫn truy cập trực tiếp; không hiển thị các mục này trên sidebar. Không cấp admin quyền vào prefix `/rnd`.
 
@@ -31,7 +30,8 @@ Hệ thống RecipeHub phục vụ 3 nhóm vai trò rõ ràng, không đè lấn
 - `/rnd/recipes/new`: Soạn thảo công thức mới, tỷ lệ thành phần.
 - `/rnd/recipes/[id]`: Xem chi tiết công thức, quy trình pha chế.
 - `/rnd/recipes/[id]/edit`: Tạo phiên bản mới hoặc cập nhật công thức.
-- `/rnd/ingredients`: Quản lý kho nguyên liệu mẫu, nhà cung cấp.
+- `/rnd/ingredients`: Quản lý kho nguyên liệu và loại nguyên liệu (tab).
+- `/rnd/catalogue`: Quản lý đại lượng đo và đơn vị đo.
 - `/rnd/media`: Thư viện ảnh tư liệu R&D.
 - `/rnd/quizzes`: Ngân hàng câu hỏi & bộ đề kiểm tra SOP.
 - `/rnd/quizzes/new`: Soạn đề thi mới gắn liền với công thức.

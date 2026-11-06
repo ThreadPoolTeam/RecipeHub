@@ -42,6 +42,7 @@ export default function RecipeDetailPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [mediaWarning, setMediaWarning] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [failedCoverUrl, setFailedCoverUrl] = useState<string | null>(null);
 
   // Version History State
   const [versions, setVersions] = useState<RecipeVersion[]>([]);
@@ -415,7 +416,7 @@ export default function RecipeDetailPage() {
           }
         }
 
-        if (!coverUrl) return null;
+        if (!coverUrl || coverUrl === failedCoverUrl) return null;
 
         return (
           <div className="rounded-2xl overflow-hidden border border-[#E8E2D9] max-h-72 bg-[#FAF9F5] shadow-xs relative">
@@ -423,9 +424,7 @@ export default function RecipeDetailPage() {
               src={coverUrl}
               alt={recipe.name}
               className="w-full h-64 object-cover"
-              onError={(e) => {
-                e.currentTarget.parentElement?.remove();
-              }}
+              onError={() => setFailedCoverUrl(coverUrl)}
             />
           </div>
         );
@@ -535,7 +534,12 @@ export default function RecipeDetailPage() {
         ) : (
           <div className="space-y-3">
             {recipe.steps.map((step, idx) => {
-              const coverUrl = step.coverMediaAssetId ? mediaMap[step.coverMediaAssetId] : null;
+              const coverUrl = step.coverMediaAssetId
+                ? mediaMap[step.coverMediaAssetId] ||
+                  (typeof window !== 'undefined'
+                    ? localStorage.getItem(`recipehub_media_url_${step.coverMediaAssetId}`)
+                    : null)
+                : null;
 
               return (
                 <div

@@ -25,8 +25,10 @@ export default function EditIngredientPage() {
   const [generatedCode, setGeneratedCode] = useState<{ code: string; categoryId: string } | null>(null);
   const [name, setName] = useState('');
   const [categories, setCategories] = useState<CatalogItem[]>([]);
+  const [unitCategories, setUnitCategories] = useState<CatalogItem[]>([]);
   const [units, setUnits] = useState<UnitItem[]>([]);
   const [categoryId, setCategoryId] = useState('');
+  const [unitCategoryId, setUnitCategoryId] = useState('');
   const [defaultUnitId, setDefaultUnitId] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [note, setNote] = useState('');
@@ -39,9 +41,10 @@ export default function EditIngredientPage() {
     async function loadIngredient() {
       try {
         setLoading(true);
-        const [list, categoryItems, unitItems] = await Promise.all([
+        const [list, categoryItems, unitCategoryItems, unitItems] = await Promise.all([
           repo.getIngredients(),
           repo.getIngredientCategories(),
+          repo.getUnitCategories(),
           repo.getUnits(),
         ]);
         const found = list.find((item) => item.id === ingredientId);
@@ -53,12 +56,15 @@ export default function EditIngredientPage() {
         if (isMounted) {
           setIngredient(found);
           setCategories(categoryItems);
+          setUnitCategories(unitCategoryItems);
           setUnits(unitItems);
           setCode(found.code);
           setGeneratedCode(null);
           setName(found.name);
           setCategoryId(found.categoryId ?? '');
           setDefaultUnitId(found.defaultUnitId ?? '');
+          const currentUnit = unitItems.find((u) => u.id === found.defaultUnitId);
+          setUnitCategoryId(currentUnit?.categoryId ?? unitCategoryItems[0]?.id ?? '');
           setIsActive(found.isActive);
           setNote(found.note || '');
         }
@@ -77,6 +83,13 @@ export default function EditIngredientPage() {
       isMounted = false;
     };
   }, [ingredientId, repo]);
+
+  const handleUnitCategoryChange = (nextUnitCatId: string) => {
+    setUnitCategoryId(nextUnitCatId);
+    const catUnits = units.filter((u) => u.categoryId === nextUnitCatId && (u.state === 'active' || u.id === defaultUnitId));
+    const baseUnit = catUnits.find((u) => u.isBase) || catUnits[0];
+    setDefaultUnitId(baseUnit?.id ?? '');
+  };
 
   const canGenerateCode = categories.some((item) => item.id === categoryId && item.state === 'active');
 
@@ -243,7 +256,7 @@ export default function EditIngredientPage() {
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Select
             label="Nhóm Phân Loại *"
             value={categoryId}
@@ -258,14 +271,26 @@ export default function EditIngredientPage() {
           />
 
           <Select
-            label="Đơn Vị Tính Tiêu Chuẩn *"
+            label="Đại Lượng Đo *"
+            value={unitCategoryId}
+            onChange={(e) => handleUnitCategoryChange(e.target.value)}
+            options={unitCategories
+              .filter((item) => item.state === 'active' || item.id === unitCategoryId)
+              .map((item) => ({
+                value: item.id,
+                label: item.state === 'active' ? item.name : `${item.name} (đã ngừng dùng)`,
+              }))}
+          />
+
+          <Select
+            label="Đơn Vị Định Mức *"
             value={defaultUnitId}
             onChange={(e) => setDefaultUnitId(e.target.value)}
             options={units
-              .filter((item) => item.state === 'active' || item.id === defaultUnitId)
+              .filter((item) => item.categoryId === unitCategoryId && (item.state === 'active' || item.id === defaultUnitId))
               .map((item) => ({
                 value: item.id,
-                label: `${item.code} — ${item.name}${item.state === 'active' ? '' : ' (đã ngừng dùng)'}`,
+                label: `${item.code} — ${item.name}${item.isBase ? ' (BASE)' : ''}${item.state === 'active' ? '' : ' (đã ngừng dùng)'}`,
               }))}
           />
         </div>

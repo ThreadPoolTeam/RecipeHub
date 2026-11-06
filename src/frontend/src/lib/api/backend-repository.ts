@@ -1264,6 +1264,9 @@ export class BackendRepository extends DemoRepository {
       'accepted image draft'
     );
     const mediaAssetId = text(accepted.mediaAssetId, 'accepted image draft.mediaAssetId');
+    // Ảnh vừa chấp nhận là media asset mới: bỏ cache để trang chi tiết/biên tập thấy nó.
+    this.mediaCache = null;
+    this.mediaPromise = null;
     const deliveryUrl = optionalText(accepted.deliveryUrl, 'accepted image draft.deliveryUrl');
     const previewBlob = this.draftPreviews.get(candidateId);
     if (previewBlob) {

@@ -8,8 +8,13 @@ using RecipeHub.Audit.Application;
 using RecipeHub.Audit.Infrastructure;
 using RecipeHub.Audit.Infrastructure.Data;
 using RecipeHub.GrpcContracts.Identity;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(5004, o => o.Protocols = HttpProtocols.Http1);
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

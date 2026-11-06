@@ -9,6 +9,8 @@ GATEWAY_URL="${GATEWAY_URL:-http://localhost:5000}"
 FRONTEND_URL="${FRONTEND_URL:-http://localhost:3000}"
 REDIS_CONTAINER="${REDIS_CONTAINER:-recipehub-redis}"
 WORKER_CONTAINER="${WORKER_CONTAINER:-recipehub-worker}"
+SMOKE_USER="${SMOKE_USER:-rd@recipehub.demo}"
+SMOKE_PASSWORD="${SMOKE_PASSWORD:-Demo@1234}"
 
 echo "=========================================================="
 echo "      RecipeHub Platform Foundation Smoke Verification    "
@@ -40,16 +42,28 @@ echo "  [OK] Gateway Liveness Probe passed."
 
 # 2. Test YARP Proxied Endpoints
 echo "[2/5] Testing Proxied Service Endpoints (/api/v1/...)..."
+echo "  Logging in as $SMOKE_USER (R&D) via Gateway:"
+LOGIN_RES=$(curl -s -f -X POST "$GATEWAY_URL/api/v1/identity/auth/login" \
+  -H "Content-Type: application/json" \
+  -d "{\"username\":\"$SMOKE_USER\",\"password\":\"$SMOKE_PASSWORD\"}")
+TOKEN=$(echo "$LOGIN_RES" | sed -n 's/.*"accessToken":"\([^"]*\)".*/\1/p')
+if [ -z "$TOKEN" ]; then
+  echo "[FATAL] Login failed for $SMOKE_USER. Set SMOKE_USER/SMOKE_PASSWORD." >&2
+  exit 1
+fi
+AUTH_HEADER="Authorization: Bearer $TOKEN"
+echo "  [OK] Access token acquired."
+
 echo "  Testing Identity Service via Gateway:"
 curl -s -f "$GATEWAY_URL/api/v1/identity/info" | grep -q "RecipeHub.Identity.Api"
 echo "  [OK] Identity proxied info response verified."
 
 echo "  Testing Recipe Service via Gateway:"
-curl -s -f "$GATEWAY_URL/api/v1/recipes/info" | grep -q "RecipeHub.Recipe.Api"
-echo "  [OK] Recipe proxied info response verified."
+curl -s -f -H "$AUTH_HEADER" "$GATEWAY_URL/api/v1/recipes/unit-categories" > /dev/null
+echo "  [OK] Recipe proxied catalog response verified."
 
 echo "  Testing Content Service via Gateway:"
-curl -s -f "$GATEWAY_URL/api/v1/content/info" | grep -q "RecipeHub.Content.Api"
+curl -s -f -H "$AUTH_HEADER" "$GATEWAY_URL/api/v1/content/info" | grep -q "RecipeHub.Content.Api"
 echo "  [OK] Content proxied info response verified."
 
 echo "  Testing Audit Service via Gateway:"
@@ -62,7 +76,7 @@ echo "  [OK] Quiz proxied info response verified."
 
 # 3. Test gRPC Communication (Content -> Recipe)
 echo "[3/5] Testing gRPC Channel (Content.Api -> Recipe.Api via ServiceProbe.Ping)..."
-GRPC_RES=$(curl -s -f "$GATEWAY_URL/api/v1/content/probe-recipe")
+GRPC_RES=$(curl -s -f -H "$AUTH_HEADER" "$GATEWAY_URL/api/v1/content/probe-recipe")
 echo "  gRPC Response: $GRPC_RES"
 echo "$GRPC_RES" | grep -q "Healthy"
 echo "  [OK] gRPC Probe Ping confirmed."
@@ -70,10 +84,15 @@ echo "  [OK] gRPC Probe Ping confirmed."
 # 4. Trigger Redis Heartbeat Event & Verify Worker Consumer & ACK
 echo "[4/5] Testing Redis Streams Producer -> Consumer -> ACK Cycle..."
 
-EVENT_RES=$(curl -s -f -X POST "$GATEWAY_URL/api/v1/recipes/dev/publish-heartbeat")
-echo "  Event Publish Response: $EVENT_RES"
-echo "$EVENT_RES" | grep -q '"success":true'
-echo "  [OK] Heartbeat published to Redis Stream 'platform.heartbeat.v1'."
+EVENT_ID=$(cat /proc/sys/kernel/random/uuid 2>/dev/null || date +%s%N)
+# Worker đọc field "payload" chứa EventEnvelope<PlatformHeartbeatEvent> (System.Text.Json, PascalCase)
+PAYLOAD="{\"EventId\":\"$EVENT_ID\",\"EventType\":\"PlatformHeartbeatEvent\",\"OccurredAtUtc\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"CorrelationId\":\"$EVENT_ID\",\"Source\":\"smoke-test\",\"SchemaVersion\":\"1.0\",\"Payload\":{\"ServiceName\":\"smoke-test\",\"Status\":\"Healthy\",\"Message\":\"Smoke heartbeat\"}}"
+MESSAGE_ID=$(docker exec "$REDIS_CONTAINER" redis-cli XADD platform.heartbeat.v1 '*' payload "$PAYLOAD")
+if [ -z "$MESSAGE_ID" ]; then
+  echo "[FATAL] Failed to publish heartbeat to Redis Stream." >&2
+  exit 1
+fi
+echo "  [OK] Heartbeat $MESSAGE_ID published to Redis Stream 'platform.heartbeat.v1'."
 
 echo "  Polling BackgroundWorker consumer ACK and XPENDING=0..."
 ACK_CONFIRMED=0

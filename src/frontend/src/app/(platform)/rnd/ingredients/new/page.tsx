@@ -19,8 +19,10 @@ export default function NewIngredientPage() {
   const [generatedCode, setGeneratedCode] = useState<{ code: string; categoryId: string } | null>(null);
   const [name, setName] = useState('');
   const [categories, setCategories] = useState<CatalogItem[]>([]);
+  const [unitCategories, setUnitCategories] = useState<CatalogItem[]>([]);
   const [units, setUnits] = useState<UnitItem[]>([]);
   const [categoryId, setCategoryId] = useState('');
+  const [unitCategoryId, setUnitCategoryId] = useState('');
   const [defaultUnitId, setDefaultUnitId] = useState('');
   const [catalogueLoading, setCatalogueLoading] = useState(true);
   const [isActive, setIsActive] = useState(true);
@@ -32,15 +34,22 @@ export default function NewIngredientPage() {
   useEffect(() => {
     let isMounted = true;
     setCatalogueLoading(true);
-    Promise.all([repo.getIngredientCategories(), repo.getUnits()])
-      .then(([categoryItems, unitItems]) => {
+    Promise.all([repo.getIngredientCategories(), repo.getUnitCategories(), repo.getUnits()])
+      .then(([categoryItems, unitCatItems, unitItems]) => {
         if (!isMounted) return;
         const activeCategories = categoryItems.filter((item) => item.state === 'active');
+        const activeUnitCats = unitCatItems.filter((item) => item.state === 'active');
         const activeUnits = unitItems.filter((item) => item.state === 'active');
         setCategories(activeCategories);
+        setUnitCategories(activeUnitCats);
         setUnits(activeUnits);
         setCategoryId(activeCategories[0]?.id ?? '');
-        setDefaultUnitId(activeUnits[0]?.id ?? '');
+
+        const firstUnitCatId = activeUnitCats[0]?.id ?? '';
+        setUnitCategoryId(firstUnitCatId);
+        const catUnits = activeUnits.filter((u) => u.categoryId === firstUnitCatId);
+        const baseUnit = catUnits.find((u) => u.isBase) || catUnits[0];
+        setDefaultUnitId(baseUnit?.id ?? '');
       })
       .catch((loadError: unknown) => {
         if (!isMounted) return;
@@ -53,6 +62,13 @@ export default function NewIngredientPage() {
       isMounted = false;
     };
   }, [repo]);
+
+  const handleUnitCategoryChange = (nextUnitCatId: string) => {
+    setUnitCategoryId(nextUnitCatId);
+    const catUnits = units.filter((u) => u.categoryId === nextUnitCatId && u.state === 'active');
+    const baseUnit = catUnits.find((u) => u.isBase) || catUnits[0];
+    setDefaultUnitId(baseUnit?.id ?? '');
+  };
 
   const canGenerateCode = categories.some((item) => item.id === categoryId && item.state === 'active');
 
@@ -218,7 +234,7 @@ export default function NewIngredientPage() {
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Select
             label="Nhóm Phân Loại *"
             value={categoryId}
@@ -229,12 +245,26 @@ export default function NewIngredientPage() {
           />
 
           <Select
-            label="Đơn Vị Tính Tiêu Chuẩn *"
+            label="Đại Lượng Đo *"
+            value={unitCategoryId}
+            onChange={(e) => handleUnitCategoryChange(e.target.value)}
+            options={unitCategories.map((item) => ({ value: item.id, label: item.name }))}
+            disabled={catalogueLoading || unitCategories.length === 0}
+            helper="Chọn đại lượng (VD: Khối lượng)"
+          />
+
+          <Select
+            label="Đơn Vị Định Mức *"
             value={defaultUnitId}
             onChange={(e) => setDefaultUnitId(e.target.value)}
-            options={units.map((item) => ({ value: item.id, label: `${item.code} — ${item.name}` }))}
+            options={units
+              .filter((item) => item.categoryId === unitCategoryId)
+              .map((item) => ({
+                value: item.id,
+                label: `${item.code} — ${item.name}${item.isBase ? ' (BASE)' : ''}`,
+              }))}
             disabled={catalogueLoading || units.length === 0}
-            helper={units.length === 0 && !catalogueLoading ? 'Hãy tạo đơn vị trong trang Admin.' : undefined}
+            helper="Tự động lấy đơn vị gốc (BASE)"
           />
         </div>
 
