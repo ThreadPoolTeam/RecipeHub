@@ -98,11 +98,11 @@ export default function NewIngredientPage() {
       return;
     }
     if (!categoryId) {
-      setError('Chưa có nhóm nguyên liệu đang hoạt động. Hãy tạo nhóm trong trang Admin trước.');
+      setError('Chưa có nhóm nguyên liệu đang hoạt động. Hãy tạo nhóm trong trang Đơn vị & Phân nhóm (/rnd/catalogue) trước.');
       return;
     }
     if (!defaultUnitId) {
-      setError('Chưa có đơn vị đang hoạt động. Hãy tạo đơn vị trong trang Admin trước.');
+      setError('Chưa có đơn vị đang hoạt động. Hãy tạo đơn vị trong trang Đơn vị & Phân nhóm (/rnd/catalogue) trước.');
       return;
     }
     const selectedCategory = categories.find((item) => item.id === categoryId);
@@ -225,7 +225,7 @@ export default function NewIngredientPage() {
             onChange={(e) => handleCategoryChange(e.target.value)}
             options={categories.map((item) => ({ value: item.id, label: item.name }))}
             disabled={catalogueLoading || categories.length === 0 || generatingCode || submitting}
-            helper={categories.length === 0 && !catalogueLoading ? 'Hãy tạo nhóm nguyên liệu trong trang Admin.' : undefined}
+            helper={categories.length === 0 && !catalogueLoading ? 'Hãy tạo nhóm nguyên liệu trong trang Đơn vị & Phân nhóm (/rnd/catalogue).' : undefined}
           />
 
           <Select
@@ -234,7 +234,7 @@ export default function NewIngredientPage() {
             onChange={(e) => setDefaultUnitId(e.target.value)}
             options={units.map((item) => ({ value: item.id, label: `${item.code} — ${item.name}` }))}
             disabled={catalogueLoading || units.length === 0}
-            helper={units.length === 0 && !catalogueLoading ? 'Hãy tạo đơn vị trong trang Admin.' : undefined}
+            helper={units.length === 0 && !catalogueLoading ? 'Hãy tạo đơn vị trong trang Đơn vị & Phân nhóm (/rnd/catalogue).' : undefined}
           />
         </div>
 

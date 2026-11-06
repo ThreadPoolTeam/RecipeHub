@@ -90,6 +90,8 @@ public sealed class PdfDocumentsController : ControllerBase
         [FromQuery] Guid? createdByUserId,
         [FromQuery] DateTime? fromDate,
         [FromQuery] DateTime? toDate,
+        [FromQuery] DateTime? fromUtc = null,
+        [FromQuery] DateTime? toUtc = null,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
@@ -106,8 +108,8 @@ public sealed class PdfDocumentsController : ControllerBase
             state,
             recipeVersionId,
             createdByUserId,
-            fromDate,
-            toDate,
+            fromDate ?? fromUtc,
+            toDate ?? toUtc,
             page,
             pageSize,
             cancellationToken);

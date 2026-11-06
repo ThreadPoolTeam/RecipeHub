@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { BookOpen, Search, Coffee, ArrowRight, Shield } from 'lucide-react';
+import { BookOpen, Coffee, ArrowRight } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { RecipeVersion } from '@/lib/demo/types';
-import { TextInput, Alert, SearchInput } from '@/components/workspace/fields';
+import { Alert, SearchInput } from '@/components/workspace/fields';
 import { StatusBadge, RoleBadge } from '@/components/workspace/status-badge';
 export default function ViewerPage() {
-  const { session, currentUser, repo, dataVersion } = useDemo();
+  const { session, repo, dataVersion } = useDemo();
   const [recipes, setRecipes] = useState<RecipeVersion[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -24,11 +24,10 @@ export default function ViewerPage() {
       return;
     }
 
-    // The repository restricts viewer accounts to published recipes in currentUser.allowedRecipeIds.
     repo
       .getRecipes(session, {
         query: searchQuery.trim(),
-        pageSize: 100, // Show all granted recipes on dashboard
+        pageSize: 100,
       })
       .then((result) => {
         if (!isMounted) return;
@@ -57,13 +56,13 @@ export default function ViewerPage() {
             Tra Cứu Quy Trình Pha Chế (SOP)
           </h1>
           <p className="text-sm text-[#706E68] mt-1">
-            Tra cứu nhanh thành phần, thao tác quầy bar và tài liệu kỹ thuật chuẩn.
+            Tra cứu nhanh thành phần, thao tác quầy bar và tài liệu kỹ thuật chuẩn đã phát hành.
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <RoleBadge role="viewer" />
-          <span className="text-xs text-[#706E68] font-mono">
-            Được cấp quyền: <strong className="text-[#B47820] font-bold">{currentUser?.allowedRecipeIds?.length || 0}</strong> công thức
+          <span className="text-xs text-[#706E68] font-mono tabular-nums">
+            Công thức khả dụng: <strong className="text-[#B47820] font-bold">{recipes.length}</strong> công thức
           </span>
         </div>
       </div>
@@ -92,7 +91,7 @@ export default function ViewerPage() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="w-6 h-6 border-2 border-[#B47820] border-t-transparent rounded-full animate-spin mb-2"></div>
-          <p className="text-xs text-[#706E68]">Đang tải danh sách công thức được cấp quyền...</p>
+          <p className="text-xs text-[#706E68]">Đang tải danh sách công thức đã phát hành...</p>
         </div>
       ) : recipes.length === 0 ? (
         <div className="bg-white border border-dashed border-[#E8E2D9] rounded-xl p-10 text-center max-w-xl mx-auto my-6 shadow-xs">
@@ -103,7 +102,7 @@ export default function ViewerPage() {
           <p className="text-xs text-[#706E68] leading-relaxed max-w-md mx-auto">
             {searchQuery.trim()
               ? `Không tìm thấy công thức nào phù hợp với từ khóa "${searchQuery.trim()}".`
-              : 'Chưa có công thức nào được cấp quyền xem cho tài khoản của bạn. Vui lòng liên hệ Quản trị viên để được phân quyền.'}
+              : 'Hiện chưa có công thức nào được phát hành trong hệ thống.'}
           </p>
         </div>
       ) : (

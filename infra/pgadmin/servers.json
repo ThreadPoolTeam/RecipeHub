@@ -1,0 +1,58 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "1. RecipeHub Identity DB",
+      "Group": "RecipeHub Microservices",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "recipehub_identity",
+      "Username": "identity_user",
+      "SSLMode": "prefer"
+    },
+    "2": {
+      "Name": "2. RecipeHub Recipe DB",
+      "Group": "RecipeHub Microservices",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "recipehub_recipe",
+      "Username": "recipe_user",
+      "SSLMode": "prefer"
+    },
+    "3": {
+      "Name": "3. RecipeHub Content DB",
+      "Group": "RecipeHub Microservices",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "recipehub_content",
+      "Username": "content_user",
+      "SSLMode": "prefer"
+    },
+    "4": {
+      "Name": "4. RecipeHub Audit DB",
+      "Group": "RecipeHub Microservices",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "recipehub_audit",
+      "Username": "audit_migrator",
+      "SSLMode": "prefer"
+    },
+    "5": {
+      "Name": "5. RecipeHub Quiz DB",
+      "Group": "RecipeHub Microservices",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "recipehub_quiz",
+      "Username": "quiz_migrator",
+      "SSLMode": "prefer"
+    },
+    "6": {
+      "Name": "6. RecipeHub Cluster Admin (All DBs)",
+      "Group": "RecipeHub Microservices",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "recipehub_default",
+      "Username": "recipehub_admin",
+      "SSLMode": "prefer"
+    }
+  }
+}

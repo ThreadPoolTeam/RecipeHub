@@ -3,10 +3,10 @@
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { BookOpen, Plus, Pencil, RotateCcw, Coffee, History, FileDown, Layers } from 'lucide-react';
+import { BookOpen, Plus, Pencil, Coffee, History, FileDown } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { RecipeVersion, RecipeStatus } from '@/lib/demo/types';
-import { Button, TextInput, Select, SearchInput } from '@/components/workspace/fields';
+import { Button, Select, SearchInput } from '@/components/workspace/fields';
 import { StatusBadge } from '@/components/workspace/status-badge';
 import { DataTable } from '@/components/workspace/data-table';
 import { VersionHistoryDrawer } from '@/components/workspace/version-history-drawer';
@@ -25,7 +25,7 @@ function RecipeListContent() {
   const [selectedRecipeForHistory, setSelectedRecipeForHistory] = useState<RecipeVersion | null>(null);
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
   const [drawerVersions, setDrawerVersions] = useState<RecipeVersion[]>([]);
-  const [isLoadingDrawerVersions, setIsLoadingDrawerVersions] = useState(false);
+  const [, setIsLoadingDrawerVersions] = useState(false);
   const router = useRouter();
   const [selectedRecipeIds, setSelectedRecipeIds] = useState<string[]>([]);
   const handleOpenHistoryDrawer = async (item: RecipeVersion) => {
@@ -348,12 +348,12 @@ function RecipeListContent() {
                   );
                   if (match) {
                     router.push(
-                      `/rnd/documents?recipeId=${match.recipeId || match.id}&versionId=${selectedRecipeIds[0]}`
+                      `/rnd/documents/new?recipeId=${match.recipeId || match.id}&versionId=${selectedRecipeIds[0]}`
                     );
                     return;
                   }
                 }
-                router.push(`/rnd/documents?recipes=${selectedRecipeIds.join(',')}`);
+                router.push(`/rnd/documents/new?recipes=${selectedRecipeIds.join(',')}`);
               }}
               title="Chuyển sang không gian xuất bản tài liệu PDF"
             >

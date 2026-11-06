@@ -33,8 +33,12 @@ RecipeHub/
 │       └── src/                                  # Next.js 16 App Router (Standalone output)
 ├── infra/
 │   ├── compose.yaml                              # Docker Compose full-stack orchestration
+│   ├── pgadmin/
+│   │   └── servers.json                          # Cấu hình sẵn kết nối 5 CSDL cho pgAdmin 4
+│   ├── grafana/
+│   │   └── provisioning/                         # Datasources & Dashboard giám sát sẵn có
 │   └── postgres/
-│   │       └── init-databases.sh                     # Khởi tạo 5 database logic riêng biệt
+│       └── init-databases.sh                     # Khởi tạo 5 database logic riêng biệt + seed catalog
 ├── tests/
 │   └── smoke/
 │       └── smoke-test.sh                         # Kịch bản kiểm thử tích hợp tự động
@@ -55,12 +59,12 @@ RecipeHub/
    ```bash
    cp .env.example .env
    ```
-2. **Chuẩn bị schema trước khi chạy API:** bootstrap Compose chỉ áp dụng DDL Audit/Quiz; Identity/Recipe/Content cần áp dụng SQL chính thức trong [docs/database-schema](docs/database-schema/). Với DB mới, khởi động PostgreSQL/Redis trước (`docker compose -f infra/compose.yaml up -d postgres redis`), rồi dùng `.postgres` tương ứng; DB có dữ liệu phải chọn migration phù hợp, không chạy lại bootstrap.
-3. Khởi động toàn bộ cụm dịch vụ qua Docker Compose:
+2. **Khởi động toàn bộ cụm dịch vụ qua Docker Compose (One-Command Bootstrap):**
+   Khi khởi tạo volume PostgreSQL mới, `infra/postgres/init-databases.sh` tự động áp dụng DDL `.postgres` cho cả 5 database (`recipehub_identity`, `recipehub_recipe`, `recipehub_content`, `recipehub_audit`, `recipehub_quiz`), nạp danh mục chuẩn (`20261028_seed_catalog.sql`), và `identity-service` tự động seed 3 tài khoản demo (`admin@recipehub.demo`, `rd@recipehub.demo`, `viewer@recipehub.demo` / mật khẩu `Demo@1234`):
    ```bash
    docker compose -f infra/compose.yaml up -d --build
    ```
-4. Sau khi schema và cấu hình dịch vụ đầy đủ, thực thi script kiểm thử tích hợp (smoke test):
+3. Sau khi toàn bộ dịch vụ sẵn sàng, thực thi script kiểm thử tích hợp (smoke test):
    ```bash
    bash tests/smoke/smoke-test.sh
    ```
@@ -110,6 +114,8 @@ RecipeHub/
 | **Background Worker** | - | Heartbeat, Content processing/cleanup, Audit consumer |
 | **PostgreSQL** | Host `5433` → container `5432` | 5 CSDL: `recipehub_identity`, `recipehub_recipe`, `recipehub_content`, `recipehub_audit`, `recipehub_quiz` |
 | **Redis** | Host `6380` → container `6379` | Message broker Redis Streams |
+| **pgAdmin 4** | `5050` | Trình quản trị PostgreSQL Web (`admin@recipehub.demo` / `admin123`, nạp sẵn `servers.json`) |
+| **Grafana** | `3001` | Dashboard giám sát hệ thống & DB (`admin` / `admin123`, nạp sẵn 5 PostgreSQL datasources) |
 
 ---
 

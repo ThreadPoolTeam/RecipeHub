@@ -72,7 +72,7 @@ app.Use(async (context, next) =>
     if (path.StartsWithSegments("/api/v1/recipes") && !HttpMethods.IsGet(context.Request.Method) && !calculation)
     {
         if (context.User.Identity?.IsAuthenticated != true) { await context.ChallengeAsync(); return; }
-        if (!context.User.IsInRole("rnd") && !context.User.IsInRole("admin")) { await context.ForbidAsync(); return; }
+        if (!context.User.IsInRole("rnd")) { await context.ForbidAsync(); return; }
     }
     await next();
 });
@@ -89,6 +89,25 @@ app.MapGet("/", () => Results.Ok(new
 }));
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "Live" }));
-app.MapGet("/health/ready", () => Results.Ok(new { status = "Ready" }));
+app.MapGet("/health/ready", async (RecipeDbContext db, CancellationToken ct) =>
+{
+    var canConnect = await db.Database.CanConnectAsync(ct);
+    return canConnect
+        ? Results.Ok(new { status = "Ready", database = "Connected" })
+        : Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+});
+
+app.MapGet("/api/v1/recipes/info", async (RecipeDbContext db, CancellationToken ct) =>
+{
+    var canConnect = await db.Database.CanConnectAsync(ct);
+    return Results.Ok(new
+    {
+        service = "RecipeHub.Recipe.Api",
+        version = "1.0.0",
+        status = canConnect ? "Ready" : "Degraded",
+        database = canConnect ? "Connected" : "Unreachable",
+        timestampUtc = DateTime.UtcNow
+    });
+});
 
 app.Run();

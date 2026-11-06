@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { FlaskConical, Plus, Pencil } from 'lucide-react';
+import { FlaskConical, Plus, Pencil, Package } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { Ingredient } from '@/lib/demo/types';
 import { Button, Select, Alert, SearchInput } from '@/components/workspace/fields';
@@ -215,7 +215,12 @@ export default function RndIngredientsPage() {
             Định nghĩa danh mục nguyên liệu tiêu chuẩn và đơn vị đo phục vụ xây dựng công thức.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href="/rnd/catalogue">
+            <Button variant="secondary" size="sm">
+              <Package className="w-4 h-4 mr-1 text-[#B47820]" /> Quản lý Đơn vị &amp; Phân nhóm
+            </Button>
+          </Link>
           <UnitConversionModal />
           <Link href="/rnd/ingredients/new">
             <Button variant="gold" size="sm">

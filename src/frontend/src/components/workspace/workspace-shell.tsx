@@ -18,22 +18,20 @@ import {
   X,
   PanelLeft,
   User,
-  ExternalLink,
   ChevronRight,
   ChevronUp,
   HelpCircle,
   Award,
   GraduationCap,
+  Activity,
 } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { isPathAllowedForUser } from '@/lib/demo/permissions';
 
-import { RoleBadge } from './status-badge';
 import { Button } from './fields';
-import { Dialog } from './dialog';
 import './workspace.css';
 export function WorkspaceShell({ children }: { children: React.ReactNode }) {
-  const { session, currentUser, loading, logout, repo, touch } = useDemo();
+  const { session, currentUser, loading, logout, touch } = useDemo();
   const pathname = usePathname();
   const [pendingPath, setPendingPath] = useState<string | null>(null);
   const router = useRouter();
@@ -163,6 +161,16 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             {!isCollapsed && <span>Kho nguyên liệu</span>}
           </Link>
           <Link
+            href="/rnd/catalogue"
+            prefetch={true}
+            onClick={(e) => handleNavClick('/rnd/catalogue', e)}
+            className={navLinkStyle(isLinkActive('/rnd/catalogue'), isCollapsed)}
+            title="Đơn vị & Phân nhóm"
+          >
+            <Package className="w-5 h-5 text-[#706E68]" />
+            {!isCollapsed && <span>Đơn vị &amp; Phân nhóm</span>}
+          </Link>
+          <Link
             href="/rnd/media"
             prefetch={true}
             onClick={(e) => handleNavClick('/rnd/media', e)}
@@ -275,14 +283,14 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             {!isCollapsed && <span>Tài khoản &amp; Quyền</span>}
           </Link>
           <Link
-            href="/admin/catalogue"
+            href="/admin/system"
             prefetch={true}
-            onClick={(e) => handleNavClick('/admin/catalogue', e)}
-            className={navLinkStyle(isLinkActive('/admin/catalogue'), isCollapsed)}
-            title="Danh mục đơn vị"
+            onClick={(e) => handleNavClick('/admin/system', e)}
+            className={navLinkStyle(isLinkActive('/admin/system'), isCollapsed)}
+            title="Giám sát hệ thống"
           >
-            <Package className="w-5 h-5 text-[#706E68]" />
-            {!isCollapsed && <span>Danh mục đơn vị</span>}
+            <Activity className="w-5 h-5 text-[#706E68]" />
+            {!isCollapsed && <span>Giám sát hệ thống</span>}
           </Link>
           <Link
             href="/admin/logs"
@@ -347,16 +355,14 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
           {renderNavItems(sidebarCollapsed)}
         </nav>
 
-        {/* User Card & Controls at Bottom (ChatGPT-style user item with popover menu) */}
+        {/* User Card & Controls at Bottom */}
         <div ref={menuRef} className="p-2 border-t border-[#E8E2D9] bg-[#F0ECE4] relative shrink-0">
-          {/* Popover Menu (Image #4) */}
           {userMenuOpen && (
             <div
               className={`absolute bottom-full mb-2 bg-white border border-[#E8E2D9] rounded-2xl shadow-xl p-1.5 space-y-1 z-50 w-64 animate-in fade-in slide-in-from-bottom-2 duration-150 ${
                 sidebarCollapsed ? 'left-2' : 'left-3 right-3'
               }`}
             >
-              {/* Header profile row with chevron > */}
               <Link
                 href="/profile"
                 onClick={() => setUserMenuOpen(false)}
@@ -384,7 +390,6 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
 
               <div className="border-t border-[#E8E2D9] my-1" />
 
-              {/* 3 working buttons in 100% Vietnamese */}
               <Link
                 href="/profile"
                 onClick={() => setUserMenuOpen(false)}
@@ -429,7 +434,6 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {/* Trigger Button: In Collapsed mode, render ONLY avatar circle (Image #1) */}
           {sidebarCollapsed ? (
             <button
               type="button"

@@ -44,12 +44,13 @@
 
 ### 2.4. Phân Quyền & Xác Thực (Authorization Policies)
 - API nghiệp vụ bắt buộc xác thực Bearer JWT token từ Identity, ngoại trừ login/refresh. Tuyệt đối không chấp nhận fake actor header `X-User-Id`.
-- Endpoint liveness/readiness `/health/live` và `/health/ready` là public (nằm ngoài tiền tố nghiệp vụ `/api/v1/*`).
+- Endpoint liveness/readiness `/health/live` và `/health/ready` là public (nằm ngoài tiền tố nghiệp vụ `/api/v1/*`). Cả 5 microservices thực thi kiểm tra kết nối PostgreSQL thực tế (`CanConnectAsync`) tại `/health/ready` và `/api/v1/{service}/info`.
 - Quyền truy cập dùng chung:
+  - `Recipe.Api`: Thao tác ghi (`POST/PUT/PATCH/DELETE` trên `/api/v1/recipes/*`, ngoại trừ `/calculate` và `/units/convert`) yêu cầu role `rnd`. Role `admin` có quyền đọc (`GET`) để phục vụ tra cứu/giám sát.
   - `ContentEditors`: role `admin` hoặc `rnd` (quản lý media và bản nháp AI).
   - `ContentReaders`: role `admin`, `rnd` hoặc `viewer`; viewer phải qua resource check recipe published/active.
   - Audit logs: role `admin` qua `[Authorize(Roles = "admin")]`.
-  - PDF: `admin`/`rnd` được preview, xuất và xem lịch sử/chi tiết. Mọi user đã xác thực được đọc capabilities.
+  - PDF: `rnd` được preview, xuất và xem lịch sử/chi tiết (`admin` chỉ đọc lịch sử/chi tiết khi cần tra cứu). Mọi user đã xác thực được đọc capabilities.
   - Viewer chỉ tra cứu/tải PDF chính thức dạng `single` có nguồn `published`, chưa archive; không preview, xuất, đọc lịch sử/chi tiết hay tải bộ. Recipe kiểm tra quyền trong middleware/controller/service.
 
 ### 2.5. Quy Định Endpoint Nhị Phân (Binary Endpoints)

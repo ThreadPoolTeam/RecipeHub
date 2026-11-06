@@ -31,7 +31,26 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
     GRANT CONNECT ON DATABASE ${QUIZ_DB_NAME:-recipehub_quiz} TO ${QUIZ_DB_USER:-quiz_user};
 EOSQL
 
-# Execute official versioned DDL as migration role (sole authority for fresh DB)
+# 1. Execute official versioned DDL for Identity Service
+if [ -f "/schema/identity-db/RecipeHub.Identity.postgres" ]; then
+    PGPASSWORD="${IDENTITY_DB_PASSWORD:-identity_pw}" psql -v ON_ERROR_STOP=1 --username "${IDENTITY_DB_USER:-identity_user}" --dbname "${IDENTITY_DB_NAME:-recipehub_identity}" -f "/schema/identity-db/RecipeHub.Identity.postgres"
+fi
+
+# 2. Execute official versioned DDL & reference catalog seed for Recipe Service
+if [ -f "/schema/recipe-db/RecipeHub.Recipe.postgres" ]; then
+    PGPASSWORD="${RECIPE_DB_PASSWORD:-recipe_pw}" psql -v ON_ERROR_STOP=1 --username "${RECIPE_DB_USER:-recipe_user}" --dbname "${RECIPE_DB_NAME:-recipehub_recipe}" -f "/schema/recipe-db/RecipeHub.Recipe.postgres"
+fi
+
+if [ -f "/schema/recipe-db/migrations/20261028_seed_catalog.sql" ]; then
+    PGPASSWORD="${RECIPE_DB_PASSWORD:-recipe_pw}" psql -v ON_ERROR_STOP=1 --username "${RECIPE_DB_USER:-recipe_user}" --dbname "${RECIPE_DB_NAME:-recipehub_recipe}" -f "/schema/recipe-db/migrations/20261028_seed_catalog.sql"
+fi
+
+# 3. Execute official versioned DDL for Content Service
+if [ -f "/schema/content-db/RecipeHub.Content.postgres" ]; then
+    PGPASSWORD="${CONTENT_DB_PASSWORD:-content_pw}" psql -v ON_ERROR_STOP=1 --username "${CONTENT_DB_USER:-content_user}" --dbname "${CONTENT_DB_NAME:-recipehub_content}" -f "/schema/content-db/RecipeHub.Content.postgres"
+fi
+
+# 4. Execute official versioned DDL as Quiz migration role (sole authority for fresh DB)
 if [ -f "/schema/quiz-db/RecipeHub.Quiz.postgres" ]; then
     PGPASSWORD="${QUIZ_MIGRATOR_PASSWORD:-quiz_migrator_pw}" psql -v ON_ERROR_STOP=1 --username "${QUIZ_MIGRATOR_USER:-quiz_migrator}" --dbname "${QUIZ_DB_NAME:-recipehub_quiz}" -f "/schema/quiz-db/RecipeHub.Quiz.postgres"
 fi
@@ -45,7 +64,7 @@ PGPASSWORD="${QUIZ_MIGRATOR_PASSWORD:-quiz_migrator_pw}" psql -v ON_ERROR_STOP=1
     ALTER DEFAULT PRIVILEGES IN SCHEMA quiz_db GRANT USAGE, SELECT ON SEQUENCES TO ${QUIZ_DB_USER:-quiz_user};
 EOSQL
 
-# Execute official versioned DDL as audit migration role (sole authority for fresh DB)
+# 5. Execute official versioned DDL as Audit migration role (sole authority for fresh DB)
 if [ -f "/schema/audit-db/RecipeHub.Audit.postgres" ]; then
     PGPASSWORD="${AUDIT_MIGRATOR_PASSWORD:-audit_migrator_pw}" psql -v ON_ERROR_STOP=1 --username "${AUDIT_MIGRATOR_USER:-audit_migrator}" --dbname "${AUDIT_DB_NAME:-recipehub_audit}" -f "/schema/audit-db/RecipeHub.Audit.postgres"
 fi
