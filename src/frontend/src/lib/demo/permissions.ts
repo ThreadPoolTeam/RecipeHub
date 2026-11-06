@@ -81,12 +81,12 @@ export function canViewRecipe(user: User, recipe: RecipeVersion): boolean {
     return true;
   }
   if (user.role === 'viewer') {
-    return recipe.status === 'Published' && (user.allowedRecipeIds || []).includes(recipe.recipeId);
+    return recipe.status === 'Published';
   }
   return false;
 }
 
 export function canManagePdf(user: User | SessionInfo | null): boolean {
   if (!user) return false;
-  return user.role === 'admin' || user.role === 'rnd';
+  return user.role === 'rnd';
 }

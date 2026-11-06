@@ -36,11 +36,11 @@ Tất cả các trang thuộc không gian làm việc `(platform)` được qu�
 ### 2.2. Nhãn Phân Khu (Section Header)
 - Font: 10px, bold 700, viết hoa toàn bộ, tracking-wider, màu `#8C887F`.
 - Phân khu tương ứng từng role:
-  - Admin: `QUẢN TRỊ HỆ THỐNG`
-  - R&D: `KHÔNG GIAN R&D`
-  - Viewer: `VẬN HÀNH CỬA HÀNG`
+  - Admin: `QUẢN TRỊ HỆ THỐNG` (`/admin`, `/admin/users`, `/admin/system`, `/admin/logs`).
+  - R&D: `KHÔNG GIAN R&D` (`/rnd`, `/rnd/recipes`, `/rnd/ingredients`, `/rnd/catalogue`, `/rnd/media`, `/rnd/documents`, `/rnd/quizzes`, `/rnd/quizzes/results`).
+  - Viewer: `VẬN HÀNH CỬA HÀNG` (`/viewer`, `/viewer/quizzes`, `/viewer/quizzes/history`).
   - Menu "Tài liệu PDF" (`FileText` icon):
-    - Admin: Không có menu PDF; route `/admin/documents` và `/admin/documents/new` vẫn dành cho admin.
+    - Admin: Không quản lý xuất bản PDF R&D; tập trung quản trị tài khoản, giám sát hệ thống và nhật ký kiểm toán.
     - R&D: Menu `/rnd/documents` mở kho tài liệu; nút tạo mới dẫn `/rnd/documents/new`.
     - Viewer: Không hiển thị menu tài liệu; chỉ có nút tải PDF chính thức trực tiếp trên trang chi tiết công thức `/viewer/recipes/[id]`.
 

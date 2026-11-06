@@ -6,8 +6,6 @@ import Link from 'next/link';
 import {
   Clock,
   Thermometer,
-  FileText,
-  CheckCircle2,
   ArrowLeft,
   Pencil,
   Send,
@@ -338,7 +336,7 @@ export default function RecipeDetailPage() {
             <History className="w-3.5 h-3.5 mr-1 text-[#B47820]" /> Lịch sử ({versions.length})
           </Button>
 
-          <Link href={`/rnd/documents?recipeId=${recipe.recipeId || id}&versionId=${recipe.versionId || id}`}>
+          <Link href={`/rnd/documents/new?recipeId=${recipe.recipeId || id}&versionId=${recipe.versionId || id}`}>
             <Button variant="secondary" size="sm">
               <FileDown className="w-3.5 h-3.5 mr-1 text-[#B47820]" /> Xuất bản PDF
             </Button>
@@ -502,7 +500,7 @@ export default function RecipeDetailPage() {
                           {ing ? ing.code : '—'}
                         </span>
                         <span className="font-medium text-[#1C1917]">
-                          {ing ? ing.name : item.ingredientId}
+                          {ing ? ing.name : 'Nguyên liệu chưa cập nhật'}
                         </span>
                       </td>
                       <td className="py-2 px-3 text-xs text-[#78716C]">
