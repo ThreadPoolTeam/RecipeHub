@@ -57,6 +57,14 @@ public sealed class UnitRepository : IUnitRepository
             item => item.NormalizedCode == normalizedCode && item.PublicId != excludedPublicId,
             cancellationToken);
 
+    public Task<bool> BaseUnitExistsAsync(
+        long categoryId,
+        long? excludedUnitId,
+        CancellationToken cancellationToken) =>
+        _dbContext.Units.AnyAsync(
+            item => item.CategoryId == categoryId && item.IsBase && item.Id != excludedUnitId,
+            cancellationToken);
+
     public async Task<bool> UnitIsUsedAsync(long unitId, CancellationToken cancellationToken)
     {
         if (await _dbContext.Ingredients.AnyAsync(item => item.DefaultUnitId == unitId, cancellationToken))

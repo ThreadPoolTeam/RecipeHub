@@ -64,6 +64,11 @@ RecipeHub/
    ```bash
    bash tests/smoke/smoke-test.sh
    ```
+4. Kiểm tra riêng Recipe API ở chế độ chỉ đọc hoặc toàn bộ vòng đời:
+   ```bash
+   tests/smoke/test_recipe_api.sh
+   tests/smoke/test_recipe_api.sh --full
+   ```
 
 ### Khởi chạy trực tiếp Local (Dev mode)
 1. Chuẩn bị PostgreSQL/Redis, áp dụng SQL theo trạng thái database và cấu hình connection strings/gRPC/AI/storage cho dịch vụ cần dùng. **Build không khởi động API:**

@@ -6,7 +6,6 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Users,
-  Leaf,
   ShieldCheck,
   Image,
   ArrowRight,
@@ -81,14 +80,6 @@ export default function AdminPage() {
       icon: Users,
       count: `${stats.userCount} người dùng`,
       tag: 'Identity & RBAC',
-    },
-    {
-      title: 'Danh mục nguyên liệu & Đơn vị',
-      desc: 'Quản lý kho nguyên liệu dùng chung, nhóm nguyên liệu, quy chuẩn đơn vị đo và đơn giá định mức.',
-      href: '/admin/catalogue',
-      icon: Leaf,
-      count: `${stats.activeIngredientsCount}/${stats.totalIngredientsCount} đang kích hoạt`,
-      tag: 'Global Catalogue',
     },
     {
       title: 'Nhật ký kiểm toán',

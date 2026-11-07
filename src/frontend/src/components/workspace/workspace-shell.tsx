@@ -163,6 +163,16 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             {!isCollapsed && <span>Kho nguyên liệu</span>}
           </Link>
           <Link
+            href="/rnd/catalogue"
+            prefetch={true}
+            onClick={(e) => handleNavClick('/rnd/catalogue', e)}
+            className={navLinkStyle(isLinkActive('/rnd/catalogue'), isCollapsed)}
+            title="Đại lượng & Đơn vị đo"
+          >
+            <Package className="w-5 h-5 text-[#706E68]" />
+            {!isCollapsed && <span>Đại lượng &amp; Đơn vị đo</span>}
+          </Link>
+          <Link
             href="/rnd/media"
             prefetch={true}
             onClick={(e) => handleNavClick('/rnd/media', e)}
@@ -274,16 +284,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             <Users className="w-5 h-5 text-[#706E68]" />
             {!isCollapsed && <span>Tài khoản &amp; Quyền</span>}
           </Link>
-          <Link
-            href="/admin/catalogue"
-            prefetch={true}
-            onClick={(e) => handleNavClick('/admin/catalogue', e)}
-            className={navLinkStyle(isLinkActive('/admin/catalogue'), isCollapsed)}
-            title="Danh mục đơn vị"
-          >
-            <Package className="w-5 h-5 text-[#706E68]" />
-            {!isCollapsed && <span>Danh mục đơn vị</span>}
-          </Link>
+
           <Link
             href="/admin/logs"
             prefetch={true}
