@@ -104,6 +104,7 @@ public sealed class RecipeCalculationTests
         public Task<bool> CategoryCodeExistsAsync(string code, Guid? id, CancellationToken ct) => throw new NotSupportedException();
         public Task<bool> CategoryNameExistsAsync(string name, Guid? id, CancellationToken ct) => throw new NotSupportedException();
         public Task<bool> UnitCodeExistsAsync(string code, Guid? id, CancellationToken ct) => throw new NotSupportedException();
+        public Task<bool> BaseUnitExistsAsync(long categoryId, long? excludedUnitId, CancellationToken ct) => throw new NotSupportedException();
         public Task<bool> UnitIsUsedAsync(long id, CancellationToken ct) => throw new NotSupportedException();
         public Task AddCategoryAsync(UnitCategory category, CancellationToken ct) => throw new NotSupportedException();
         public Task AddUnitAsync(Unit unit, CancellationToken ct) => throw new NotSupportedException();

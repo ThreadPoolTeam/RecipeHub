@@ -74,7 +74,7 @@ export default function AdminPage() {
       tag: 'System Health',
     },
     {
-      title: 'Nhật ký Kiểm toán (Audit Logs)',
+      title: 'Nhật ký kiểm toán',
       desc: 'Truy vết toàn diện mọi thay đổi dữ liệu trong hệ thống: tạo/sửa/phát hành công thức, quản trị tài khoản và bài kiểm tra.',
       href: '/admin/logs',
       icon: ShieldCheck,
