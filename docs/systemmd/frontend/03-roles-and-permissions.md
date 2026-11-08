@@ -10,7 +10,7 @@ Hệ thống RecipeHub phục vụ 3 nhóm vai trò rõ ràng, không đè lấn
 | **Route gốc** | `/admin` | `/rnd` | `/viewer` |
 | **Phân khu Sidebar** | `QUẢN TRỊ HỆ THỐNG` | `KHÔNG GIAN R&D` | `VẬN HÀNH CỬA HÀNG` |
 | **Mục đích** | Quản trị tài khoản, giám sát sức khỏe microservices/DB và xem nhật ký kiểm toán | Sáng tạo công thức, quản lý nguyên liệu, đơn vị đo, media, tài liệu PDF và quiz (soạn, ban hành, lưu trữ, kết quả) | Tra cứu công thức chuẩn đã phát hành, làm bài kiểm tra SOP |
-| **Quyền Recipe** | Không có workspace và không ghi công thức; chỉ `GET` khi API cần cho thống kê | Toàn quyền biên tập (`POST/PUT/PATCH/DELETE`): soạn/sửa `draft`, phát hành `published`, tạo phiên bản | Chỉ xem `published`, chưa archive |
+| **Quyền Recipe** | Không đọc và không ghi dữ liệu công thức (API trả 403); chỉ gọi `/info` và health để giám sát | Toàn quyền biên tập (`POST/PUT/PATCH/DELETE`): soạn/sửa `draft`, phát hành `published`, tạo phiên bản | Chỉ xem `published`, chưa archive |
 | **Quyền Nguyên liệu & Đơn vị** | Không có quyền | Toàn quyền quản lý nguyên liệu, loại nguyên liệu (`/rnd/ingredients`), đại lượng đo và đơn vị đo (`/rnd/catalogue`) | Không có quyền quản lý |
 | **Quyền Quiz** | Không có workspace quiz; chỉ theo dõi sự kiện qua Audit Logs | Soạn đề, ngân hàng câu hỏi, ban hành/lưu trữ đề, thống kê kết quả (`/rnd/quizzes*`) | Làm bài kiểm tra, xem lại lịch sử bài làm của mình |
 | **Quyền Hệ thống** | Quản trị tài khoản (`/admin/users`), giám sát hệ thống (`/admin/system`), Audit Logs (`/admin/logs`), liên kết Grafana & pgAdmin | Quản lý media R&D (`/rnd/media`) | Cấu hình tài khoản cá nhân |

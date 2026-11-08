@@ -89,8 +89,8 @@ Nguồn controller: [Identity](../../src/backend/Services/Identity/RecipeHub.Ide
 
 - Gateway có **5 YARP route**, mỗi prefix chuyển về một cluster: `identity`, `recipes`, `content`, `audit`, `quiz`. Catch-all forwarding không tạo thêm operation nghiệp vụ.
 - Next có **2 file `route.ts`**: `/api/health` và `/api/backend/[...path]`; proxy export **5 verb GET/POST/PUT/PATCH/DELETE**, chỉ cho phép 5 prefix API kể trên.
-- **44 file `page.tsx`, 4 file `layout.tsx`**, và **30 component `.tsx`** dưới `src/components/`.
-- Phân nhóm page: admin 12, rnd 17, viewer 8, các trang chung `(platform)` 4 (help/platform/profile/settings), ngoài `(platform)` 3. Đây là vị trí source, không phải chứng minh quyền truy cập.
+- **37 file `page.tsx`, 4 file `layout.tsx`**, và **30 component `.tsx`** dưới `src/components/`.
+- Phân nhóm page: admin 4, rnd 18, viewer 8, các trang chung `(platform)` 4 (help/platform/profile/settings), ngoài `(platform)` 3. Đây là vị trí source, không phải chứng minh quyền truy cập.
 
 Nguồn: [`Program.cs` của Gateway](../../src/backend/Gateway/RecipeHub.Gateway/Program.cs), [YARP routes](../../src/backend/Gateway/RecipeHub.Gateway/appsettings.json), [App Router](../../src/frontend/src/app/), [proxy](../../src/frontend/src/app/api/backend/). Quy tắc quyền/route: [Web RBAC](frontend/03-roles-and-permissions.md), [API conventions](backend/05-gateway-and-api-conventions.md).
 

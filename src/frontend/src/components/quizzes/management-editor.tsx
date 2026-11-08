@@ -113,7 +113,7 @@ export function ManagementEditor({ quizId }: { quizId: string }) {
           <button className="qm-btn" disabled={busy || dirty} onClick={() => setAction('clone')}><Copy size={15} />Nhân bản phiên bản</button>
           <Link className="qm-btn" href={`${base}/results?quizId=${quizId}&version=${version}`}>Kết quả</Link>
           <button className="qm-btn" disabled={busy || !draft.questions.length} onClick={() => setPreview(true)}>Xem thử</button>
-          {session?.role === 'admin' && detail.version.state !== 'archived' && <button className="qm-btn qm-primary" disabled={busy || dirty || (detail.version.state === 'draft' && !draft.questions.length)} onClick={() => setAction(detail.version.state === 'draft' ? 'published' : 'archived')}>{detail.version.state === 'draft' ? 'Ban hành' : 'Lưu trữ'}</button>}
+          {session?.role === 'rnd' && detail.version.state !== 'archived' && <button className="qm-btn qm-primary" disabled={busy || dirty || (detail.version.state === 'draft' && !draft.questions.length)} onClick={() => setAction(detail.version.state === 'draft' ? 'published' : 'archived')}>{detail.version.state === 'draft' ? 'Ban hành' : 'Lưu trữ'}</button>}
         </div>
       </div>
       {dirty && <p className="qm-muted">Lưu bản nháp trước khi nhân bản hoặc ban hành.</p>}

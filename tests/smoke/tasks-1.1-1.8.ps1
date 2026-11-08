@@ -116,8 +116,10 @@ try {
 finally {
     if ($admin) {
         if (!$KeepFixtures) {
-            foreach ($id in $createdRecipes) { Api DELETE "api/v1/recipes/$id" $null $admin.accessToken 204 | Out-Null }
-            foreach ($id in $createdIngredients) { Api DELETE "api/v1/recipes/ingredients/$id" $null $admin.accessToken 204 | Out-Null }
+            if ($rnd) {
+                foreach ($id in $createdRecipes) { Api DELETE "api/v1/recipes/$id" $null $rnd.accessToken 204 | Out-Null }
+                foreach ($id in $createdIngredients) { Api DELETE "api/v1/recipes/ingredients/$id" $null $rnd.accessToken 204 | Out-Null }
+            }
             foreach ($id in $createdUsers) { Api PUT "api/v1/identity/users/$id/status" @{ isActive = $false } $admin.accessToken | Out-Null }
         }
         Api POST 'api/v1/identity/auth/logout' $null $admin.accessToken 204 | Out-Null

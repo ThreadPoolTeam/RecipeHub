@@ -77,7 +77,7 @@ export function canPublishRecipe(user: User | SessionInfo, recipe: RecipeVersion
 }
 
 export function canViewRecipe(user: User, recipe: RecipeVersion): boolean {
-  if (user.role === 'admin' || user.role === 'rnd') {
+  if (user.role === 'rnd') {
     return true;
   }
   if (user.role === 'viewer') {

@@ -39,10 +39,17 @@ public class QuizService : IQuizService
         }
     }
 
+    private static void EnsureRnd(string? role)
+    {
+        if (!string.Equals(role, "rnd", StringComparison.OrdinalIgnoreCase))
+            throw new UnauthorizedAccessException("Only rnd is authorized to manage quizzes.");
+    }
+
     public async Task<(List<QuizDto> Items, int Total)> GetManagementQuizzesAsync(
         string? code, string? title, string? state, Guid actorUserId, string actorRole, int page, int pageSize, CancellationToken ct = default)
     {
-        Guid? ownerRef = actorRole.ToLowerInvariant() == "admin" ? null : actorUserId;
+        EnsureRnd(actorRole);
+        Guid? ownerRef = null;
         var total = await _quizRepository.GetManagementQuizzesCountAsync(code, title, state, ownerRef, ct);
         var quizzes = await _quizRepository.GetManagementQuizzesAsync(code, title, state, ownerRef, page, pageSize, ct);
 
@@ -78,10 +85,7 @@ public class QuizService : IQuizService
             throw new KeyNotFoundException($"Quiz '{quizId}' version {versionNumber} was not found.");
         }
 
-        if (actorRole.ToLowerInvariant() != "admin" && version.Quiz.CreatedByUserRef != actorUserId)
-        {
-            throw new UnauthorizedAccessException("You are not authorized to view this quiz.");
-        }
+        EnsureRnd(actorRole);
 
         return MapToDetailDto(version.Quiz, version);
     }
@@ -202,8 +206,7 @@ public class QuizService : IQuizService
         if (quiz is null)
             throw new KeyNotFoundException($"Quiz '{quizId}' was not found.");
 
-        if (actor.Role != "admin" && quiz.CreatedByUserRef != actor.Id)
-            throw new UnauthorizedAccessException("You are not authorized to update this quiz.");
+        EnsureRnd(actor.Role);
 
         // 2. Lock version
         var version = await _quizRepository.GetVersionForUpdateAsync(quiz.Id, versionNumber, ct);
@@ -223,8 +226,7 @@ public class QuizService : IQuizService
                 return MapToDetailDto(quiz, version);
             }
 
-            if (actor.Role != "admin")
-                throw new UnauthorizedAccessException("Only admin is authorized to publish or archive quiz versions.");
+            EnsureRnd(actor.Role);
             if (version.State == "draft")
             {
                 if (targetState != "published")
@@ -383,8 +385,7 @@ public class QuizService : IQuizService
         if (quiz is null)
             throw new KeyNotFoundException($"Quiz '{quizId}' was not found.");
 
-        if (actor.Role != "admin" && quiz.CreatedByUserRef != actor.Id)
-            throw new UnauthorizedAccessException("You are not authorized to delete this quiz.");
+        EnsureRnd(actor.Role);
 
         // Check: all versions must be draft and have no attempts
         foreach (var v in quiz.Versions)
@@ -422,8 +423,7 @@ public class QuizService : IQuizService
         if (quiz is null)
             throw new KeyNotFoundException($"Quiz '{quizId}' was not found.");
 
-        if (actor.Role != "admin" && quiz.CreatedByUserRef != actor.Id)
-            throw new UnauthorizedAccessException("You are not authorized to delete versions of this quiz.");
+        EnsureRnd(actor.Role);
 
         if (quiz.Versions.Count <= 1)
         {
@@ -469,8 +469,7 @@ public class QuizService : IQuizService
         if (quiz is null)
             throw new KeyNotFoundException($"Quiz '{quizId}' was not found.");
 
-        if (actor.Role != "admin" && quiz.CreatedByUserRef != actor.Id)
-            throw new UnauthorizedAccessException("You are not authorized to clone this quiz.");
+        EnsureRnd(actor.Role);
 
         // 2. Lock source version
         var sourceVersion = await _quizRepository.GetVersionForUpdateAsync(quiz.Id, request.SourceVersion, ct);

@@ -69,10 +69,12 @@ builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("ContentEditors", policy =>
         policy.RequireAuthenticatedUser()
-              .RequireRole("admin", "rnd"));
+              .RequireRole("rnd"));
     options.AddPolicy("ContentReaders", policy =>
         policy.RequireAuthenticatedUser()
-              .RequireRole("admin", "rnd", "viewer"));
+              .RequireRole("rnd", "viewer"));
+    options.AddPolicy("ServiceInfo", policy =>
+        policy.RequireAuthenticatedUser());
 });
 
 builder.Services.AddHealthChecks();
@@ -133,7 +135,7 @@ app.MapGet("/api/v1/content/info", async (ContentDbContext db, CancellationToken
         description = "Content AI & Media Management Service",
         timestampUtc = DateTime.UtcNow
     });
-}).RequireAuthorization("ContentReaders");
+}).RequireAuthorization("ServiceInfo");
 
 // Endpoint trigger gRPC Ping to Recipe.Api
 app.MapGet("/api/v1/content/probe-recipe", async (IConfiguration config) =>
