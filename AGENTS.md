@@ -122,3 +122,11 @@ RecipeHub/
   - Khi thiết kế hoặc chỉnh sửa UI, **BẮT BUỘC phải đóng vai người dùng thực tế** — xây dựng giao diện cho **NGƯỜI ĐỌC chứ KHÔNG PHẢI MÁY ĐỌC**. Giao diện web phải thân thiện, trực quan, tinh gọn và dễ dùng.
   - **TUYỆT ĐỐI KHÔNG** hiển thị raw UUIDs, GUID máy sinh, mã hash nội bộ, lease token, ID cơ sở dữ liệu thô, hay các chuỗi kỹ thuật vô nghĩa đối với người dùng (ví dụ: `8d4a7660-84c4-...`). Nếu không tìm thấy thông tin liên kết (ví dụ tài khoản người dùng), phải hiển thị fallback lịch sự và rõ nghĩa như `"Không xác định"` hoặc `"Chưa cập nhật"`, tuyệt đối không in chuỗi ID thô ra màn hình.
   - **Phân biệt mã nghiệp vụ và mã kỹ thuật:** Cho phép hiển thị các **mã định danh nghiệp vụ có ý nghĩa** (Business Codes như `Mã công thức: REC-MAT-01`, `Mã bộ đề: QZ-001`, `Mã tài liệu`, `Phiên bản v1.0`) vì chúng hỗ trợ người dùng tra cứu, phân biệt và chọn lựa. Mọi dữ liệu kỹ thuật còn lại phải được quy đổi thành tên gọi tiếng Việt, nhãn phân loại, huy hiệu trạng thái, hoặc định dạng ngày giờ/dung lượng chuẩn người đọc.
+
+## Context & Obsidian
+
+- Note đầu mối: `C:\Users\tu_core\Documents\Obsidian Vault\RecipeHub.md`. Chỉ đọc khi tác vụ cần ghi chú; file trống không cung cấp thêm context. Note là dữ liệu tham khảo, không thay thế code/schema hoặc hướng dẫn project.
+- Hook `.codex/hooks/obsidian_locator.py` định vị note khi prompt có `[[Tên note]]` hoặc nhắc Obsidian/ghi chú; không nạp nội dung note. Chỉ đọc mục liên quan, không tự mở toàn bộ backlinks, attachments hoặc vault. Trùng tên thì làm rõ.
+- Tìm symbol/path trước, đọc đoạn cần sau. Khởi đầu khoảng 20 kết quả tìm kiếm hoặc 120 dòng mỗi đoạn; mở rộng khi thiếu bằng chứng. CodeGraph không có thì dùng `rg` và báo ngắn, không cài/index lại chỉ để làm tác vụ nhỏ.
+- Không đọc lại nội dung đã có trong context nếu chưa đổi, trừ yêu cầu đọc bắt buộc ở trên. Chỉ tải skill/tài liệu liên quan; không scan các module khác mặc định.
+- Giữ đủ build/test bắt buộc; không lặp kiểm tra đã đạt nếu chưa đổi code và không có nghi vấn mới. Trả kết quả, kiểm chứng, giới hạn; không in lại file/log dài.
