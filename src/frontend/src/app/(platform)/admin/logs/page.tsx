@@ -281,7 +281,7 @@ export default function AdminAuditLogsPage() {
               const validRole: Role | null =
                 roleStr === 'admin' ? 'admin' : roleStr === 'rnd' ? 'rnd' : roleStr === 'viewer' ? 'viewer' : null;
               return (
-                <div title={`Mã định danh: ${l.actorId}`}>
+                <div>
                   <div className="text-xs font-semibold text-[#1A1917]">{l.actorName}</div>
                   <div className="mt-1">
                     {validRole ? (
@@ -316,7 +316,6 @@ export default function AdminAuditLogsPage() {
             render: (l) => (
               <span
                 className="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-[#FAF9F5] text-[#706E68] border border-[#E8E2D9]"
-                title={`Mã đối tượng: ${l.targetId}`}
               >
                 {getTargetTypeLabel(l.targetType)}
               </span>

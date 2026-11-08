@@ -179,7 +179,7 @@ export function VersionHistoryDrawer({
                           {v.ingredients && v.ingredients.length > 0 ? (
                             <div className="space-y-1 bg-[#FAF9F5] p-2 rounded-lg border border-[#E8E2D9] max-h-40 overflow-y-auto">
                               {v.ingredients.map((ing, idx) => {
-                                const name = ingredientsMap?.[ing.ingredientId]?.name || ing.notes || ing.ingredientId;
+                                const name = ingredientsMap?.[ing.ingredientId]?.name || ing.notes || 'Chưa xác định';
                                 return (
                                   <div key={`${ing.ingredientId}-${idx}`} className="flex items-center justify-between text-[11px] py-0.5 border-b border-[#F5F0E8] last:border-b-0">
                                     <span className="text-[#1A1917] font-medium">{name}</span>

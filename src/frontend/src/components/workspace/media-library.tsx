@@ -357,7 +357,7 @@ export function MediaLibrary({
                       {item.name}
                     </h5>
                     <p className="text-[10px] text-[#706E68] mt-0.5">
-                      {(item.sizeBytes / 1024).toFixed(1)} KB • {item.uploadedBy.split('@')[0]}
+                      {(item.sizeBytes / 1024).toFixed(1)} KB • {item.uploadedBy.split('@')[0] || 'Chưa cập nhật'}
                     </p>
                   </div>
 
@@ -407,7 +407,7 @@ export function MediaLibrary({
           isOpen={true}
           onClose={() => setInspectingMedia(null)}
           title={`Tư liệu: ${inspectingMedia.name}`}
-          description={`ID: ${inspectingMedia.id} | Người tải lên: ${inspectingMedia.uploadedBy}`}
+          description={`Người tải lên: ${inspectingMedia.uploadedBy || 'Chưa cập nhật'}`}
         >
           <div className="space-y-4">
             <div className="aspect-video w-full rounded-md overflow-hidden bg-[#F5F0E8] flex items-center justify-center border border-[#E8E2D9]">

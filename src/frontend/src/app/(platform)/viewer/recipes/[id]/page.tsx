@@ -379,7 +379,7 @@ export default function ViewerRecipeDetailPage() {
                       {idx + 1}
                     </td>
                     <td className="py-3.5 px-4 font-medium text-[#1A1917]">
-                      <div>{ingInfo ? ingInfo.name : item.ingredientId}</div>
+                      <div>{ingInfo ? ingInfo.name : 'Chưa xác định'}</div>
                       {ingInfo?.code && (
                         <div className="text-[11px] font-mono text-[#8C887F]">{ingInfo.code}</div>
                       )}
