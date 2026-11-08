@@ -108,9 +108,19 @@ if [ "$ACK_CONFIRMED" -ne 1 ]; then
   exit 1
 fi
 
-echo "  Verifying BackgroundWorker log entry..."
-WORKER_LOGS=$(docker logs "$WORKER_CONTAINER" 2>&1)
-if echo "$WORKER_LOGS" | grep -q "\[ACK\]"; then
+echo "  Verifying BackgroundWorker log entry (up to 15s)..."
+ACK_LOG_FOUND=0
+for i in {1..15}; do
+  WORKER_LOGS=$(docker logs "$WORKER_CONTAINER" 2>&1 || true)
+  if echo "$WORKER_LOGS" | grep -q "\[ACK\]"; then
+    ACK_LOG_FOUND=1
+    break
+  fi
+  echo "  Waiting for worker [ACK] log line (attempt $i/15)..."
+  sleep 1
+done
+
+if [ "$ACK_LOG_FOUND" -eq 1 ]; then
   echo "$WORKER_LOGS" | grep "\[ACK\]" | tail -n 2
   echo "  [OK] Worker processing & ACK log entry confirmed."
 else

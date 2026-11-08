@@ -1,3 +1,4 @@
+using Prometheus;
 using RecipeHub.BuildingBlocks.Audit;
 using RecipeHub.Recipe.Api;
 using RecipeHub.Recipe.Api.Swagger;
@@ -52,6 +53,13 @@ if (!string.IsNullOrWhiteSpace(redisConn))
 builder.Services.AddAuditActivityPublisher();
 
 var app = builder.Build();
+
+app.UseRouting();
+app.UseWhen(
+    context => !context.Request.Path.StartsWithSegments("/metrics")
+        && !context.Request.Path.StartsWithSegments("/health"),
+    branch => branch.UseHttpMetrics());
+app.MapMetrics().WithMetadata(new HttpMethodMetadata([HttpMethods.Get])).AllowAnonymous().ExcludeFromDescription();
 
 if (app.Environment.IsDevelopment())
 {

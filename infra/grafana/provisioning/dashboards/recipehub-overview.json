@@ -52,7 +52,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) AS active_users FROM identity_db.users WHERE status = 'active';",
+          "rawSql": "SELECT COUNT(*) AS active_users FROM identity_db.users WHERE is_active = TRUE;",
           "refId": "A"
         }
       ]
@@ -101,7 +101,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) AS published_versions FROM recipe_db.recipe_version WHERE version_status = 'published';",
+          "rawSql": "SELECT COUNT(*) AS published_versions FROM recipe_db.recipe_version WHERE status = 'published';",
           "refId": "A"
         }
       ]
@@ -225,7 +225,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT occurred_at_utc, event_type, actor_role, entity_type, entity_id FROM audit_db.audit_log ORDER BY occurred_at_utc DESC LIMIT 25;",
+          "rawSql": "SELECT occurred_at AS \"Thời gian\", action AS \"Hành động\", actor_name AS \"Người thực hiện\", actor_role AS \"Vai trò\", target_type AS \"Đối tượng\", summary AS \"Tóm tắt\" FROM audit_db.audit_log ORDER BY occurred_at DESC LIMIT 25;",
           "refId": "A"
         }
       ]

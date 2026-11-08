@@ -78,3 +78,9 @@
 }
 ```
 - Không bao giờ để rò rỉ StackTrace kỹ thuật hoặc thông tin kết nối CSDL ra response bên ngoài.
+
+## 4. Metrics vận hành
+
+- Gateway và năm API xuất `GET /metrics` định dạng Prometheus, ngoài `/api/v1/*`, không phải API nghiệp vụ và không đưa vào Swagger. Prometheus gọi trực tiếp từng service; Gateway không proxy metrics của service khác.
+- HTTP metrics dùng method/status và route template có số lượng giá trị hữu hạn; không gắn raw URL, UUID hay user vào label. Không tính scrape `/metrics` và probe `/health/*` vào lưu lượng nghiệp vụ.
+- Tách ba tín hiệu: scrape thành công, readiness HTTP và metric tài nguyên; một tín hiệu không thay thế hai tín hiệu còn lại. Cấu hình nguồn và giới hạn Docker Desktop nằm trong [README](../../../README.md#giám-sát-vận-hành-grafana--prometheus).
