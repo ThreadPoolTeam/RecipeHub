@@ -212,7 +212,6 @@ export default function ViewerRecipeDetailPage() {
 
       <header className="flex flex-col justify-between gap-6 border-b border-border pb-8 lg:flex-row lg:items-end">
         <div className="space-y-3">
-          <p className="text-xs text-muted-foreground">{recipe.code}</p>
           <h1 className="font-display text-h2 font-medium text-foreground sm:text-h1">{recipe.name}</h1>
           {recipe.description && <p className="max-w-2xl text-sm text-muted-foreground">{recipe.description}</p>}
           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
@@ -249,7 +248,7 @@ export default function ViewerRecipeDetailPage() {
           </div>
         </aside>
 
-        <main className="min-w-0 space-y-8">
+        <div className="min-w-0 space-y-8">
           <section aria-labelledby="ingredients-heading" className="space-y-5">
             <h2 id="ingredients-heading" className="font-display text-h3 font-medium">Định lượng nguyên liệu <span className="text-sm text-muted-foreground">({recipe.ingredients.length})</span></h2>
             <RecipeBatchScaler key={recipe.versionId ?? recipe.id} recipe={recipe} onScaled={setScaledIngredients} />
@@ -313,7 +312,7 @@ export default function ViewerRecipeDetailPage() {
               })}
             </div>
           </section>
-        </main>
+        </div>
       </div>
     </div>
   );
