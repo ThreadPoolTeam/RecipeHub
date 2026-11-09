@@ -29,7 +29,7 @@ export function MobileNavDrawer({ open, onClose, items, isLinkActive, onNavClick
   }, [open, onClose]);
   if (!open) return null;
   return <div className="fixed inset-0 z-50 flex md:hidden">
-    <div className="absolute inset-0 bg-foreground/45" onClick={onClose} />
+    <div className="absolute inset-0 bg-foreground opacity-[.45]" onClick={onClose} />
     <div ref={ref} role="dialog" aria-modal="true" aria-label="Menu điều hướng" className="relative flex h-full w-72 max-w-[85vw] flex-col border-r border-border bg-card shadow-lift">
       <div className="flex h-20 items-center justify-between border-b border-border px-4"><span className="font-semibold">RecipeHub Menu</span><button type="button" aria-label="Đóng menu" onClick={onClose} className="rounded-md p-2 hover:bg-secondary"><X className="h-5 w-5" strokeWidth={1.5} /></button></div>
       <nav aria-label="Điều hướng chính" className="flex-1 overflow-y-auto p-4">
