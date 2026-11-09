@@ -1,14 +1,6 @@
-/* RecipeHub Cinematic Landing & Warm Editorial Styles */
+/* RecipeHub landing styles */
 
 .landing {
-  --cinematic-bg: #0C0C0E;
-  --cinematic-fg: #F2F0EB;
-  --cinematic-muted: #9E9A90;
-  --cinematic-gold: #C9A84C;
-  --cinematic-gold-hover: #DEBF64;
-  --cinematic-surface: #151518;
-  --cinematic-border: rgba(242, 240, 235, 0.12);
-
   background-color: var(--color-background);
   color: var(--color-foreground);
   overflow-x: clip;
@@ -132,7 +124,7 @@
 
 .story-progress-dot.active {
   height: 24px;
-  background-color: var(--noir-gold);
+  background-color: var(--cinematic-gold);
   box-shadow: 0 0 10px rgba(201, 168, 76, 0.5);
 }
 /* Reduced Motion Fallback */

@@ -1,5 +1,4 @@
 import type { Config } from "tailwindcss";
-import daisyui from "daisyui";
 
 const config: Config = {
   content: [
@@ -21,19 +20,16 @@ const config: Config = {
         sidebar: "var(--color-sidebar)",
         primary: { DEFAULT: "var(--color-primary)", foreground: "var(--color-primary-foreground)", soft: "var(--color-primary-soft)" },
         secondary: { DEFAULT: "var(--color-secondary)", foreground: "var(--color-secondary-foreground)" },
-        muted: { DEFAULT: "var(--color-muted)", foreground: "var(--color-muted-foreground)", soft: "var(--muted-soft)" },
-        accent: { DEFAULT: "var(--color-accent)", foreground: "var(--color-accent-foreground)", hover: "var(--accent-hover)" },
-        border: { DEFAULT: "var(--color-border)", strong: "var(--border-strong)" },
+        muted: { DEFAULT: "var(--color-muted)", foreground: "var(--color-muted-foreground)" },
+        accent: { DEFAULT: "var(--color-accent)", foreground: "var(--color-accent-foreground)" },
+        border: "var(--color-border)",
         input: "var(--color-input)",
         ring: "var(--color-ring)",
         ink: { DEFAULT: "var(--color-ink)", foreground: "var(--color-ink-foreground)" },
         success: { DEFAULT: "var(--color-success)", soft: "var(--color-success-soft)" },
         info: { DEFAULT: "var(--color-info)", soft: "var(--color-info-soft)" },
         destructive: { DEFAULT: "var(--color-destructive)", foreground: "var(--color-destructive-foreground)", soft: "var(--color-destructive-soft)", tint: "var(--color-destructive-tint)", border: "var(--color-destructive-border)" },
-        canvas: "var(--canvas)",
-        surface: { DEFAULT: "var(--surface)", soft: "var(--surface-soft)", hover: "var(--surface-hover)" },
-        action: { DEFAULT: "var(--action)", hover: "var(--action-hover)" },
-        cinematic: { bg: "var(--cinematic-bg)", ink: "var(--cinematic-ink)", muted: "var(--cinematic-muted)", border: "var(--cinematic-border)", gold: "var(--cinematic-gold)", "gold-hover": "var(--cinematic-gold-hover)" },
+        cinematic: { bg: "var(--cinematic-bg)", ink: "var(--cinematic-ink)", muted: "var(--cinematic-muted)", border: "var(--cinematic-border)", gold: "var(--cinematic-gold)" },
       },
       borderRadius: { sm: "var(--radius-sm)", md: "var(--radius-md)", lg: "var(--radius-lg)", xl: "var(--radius-xl)", "2xl": "var(--radius-2xl)" },
       boxShadow: { soft: "var(--shadow-soft)", lift: "var(--shadow-lift)", control: "var(--shadow-control)", inset: "var(--shadow-inset)", header: "var(--shadow-header)", shell: "var(--shadow-shell)" },
@@ -45,7 +41,6 @@ const config: Config = {
       },
     },
   },
-  plugins: [daisyui],
-  daisyui: { themes: false, logs: false },
+  plugins: [],
 };
 export default config;

@@ -5,6 +5,7 @@ import { Plus, Ruler } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { Button, TextInput, Select, TextArea, Alert, SearchInput } from '@/components/workspace/fields';
 import { Dialog } from '@/components/workspace/dialog';
+import { Switch } from '@/components/workspace/switch';
 import { DataTable } from '@/components/workspace/data-table';
 import { UnitConversionModal } from '@/components/shared/UnitConversionModal';
 import { CatalogPageHeader, CodeChip, EditIconButton, StateToggle } from '@/components/workspace/catalog-ui';
@@ -470,7 +471,7 @@ export default function RndCataloguePage() {
               />
               <fieldset className="space-y-3 rounded-lg border border-border bg-secondary p-4">
                 <legend className="px-1 text-sm font-semibold text-foreground">Quy đổi</legend>
-                <label className="flex items-center justify-between gap-4 cursor-pointer">
+                <div className="flex items-center justify-between gap-4">
                   <span>
                     <span className="block text-sm font-semibold text-foreground">Là đơn vị gốc</span>
                     <span className="mt-0.5 block text-xs text-muted-foreground">
@@ -479,9 +480,8 @@ export default function RndCataloguePage() {
                         : 'Mỗi đại lượng chỉ có một đơn vị gốc.'}
                     </span>
                   </span>
-                  <input
-                    type="checkbox"
-                    className="toggle toggle-sm"
+                  <Switch
+                    aria-label="Là đơn vị gốc"
                     checked={unitIsBase}
                     disabled={Boolean(selectedCategoryBase)}
                     onChange={(event) => {
@@ -489,7 +489,7 @@ export default function RndCataloguePage() {
                       if (event.target.checked) setUnitFactorToBase(1);
                     }}
                   />
-                </label>
+                </div>
 
                 <div className={`grid grid-cols-1 gap-3 items-end ${unitIsBase ? '' : 'sm:grid-cols-2'}`}>
                   {!unitIsBase && (

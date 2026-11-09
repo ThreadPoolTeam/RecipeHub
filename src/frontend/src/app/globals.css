@@ -60,47 +60,12 @@
   --role-page-bg: var(--color-background);
   --role-density: 24px;
   --role-control-height: 36px;
+  /* Dark cinematic palette: only for the landing ScrollFrameStory, an intentional exception to the light token set. */
   --cinematic-bg: #0C0C0E;
   --cinematic-ink: #F2F0EB;
   --cinematic-muted: #9E9A90;
   --cinematic-border: rgba(242, 240, 235, 0.12);
   --cinematic-gold: #C9A84C;
-  --cinematic-gold-hover: #DEBF64;
-
-  /* Temporary aliases for pages awaiting the Figma refactor. */
-  --background: var(--color-background);
-  --foreground: var(--color-foreground);
-  --canvas: var(--color-background);
-  --surface: var(--color-card);
-  --surface-soft: var(--color-secondary);
-  --surface-hover: var(--color-accent);
-  --border: var(--color-border);
-  --border-strong: var(--color-input);
-  --ink: var(--color-foreground);
-  --muted: var(--color-muted-foreground);
-  --muted-soft: var(--color-muted-foreground);
-  --accent: var(--color-primary);
-  --accent-hover: var(--color-primary);
-  --action: var(--color-primary);
-  --action-hover: var(--color-primary);
-  --color-canvas: var(--color-background);
-  --color-surface: var(--color-card);
-  --color-action: var(--color-primary);
-  --status-draft-fg: var(--color-info);
-  --status-draft-bg: var(--color-info-soft);
-  --status-draft-border: var(--color-info);
-  --status-pending-fg: var(--color-info);
-  --status-pending-bg: var(--color-info-soft);
-  --status-pending-border: var(--color-info);
-  --status-approved-fg: var(--color-success);
-  --status-approved-bg: var(--color-success-soft);
-  --status-approved-border: var(--color-success);
-  --status-returned-fg: var(--color-destructive);
-  --status-returned-bg: var(--color-destructive-soft);
-  --status-returned-border: var(--color-destructive-border);
-  --status-archived-fg: var(--color-muted-foreground);
-  --status-archived-bg: var(--color-secondary);
-  --status-archived-border: var(--color-border);
 }
 
 [data-role="rnd"] {
@@ -128,13 +93,6 @@ body {
   font-family: 'Figtree Variable', 'Google Sans', system-ui, sans-serif;
   background-color: var(--color-background);
   color: var(--color-foreground);
-}
-
-.landing-root {
-  font-family: 'Figtree Variable', 'Google Sans', system-ui, sans-serif;
-  background-color: var(--canvas);
-  color: var(--ink);
-  min-height: 100vh;
 }
 
 @media (prefers-reduced-motion: reduce) {
