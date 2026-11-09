@@ -54,6 +54,15 @@ RecipeHub/
 - **Node.js 20+ & npm**
 - **Docker & Docker Compose** (Nếu chạy qua container)
 
+### CodeGraph tự động trong OMP
+
+Hook project `.omp/hooks/pre/codegraph-sync.ts` được nạp khi mở phiên OMP mới tại root repo. Hook chạy `codegraph sync --quiet` khi mở phiên và khi agent kết thúc; chỉ chạy nếu cwd trùng root chứa hook, có `.git` và thư mục `.codegraph/`. Không tự tạo index, rebuild hoặc unlock; không sửa cấu hình global.
+
+- Cần CLI `codegraph` trên `PATH`. Checkout chưa có index: chủ động chạy `codegraph init .` một lần tại root repo.
+- Các lượt sync đồng thời trong cùng tiến trình dùng chung một lượt đang chạy. Sync lỗi hoặc quá 25 giây sẽ cảnh báo; thử `codegraph sync .` để xem lỗi chi tiết. Các tiến trình OMP khác nhau vẫn phụ thuộc khóa của CodeGraph.
+- Nếu sửa source ngoài OMP trong phiên, chạy `codegraph sync .` trước truy vấn kế tiếp. Hook không chạy trước từng truy vấn MCP.
+- Để tắt riêng hook, chuyển file ra ngoài `.omp/hooks/pre/` và `.omp/hooks/post/`, rồi mở phiên mới.
+
 ### Khởi chạy bằng Docker Compose (Khuyên dùng)
 1. Tạo file môi trường từ mẫu:
    ```bash

@@ -38,3 +38,5 @@ Thumbs.db
 # Local AI session artifacts
 .superpowers/
 .claude/
+.commandcode/
+docs/screenshots/
