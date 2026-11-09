@@ -181,8 +181,8 @@ export default function EditIngredientPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-[#706E68]">
-        <Loader2 className="w-8 h-8 animate-spin text-[#B47820] mb-3" />
+      <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+        <Loader2 className="mb-3 h-8 w-8 animate-spin text-primary" />
         <p className="text-sm">Đang tải thông tin nguyên liệu...</p>
       </div>
     );
