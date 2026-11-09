@@ -1,21 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import {
-  UploadCloud,
-  Camera,
-  Sparkles,
-  AlertTriangle,
-  Eye,
-  Trash2,
-  CheckCircle2,
-  ShieldAlert,
-} from 'lucide-react';
 import { MediaAsset, MediaSource, MediaState, MediaReferenceInfo } from '@/lib/demo/types';
 import { useDemo } from '@/lib/demo/provider';
-import { MediaSourceBadge, MediaStateBadge } from './status-badge';
-import { Button, TextInput, Alert } from './fields';
-import { Dialog } from './dialog';
+import { Alert } from './fields';
+import { MediaControls } from './media-controls';
+import { MediaGrid } from './media-grid';
+import { MediaDetail } from './media-detail';
 interface MediaLibraryProps {
   mode?: 'picker' | 'manage';
   selectedMediaId?: string;
@@ -198,316 +189,23 @@ export function MediaLibrary({
 
   return (
     <div className="space-y-6">
-      {errorMsg && (
-        <Alert variant="error" title="Thông báo lỗi">
-          {errorMsg}
-        </Alert>
-      )}
-      {successMsg && (
-        <Alert variant="success" title="Thành công">
-          {successMsg}
-        </Alert>
-      )}
-
-      {/* Upload Zone */}
-      <div className="p-4 bg-white border border-[#E8E2D9] rounded-xl space-y-3 shadow-xs">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h4 className="text-sm font-semibold text-[#1A1917] flex items-center gap-2">
-              <UploadCloud className="w-4 h-4 text-[#B47820]" /> Tải lên tư liệu hình ảnh SOP &amp; R&amp;D
-            </h4>
-            <p className="text-xs text-[#706E68] mt-0.5">
-              Hỗ trợ JPG, PNG, WebP, SVG. Giới hạn tối đa 5 MB/tệp.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-[#F5F0E8] px-2.5 py-1 rounded-md border border-[#E8E2D9] text-xs text-[#706E68]">
-              <span>Nguồn:</span>
-              <select
-                value={uploadSource}
-                onChange={(e) => setUploadSource(e.target.value as MediaSource)}
-                className="bg-transparent text-[#1A1917] font-medium focus:outline-none"
-              >
-                <option value="Real">Ảnh chụp SOP thực tế</option>
-                <option value="AiIllustration">Concept AI (Minh họa)</option>
-              </select>
-            </div>
-
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileUpload}
-              accept="image/jpeg,image/png,image/webp,image/svg+xml"
-              className="hidden"
-              id="media-file-upload-input"
-            />
-            <Button
-              variant="gold"
-              size="sm"
-              isLoading={isUploading}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              Chọn tệp từ máy...
-            </Button>
-          </div>
-        </div>
+      {errorMsg && <Alert variant="error" title="Thông báo lỗi">{errorMsg}</Alert>}
+      {successMsg && <Alert variant="success" title="Thành công">{successMsg}</Alert>}
+      <MediaControls
+        mediaList={mediaList} filterSource={filterSource} setFilterSource={setFilterSource}
+        filterState={filterState} setFilterState={setFilterState} uploadSource={uploadSource}
+        setUploadSource={setUploadSource} fileInputRef={fileInputRef}
+        handleFileUpload={handleFileUpload} isUploading={isUploading}
+      />
+      <div className={mode === 'manage' ? 'grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]' : ''}>
+        <MediaGrid items={filteredMedia} loading={loading} mode={mode} selectedMediaId={selectedMediaId}
+          inspectingMedia={inspectingMedia} previewUrls={previewUrls} isRetrying={isRetrying}
+          onSelect={onSelect} onInspect={handleInspect} onRetry={handleRetryDelete} />
+        {mode === 'manage' && <MediaDetail item={inspectingMedia} refs={inspectRefs}
+          previewUrl={inspectingMedia ? previewUrls[inspectingMedia.id] : undefined}
+          allowDelete={allowDelete} isDeleting={isDeleting} isRetrying={isRetrying}
+          onClose={() => setInspectingMedia(null)} onDelete={handleDelete} onRetry={handleRetryDelete} />}
       </div>
-      {/* Filter Tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E8E2D9] pb-3">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setFilterSource('all')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
-              filterSource === 'all'
-                ? 'bg-[#1A1917] text-white font-semibold'
-                : 'bg-white text-[#706E68] border border-[#E8E2D9] hover:bg-[#F5F0E8]'
-            }`}
-          >
-            Tất cả ({mediaList.length})
-          </button>
-          <button
-            onClick={() => setFilterSource('Real')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
-              filterSource === 'Real'
-                ? 'bg-[#1A1917] text-white font-semibold'
-                : 'bg-white text-[#706E68] border border-[#E8E2D9] hover:bg-[#F5F0E8]'
-            }`}
-          >
-            <Camera className="w-3.5 h-3.5 text-[#B47820]" />
-            <span>Thực tế ({mediaList.filter((m) => m.source === 'Real').length})</span>
-          </button>
-          <button
-            onClick={() => setFilterSource('AiIllustration')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
-              filterSource === 'AiIllustration'
-                ? 'bg-[#1A1917] text-white font-semibold'
-                : 'bg-white text-[#706E68] border border-[#E8E2D9] hover:bg-[#F5F0E8]'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-[#B47820]" />
-            <span>AI Concept ({mediaList.filter((m) => m.source === 'AiIllustration').length})</span>
-          </button>
-        </div>
-
-        {/* State filter */}
-        <div className="flex items-center gap-2 text-xs text-[#706E68]">
-          <span>Trạng thái:</span>
-          <select
-            value={filterState}
-            onChange={(e) => setFilterState(e.target.value as 'all' | MediaState)}
-            className="bg-white border border-[#E8E2D9] text-[#1A1917] rounded-md px-2 py-1 shadow-xs"
-          >
-            <option value="all">Tất cả trạng thái</option>
-            <option value="Active">Đang hoạt động</option>
-            <option value="DeleteFailed">Lỗi xóa</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Media Grid */}
-      {loading ? (
-        <div className="p-12 text-center text-[#706E68]">
-          <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-[#B47820] mb-2"></div>
-          <p className="text-xs">Đang tải danh mục tư liệu hình ảnh...</p>
-        </div>
-      ) : filteredMedia.length === 0 ? (
-        <div className="p-12 text-center text-[#706E68] bg-white border border-[#E8E2D9] rounded-2xl">
-          Không có tệp hình ảnh nào trong mục này.
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {filteredMedia.map((item) => {
-            const isSelected = selectedMediaId === item.id;
-            const previewUrl = previewUrls[item.id];
-
-            return (
-              <div
-                key={item.id}
-                className={`group relative bg-white border ${
-                  isSelected ? 'border-[#B47820] ring-2 ring-[#B47820]/30' : 'border-[#E8E2D9] hover:border-[#B47820]'
-                } rounded-xl overflow-hidden flex flex-col transition shadow-xs hover:shadow-sm`}
-              >
-                {/* Thumbnail Preview */}
-                <div className="aspect-video w-full bg-[#F5F0E8] flex items-center justify-center overflow-hidden relative">
-                  {previewUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={previewUrl}
-                      alt={item.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <span className="text-[#8C887F] text-xs">Không có ảnh</span>
-                  )}
-                  <div className="absolute top-1.5 left-1.5 flex flex-col gap-1">
-                    <MediaSourceBadge source={item.source} />
-                  </div>
-                  {item.state === 'DeleteFailed' && (
-                    <div className="absolute bottom-1.5 left-1.5">
-                      <MediaStateBadge state={item.state} />
-                    </div>
-                  )}
-                </div>
-
-                {/* Details */}
-                <div className="p-2.5 flex-1 flex flex-col justify-between space-y-2">
-                  <div>
-                    <h5 className="text-xs font-semibold text-[#1A1917] truncate" title={item.name}>
-                      {item.name}
-                    </h5>
-                    <p className="text-[10px] text-[#706E68] mt-0.5">
-                      {(item.sizeBytes / 1024).toFixed(1)} KB • {item.uploadedBy.split('@')[0] || 'Chưa cập nhật'}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 pt-1">
-                    {mode === 'picker' ? (
-                      <Button
-                        variant={isSelected ? 'gold' : 'secondary'}
-                        size="sm"
-                        className="w-full text-[11px]"
-                        onClick={() => onSelect && onSelect(item)}
-                      >
-                        {isSelected ? '✓ Đã chọn' : 'Chọn ảnh'}
-                      </Button>
-                    ) : (
-                      <>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="flex-1 text-[11px]"
-                          onClick={() => handleInspect(item)}
-                        >
-                          <Eye className="w-3 h-3 mr-1" /> Chi tiết
-                        </Button>
-                        {item.state === 'DeleteFailed' && (
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            className="text-[10px]"
-                            isLoading={isRetrying}
-                            onClick={() => handleRetryDelete(item)}
-                          >
-                            Thử lại
-                          </Button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-      {/* Inspect & Delete Dialog */}
-      {inspectingMedia && (
-        <Dialog
-          isOpen={true}
-          onClose={() => setInspectingMedia(null)}
-          title={`Tư liệu: ${inspectingMedia.name}`}
-          description={`Người tải lên: ${inspectingMedia.uploadedBy || 'Chưa cập nhật'}`}
-        >
-          <div className="space-y-4">
-            <div className="aspect-video w-full rounded-md overflow-hidden bg-[#F5F0E8] flex items-center justify-center border border-[#E8E2D9]">
-              {previewUrls[inspectingMedia.id] && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={previewUrls[inspectingMedia.id]}
-                  alt={inspectingMedia.name}
-                  className="max-h-full max-w-full object-contain"
-                />
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-xs bg-[#FAF9F5] p-3 rounded-md border border-[#E8E2D9] text-[#1A1917]">
-              <div>
-                <span className="text-[#706E68]">Phân loại:</span>{' '}
-                <span className="font-medium text-[#1A1917]">{inspectingMedia.source}</span>
-              </div>
-              <div>
-                <span className="text-[#706E68]">Trạng thái:</span>{' '}
-                <span className="font-medium text-[#1A1917]">{inspectingMedia.state}</span>
-              </div>
-              <div>
-                <span className="text-[#706E68]">Kích thước:</span>{' '}
-                <span className="font-medium text-[#1A1917]">{(inspectingMedia.sizeBytes / 1024).toFixed(1)} KB</span>
-              </div>
-              <div>
-                <span className="text-[#706E68]">Định dạng:</span>{' '}
-                <span className="font-medium text-[#1A1917]">{inspectingMedia.mimeType}</span>
-              </div>
-            </div>
-
-            {/* Reference Inspection */}
-            <div className="space-y-2 border-t border-[#E8E2D9] pt-3">
-              <h5 className="text-xs font-semibold uppercase tracking-wider text-[#706E68]">
-                Ràng buộc tham chiếu công thức &amp; SOP:
-              </h5>
-              {inspectRefs ? (
-                inspectRefs.recipes.length === 0 && inspectRefs.documents.length === 0 ? (
-                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-md text-xs text-emerald-800 flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Không có công thức nào đang sử dụng tệp này. Có thể xóa an toàn khỏi hệ thống.</span>
-                  </div>
-                ) : (
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-md space-y-1.5 text-xs">
-                    <div className="text-amber-900 font-semibold flex items-center gap-1.5">
-                      <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
-                      <span>Đang được tham chiếu ({inspectRefs.recipes.length} công thức, {inspectRefs.documents.length} tài liệu). Hệ thống sẽ chặn xóa!</span>
-                    </div>
-                    <ul className="list-disc list-inside space-y-0.5 text-amber-800 pl-1 max-h-32 overflow-y-auto">
-                      {inspectRefs.recipes.map((r, idx) => (
-                        <li key={idx}>
-                          <span className="font-semibold">{r.recipeCode}</span> ({r.versionLabel}) — {r.location}
-                        </li>
-                      ))}
-                      {inspectRefs.documents.map((d, idx) => (
-                        <li key={`doc-${idx}`}>
-                          Tài liệu phát hành của {d.recipeCode} ({d.versionLabel})
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )
-              ) : (
-                <p className="text-xs text-[#706E68]">Đang kiểm tra ràng buộc tham chiếu...</p>
-              )}
-            </div>
-
-            {allowDelete && (
-              <div className="pt-3 border-t border-[#E8E2D9] flex justify-between items-center">
-                {inspectingMedia.state === 'DeleteFailed' ? (
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    isLoading={isRetrying}
-                    onClick={() => handleRetryDelete(inspectingMedia)}
-                  >
-                    Thử lại xóa ảnh
-                  </Button>
-                ) : (
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    isLoading={isDeleting}
-                    disabled={Boolean(inspectRefs && (inspectRefs.recipes.length > 0 || inspectRefs.documents.length > 0))}
-                    onClick={handleDelete}
-                  >
-                    <Trash2 className="w-3.5 h-3.5 mr-1" /> Xóa tệp này
-                  </Button>
-                )}
-                <span className="text-[11px] text-[#706E68]">
-                  {inspectRefs && (inspectRefs.recipes.length > 0 || inspectRefs.documents.length > 0)
-                    ? 'Bị khóa do có tham chiếu'
-                    : 'Hợp lệ để xóa'}
-                </span>
-              </div>
-            )}
-          </div>
-        </Dialog>
-      )}
     </div>
   );
 }
