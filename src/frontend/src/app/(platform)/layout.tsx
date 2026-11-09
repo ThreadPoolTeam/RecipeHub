@@ -3,6 +3,7 @@
 import React from 'react';
 import { DemoProvider } from '@/lib/demo/provider';
 import { WorkspaceShell } from '@/components/workspace/workspace-shell';
+import { ToastProvider } from '@/components/workspace/toast';
 
 export default function PlatformLayout({
   children,
@@ -11,7 +12,9 @@ export default function PlatformLayout({
 }>) {
   return (
     <DemoProvider>
-      <WorkspaceShell>{children}</WorkspaceShell>
+      <ToastProvider>
+        <WorkspaceShell>{children}</WorkspaceShell>
+      </ToastProvider>
     </DemoProvider>
   );
 }

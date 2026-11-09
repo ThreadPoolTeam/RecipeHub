@@ -13,40 +13,21 @@ export default function ForbiddenPage() {
   const { session, logout } = useDemo();
 
   return (
-    <div className="w-full max-w-md bg-white border border-[#E8E2D9] rounded-xl p-8 shadow-xs text-center space-y-6">
-      <div className="w-12 h-12 rounded-full bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto">
-        <ShieldAlert className="w-6 h-6" />
-      </div>
-
+    <div className="w-full max-w-lg space-y-8 text-center">
+      <ShieldAlert aria-hidden="true" className="mx-auto h-7 w-7 text-primary" strokeWidth={1.5} />
       <div className="space-y-2">
-        <h2 className="text-xl font-bold text-[#1A1917]">
-          403 — Không Đủ Quyền Truy Cập
-        </h2>
-        <p className="text-xs text-[#706E68] leading-relaxed">
-          Tài khoản hiện tại của bạn{' '}
-          {session ? (
-            <strong className="text-[#1A1917]">({session.email})</strong>
-          ) : (
-            ''
-          )}{' '}
-          không có quyền truy cập vào đường dẫn hoặc tài nguyên nghiệp vụ được yêu cầu.
+        <h1 className="font-display text-3xl font-medium text-foreground sm:text-[40px] sm:leading-[48px]">
+          Không đủ quyền truy cập
+        </h1>
+        <p className="text-sm leading-6 text-muted-foreground">
+          Tài khoản của bạn không có quyền xem trang này. Hãy quay về khu vực làm việc của bạn hoặc liên hệ quản trị viên.
         </p>
       </div>
-
-      <div className="p-3 bg-[#FAF9F5] rounded-lg border border-[#E8E2D9] text-xs text-[#706E68] text-left space-y-1">
-        <div>
-          Vai trò của bạn:{' '}
-          <span className="font-semibold text-[#1A1917] uppercase">
-            {session?.role || 'Chưa xác định'}
-          </span>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-2 pt-2">
+      <div className="flex flex-col justify-center gap-3 sm:flex-row">
         {session && (
-          <Link href={getDefaultDashboardForRole(session.role)} className="w-full">
-            <Button variant="gold" size="md" className="w-full">
-              Về Không Gian Của Bạn ({session.role.toUpperCase()})
+          <Link href={getDefaultDashboardForRole(session.role)}>
+            <Button variant="gold" size="md">
+              Về khu vực làm việc
             </Button>
           </Link>
         )}
@@ -54,13 +35,13 @@ export default function ForbiddenPage() {
         <Button
           variant="secondary"
           size="md"
-          className="w-full"
+          className="w-full sm:w-auto"
           onClick={async () => {
             await logout();
             router.push('/login');
           }}
         >
-          Đăng Xuất &amp; Đổi Tài Khoản Khác
+          Đăng nhập tài khoản khác
         </Button>
       </div>
     </div>
