@@ -13,7 +13,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" className="scroll-smooth">
-      <body className="antialiased min-h-screen bg-[#FAF9F5] text-[#1A1917]">
+      <body className="antialiased min-h-screen bg-background text-foreground font-sans">
 
         {children}
       </body>

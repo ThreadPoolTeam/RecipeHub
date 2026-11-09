@@ -1,181 +1,92 @@
-# RecipeHub Warm Editorial Design System
+# RecipeHub Web Design System — Figma
 
-## 1. Overview & Scope
+## 1. Phạm vi
 
-Hệ thống thiết kế Warm Editorial của RecipeHub mang phong cách ấn phẩm biên tập ấm áp, thanh lịch và chuẩn mực cho hệ thống quản lý & nghiên cứu công thức đồ uống (Beverage R&D). Quy chuẩn này áp dụng cho ứng dụng Web: landing, auth và các workspace R&D, Viewer, Admin; thay thế NoirLuxe cũ. Mobile dùng bộ chuẩn riêng tại `src/mobile/DESIGN.md`.
+Chuẩn giao diện web landing, auth và workspace R&D, Admin, Viewer theo Figma `9gCw3BzwxSGGLt7S1Mcya9`. Mobile theo `src/mobile/DESIGN.md`. Các primitive và shell cũ được chuyển đổi theo từng phase; token cũ là alias tạm thời, không phải chuẩn mới.
 
-### Cinematic Exception (Ngoại lệ duy nhất)
-Khu vực **ScrollFrameStory** trên Landing page (`#story`) là ngoại lệ duy nhất được phép duy trì nền tối điện ảnh (`#0C0C0E`) và chữ sáng (`#F2F0EB`) cùng overlay tương ứng để bảo đảm trải nghiệm trình diễn khung hình phim nghệ thuật (TVC Phê La). Toàn bộ các phần còn lại của Landing page (từ sau story trở xuống bao gồm #workspace, #features, #cta, footer) và thanh điều hướng (khi cuộn qua story) BẮT BUỘC tuân thủ chuẩn Warm Editorial sáng.
+## 2. Màu ngữ nghĩa
 
----
-
-## 2. Semantic Color Tokens
-
-Hệ thống màu sử dụng biến số ngữ nghĩa (semantic tokens), tách bạch giữa màu thương hiệu (accent), màu hành động tương phản cao (action) và màu bề mặt/văn bản.
-
-| Semantic Token | Hex / Value | Vai trò & Quy tắc sử dụng |
+| Token | Giá trị | Sử dụng |
 |---|---|---|
-| `--color-canvas` | `#FAF9F5` | Nền canvas toàn app và landing phía dưới story track. |
-| `--color-surface` | `#FFFFFF` | Nền chính cho card, panel, modal dialog, form inputs, data table. |
-| `--color-surface-soft` | `#F5F0E8` | Nhóm nội dung phụ, sidebar nav item hover, code badge background. |
-| `--color-surface-hover` | `#ECE6DA` | Trạng thái hover của surface-soft hoặc interactive rows. |
-| `--color-border` | `#E8E2D9` | Đường viền ngăn cách trang trí, divider giữa các khối. |
-| `--color-border-strong`| `#D5CEBF` | Viền input, controls, trạng thái phân định rõ ràng. |
-| `--color-ink` | `#1A1917` | Màu chữ chính, tiêu đề, nhãn chính (contrast > 15:1 trên canvas). |
-| `--color-muted` | `#706E68` | Chữ phụ, mô tả phụ, metadata (contrast > 4.8:1 trên canvas/surface). |
-| `--color-muted-soft` | `#8C887F` | Timestamp, icon minh họa phụ (không dùng cho văn bản bắt buộc đọc). |
-| `--color-accent` | `#B47820` / `#C9A84C` | Điểm nhấn thương hiệu (vàng mật ong / caramel cà phê), icon highlight, badge brand. |
-| `--color-action` | `#B47820` | Nút hành động chính (primary action) đi kèm chữ trắng `#FFFFFF` hoặc ink `#1A1917` (hover `#9A6416`). |
-| `--color-action-hover`| `#9A6416` | Hover state của action chính. |
-| `--cinematic-bg` | `#0C0C0E` | Riêng biệt cho Story canvas và navbar overlay khi đang ở Story. |
-| `--cinematic-ink` | `#F2F0EB` | Chữ hiển thị trên nền cinematic tối. |
-| `--cinematic-muted` | `#9E9A90` | Chữ phụ trên nền cinematic tối. |
+| background, card, popover, sidebar | #FFFFFF | Nền trang và bề mặt |
+| foreground, card-foreground, secondary-foreground | #1B1B1B | Nội dung chính |
+| primary, ring | #ED4061 | Hành động, focus |
+| primary-foreground | #FFFFFF | Chữ trên primary |
+| primary-soft, accent | #FFFCFC | Nền nhấn, hover |
+| accent-foreground | #ED4061 | Chữ trên accent |
+| secondary, muted | #FAFAFA | Bề mặt phụ |
+| muted-foreground | #606060 | Chữ phụ |
+| border, input | #E6E6E6 | Viền và trường nhập |
+| ink / ink-foreground | #202123 / #FCFCFC | Hành động Admin |
+| success / success-soft | #2F6633 / #E4F8E4 | Thành công |
+| info / info-soft | #3F55BA / #EAF0FF | Thông tin, bản nháp |
+| destructive / foreground / soft / tint / border | #C83B2C / #FCFCFC / #FAEBEA / #FCF5F4 / #EFC4C0 | Lỗi, xóa |
 
-### Semantic Status Tokens (Foreground / Background / Border)
-Trạng thái nghiệp vụ luôn kết hợp cả văn bản, biểu tượng (icon) và màu sắc rõ ràng (không dựa duy nhất vào màu sắc):
+Figma trích xuất accent gần trắng #FFFCFC; dùng làm hover tint, cần kiểm tra trực tiếp khi có Figma. Không phân biệt trạng thái chỉ bằng màu; thêm nhãn và icon. Draft dùng info, Published dùng success, Archived dùng secondary/muted-foreground, lỗi dùng destructive.
 
-- **Draft (Bản nháp):** fg `#9A3412` (amber-800), bg `#FFF7ED` (orange-50), border `#FED7AA` (orange-200) + Icon `Clock` / `FileText`.
-- **Pending (Chờ duyệt):** fg `#1E40AF` (blue-800), bg `#EFF6FF` (blue-50), border `#BFDBFE` (blue-200) + Icon `Clock` / `CheckSquare`.
-- **Approved (Đã duyệt):** fg `#166534` (green-800), bg `#F0FDF4` (green-50), border `#BBF7D0` (green-200) + Icon `CheckCircle2`.
-- **Returned / Failed (Từ chối / Lỗi):** fg `#991B1B` (red-800), bg `#FEF2F2` (red-50), border `#FECACA` (red-200) + Icon `AlertTriangle` / `RotateCcw`.
-- **Archived (Lưu trữ):** fg `#475569` (slate-700), bg `#F8FAFC` (slate-50), border `#E2E8F0` (slate-200) + Icon `Archive`.
+### Role skin
 
----
+| Role | Nền trang | Accent | Density | Control height |
+|---|---|---|---|---|
+| rnd | #FFFFFF | primary | 24px | 36px |
+| admin | #FAFAFA | ink | 28px | 40px |
+| viewer | #FFFCFC | primary | 32px | 44px |
 
-## 3. Typography & Vietnamese Localization
+Shell đặt `data-role`, dùng `--role-page-bg`, `--role-accent`, `--role-density`, `--role-control-height`. Không thay đổi role guard hoặc điều hướng nghiệp vụ.
 
-- **Font Family:**
-  - **Font chính toàn hệ thống:** **Google Sans** local (`'Google Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`) áp dụng cho toàn bộ Landing, Auth, và toàn bộ Không gian làm việc (Workspace, Dashboard, Modal, Forms). Đã nhúng sẵn file font local WOFF2 với đầy đủ subset tiếng Việt (U+0102-0103, U+0110-0111, U+1EA0-1EF9,...).
-  - Code / Identifier / Đơn vị đo: Monospace (`ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`) kết hợp thuộc tính `tabular-nums` cho số liệu định lượng (gram, ml, độ Brix, nhiệt độ).
-- **Scale:**
-  - `Display / Hero`: `clamp(2rem, 5vw, 3.5rem)` — Bold 700, leading 1.15.
-  - `h1`: 24px–30px — Bold 700, leading 1.25.
-  - `h2`: 20px–24px — Bold 700, leading 1.3.
-  - `h3`: 16px–18px — Bold 600, leading 1.4.
-  - `body`: 14px–15px — Regular 400, leading 1.6.
-  - `small / caption`: 12px–13px — Regular 400 / Medium 500, leading 1.5.
-  - `tiny`: 10px–11px — Medium 500, tracking wide, uppercase cho badges.
-- **Quy tắc tiếng Việt:**
-  - Kiểm tra kỹ các chuỗi có dấu mũ, dấu móc tổ hợp như: "đến công thức chuẩn hóa", "Định lượng", "Phê duyệt", "Khám phá quy trình pha chế".
-  - Giữ khoảng cách dòng `leading-normal` hoặc `leading-relaxed` để tránh dính dấu thanh tiếng Việt vào dòng phía trên.
+## 3. Typography và tiếng Việt
 
----
+Outfit variable cho display, heading, chỉ số; Figtree variable cho nội dung và điều khiển. Hai font thiếu glyph tiếng Việt như ấ, ệ, ừ, ỹ; chữ có dấu chồng dùng Google Sans local làm fallback. Giữ khoảng cách dòng đủ thoáng. Tracking mặc định 0; eyebrow uppercase tracking .06em. Số đo dùng tabular numbers.
 
-## 4. Spacing, Layout & Elevation
+| Kiểu | Font / weight | Cỡ / dòng |
+|---|---|---|
+| Hero | Outfit 500 | 60 / 63px |
+| H1 / H2 / H3 | Outfit 500 | 40 / 48, 32 / 40, 24 / 32px |
+| Card / panel | Outfit 500 | 19 / 26, 18 / 28px |
+| Stat | Outfit 400 | 30 / 36px |
+| Body lớn / thường / nhỏ | Figtree 400 | 16 / 24, 14 / 20, 12 / 16px |
+| Button / button nhỏ | Figtree 600 | 14 / 20, 12 / 16px |
+| Field / pill / eyebrow | Figtree 500 | 12 / 16, 11 / 16, 11 / 16px |
+| Nav / nav active / table head | Figtree 400 / 600 / 500 | 14 / 20, 14 / 20, 12 / 16px |
 
-- **Thước đo cơ sở:** Bội số 4px (4px, 8px, 12px, 16px, 24px, 32px, 48px, 64px).
-- **Bo góc (Border Radius & Apple Geometry):**
-  - **Level 1 — Containers, Surface Cards & Data Tables (`rounded-2xl` / 16px):** Vỏ bọc thanh toolbar lọc, thẻ Card chính, khung bao `DataTable`, banner đầu trang, dialog modals. Viền hairline mảnh `1px solid #E8E2D9`.
-  - **Level 2 — Nested Cards, Stat Boxes & Form Controls (`rounded-xl` / 12px):** Ô chỉ số thống kê (stat boxes lồng trong trang), sub-panels nội dung con, `TextInput`, `Select`, `TextArea`.
-  - **Level 3 — Small Action Items & Thumbnails (`rounded-lg` / 8px):** Nút icon thao tác nhỏ (`w-8 h-8`), thumbnail media xem trước, tag mã code nhỏ.
-  - **Level 4 — Apple Pills (`rounded-full` / 9999px):** `Button` (Action, Secondary, Ghost, Danger), `SearchInput`, status badges, role badges, filter chips.
-- **Bóng đổ (Elevation):**
-  - Không dùng hiệu ứng phát sáng vàng (`gold glow`) của NoirLuxe.
-  - Dùng shadow tự nhiên, thanh thoát:
-    - `shadow-xs`: `0 1px 2px 0 rgba(26, 25, 23, 0.05)`.
-    - `shadow-sm`: `0 1px 3px 0 rgba(26, 25, 23, 0.07), 0 1px 2px -1px rgba(26, 25, 23, 0.07)`.
-    - `shadow-md`: `0 4px 6px -1px rgba(26, 25, 23, 0.08), 0 2px 4px -2px rgba(26, 25, 23, 0.06)`.
-    - `shadow-xl`: `0 20px 25px -5px rgba(26, 25, 23, 0.1), 0 8px 10px -6px rgba(26, 25, 23, 0.08)`.
+## 4. Radius, spacing và elevation
 
----
+Lưới spacing 4px: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64. Radius sm 4, md 6, lg 8, xl 12, 2xl 16, full 999px; toast 18px. Button không dùng pill; search và avatar dùng full.
 
-## 5. Components Standards
+| Shadow | Giá trị |
+|---|---|
+| soft | 0 1px 2px rgba(26,26,31,.05), 0 4px 12px -4px rgba(26,26,31,.06) |
+| lift | 0 1px 3px rgba(26,26,31,.04), 0 8px 24px -10px rgba(26,26,31,.10) |
+| control | 0 1px 2px rgba(26,26,31,.08), 0 2px 5px -1px rgba(26,26,31,.06) |
+| inset | inset 0 1px 2px rgba(32,33,35,.05), 0 1px 0 #FFFFFFE5 |
+| header | 0 2px 8px -4px rgba(26,26,31,.07) |
+| shell | 3px 0 16px -10px rgba(26,26,31,.07) |
 
-### Buttons (Apple-style Pill Controls)
-- **Hình dáng & Kích thước:** Toàn bộ button tuân thủ chuẩn viên thuốc Apple (`rounded-full`), chuyển động nhấn nhẹ `active:scale-[0.98]`, padding chuẩn (`sm: px-3.5 py-1.5`, `md: px-4 py-2`, `lg: px-6 py-2.5`).
-- **Action (Primary / Gold):** Nền `#B47820`, chữ trắng `#FFFFFF`, hover `#9A6416`, viền `#B47820`, shadow-xs.
-- **Secondary:** Nền trắng `#FFFFFF`, chữ ink `#1A1917`, viền hairline `#E8E2D9`, hover nền `#FAF9F5`, hover viền `#D8D0C5`, shadow-xs.
-- **Ghost:** Nền trong suốt, chữ muted `#706E68`, hover nền `#FAF9F5`, chữ ink `#1A1917`.
-- **Danger:** Nền `#DC2626` (red-600), chữ trắng `#FFFFFF`, hover `#B91C1C` (red-700).
+## 5. Components
 
-### Inputs & Search Controls (Apple-style Inputs)
-- **Thanh tìm kiếm (`SearchInput`):** Nền trắng `#FFFFFF`, bo tròn viên thuốc (`rounded-full`), icon kính lúp trái, icon xóa nhanh khi có text, viền `#E8E2D9`, hover `#D8D0C5`, focus viền `#B47820` kèm `ring-2 ring-[#B47820]/15`.
-- **Inputs thông thường & Selects:** Bo góc mềm `rounded-xl`, nền trắng `#FFFFFF`, chữ `#1A1917`, viền `#E8E2D9`, focus `ring-2 ring-[#B47820]/15`. Placeholder: `#8C887F`.
-### Cards & Data Tables
-- Nền trắng `#FFFFFF`, bo góc 16px (`rounded-2xl`), viền mảnh 1px `#E8E2D9`, shadow-xs.
-- Header bảng: nền `#F5F0E8`, chữ `#706E68`, font size 12px, uppercase tracking-wider.
-- Phân cách dòng: viền `#E8E2D9`. Hover dòng: nền `#FAF9F5`.
+- Button: primary, destructive, outline, secondary, ghost, link; cao 36/32/44px, radius 6px, focus ring 2px offset 2px; disabled opacity 50%. Admin primary dùng ink.
+- Badge: radius 6px, padding 10×4px, dot 6px, nhãn 11/16; không viền.
+- Input: cao 40px, radius 6px, viền input, shadow inset, focus ring; lỗi có helper. Search radius full.
+- Card: radius 8px, viền border, shadow soft; recipe tile ảnh 4:3, shadow lift.
+- Table: header cao 56px nền secondary, dòng cao 64px, hover accent; không uppercase header.
+- Modal: radius 8px, padding 24px, backdrop rgba(27,27,27,.45), focus trap, Escape và nút đóng.
+- Toast: 400×89px, radius 18px, icon theo loại, nút đóng, action và progress; success/info tự đóng 5 giây, error/loading giữ lại.
+- Nav: header cao 79px, item active có underline primary 2px. Lucide stroke 1.5.
+- Select, textarea, checkbox, radio, skeleton, drawer, tooltip không có spec Figma: suy từ token Input/Button; giữ accessibility và hành vi hiện có.
 
-### Dialogs & Modals
-- Backdrop: `rgba(26, 25, 23, 0.45)` kết hợp `backdrop-blur-xs`.
-- Nội dung dialog: nền trắng `#FFFFFF`, viền `#E8E2D9`, shadow-xl, bo góc 16px (`rounded-2xl`).
-- Focus trap và đóng bằng phím `Escape`.
----
+## 6. Layout và responsive
 
-## 6. Motion & Animation System
+Shell đích dùng top-nav và footer, content tối đa 1360px, gutter desktop 40px; dưới 768px dùng drawer và gutter 16px. Giữ menu theo quyền hiện có. Màn hình mobile và một số trạng thái không có frame Figma, kích thước được suy theo token; chuyển shell ở phase sau, không coi sidebar hiện hữu đã được chuyển.
 
-Hệ thống chuyển động Warm Editorial ưu tiên sự thanh thoát, tĩnh tại, chuẩn mực của ấn phẩm biên tập cao cấp. Chuyển động đóng vai trò định hướng sự chú ý và báo hiệu trạng thái, không lạm dụng hiệu ứng lò xo (bounce) gây rối mắt hay làm chậm thao tác người dùng.
+## 7. Motion, trạng thái và accessibility
 
-### Motion Tokens & Quy chuẩn thời gian (Timing & Easing)
+Motion tối thiểu để phản hồi thao tác; không bắt buộc active scale hoặc chuyển trang. Với `prefers-reduced-motion: reduce`, tắt chuyển động và cho story hiển thị tĩnh. Skeleton mô phỏng nội dung thực; empty state nêu bước tiếp theo; error nêu vấn đề và cách xử lý. Mọi control hỗ trợ bàn phím, focus rõ, nhãn hợp lệ; tương phản chữ thường tối thiểu 4.5:1, chữ lớn và control tối thiểu 3:1. Không hiển thị UUID/hash/token thô; dùng tên hoặc “Không xác định”, “Chưa cập nhật”. Mã nghiệp vụ được phép hiển thị.
 
-| Token chuyển động | Thời lượng & Easing | Quỹ đạo / Thay đổi | Phạm vi sử dụng |
-|---|---|---|---|
-| `--motion-micro` | `150ms – 180ms ease-out` | `active:scale-[0.98]` | Nút bấm, icon action, pill filter, chip. |
-| `--motion-lift` | `160ms – 200ms ease-out` | `translateY(-2px)`, shadow lift | Card hover, table row highlight. |
-| `--motion-page-enter` | `220ms ease-out` | `opacity: 0 -> 1`, `translateY(4px -> 0)` | Chuyển trang toàn bộ Workspace, route transitions. |
-| `--motion-dialog` | `200ms – 250ms ease-out` | `scale-[0.98] -> scale-[1]`, `opacity: 0 -> 1` | Modal dialog, confirm prompt, popover. |
-| `--motion-drawer` | `280ms cubic-bezier(0.16, 1, 0.3, 1)` | `translateX(100% -> 0)` | Version history drawer, filter slide-out. |
+**Sai lệch đã biết theo Figma:** chữ trắng 14px semibold trên primary `#ED4061` đạt khoảng 3.81:1, dưới mức 4.5:1 cho chữ thường. Giữ màu theo thiết kế được duyệt; cần báo người dùng về giới hạn accessibility này.
 
-### Quy chuẩn hiệu ứng chuyển trang (Page Entrance Transition)
-- Mọi view con trong không gian làm việc (`WorkspaceShell`) khi chuyển đổi route BẮT BUỘC có hiệu ứng fade-in nhẹ kèm trượt 4px từ dưới lên:
-  ```css
-  @keyframes workspace-enter {
-    from {
-      opacity: 0;
-      transform: translateY(4px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  ```
-- Bắt buộc bọc nội dung route với key thay đổi theo URL pathname (`key={pathname}`) để kích hoạt chuyển động mượt mà.
+## 8. Ngoại lệ cinematic
 
-### Quy chuẩn Loading State & Skeleton Pulse
-1. **Tránh Spinner toàn trang:** Tuyệt đối không treo spinner xoay đơn độc ở giữa màn hình trắng khi tải dữ liệu trang.
-2. **Skeleton Khớp Layout Thực Tế:**
-   - Dạng danh sách lưới (Grid/Cards): Hiển thị skeleton cards 3 cột mô phỏng đúng kích thước thẻ card thực tế.
-   - Dạng bảng (DataTable): Hiển thị skeleton header và các skeleton rows xen kẽ viền `#E8E2D9`.
-   - Hiệu ứng nhịp thở: Dùng `animate-pulse` với màu nền `#FAF9F5` / `#F5F0E8` bo góc đồng bộ với component thật.
-3. **Spinner Cục Bộ (Local Loader):** Chỉ dùng spinner xoay tròn kích thước nhỏ (`16px`) bên trong chính nút bấm (`Button isLoading`) khi thực hiện action (Lưu, Nộp bài, Xóa, Tạo mới).
-
-### Accessibility & Reduced Motion
-- **Quy tắc bắt buộc:** Mọi animation và transition phải tuân thủ nghiêm ngặt truy vấn `@media (prefers-reduced-motion: reduce)`.
-- Khi người dùng kích hoạt Reduced Motion trên hệ điều hành/trình duyệt:
-  - Tắt toàn bộ biến đổi dịch chuyển trục Y (`transform: translateY(...) -> none`).
-  - Tắt hiệu ứng trượt cuộn cinematic Story trên Landing page (hiển thị tĩnh có thể đọc ngay).
-  - Giữ hiệu ứng chuyển đổi `opacity` tức thời hoặc chuyển sang trạng thái cuối ngay lập tức (`transition: none !important; animation: none !important;`).
-
----
-
-## 7. Responsive & Accessibility Standards
-
-1. **Độ tương phản (Contrast Ratio):**
-   - Chữ thông thường (dưới 18pt/24px): Tối thiểu 4.5:1.
-   - Chữ lớn (trên 18pt/24px) hoặc bold trên 14pt: Tối thiểu 3:1.
-   - Các nút bấm, icon thao tác nghiệp vụ, đường viền input: Tối thiểu 3:1.
-2. **Keyboard Navigation:**
-   - Mọi nút, liên kết, form field đều có thể focus bằng phím `Tab`.
-   - Focus outline luôn hiển thị rõ ràng (`outline: 2px solid #CC785C`).
-3. **Motion & Reduced Motion:**
-   - Hỗ trợ đầy đủ media query `prefers-reduced-motion: reduce`.
-   - Khi bật reduced-motion: tắt chuyển động cuộn cinematic, hiển thị fallback story đọc được ngay, không phụ thuộc cuộn trang.
-4. **Không làm vỡ layout ngang:**
-   - Kiểm tra kỹ trên các độ phân giải: Mobile (320px, 390px), Tablet (768px), Desktop (1440px). Không tràn thanh cuộn ngang trang.
-
----
-
-## 8. Acceptance Checklist
-
-- [ ] DESIGN.md định nghĩa đầy đủ semantic tokens, token ngoại lệ cinematic và contrast ratios.
-- [ ] Mọi token và kiểu dáng cũ của NoirLuxe (dark background khắp app, gold glow, dancing script) được xóa bỏ.
-- [ ] Không có màu hardcode lạ ngoài bộ semantic đã quy định.
-- [ ] Giao diện hoạt động trơn tru trên cả desktop và mobile, không lỗi dấu tiếng Việt.
-- [ ] Story cinematic được cô lập an toàn, không bị ảnh hưởng bởi styles sáng của phần còn lại.
-- [ ] Chuyển động (motion) tuân thủ nhịp độ Warm Editorial; tôn trọng prefers-reduced-motion: reduce trên toàn bộ workspace.
-
----
+Chỉ `#story` và overlay liên quan dùng `--cinematic-bg` #0C0C0E, `--cinematic-ink` #F2F0EB, `--cinematic-muted` #9E9A90; các khu vực landing khác dùng bộ token sáng.
 
 ## 9. Ấn phẩm in ấn & Xuất bản PDF (Document Print Preset)
 
@@ -199,3 +110,8 @@ Hệ thống chuyển động Warm Editorial ưu tiên sự thanh thoát, tĩnh 
 - Mục lục: số thứ tự, tên món và mã/phiên bản phụ, số trang thực tế bên phải; đường phân cách mảnh, internal links. Không dùng bảng quản trị trạng thái.
 - Trang công thức: dải tiêu đề be `#E8C9A5` với đầu nhấn nâu `#965B22`; sidebar ảnh món hoặc monogram P, nhãn “CÔNG THỨC VẬN HÀNH”; bên phải bảng thành phần/định lượng hai cột và bảng SOP có nhãn bên trái, số bước, ảnh, hướng dẫn.
 - Giữ ghi chú nguyên liệu, sản lượng và thông số từng bước; ảnh AI có chú thích rõ. Footer nhỏ ghi tài liệu đào tạo nội bộ và số trang. Nội dung dài tự ngắt trang; dải tên món lặp lại ở trang tiếp theo.
+
+
+## 10. Backlog
+
+Các frame chưa có route, không triển khai: so sánh phiên bản, chi tiết nguyên liệu, bản nháp ảnh AI, viewer/ingredients.

@@ -3,7 +3,7 @@
 > **CẢNH BÁO QUAN TRỌNG CHO LẬP TRÌNH VIÊN VÀ AI AGENT:**  
 > Hệ thống thiết kế chuẩn hóa tại `docs/systemmd/` là Nguồn Sự Thật Duy Nhất (Single Source of Truth) về kiến trúc và giao diện của RecipeHub.  
 > **TUYỆT ĐỐI KHÔNG ĐƯỢC TỰ TIỆN:**  
-> 1. Viết code phá vỡ cấu trúc layout, tự tạo sidebar/menu dị biệt, tự tạo style CSS phân mảnh làm sai lệch Warm Editorial (`docs/DESIGN.md`).  
+> 1. Viết code phá vỡ cấu trúc layout, tự tạo sidebar/menu dị biệt, tự tạo style CSS phân mảnh làm sai lệch chuẩn tại `docs/DESIGN.md`.
 > 2. Đổi mô hình Clean Architecture, tự dùng EF Code First, tự gọi `MigrateAsync` hoặc tự thay đổi schema DB mà không cập nhật tài liệu `docs/database-schema/`.  
 > 3. Chỉ cập nhật mục chuẩn liên quan khi có thay đổi chuẩn/kiến trúc hoặc sai lệch đã được đối chiếu; cập nhật cùng commit với code ảnh hưởng. Tính năng tuân thủ chuẩn hiện hữu không cần bổ sung `docs/systemmd/`. Không đưa kế hoạch, nhật ký, kết quả test hay bản sao schema/API/runbook vào bộ chuẩn này; dẫn link nguồn chuyên biệt khi cần.
 
@@ -24,7 +24,7 @@
 [4. Backend: Clean Architecture 4 Layer + Swagger + YARP Route]
        |
        v
-[5. Frontend: Page trong (platform) + WorkspaceShell + Warm Editorial Components]
+[5. Frontend: Page trong (platform) + WorkspaceShell + components theo DESIGN.md]
        |
        v
 [6. Verify: dotnet build + npm run build]
@@ -41,11 +41,9 @@
 - [ ] Màn hình workspace nằm trong `src/frontend/src/app/(platform)/`, dùng `WorkspaceShell` và áp dụng đúng quyền vai trò hoặc quyền chung của người đã đăng nhập?
 - [ ] Nếu có màn hình cần mục điều hướng mới, đã cập nhật menu đúng vai trò trong `src/frontend/src/components/workspace/workspace-shell.tsx`?
 - [ ] Nếu thay đổi quyền truy cập, đã đồng bộ `src/frontend/src/lib/demo/permissions.ts` và kiểm tra quyền phía backend?
-- [ ] Giao diện có dùng đúng Semantic Color Tokens: Canvas `#FAF9F5`, Surface `#FFFFFF`, viền `#E8E2D9`, nút bấm `#B47820`?
-- [ ] Nút bấm có bo góc viên thuốc `rounded-full` và hiệu ứng `active:scale-[0.98]` không?
-- [ ] Bảng dữ liệu có dùng `DataTable` bo góc `rounded-2xl` viền hairline không?
-- [ ] Số đo định lượng (gram, ml, độ brix) có dùng font monospace kèm `tabular-nums` không?
-- [ ] Chuyển trang workspace dùng wrapper `workspace-page-anim` hiện hữu và tôn trọng `prefers-reduced-motion`?
+- [ ] Giao diện dùng semantic tokens và component theo `docs/DESIGN.md`; alias cũ chỉ dùng tạm trong quá trình chuyển đổi?
+- [ ] Số đo định lượng (gram, ml, độ Brix, nhiệt độ) dùng `tabular-nums`?
+- [ ] Chuyển động tôn trọng `prefers-reduced-motion`?
 - [ ] Đã chạy kiểm tra `npm run build` thành công, không lỗi TypeScript/JSX?
 
 ### 2.2. Phía Backend:
