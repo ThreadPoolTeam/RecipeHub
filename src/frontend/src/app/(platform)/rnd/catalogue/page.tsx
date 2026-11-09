@@ -33,6 +33,7 @@ export default function RndCataloguePage() {
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
 
   // Editor dialog
   const [editor, setEditor] = useState<CatalogueEditor | null>(null);
@@ -294,7 +295,8 @@ export default function RndCataloguePage() {
                 type="radio"
                 name="catalogue-category"
                 id={`category-select-${category.id}`}
-                defaultChecked={index === 0}
+                checked={groups.some((group) => group.category.id === selectedCategoryId) ? category.id === selectedCategoryId : index === 0}
+                onChange={() => setSelectedCategoryId(category.id)}
               />
               <label
                 htmlFor={`category-select-${category.id}`}
