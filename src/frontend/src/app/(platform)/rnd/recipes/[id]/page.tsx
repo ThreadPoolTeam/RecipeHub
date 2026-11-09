@@ -434,27 +434,32 @@ export default function RecipeDetailPage() {
         <h2 className="font-display text-h3 font-medium text-foreground">
           Thông số kỹ thuật
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-          <div>
-            <span className="block text-xs text-muted-foreground">Mã công thức</span>
-            <span className="font-semibold text-foreground">{recipe.code}</span>
+        <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+          <div className="rounded-lg border border-border bg-secondary p-4">
+            <span className="block text-xs text-muted-foreground">Nguyên liệu</span>
+            <span className="font-semibold text-foreground">{recipe.ingredients.length}</span>
           </div>
-          <div>
+          <div className="rounded-lg border border-border bg-secondary p-4">
             <span className="block text-xs text-muted-foreground">Sản lượng chuẩn</span>
             <span className="font-semibold text-foreground">
               {recipe.targetYield !== null && recipe.yieldUnit ? `${recipe.targetYield} ${recipe.yieldUnit}` : 'Chưa thiết lập'}
             </span>
           </div>
-          <div>
-            <span className="block text-xs text-muted-foreground">Người khởi tạo</span>
-            <span className="text-xs text-muted-foreground">{recipe.creatorEmail}</span>
+          <div className="rounded-lg border border-border bg-secondary p-4">
+            <span className="block text-xs text-muted-foreground">Bước thực hiện</span>
+            <span className="font-semibold text-foreground">{recipe.steps.length}</span>
           </div>
-          <div>
-            <span className="block text-xs text-muted-foreground">Thời điểm phát hành</span>
-            <span className="text-xs text-muted-foreground">
-              {recipe.publishedAt ? new Date(recipe.publishedAt).toLocaleString('vi-VN') : 'Chưa phát hành'}
+          <div className="rounded-lg border border-border bg-secondary p-4">
+            <span className="block text-xs text-muted-foreground">Tổng thời gian</span>
+            <span className="font-semibold text-foreground">
+              {recipe.steps.some((step) => step.durationSeconds) ? `${recipe.steps.reduce((sum, step) => sum + (step.durationSeconds || 0), 0)} giây` : 'Chưa cập nhật'}
             </span>
           </div>
+        </div>
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
+          <span>Mã công thức: <strong className="text-foreground">{recipe.code}</strong></span>
+          <span>Người khởi tạo: {recipe.creatorEmail || 'Chưa cập nhật'}</span>
+          <span>Thời điểm phát hành: {recipe.publishedAt ? new Date(recipe.publishedAt).toLocaleString('vi-VN') : 'Chưa phát hành'}</span>
         </div>
 
         {recipe.description && (
@@ -532,7 +537,7 @@ export default function RecipeDetailPage() {
         {recipe.steps.length === 0 ? (
           <p className="text-sm italic text-muted-foreground">Chưa có các bước hướng dẫn thao tác.</p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 border-l-2 border-primary/20 pl-4">
             {recipe.steps.map((step, idx) => {
               const coverUrl = step.coverMediaAssetId
                 ? mediaMap[step.coverMediaAssetId] ||

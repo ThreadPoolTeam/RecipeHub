@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useDemo } from '@/lib/demo/provider';
@@ -14,6 +15,7 @@ import { NewRecipeStepper } from '@/components/recipes/new-recipe-stepper';
 export default function NewRecipePage() {
   const router = useRouter();
   const { session, repo, touch } = useDemo();
+  const [activeStep, setActiveStep] = useState(0);
 
   // Basic Info
   const [code, setCode] = useState('');
@@ -218,7 +220,14 @@ export default function NewRecipePage() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto max-w-7xl space-y-8 pb-12">
+    <form onSubmit={handleSubmit} onInvalid={(event) => {
+      if (event.target !== event.currentTarget.querySelector(':invalid') || !(event.target instanceof HTMLElement)) return;
+      const panel = event.target.closest<HTMLElement>('[data-recipe-step]');
+      if (panel) {
+        const step = Number(panel.dataset.recipeStep);
+        if (step !== activeStep) flushSync(() => setActiveStep(step));
+      }
+    }} className="mx-auto max-w-7xl space-y-8 pb-12">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Tạo công thức</p>
@@ -234,18 +243,25 @@ export default function NewRecipePage() {
       {errorMsg && <Alert type="error" message={errorMsg} />}
 
       <div className="grid gap-8 lg:grid-cols-[220px_minmax(0,1fr)]">
-        <NewRecipeStepper ingredientCount={recipeIngredients.length} stepCount={steps.length} />
+        <NewRecipeStepper ingredientCount={recipeIngredients.length} stepCount={steps.length}
+          activeStep={activeStep} onStepChange={setActiveStep} />
         <div className="min-w-0 space-y-8">
-          <NewRecipeBasicInfo code={code} setCode={setCode} generatingCode={generatingCode} codeError={codeError}
-            handleGenerateCode={handleGenerateCode} hasSession={!!session} submitting={submitting}
-            name={name} setName={setName} description={description} setDescription={setDescription}
-            targetYield={targetYield} setTargetYield={setTargetYield} yieldUnit={yieldUnit}
-            setYieldUnit={setYieldUnit} availableUnits={availableUnits} />
-          <NewRecipeIngredients availableIngredients={availableIngredients} recipeIngredients={recipeIngredients}
-            handleAddIngredient={handleAddIngredient} handleRemoveIngredient={handleRemoveIngredient}
-            handleUpdateIngredient={handleUpdateIngredient} />
-          <NewRecipeSop steps={steps} handleAddStep={handleAddStep} handleRemoveStep={handleRemoveStep}
-            handleUpdateStep={handleUpdateStep} handleMoveStep={handleMoveStep} />
+          <div id="recipe-step-0" data-recipe-step="0" hidden={activeStep !== 0}>
+            <NewRecipeBasicInfo code={code} setCode={setCode} generatingCode={generatingCode} codeError={codeError}
+              handleGenerateCode={handleGenerateCode} hasSession={!!session} submitting={submitting}
+              name={name} setName={setName} description={description} setDescription={setDescription}
+              targetYield={targetYield} setTargetYield={setTargetYield} yieldUnit={yieldUnit}
+              setYieldUnit={setYieldUnit} availableUnits={availableUnits} />
+          </div>
+          <div id="recipe-step-1" data-recipe-step="1" hidden={activeStep !== 1}>
+            <NewRecipeIngredients availableIngredients={availableIngredients} recipeIngredients={recipeIngredients}
+              handleAddIngredient={handleAddIngredient} handleRemoveIngredient={handleRemoveIngredient}
+              handleUpdateIngredient={handleUpdateIngredient} />
+          </div>
+          <div id="recipe-step-2" data-recipe-step="2" hidden={activeStep !== 2}>
+            <NewRecipeSop steps={steps} handleAddStep={handleAddStep} handleRemoveStep={handleRemoveStep}
+              handleUpdateStep={handleUpdateStep} handleMoveStep={handleMoveStep} />
+          </div>
         </div>
       </div>
 

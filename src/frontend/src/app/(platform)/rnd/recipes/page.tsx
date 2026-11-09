@@ -219,20 +219,23 @@ function RecipeListContent() {
           />
         </div>
 
-        <div>
-          <Select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value as RecipeStatus | 'all');
-              setPage(1);
-            }}
-            options={[
-              { value: 'all', label: 'Tất cả trạng thái' },
-              { value: 'Draft', label: 'Bản nháp' },
-              { value: 'Published', label: 'Đã phát hành' },
-              { value: 'Archived', label: 'Lưu trữ' },
-            ]}
-          />
+        <div className="flex flex-wrap gap-2 md:col-span-4" aria-label="Lọc theo trạng thái">
+          {([
+            ['all', 'Tất cả'],
+            ['Draft', 'Bản nháp'],
+            ['Published', 'Đã phát hành'],
+            ['Archived', 'Lưu trữ'],
+          ] as const).map(([status, label]) => (
+            <button
+              key={status}
+              type="button"
+              aria-pressed={statusFilter === status}
+              onClick={() => { setStatusFilter(status); setPage(1); }}
+              className={`rounded-md border px-3 py-1.5 text-sm font-semibold ${statusFilter === status ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-foreground hover:bg-muted'}`}
+            >
+              {label} ({status === 'all' ? distinctRecipes.length : distinctRecipes.filter((recipe) => recipe.status === status).length})
+            </button>
+          ))}
         </div>
 
         <div>

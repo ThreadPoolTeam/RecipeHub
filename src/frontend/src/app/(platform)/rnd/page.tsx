@@ -13,6 +13,7 @@ export default function RndDashboardPage() {
   const [ingredientsCount, setIngredientsCount] = useState<number>(0);
   const [mediaCount, setMediaCount] = useState<number>(0);
   const [draftRecipes, setDraftRecipes] = useState<RecipeVersion[]>([]);
+  const [publishedRecipes, setPublishedRecipes] = useState<RecipeVersion[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,6 +35,7 @@ export default function RndDashboardPage() {
           .filter((r) => r.status === 'Draft')
           .slice(0, 5);
         setDraftRecipes(drafts);
+        setPublishedRecipes(recipesRes.items.filter((r) => r.status === 'Published').slice(0, 5));
       })
       .catch(() => {})
       .finally(() => {
@@ -108,6 +110,29 @@ export default function RndDashboardPage() {
                   </div>
                 </div>
               </article>
+            ))}
+          </div>
+        )}
+      </section>
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-display text-h3 font-medium text-foreground">Đã phát hành</h2>
+            <p className="text-sm text-muted-foreground">Công thức đã sẵn sàng sử dụng.</p>
+          </div>
+          <Link href="/rnd/recipes?status=Published" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">Xem công thức đã phát hành <ArrowRight className="h-4 w-4" strokeWidth={1.5} /></Link>
+        </div>
+        {!loading && publishedRecipes.length === 0 ? (
+          <p className="rounded-lg border border-border bg-card p-8 text-center text-sm text-muted-foreground">Chưa có công thức đã phát hành.</p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {publishedRecipes.map((recipe) => (
+              <Link key={recipe.id} href={`/rnd/recipes/${recipe.id}`} className="space-y-2 rounded-lg border border-border bg-card p-5 shadow-soft hover:border-primary">
+                <p className="text-xs text-muted-foreground">{recipe.code} · {recipe.versionLabel}</p>
+                <h3 className="font-display text-lg font-medium text-foreground">{recipe.name}</h3>
+                {recipe.description && <p className="line-clamp-2 text-sm text-muted-foreground">{recipe.description}</p>}
+                <StatusBadge status={recipe.status} />
+              </Link>
             ))}
           </div>
         )}
