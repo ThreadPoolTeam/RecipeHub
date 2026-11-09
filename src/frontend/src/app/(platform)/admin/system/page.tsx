@@ -144,83 +144,54 @@ export default function AdminSystemMonitoringPage() {
       : 0;
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Level 1: Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E2D9]">
+    <div className="mx-auto max-w-7xl space-y-8">
+      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-2xl font-bold text-[#1A1917] flex items-center gap-2.5">
-            <Activity className="w-6 h-6 text-[#B47820]" />
-            Giám Sát Hệ Thống &amp; Xử Lý Sự Cố
-          </h1>
-          <p className="text-[#706E68] text-sm mt-1">
-            Kiểm tra sức khỏe 5 Microservices qua YARP Gateway, trạng thái kết nối 5 CSDL PostgreSQL và công cụ vận hành.
-          </p>
+          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Quản trị</p>
+          <h1 className="font-display text-3xl font-medium text-foreground sm:text-4xl">Giám sát hệ thống &amp; sự cố</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Kiểm tra trạng thái dịch vụ và kết nối cơ sở dữ liệu.</p>
         </div>
-        <Button variant="gold" size="sm" isLoading={probing} onClick={runSystemProbe}>
-          <RefreshCw className="w-4 h-4 mr-1.5" /> Kiểm tra toàn hệ thống
+        <Button variant="secondary" className="h-10" isLoading={probing} onClick={runSystemProbe}>
+          <RefreshCw className="mr-2 h-4 w-4" strokeWidth={1.5} /> Kiểm tra lại
         </Button>
+      </header>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {services.map((service) => (
+          <div key={service.key} className="rounded-lg border border-border bg-card p-5 shadow-soft">
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="font-display text-lg font-medium text-foreground">{service.name}</h2>
+              <span className={`rounded-md px-2.5 py-1 text-xs font-medium ${service.status === 'Ready' ? 'bg-success-soft text-success' : 'bg-destructive-soft text-destructive'}`}>
+                {service.status === 'Ready' ? 'Sẵn sàng' : service.status === 'Degraded' ? 'Suy giảm' : 'Mất kết nối'}
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">{service.roleLabel}</p>
+            <div className="mt-5 grid grid-cols-2 gap-4">
+              <div><p className="text-xs text-muted-foreground">Độ trễ</p><p className="mt-1 font-display text-xl tabular-nums text-foreground">{service.latencyMs} ms</p></div>
+              <div><p className="text-xs text-muted-foreground">Cơ sở dữ liệu</p><p className="mt-1 text-sm text-foreground">{service.database === 'Connected' ? 'Đã kết nối' : 'Mất kết nối'}</p></div>
+            </div>
+            <p className="mt-4 text-xs text-muted-foreground">Lần kiểm tra cuối: {service.checkedAt}</p>
+          </div>
+        ))}
+        {loading && <p className="text-sm text-muted-foreground">Đang kiểm tra dịch vụ...</p>}
       </div>
 
-      {/* Level 2: Summary Metrics & External Tool Launchers */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-white border border-[#E8E2D9] rounded-xl p-4 shadow-xs">
-          <div className="text-[11px] text-[#706E68] uppercase font-semibold">Trạng thái Microservices</div>
-          <div className="text-xl font-bold text-[#166534] mt-1 font-mono tabular-nums">
-            {loading ? '...' : `${healthyCount} / ${SERVICE_TARGETS.length} Sẵn sàng`}
-          </div>
-          <div className="text-xs text-[#706E68] mt-1">Kết nối qua YARP Gateway (/api/v1/*)</div>
-        </div>
-
-        <div className="bg-white border border-[#E8E2D9] rounded-xl p-4 shadow-xs">
-          <div className="text-[11px] text-[#706E68] uppercase font-semibold">Độ trễ phản hồi trung bình</div>
-          <div className="text-xl font-bold text-[#1A1917] mt-1 font-mono tabular-nums">
-            {loading ? '...' : `${avgLatency} ms`}
-          </div>
-          <div className="text-xs text-[#706E68] mt-1">Bao gồm kiểm tra kết nối PostgreSQL</div>
-        </div>
-
-        <a
-          href="http://localhost:3001"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="group bg-white hover:bg-[#FAF9F5] border border-[#E8E2D9] hover:border-[#B47820] rounded-xl p-4 shadow-xs transition flex flex-col justify-between"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] text-[#706E68] uppercase font-semibold">Grafana Dashboard</span>
-            <ExternalLink className="w-4 h-4 text-[#B47820] group-hover:translate-x-0.5 transition" />
-          </div>
-          <div className="text-base font-bold text-[#1A1917] group-hover:text-[#B47820] mt-1 flex items-center gap-1.5">
-            <BarChart3 className="w-4 h-4 text-[#B47820]" /> Cổng 3001
-          </div>
-          <div className="text-xs text-[#706E68] mt-1">Biểu đồ trực quan 5 CSDL PostgreSQL</div>
-        </a>
-
-        <a
-          href="http://localhost:5050"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="group bg-white hover:bg-[#FAF9F5] border border-[#E8E2D9] hover:border-[#B47820] rounded-xl p-4 shadow-xs transition flex flex-col justify-between"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] text-[#706E68] uppercase font-semibold">pgAdmin 4 Web</span>
-            <ExternalLink className="w-4 h-4 text-[#B47820] group-hover:translate-x-0.5 transition" />
-          </div>
-          <div className="text-base font-bold text-[#1A1917] group-hover:text-[#B47820] mt-1 flex items-center gap-1.5">
-            <Database className="w-4 h-4 text-[#B47820]" /> Cổng 5050
-          </div>
-          <div className="text-xs text-[#706E68] mt-1">Quản trị trực tiếp 5 Database-per-service</div>
-        </a>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-lg border border-border bg-card p-4 shadow-soft"><p className="text-xs text-muted-foreground">Dịch vụ sẵn sàng</p><p className="mt-2 font-display text-xl tabular-nums">{loading ? '...' : `${healthyCount} / ${SERVICE_TARGETS.length}`}</p></div>
+        <div className="rounded-lg border border-border bg-card p-4 shadow-soft"><p className="text-xs text-muted-foreground">Độ trễ trung bình</p><p className="mt-2 font-display text-xl tabular-nums">{loading ? '...' : `${avgLatency} ms`}</p></div>
+        <a href="http://localhost:3001" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 shadow-soft hover:bg-accent"><BarChart3 className="h-5 w-5" strokeWidth={1.5} /><span className="flex-1 text-sm font-semibold">Grafana Dashboard</span><ExternalLink className="h-4 w-4" strokeWidth={1.5} /></a>
+        <a href="http://localhost:5050" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 shadow-soft hover:bg-accent"><Database className="h-5 w-5" strokeWidth={1.5} /><span className="flex-1 text-sm font-semibold">pgAdmin 4</span><ExternalLink className="h-4 w-4" strokeWidth={1.5} /></a>
       </div>
 
       {/* Level 3: Microservices & Database Readiness Table */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-bold text-[#1A1917] flex items-center gap-2">
-              <Server className="w-4 h-4 text-[#B47820]" />
+            <h2 className="flex items-center gap-2 font-display text-xl font-medium text-foreground">
+              <Server className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
               Trạng thái Dịch vụ &amp; Cơ sở dữ liệu
             </h2>
-            <p className="text-xs text-[#706E68] mt-0.5">
+            <p className="mt-1 text-sm text-muted-foreground">
               Mỗi dịch vụ tự kiểm tra kết nối tới schema PostgreSQL độc lập của dịch vụ đó.
             </p>
           </div>
@@ -237,15 +208,15 @@ export default function AdminSystemMonitoringPage() {
               header: 'Dịch vụ (Microservice)',
               render: (item) => (
                 <div>
-                  <div className="font-semibold text-[#1A1917] text-sm">{item.name}</div>
-                  <div className="text-xs text-[#706E68]">{item.roleLabel}</div>
+                  <div className="text-sm font-semibold text-foreground">{item.name}</div>
+                  <div className="text-xs text-muted-foreground">{item.roleLabel}</div>
                 </div>
               ),
             },
             {
               header: 'CSDL Độc lập',
               render: (item) => (
-                <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#F5F0E8] text-[#1A1917] border border-[#E8E2D9]">
+                <span className="rounded-md bg-secondary px-2 py-1 text-xs text-foreground">
                   {item.dbName}
                 </span>
               ),
@@ -254,11 +225,11 @@ export default function AdminSystemMonitoringPage() {
               header: 'Trạng thái API',
               render: (item) =>
                 item.status === 'Ready' ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0]">
+                  <span className="inline-flex items-center gap-1.5 rounded-md bg-success-soft px-2.5 py-1 text-xs font-medium text-success">
                     <CheckCircle2 className="w-3.5 h-3.5" /> Hoạt động tốt
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#FEF2F2] text-[#991B1B] border border-[#FECACA]">
+                  <span className="inline-flex items-center gap-1.5 rounded-md bg-destructive-soft px-2.5 py-1 text-xs font-medium text-destructive">
                     <AlertTriangle className="w-3.5 h-3.5" /> Sự cố kết nối
                   </span>
                 ),
@@ -267,15 +238,15 @@ export default function AdminSystemMonitoringPage() {
               header: 'Kết nối PostgreSQL',
               render: (item) =>
                 item.database === 'Connected' ? (
-                  <span className="text-xs font-medium text-[#166534]">Đã kết nối</span>
+                  <span className="text-xs font-medium text-success">Đã kết nối</span>
                 ) : (
-                  <span className="text-xs font-medium text-[#991B1B]">Mất kết nối</span>
+                  <span className="text-xs font-medium text-destructive">Mất kết nối</span>
                 ),
             },
             {
               header: 'Độ trễ',
               render: (item) => (
-                <span className="font-mono text-xs font-semibold tabular-nums text-[#1A1917]">
+                <span className="text-xs font-semibold tabular-nums text-foreground">
                   {item.latencyMs} ms
                 </span>
               ),
@@ -284,7 +255,7 @@ export default function AdminSystemMonitoringPage() {
               header: 'Lần kiểm tra cuối',
               className: 'text-right',
               render: (item) => (
-                <span className="font-mono text-xs text-[#706E68] tabular-nums">{item.checkedAt}</span>
+                <span className="text-xs tabular-nums text-muted-foreground">{item.checkedAt}</span>
               ),
             },
           ]}
@@ -295,17 +266,17 @@ export default function AdminSystemMonitoringPage() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-bold text-[#1A1917] flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-[#B47820]" />
+            <h2 className="flex items-center gap-2 font-display text-xl font-medium text-foreground">
+              <ShieldCheck className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
               Hoạt động hệ thống gần đây ({totalAuditCount} sự kiện)
             </h2>
-            <p className="text-xs text-[#706E68] mt-0.5">
+            <p className="mt-1 text-sm text-muted-foreground">
               Các sự kiện thay đổi dữ liệu quan trọng được đẩy qua Redis Streams vào Audit Service.
             </p>
           </div>
           <Link href="/admin/logs">
-            <Button variant="secondary" size="sm">
-              Xem toàn bộ Nhật ký Audit &rarr;
+            <Button variant="secondary" className="h-10">
+              Xem toàn bộ nhật ký
             </Button>
           </Link>
         </div>
@@ -320,7 +291,7 @@ export default function AdminSystemMonitoringPage() {
             {
               header: 'Thời gian',
               render: (item) => (
-                <span className="font-mono text-xs text-[#706E68] tabular-nums">
+                <span className="text-xs tabular-nums text-muted-foreground">
                   {new Date(item.occurredAt).toLocaleString('vi-VN')}
                 </span>
               ),
@@ -328,18 +299,18 @@ export default function AdminSystemMonitoringPage() {
             {
               header: 'Thao tác nghiệp vụ',
               render: (item) => (
-                <span className="font-semibold text-xs text-[#1A1917]">{getActionLabel(item.action)}</span>
+                <span className="text-xs font-semibold text-foreground">{getActionLabel(item.action)}</span>
               ),
             },
             {
               header: 'Người thực hiện',
               render: (item) => (
-                <span className="text-xs text-[#1A1917]">{item.actorName || 'Hệ thống'}</span>
+                <span className="text-xs text-foreground">{item.actorName || 'Hệ thống'}</span>
               ),
             },
             {
               header: 'Mô tả sự kiện',
-              render: (item) => <span className="text-xs text-[#706E68]">{item.summary}</span>,
+              render: (item) => <span className="text-xs text-muted-foreground">{item.summary}</span>,
             },
           ]}
         />

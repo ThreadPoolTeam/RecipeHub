@@ -7,7 +7,6 @@ import { Button, TextInput, Select, Alert, SearchInput } from '@/components/work
 import { DataTable } from '@/components/workspace/data-table';
 import { RoleBadge } from '@/components/workspace/status-badge';
 import { Dialog } from '@/components/workspace/dialog';
-import { Users } from 'lucide-react';
 
 export default function AdminUsersPage() {
   const { session, repo, dataVersion, touch } = useDemo();
@@ -172,20 +171,19 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E2D9]">
+    <div className="mx-auto max-w-[1360px] space-y-6">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-2xl font-bold text-[#1A1917] flex items-center gap-2.5">
-            <Users className="w-6 h-6 text-[#B47820]" />
-            Quản lý Tài khoản &amp; Phân quyền
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Quản trị</p>
+          <h1 className="mt-2 font-heading text-3xl font-medium text-foreground sm:text-[40px] sm:leading-[48px]">
+            Tài khoản &amp; phân quyền
           </h1>
-          <p className="text-[#706E68] text-sm mt-1">
-            Quản lý tài khoản, vai trò Quản trị / R&amp;D / Barista Viewer và trạng thái hoạt động.
+          <p className="mt-2 text-sm text-muted-foreground">
+            Mỗi tài khoản có đúng một vai trò: Admin, R&amp;D hoặc Viewer.
           </p>
         </div>
-        <Button variant="gold" onClick={() => setIsCreateOpen(true)}>
-          + Thêm người dùng mới
+        <Button variant="primary" className="h-10" onClick={() => setIsCreateOpen(true)}>
+          Tạo tài khoản
         </Button>
       </div>
 
@@ -201,11 +199,11 @@ export default function AdminUsersPage() {
         </Alert>
       )}
 
-      {/* Filter toolbar */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 p-4 bg-white border border-[#E8E2D9] rounded-2xl shadow-xs">
-        <div className="sm:col-span-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,320px)_minmax(160px,200px)_minmax(160px,200px)]">
+        <div>
           <SearchInput
-            placeholder="Tìm theo email hoặc họ tên..."
+            aria-label="Tìm theo tên hoặc email"
+            placeholder="Tìm theo tên hoặc email"
             value={searchTerm}
             onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
             onClear={() => { setSearchTerm(''); setPage(1); }}
@@ -213,6 +211,7 @@ export default function AdminUsersPage() {
         </div>
         <div>
           <Select
+            aria-label="Lọc vai trò"
             value={filterRole}
             onChange={(e) => { setFilterRole(e.target.value as 'all' | Role); setPage(1); }}
             options={[
@@ -233,43 +232,45 @@ export default function AdminUsersPage() {
         keyExtractor={(u) => u.id}
         isLoading={loading}
         emptyTitle="Không tìm thấy người dùng"
-        emptyMessage="Hãy điều chỉnh từ khóa tìm kiếm hoặc bấm Thêm người dùng mới."
+        emptyMessage="Hãy điều chỉnh từ khóa tìm kiếm hoặc tạo tài khoản mới."
         columns={[
           {
-            header: 'Họ tên & Email',
+            header: 'Người dùng',
             render: (u) => (
               <div>
-                <div className="font-semibold text-[#1A1917] flex items-center gap-2">
-                  {u.fullName}
-                  {u.isLocked && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
-                      BỊ KHÓA
-                    </span>
-                  )}
-                </div>
-                <div className="text-xs text-[#706E68] font-mono mt-0.5">{u.email}</div>
+                <div className="font-semibold text-foreground">{u.fullName}</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">{u.email}</div>
               </div>
             ),
           },
           {
-            header: 'Vai trò (Role)',
+            header: 'Vai trò',
             render: (u) => <RoleBadge role={u.role} />,
           },
           {
             header: 'Phạm vi truy cập',
             render: (u) => {
               if (u.role === 'admin') {
-                return <span className="text-xs text-[#706E68]">Quản trị hệ thống, tài khoản &amp; nhật ký Audit</span>;
+                return <span className="text-xs text-muted-foreground">Quản trị hệ thống, tài khoản &amp; nhật ký Audit</span>;
               }
               if (u.role === 'rnd') {
-                return <span className="text-xs text-[#706E68]">Toàn bộ công thức, nguyên liệu, danh mục &amp; bộ đề</span>;
+                return <span className="text-xs text-muted-foreground">Toàn bộ công thức, nguyên liệu, danh mục &amp; bộ đề</span>;
               }
               return (
-                <span className="text-xs text-[#166534] font-medium">
+                <span className="text-xs font-medium text-muted-foreground">
                   Toàn bộ công thức đã phát hành
                 </span>
               );
             },
+          },
+          {
+            header: 'Trạng thái',
+            render: (u) => (
+              <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${u.isLocked ? 'bg-secondary text-muted-foreground' : 'bg-success-soft text-success'}`}>
+                <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />
+                {u.isLocked ? 'Đã khóa' : 'Đang hoạt động'}
+              </span>
+            ),
           },
           {
             header: 'Thao tác',
@@ -286,7 +287,7 @@ export default function AdminUsersPage() {
                 </Button>
                 <Button
                   size="sm"
-                  variant={u.isLocked ? 'gold' : 'danger'}
+                  variant="secondary"
                   isLoading={lockingUserId === u.id}
                   disabled={u.id === session?.userId}
                   onClick={() => handleToggleLock(u)}
@@ -300,7 +301,7 @@ export default function AdminUsersPage() {
         ]}
       />
 
-      <div className="flex items-center justify-between gap-3 text-xs text-[#706E68]">
+      <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
         <span>{total} tài khoản · Trang {page}/{totalPages}</span>
         <div className="flex gap-2">
           <Button size="sm" disabled={loading || page <= 1} onClick={() => setPage(p => p - 1)}>Trước</Button>
