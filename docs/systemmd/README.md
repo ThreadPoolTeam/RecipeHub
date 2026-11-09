@@ -14,9 +14,9 @@ docs/systemmd/
 ├── technical-inventory.md               # Kiểm kê source/API/DB/topology/config; snapshot tham chiếu, không thêm chuẩn
 ├── frontend/
 │   ├── 01-architecture-and-folders.md   # Cấu trúc Next.js App Router, quy tắc đặt tên & file
-│   ├── 02-layout-and-navigation.md      # Chuẩn WorkspaceShell, Sidebar thu gọn, Topbar, layout 3 tầng
+│   ├── 02-layout-and-navigation.md      # Chuẩn WorkspaceShell, top-nav, drawer mobile, role skin, layout 3 tầng
 │   ├── 03-roles-and-permissions.md      # Quy hoạch 3 role: Admin, R&D, Viewer (Barista/Store)
-│   ├── 04-design-system-and-components.md # Tích hợp DESIGN.md Warm Editorial, Apple pills, Animation
+│   ├── 04-design-system-and-components.md # Tóm tắt chuẩn token, font, component; nguồn là DESIGN.md (Figma)
 │   └── 05-data-fetching-and-state.md    # API clients, Session provider, Proxy, Error banner
 └── backend/
     ├── 01-clean-architecture-layers.md  # 4 tầng chuẩn (Domain, Application, Infrastructure, Api)
@@ -32,7 +32,7 @@ docs/systemmd/
 
 1. **Frontend:**
    - Chỉ dùng layout chuẩn `WorkspaceShell`. Không tạo layout ngoài luồng.
-   - Tuân thủ Warm Editorial (`docs/DESIGN.md`): Canvas `#FAF9F5`, viền `#E8E2D9`, nút bấm viên thuốc `#B47820`, font Google Sans + monospace số đo.
+   - Tuân thủ `docs/DESIGN.md` (Figma): semantic token, Outfit + Figtree với Google Sans làm fallback tiếng Việt, button radius 6px (không pill), top-nav + drawer, role skin qua `data-role`.
    - Phân định rõ 3 role: `admin`, `rnd`, `viewer`. Không trộn lẫn menu.
 2. **Backend:**
    - Clean Architecture 4 layer độc lập. Domain không phụ thuộc gì.

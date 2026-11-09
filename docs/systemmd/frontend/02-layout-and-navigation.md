@@ -5,7 +5,9 @@
 Tất cả các trang thuộc không gian làm việc `(platform)` được quản lý bởi component:
 `src/frontend/src/components/workspace/workspace-shell.tsx`.
 
-Header desktop dùng top navigation; dưới 768px dùng nút menu và drawer. Nội dung có chiều rộng tối đa 1360px, gutter desktop 40px và mobile 16px, theo `docs/DESIGN.md`. Footer có đường phân cách phía trên.
+Header desktop dùng top navigation (`top-nav.tsx`); dưới 768px dùng nút menu và drawer (`mobile-nav-drawer.tsx`). Nội dung có chiều rộng tối đa 1360px, gutter desktop 40px và mobile 16px, theo `docs/DESIGN.md`. Footer có đường phân cách phía trên.
+
+Shell đặt `data-role` (`rnd`, `admin`, `viewer`) trên `.workspace-root`; role skin đổi nền trang, accent, density và chiều cao control qua `--role-*` trong `globals.css` (bảng giá trị ở DESIGN.md mục 2). Không dùng menu hay layout riêng cho từng role ngoài skin này.
 
 ## 2. Điều Hướng Theo Vai Trò
 
@@ -18,8 +20,8 @@ Header desktop dùng top navigation; dưới 768px dùng nút menu và drawer. N
 ## 3. Bố Cục Trang Nghiệp Vụ 3 Tầng (3-Tier Page Structure)
 Mọi trang con trong workspace bắt buộc tổ chức 3 tầng:
 1. **Tầng 1 - Page Header:**
-   - Cụm tiêu đề `h1` (24px–28px, Bold 700, màu `#1A1917`).
-   - Dòng mô tả mục đích (13px–14px, màu `#706E68`).
+   - Tiêu đề `h1` dùng Outfit, `text-foreground` (cỡ h1/h2 theo DESIGN.md mục 3).
+   - Dòng mô tả dùng `text-muted-foreground`.
    - Nút hành động chính (`Primary Action`) đặt góc phải tiêu đề.
 2. **Tầng 2 - Toolbar & Filters:**
    - Thanh tìm kiếm `SearchInput` dạng viên thuốc (`rounded-full`).

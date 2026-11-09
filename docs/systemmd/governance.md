@@ -41,7 +41,7 @@
 - [ ] Màn hình workspace nằm trong `src/frontend/src/app/(platform)/`, dùng `WorkspaceShell` và áp dụng đúng quyền vai trò hoặc quyền chung của người đã đăng nhập?
 - [ ] Nếu có màn hình cần mục điều hướng mới, đã cập nhật menu đúng vai trò trong `src/frontend/src/components/workspace/nav-config.ts`?
 - [ ] Nếu thay đổi quyền truy cập, đã đồng bộ `src/frontend/src/lib/demo/permissions.ts` và kiểm tra quyền phía backend?
-- [ ] Giao diện dùng semantic tokens và component theo `docs/DESIGN.md`; alias cũ chỉ dùng tạm trong quá trình chuyển đổi?
+- [ ] Giao diện dùng semantic tokens (không hex/`bg-[#...]`, không file CSS lẻ), radius, button 6px không pill và component theo `docs/DESIGN.md`?
 - [ ] Số đo định lượng (gram, ml, độ Brix, nhiệt độ) dùng `tabular-nums`?
 - [ ] Chuyển động tôn trọng `prefers-reduced-motion`?
 - [ ] Đã chạy kiểm tra `npm run build` thành công, không lỗi TypeScript/JSX?

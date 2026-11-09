@@ -32,8 +32,9 @@ src/frontend/
 │   │   └── api/backend/[...path]/route.ts   # Next.js API proxy chuyển tiếp sang Gateway
 │   ├── components/                          # UI components tái sử dụng
 │   │   ├── workspace/                       # Khung làm việc dùng chung
-│   │   │   ├── workspace-shell.tsx          # Shell với top navigation và mobile drawer
-│   │   │   ├── workspace.css                # Animation & rules
+│   │   │   ├── workspace-shell.tsx          # Shell: top-nav, drawer mobile, footer, đặt data-role
+│   │   │   ├── top-nav.tsx                  # Điều hướng desktop; mobile-nav-drawer.tsx cho <768px
+│   │   │   ├── workspace.css                # Scrollbar, focus, animation vào trang, nền theo role
 │   │   │   ├── data-table.tsx               # Bảng dữ liệu chuẩn
 │   │   │   ├── status-badge.tsx             # Badge trạng thái & Role badge
 │   │   │   ├── dialog.tsx                   # Modal dialog chuẩn hóa
@@ -41,7 +42,7 @@ src/frontend/
 │   │   │   ├── media-library.tsx            # Trình quản lý media tập trung
 │   │   │   └── pdf-document-workspace.tsx   # Biên tập và xem trước tài liệu PDF
 │   │   ├── quizzes/                         # Phân hệ Quiz (Viewer & Management)
-│   │   └── landing/                         # Trang giới thiệu ngoài
+│   │   └── landing/                         # Trang giới thiệu ngoài (landing.css, ScrollFrameStory)
 │   └── lib/
 │   │   ├── api/                             # API clients kết nối backend
 │   │   │   ├── client.ts                    # HTTP fetcher cơ sở
@@ -61,7 +62,7 @@ src/frontend/
 2. **Components:**
    - Đặt trong `components/<tên-module>/<tên-thành-phần>.tsx`.
    - Viết PascalCase cho tên Component export (`export function DataTable(...)`).
-   - Tái sử dụng style hiện có (`workspace.css`, `viewer-quiz.css`); không thêm CSS biệt lập làm phân mảnh semantic tokens.
+   - Dùng Tailwind với semantic token; chỉ giữ CSS dùng chung hiện có (`globals.css`, `workspace.css`, `landing.css`), không thêm file CSS lẻ.
 3. **API Repositories:**
    - Tách riêng theo nghiệp vụ trong `src/lib/api/`.
    - Không gọi `fetch()` rải rác bên trong components; bắt buộc đóng gói qua client/repository.

@@ -38,14 +38,14 @@ Frontend tương tác với Backend qua 2 lớp bảo vệ:
   - Khi người dùng điều chỉnh danh sách công thức, tiêu đề, loại tài liệu hoặc phạm vi xuất bản sau khi đã tạo preview, giao diện tự động đánh dấu bản xem trước là "lỗi thời" (stale), vô hiệu hóa thao tác xuất bản chính thức và nhắc nhở người dùng nhấn tạo lại preview để bảo đảm snapshot hash luôn khớp với nội dung thực tế.
 ## 3. Xử Lý Trạng Thái Tải (Loading States)
 - Không dùng spinner xoay tròn toàn màn hình đơn điệu nếu không cần thiết.
-- Khuyến khích dùng Skeleton Loader bo góc `rounded-xl` màu `#F5F0E8` với hiệu ứng xung nhịp (`animate-pulse`) nhẹ nhàng theo chuẩn Warm Editorial.
+- Skeleton mô phỏng nội dung thực: `rounded-lg bg-secondary`, `motion-safe:animate-pulse`.
 - Màn hình chờ chuyển route cấp cao dùng `loading.tsx` tại `(platform)/loading.tsx`.
 
 ## 4. Bắt Lỗi & Phản Hồi Người Dùng (Error Handling & Feedback)
 - **Error Banner:**
-  - Khi API trả về lỗi 400/404/500, hiển thị Banner cảnh báo màu đỏ kem: nền `#FEF2F2`, viền `#FECACA`, icon `AlertTriangle`, chữ đỏ đậm `#991B1B`.
+  - Khi API trả về lỗi 400/404/500, hiển thị banner `border-destructive-border bg-destructive-tint text-destructive` kèm icon và cách xử lý.
 - **Form Validation:**
-  - Báo lỗi ngay dưới ô nhập liệu (Inline error text), chữ 12px màu đỏ `#DC2626`.
+  - Báo lỗi ngay dưới ô nhập liệu (inline error), chữ 12px `text-destructive`.
 - **Toast Notifications:**
-  - Dùng cho thông báo thành công (Lưu nháp thành công, Nộp bài thi hoàn tất). Nền trắng, viền `#E8E2D9`, icon xanh lục `#166534`.
+  - Dùng cho thông báo thành công (Lưu nháp thành công, Nộp bài thi hoàn tất): nền `bg-card`, viền `border-border`, icon `text-success`; chi tiết ở DESIGN.md mục 5.
 - **Tuyệt đối cấm:** Để lộ JSON raw lỗi backend hoặc để ứng dụng văng màn hình trắng Unhandled Exception.

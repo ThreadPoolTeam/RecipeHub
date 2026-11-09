@@ -2,7 +2,7 @@
 
 ## 1. Phạm vi
 
-Chuẩn giao diện web landing, auth và workspace R&D, Admin, Viewer theo Figma `9gCw3BzwxSGGLt7S1Mcya9`. Mobile theo `src/mobile/DESIGN.md`. Các primitive và shell cũ được chuyển đổi theo từng phase; token cũ là alias tạm thời, không phải chuẩn mới.
+Chuẩn giao diện web landing, auth và workspace R&D, Admin, Viewer theo Figma `9gCw3BzwxSGGLt7S1Mcya9`. Mobile theo `src/mobile/DESIGN.md`. Chỉ dùng token ngữ nghĩa ở mục 2; không còn alias token cũ.
 
 ## 2. Màu ngữ nghĩa
 
@@ -86,7 +86,7 @@ Motion tối thiểu để phản hồi thao tác; không bắt buộc active sc
 
 ## 8. Ngoại lệ cinematic
 
-Chỉ `#story` và overlay liên quan dùng `--cinematic-bg` #0C0C0E, `--cinematic-ink` #F2F0EB, `--cinematic-muted` #9E9A90; các khu vực landing khác dùng bộ token sáng.
+Chỉ `#story` (`ScrollFrameStory`) và overlay liên quan dùng `--cinematic-bg` #0C0C0E, `--cinematic-ink` #F2F0EB, `--cinematic-muted` #9E9A90, `--cinematic-border` rgba(242,240,235,.12), `--cinematic-gold` #C9A84C; các khu vực landing khác dùng bộ token sáng. Các màu này chỉ khai báo trong `globals.css`, component dùng class `text-cinematic-*`.
 
 ## 9. Ấn phẩm in ấn & Xuất bản PDF (Document Print Preset)
 
