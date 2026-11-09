@@ -19,6 +19,7 @@ type Props = {
 export function MediaDetail({ item, refs, previewUrl, allowDelete, isDeleting, isRetrying, onClose, onDelete, onRetry }: Props) {
   if (!item) return <aside className="rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground shadow-soft">Chọn ảnh để xem chi tiết và kiểm tra tham chiếu.</aside>;
   const visibleRefs = refs?.mediaId === item.id ? refs : null;
+  const name = item.name === item.id ? 'Chưa cập nhật' : item.name;
   return (
     <aside aria-label="Chi tiết ảnh" className="h-fit space-y-4 rounded-2xl border border-border bg-card p-5 shadow-soft">
       <div className="flex items-center justify-between gap-2">
@@ -27,10 +28,10 @@ export function MediaDetail({ item, refs, previewUrl, allowDelete, isDeleting, i
       </div>
       <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg bg-secondary">
         {previewUrl ? (
-          <img src={previewUrl} alt={item.name} className="h-full w-full object-contain" />
+          <img src={previewUrl} alt={name} className="h-full w-full object-contain" />
         ) : <span className="text-xs text-muted-foreground">Không có ảnh</span>}
       </div>
-      <h2 className="break-words font-display text-h3 font-medium">{item.name}</h2>
+      <h2 className="break-words font-display text-h3 font-medium">{name}</h2>
       <div className="flex flex-wrap gap-2"><MediaSourceBadge source={item.source} /><MediaStateBadge state={item.state} /></div>
       <dl className="space-y-2 rounded-lg bg-secondary p-4 text-xs">
         <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Dung lượng</dt><dd>{(item.sizeBytes / 1024).toFixed(1)} KB</dd></div>
