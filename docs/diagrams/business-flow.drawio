@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="RecipeHub BPMN" version="24.0.0">
+  <diagram id="recipehub-business-flow" name="Business flow">
+    <mxGraphModel adaptiveColors="auto">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    
+      <mxCell id="lane_rnd" value="NHÂN SỰ R&amp;D" style="swimlane;horizontal=0;startSize=110;fillColor=#e8f4f8;strokeColor=#6c8ebf;strokeWidth=1.5;fontStyle=1;fontSize=12;fontColor=#1e3a8a;html=1;collapsible=0;" vertex="1" parent="1">
+        <mxGeometry x="0" y="0" width="2080" height="160" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="lane_sys" value="HỆ THỐNG" style="swimlane;horizontal=0;startSize=110;fillColor=#e8f5e9;strokeColor=#82b366;strokeWidth=1.5;fontStyle=1;fontSize=12;fontColor=#14532d;html=1;collapsible=0;" vertex="1" parent="1">
+        <mxGeometry x="0" y="160" width="2080" height="160" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="lane_adm" value="QUẢN LÝ / DUYỆT" style="swimlane;horizontal=0;startSize=110;fillColor=#fff9e6;strokeColor=#d6b656;strokeWidth=1.5;fontStyle=1;fontSize=12;fontColor=#713f12;html=1;collapsible=0;" vertex="1" parent="1">
+        <mxGeometry x="0" y="320" width="2080" height="160" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="lane_bar" value="BARISTA / VẬN HÀNH" style="swimlane;horizontal=0;startSize=110;fillColor=#f3e8ff;strokeColor=#a855f7;strokeWidth=1.5;fontStyle=1;fontSize=12;fontColor=#581c87;html=1;collapsible=0;" vertex="1" parent="1">
+        <mxGeometry x="0" y="480" width="2080" height="160" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="n_rnd_1" value="1. Tạo công thức<br>&amp; chọn nguyên liệu" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=1.5;fontSize=11;fontStyle=1;align=center;shadow=1;" vertex="1" parent="lane_rnd">
+        <mxGeometry x="130" y="48" width="150" height="60" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="n_br07" value="<b>[BR-07]</b><br>Nguyên liệu<br>Active?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=1.5;fontSize=10;fontStyle=1;align=center;shadow=1;" vertex="1" parent="lane_sys">
+        <mxGeometry x="325" y="38" width="140" height="80" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="n_rnd_2" value="2. Soạn bước SOP<br>&amp; yêu cầu AI ảnh" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=1.5;fontSize=11;fontStyle=1;align=center;shadow=1;" vertex="1" parent="lane_rnd">
+        <mxGeometry x="510" y="48" width="150" height="60" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="n_sys_ai" value="3. Cloudflare FLUX.1<br>Sinh Candidate Draft" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=1.5;fontSize=11;fontStyle=1;align=center;shadow=1;" vertex="1" parent="lane_sys">
+        <mxGeometry x="700" y="48" width="150" height="60" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="n_ai_rev" value="<b>[BR-02 &amp; BR-03]</b><br>R&amp;D duyệt ảnh<br>ứng viên?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=1.5;fontSize=10;fontStyle=1;align=center;shadow=1;" vertex="1" parent="lane_rnd">
+        <mxGeometry x="895" y="38" width="140" height="80" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="n_rnd_pub" value="4. Gửi yêu cầu<br>Publish công thức" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=1.5;fontSize=11;fontStyle=1;align=center;shadow=1;" vertex="1" parent="lane_rnd">
+        <mxGeometry x="1080" y="48" width="150" height="60" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="n_br01" value="<b>[BR-01]</b><br>Đủ điều kiện<br>Publish?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=1.5;fontSize=10;fontStyle=1;align=center;shadow=1;" vertex="1" parent="lane_sys">
+        <mxGeometry x="1085" y="38" width="140" height="80" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="n_br05" value="<b>[BR-05]</b><br>Cấp trên duyệt<br>phát hành?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=1.5;fontSize=10;fontStyle=1;align=center;shadow=1;" vertex="1" parent="lane_adm">
+        <mxGeometry x="1275" y="38" width="140" height="80" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="n_sys_pub" value="5. Phát hành công thức<br>Khóa bất biến [BR-04]<br>&amp; Ghi Audit Log" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=1.5;fontSize=11;fontStyle=1;align=center;shadow=1;" vertex="1" parent="lane_sys">
+        <mxGeometry x="1270" y="48" width="155" height="60" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="n_rnd_doc" value="6. Xuất SOP PDF [BR-06]<br>&amp; Soạn đề thi Quiz" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=1.5;fontSize=11;fontStyle=1;align=center;shadow=1;" vertex="1" parent="lane_rnd">
+        <mxGeometry x="1460" y="48" width="150" height="60" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="n_bar_sop" value="7. Tra cứu SOP chuẩn<br>&amp; Tải tài liệu PDF" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fce4ec;strokeColor=#f43f5e;strokeWidth=1.5;fontSize=11;fontStyle=1;align=center;shadow=1;" vertex="1" parent="lane_bar">
+        <mxGeometry x="1460" y="48" width="150" height="60" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="n_bar_quiz" value="8. Làm bài thi Quiz<br>quy chuẩn SOP (Attempt)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fce4ec;strokeColor=#f43f5e;strokeWidth=1.5;fontSize=11;fontStyle=1;align=center;shadow=1;" vertex="1" parent="lane_bar">
+        <mxGeometry x="1650" y="48" width="150" height="60" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="n_grade" value="Hệ thống<br>Chấm điểm Quiz<br>Đạt ≥80%?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=1.5;fontSize=10;fontStyle=1;align=center;shadow=1;" vertex="1" parent="lane_sys">
+        <mxGeometry x="1655" y="38" width="140" height="80" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="n_bar_res" value="9. Hoàn tất đào tạo<br>&amp; nhận chứng nhận" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=1.5;fontSize=11;fontStyle=1;align=center;shadow=1;" vertex="1" parent="lane_bar">
+        <mxGeometry x="1840" y="48" width="150" height="60" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="n_adm_rep" value="10. Xem báo cáo &amp;<br>Audit Log toàn chuỗi" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=1.5;fontSize=11;fontStyle=1;align=center;shadow=1;" vertex="1" parent="lane_adm">
+        <mxGeometry x="1840" y="48" width="150" height="60" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4338ca;strokeWidth=1.5;fontColor=#1e40af;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="n_rnd_1" target="n_br07">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e1_fail" value="FAIL BR-07: Ngừng dùng" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;dashPattern=6 4;strokeColor=#b85450;strokeWidth=2;fontColor=#b85450;fontStyle=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="n_br07" target="n_rnd_1">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e1_pass" value="Active (Hợp lệ)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4338ca;strokeWidth=1.5;fontColor=#1e40af;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="n_br07" target="n_rnd_2">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4338ca;strokeWidth=1.5;fontColor=#1e40af;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="n_rnd_2" target="n_sys_ai">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e3" value="Candidate Draft (30m)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4338ca;strokeWidth=1.5;fontColor=#1e40af;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="n_sys_ai" target="n_ai_rev">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e3_regen" value="Tạo lại / Bỏ qua" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;dashPattern=6 4;strokeColor=#b85450;strokeWidth=2;fontColor=#b85450;fontStyle=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="n_ai_rev" target="n_sys_ai">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e3_acc" value="Chấp nhận -> Lưu Cloudinary" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4338ca;strokeWidth=1.5;fontColor=#1e40af;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="n_ai_rev" target="n_rnd_pub">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4338ca;strokeWidth=1.5;fontColor=#1e40af;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="n_rnd_pub" target="n_br01">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e4_fail" value="FAIL BR-01: Thiếu NL/SOP" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;dashPattern=6 4;strokeColor=#b85450;strokeWidth=2;fontColor=#b85450;fontStyle=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="n_br01" target="n_rnd_pub">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e4_pass" value="Đủ điều kiện (≥1 NL, ≥1 SOP)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4338ca;strokeWidth=1.5;fontColor=#1e40af;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="n_br01" target="n_br05">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e5_rej" value="Từ chối / Yêu cầu sửa" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;dashPattern=6 4;strokeColor=#b85450;strokeWidth=2;fontColor=#b85450;fontStyle=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="n_br05" target="n_rnd_pub">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e5_app" value="Phê duyệt" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4338ca;strokeWidth=1.5;fontColor=#1e40af;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="n_br05" target="n_sys_pub">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e6_doc" value="Published" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4338ca;strokeWidth=1.5;fontColor=#1e40af;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="n_sys_pub" target="n_rnd_doc">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e6_sop" value="Phát hành SOP & PDF" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4338ca;strokeWidth=1.5;fontColor=#1e40af;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="n_rnd_doc" target="n_bar_sop">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4338ca;strokeWidth=1.5;fontColor=#1e40af;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="n_bar_sop" target="n_bar_quiz">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4338ca;strokeWidth=1.5;fontColor=#1e40af;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="n_bar_quiz" target="n_grade">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e8_fail" value="Chưa đạt (&lt;80%): Ôn lại" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;dashPattern=6 4;strokeColor=#b85450;strokeWidth=2;fontColor=#b85450;fontStyle=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="n_grade" target="n_bar_quiz">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e8_pass" value="Đạt chuẩn (≥80%)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4338ca;strokeWidth=1.5;fontColor=#1e40af;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="n_grade" target="n_bar_res">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e9_adm" value="Sync Audit Log" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4338ca;strokeWidth=1.5;fontColor=#1e40af;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="n_sys_pub" target="n_adm_rep">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e10_adm" value="Kết quả thi" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#4338ca;strokeWidth=1.5;fontColor=#1e40af;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="n_grade" target="n_adm_rep">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+  </root>
+</mxGraphModel>
+  </diagram>
+</mxfile>
