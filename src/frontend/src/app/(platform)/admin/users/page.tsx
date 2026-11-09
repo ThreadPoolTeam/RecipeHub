@@ -182,7 +182,7 @@ export default function AdminUsersPage() {
             Mỗi tài khoản có đúng một vai trò: Admin, R&amp;D hoặc Viewer.
           </p>
         </div>
-        <Button variant="primary" className="h-10" onClick={() => setIsCreateOpen(true)}>
+        <Button variant="primary" className="!h-10" onClick={() => setIsCreateOpen(true)}>
           Tạo tài khoản
         </Button>
       </div>
