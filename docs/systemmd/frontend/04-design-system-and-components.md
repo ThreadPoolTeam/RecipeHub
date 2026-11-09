@@ -7,4 +7,4 @@ Nguồn chuẩn token, typography, component và accessibility: [`docs/DESIGN.md
 - Button radius 6px, card/table/dialog radius 8px; không dùng pill button. Search và avatar dùng radius full.
 - Trạng thái phải có nhãn rõ, không chỉ dựa vào màu. Component tương tác hỗ trợ bàn phím, focus rõ và `prefers-reduced-motion`.
 - Không hiển thị UUID/hash/token nội bộ; chỉ hiển thị mã nghiệp vụ có nghĩa.
-- Các màn và shell chưa refactor vẫn giữ hành vi, quyền và điều hướng hiện có cho đến phase tương ứng.
+- Shell dùng top navigation và drawer theo `docs/DESIGN.md`; các màn chưa refactor vẫn giữ hành vi, quyền và điều hướng hiện có cho đến phase tương ứng.

@@ -76,7 +76,7 @@ Lưới spacing 4px: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64. Radius sm 4, md 6, lg
 
 ## 6. Layout và responsive
 
-Shell đích dùng top-nav và footer, content tối đa 1360px, gutter desktop 40px; dưới 768px dùng drawer và gutter 16px. Giữ menu theo quyền hiện có. Màn hình mobile và một số trạng thái không có frame Figma, kích thước được suy theo token; chuyển shell ở phase sau, không coi sidebar hiện hữu đã được chuyển.
+Shell dùng top-nav và footer, content tối đa 1360px, gutter desktop 40px; dưới 768px dùng drawer và gutter 16px. Giữ menu theo quyền hiện có. Màn hình mobile và một số trạng thái không có frame Figma, kích thước được suy theo token.
 
 ## 7. Motion, trạng thái và accessibility
 

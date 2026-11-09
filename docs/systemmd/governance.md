@@ -39,7 +39,7 @@
 
 ### 2.1. Phía Frontend:
 - [ ] Màn hình workspace nằm trong `src/frontend/src/app/(platform)/`, dùng `WorkspaceShell` và áp dụng đúng quyền vai trò hoặc quyền chung của người đã đăng nhập?
-- [ ] Nếu có màn hình cần mục điều hướng mới, đã cập nhật menu đúng vai trò trong `src/frontend/src/components/workspace/workspace-shell.tsx`?
+- [ ] Nếu có màn hình cần mục điều hướng mới, đã cập nhật menu đúng vai trò trong `src/frontend/src/components/workspace/nav-config.ts`?
 - [ ] Nếu thay đổi quyền truy cập, đã đồng bộ `src/frontend/src/lib/demo/permissions.ts` và kiểm tra quyền phía backend?
 - [ ] Giao diện dùng semantic tokens và component theo `docs/DESIGN.md`; alias cũ chỉ dùng tạm trong quá trình chuyển đổi?
 - [ ] Số đo định lượng (gram, ml, độ Brix, nhiệt độ) dùng `tabular-nums`?
@@ -63,7 +63,7 @@
 - **Nếu thêm một Role mới ngoài 3 role hiện tại:**
   Bắt buộc cập nhật:
   1. `docs/systemmd/frontend/03-roles-and-permissions.md`
-  2. `src/frontend/src/components/workspace/workspace-shell.tsx`
+  2. `src/frontend/src/components/workspace/nav-config.ts` và `workspace-shell.tsx`
   3. `src/frontend/src/lib/demo/permissions.ts`
   4. Backend `Identity` service và database role seed.
 - **Nếu thêm một Service mới:**
