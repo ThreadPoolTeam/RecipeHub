@@ -37,11 +37,11 @@ export function CodeInput({
 
   return (
     <div className={`min-w-0 space-y-1.5 ${className}`}>
-      <label htmlFor={inputId} className="block text-xs font-semibold text-[#1A1917]">
-        {label} {required && <span className="text-rose-500">*</span>}
+      <label htmlFor={inputId} className="block text-xs font-medium text-foreground">
+        {label} {required && <span className="text-destructive">*</span>}
       </label>
-      <div className={`flex min-w-0 items-center gap-1 rounded-xl border bg-white p-1 shadow-xs transition-all duration-150 focus-within:ring-2 ${
-        error ? 'border-rose-400 focus-within:ring-rose-200' : 'border-[#E8E2D9] focus-within:border-[#B47820] focus-within:ring-[#B47820]/15'
+      <div className={`flex h-10 min-w-0 items-center gap-1 rounded-md border bg-card px-1 shadow-inset focus-within:ring-2 ${
+        error ? 'border-destructive focus-within:ring-destructive' : 'border-input focus-within:border-ring focus-within:ring-ring'
       }`}>
         <input
           {...props}
@@ -50,7 +50,7 @@ export function CodeInput({
           disabled={disabled || generating}
           aria-invalid={error ? true : invalid}
           aria-describedby={descriptionIds}
-          className="min-w-0 flex-1 rounded-lg bg-transparent px-2.5 py-1.5 text-sm text-[#1A1917] outline-none placeholder:text-[#8C887F] disabled:cursor-not-allowed disabled:text-[#706E68]"
+          className="min-w-0 flex-1 rounded-md bg-transparent px-2 text-sm text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:text-muted-foreground"
         />
         <button
           type="button"
@@ -59,14 +59,14 @@ export function CodeInput({
           aria-label={generateLabel}
           aria-describedby={descriptionIds}
           aria-busy={generating}
-          className="inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-transparent px-2 py-1.5 text-xs font-medium text-[#B47820] transition hover:text-[#9A6416] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#B47820] disabled:cursor-not-allowed disabled:opacity-50 sm:px-2.5"
+          className="inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-transparent px-2 py-1.5 text-xs font-medium text-[var(--role-accent)] hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 sm:px-2.5"
         >
-          {generating ? <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin" /> : <Sparkles aria-hidden="true" className="h-3.5 w-3.5" />}
+          {generating ? <Loader2 aria-hidden="true" strokeWidth={1.5} className="h-3.5 w-3.5 animate-spin" /> : <Sparkles aria-hidden="true" strokeWidth={1.5} className="h-3.5 w-3.5" />}
           <span aria-live="polite">{generating ? 'Đang tạo…' : 'Tạo mã'}</span>
         </button>
       </div>
-      {helper && <p id={helperId} className="text-xs text-[#706E68]">{helper}</p>}
-      {error && <p id={errorId} role="alert" className="text-xs text-rose-500">{error}</p>}
+      {helper && <p id={helperId} className="text-xs text-muted-foreground">{helper}</p>}
+      {error && <p id={errorId} role="alert" className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }

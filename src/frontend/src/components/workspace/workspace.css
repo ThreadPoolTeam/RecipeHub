@@ -2,31 +2,9 @@
 
 .workspace-root,
 .auth-root {
-  /* Temporary aliases used by existing workspace and auth components. */
-  --bg-main: var(--role-page-bg);
-  --bg-surface: var(--color-card);
-  --bg-surface-elevated: var(--color-secondary);
-  --bg-surface-hover: var(--color-accent);
-  --text-main: var(--color-foreground);
-  --text-muted: var(--color-muted-foreground);
-  --text-dim: var(--color-muted-foreground);
-  --border-subtle: var(--color-border);
-  --border-base: var(--color-border);
-  --border-hover: var(--color-input);
-  --accent-gold: var(--color-primary);
-  --accent-gold-hover: var(--color-primary);
-  --accent-gold-bg: var(--color-primary-soft);
-  --action-primary: var(--role-accent);
-  --action-primary-hover: var(--role-accent);
-  --status-draft: var(--status-draft-fg);
-  --status-pending: var(--status-pending-fg);
-  --status-approved: var(--status-approved-fg);
-  --status-archived: var(--status-archived-fg);
-  --status-danger: var(--status-returned-fg);
-
   font-family: 'Figtree Variable', 'Google Sans', system-ui, sans-serif;
-  background-color: var(--bg-main);
-  color: var(--text-main);
+  background-color: var(--role-page-bg);
+  color: var(--color-foreground);
   min-height: 100vh;
 }
 
@@ -37,46 +15,21 @@
 }
 
 .workspace-root ::-webkit-scrollbar-track {
-  background: var(--bg-surface);
+  background: var(--color-card);
 }
 
 .workspace-root ::-webkit-scrollbar-thumb {
-  background: rgba(112, 110, 104, 0.25);
-  border-radius: 3px;
+  background: var(--color-border);
+  border-radius: var(--radius-sm);
 }
 
 .workspace-root ::-webkit-scrollbar-thumb:hover {
-  background: rgba(112, 110, 104, 0.45);
+  background: var(--color-muted-foreground);
 }
 /* Focus outlines */
-.workspace-root input:focus-visible,
-.workspace-root select:focus-visible,
-.workspace-root textarea:focus-visible,
-.workspace-root button:focus-visible,
-.auth-root input:focus-visible,
-.auth-root button:focus-visible {
-  outline: 2px solid var(--accent-gold);
-  outline-offset: 1px;
+.workspace-root :focus-visible,
+.auth-root :focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
-/* Page entrance animation across workspace */
-.workspace-page-anim {
-  animation: workspace-enter 0.22s ease-out;
-}
-
-@keyframes workspace-enter {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .workspace-page-anim {
-    animation: none !important;
-  }
-}
