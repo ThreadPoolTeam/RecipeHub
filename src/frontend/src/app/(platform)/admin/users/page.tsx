@@ -4,9 +4,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useDemo } from '@/lib/demo/provider';
 import { User, Role } from '@/lib/demo/types';
 import { Button, TextInput, Select, Alert, SearchInput } from '@/components/workspace/fields';
-import { DataTable } from '@/components/workspace/data-table';
-import { RoleBadge } from '@/components/workspace/status-badge';
 import { Dialog } from '@/components/workspace/dialog';
+import { UsersTable } from './users-table';
 
 export default function AdminUsersPage() {
   const { session, repo, dataVersion, touch } = useDemo();
@@ -175,7 +174,7 @@ export default function AdminUsersPage() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Quản trị</p>
-          <h1 className="mt-2 font-heading text-3xl font-medium text-foreground sm:text-[40px] sm:leading-[48px]">
+          <h1 className="mt-2 font-display text-3xl font-medium text-foreground sm:text-[40px] sm:leading-[48px]">
             Tài khoản &amp; phân quyền
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -226,79 +225,14 @@ export default function AdminUsersPage() {
           options={[{ label: 'Tất cả trạng thái', value: 'all' }, { label: 'Đang hoạt động', value: 'active' }, { label: 'Đã khóa', value: 'inactive' }]} />
       </div>
 
-      {/* Users DataTable */}
-      <DataTable<User>
-        data={users}
-        keyExtractor={(u) => u.id}
-        isLoading={loading}
-        emptyTitle="Không tìm thấy người dùng"
-        emptyMessage="Hãy điều chỉnh từ khóa tìm kiếm hoặc tạo tài khoản mới."
-        columns={[
-          {
-            header: 'Người dùng',
-            render: (u) => (
-              <div>
-                <div className="font-semibold text-foreground">{u.fullName}</div>
-                <div className="mt-0.5 text-xs text-muted-foreground">{u.email}</div>
-              </div>
-            ),
-          },
-          {
-            header: 'Vai trò',
-            render: (u) => <RoleBadge role={u.role} />,
-          },
-          {
-            header: 'Phạm vi truy cập',
-            render: (u) => {
-              if (u.role === 'admin') {
-                return <span className="text-xs text-muted-foreground">Quản trị hệ thống, tài khoản &amp; nhật ký Audit</span>;
-              }
-              if (u.role === 'rnd') {
-                return <span className="text-xs text-muted-foreground">Toàn bộ công thức, nguyên liệu, danh mục &amp; bộ đề</span>;
-              }
-              return (
-                <span className="text-xs font-medium text-muted-foreground">
-                  Toàn bộ công thức đã phát hành
-                </span>
-              );
-            },
-          },
-          {
-            header: 'Trạng thái',
-            render: (u) => (
-              <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${u.isLocked ? 'bg-secondary text-muted-foreground' : 'bg-success-soft text-success'}`}>
-                <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />
-                {u.isLocked ? 'Đã khóa' : 'Đang hoạt động'}
-              </span>
-            ),
-          },
-          {
-            header: 'Thao tác',
-            className: 'text-right',
-            render: (u) => (
-              <div className="flex items-center justify-end gap-2">
-                <Button size="sm" disabled={u.id === session?.userId} onClick={() => { setPasswordUser(u); setResetPassword(''); setErrorMsg(null); }}>Đổi mật khẩu</Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => openEditModal(u)}
-                >
-                  Sửa
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  isLoading={lockingUserId === u.id}
-                  disabled={u.id === session?.userId}
-                  onClick={() => handleToggleLock(u)}
-                  title={u.id === session?.userId ? 'Không thể tự khóa chính mình' : undefined}
-                >
-                  {u.isLocked ? 'Mở khóa' : 'Khóa'}
-                </Button>
-              </div>
-            ),
-          },
-        ]}
+      <UsersTable
+        users={users}
+        loading={loading}
+        currentUserId={session?.userId}
+        lockingUserId={lockingUserId}
+        onResetPassword={(u) => { setPasswordUser(u); setResetPassword(''); setErrorMsg(null); }}
+        onEdit={openEditModal}
+        onToggleLock={handleToggleLock}
       />
 
       <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">

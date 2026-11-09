@@ -3,20 +3,17 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  Activity,
   Database,
   RefreshCw,
-  CheckCircle2,
-  AlertTriangle,
   ExternalLink,
   ShieldCheck,
   BarChart3,
-  Server,
 } from 'lucide-react';
 import { requestJson } from '@/lib/api/client';
 import { listAuditLogs, getActionLabel, AuditLogDto } from '@/lib/api/audit';
 import { Button } from '@/components/workspace/fields';
 import { DataTable } from '@/components/workspace/data-table';
+import { ServiceHealthTable } from './service-health-table';
 
 interface ServiceProbeTarget {
   key: string;
@@ -183,84 +180,7 @@ export default function AdminSystemMonitoringPage() {
         <a href="http://localhost:5050" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 shadow-soft hover:bg-accent"><Database className="h-5 w-5" strokeWidth={1.5} /><span className="flex-1 text-sm font-semibold">pgAdmin 4</span><ExternalLink className="h-4 w-4" strokeWidth={1.5} /></a>
       </div>
 
-      {/* Level 3: Microservices & Database Readiness Table */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="flex items-center gap-2 font-display text-xl font-medium text-foreground">
-              <Server className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-              Trạng thái Dịch vụ &amp; Cơ sở dữ liệu
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Mỗi dịch vụ tự kiểm tra kết nối tới schema PostgreSQL độc lập của dịch vụ đó.
-            </p>
-          </div>
-        </div>
-
-        <DataTable<ServiceHealthResult>
-          data={services}
-          keyExtractor={(item) => item.key}
-          isLoading={loading}
-          emptyTitle="Chưa có dữ liệu thăm dò dịch vụ"
-          emptyMessage="Bấm Kiểm tra toàn hệ thống để thăm dò trạng thái các microservices."
-          columns={[
-            {
-              header: 'Dịch vụ (Microservice)',
-              render: (item) => (
-                <div>
-                  <div className="text-sm font-semibold text-foreground">{item.name}</div>
-                  <div className="text-xs text-muted-foreground">{item.roleLabel}</div>
-                </div>
-              ),
-            },
-            {
-              header: 'CSDL Độc lập',
-              render: (item) => (
-                <span className="rounded-md bg-secondary px-2 py-1 text-xs text-foreground">
-                  {item.dbName}
-                </span>
-              ),
-            },
-            {
-              header: 'Trạng thái API',
-              render: (item) =>
-                item.status === 'Ready' ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-md bg-success-soft px-2.5 py-1 text-xs font-medium text-success">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Hoạt động tốt
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 rounded-md bg-destructive-soft px-2.5 py-1 text-xs font-medium text-destructive">
-                    <AlertTriangle className="w-3.5 h-3.5" /> Sự cố kết nối
-                  </span>
-                ),
-            },
-            {
-              header: 'Kết nối PostgreSQL',
-              render: (item) =>
-                item.database === 'Connected' ? (
-                  <span className="text-xs font-medium text-success">Đã kết nối</span>
-                ) : (
-                  <span className="text-xs font-medium text-destructive">Mất kết nối</span>
-                ),
-            },
-            {
-              header: 'Độ trễ',
-              render: (item) => (
-                <span className="text-xs font-semibold tabular-nums text-foreground">
-                  {item.latencyMs} ms
-                </span>
-              ),
-            },
-            {
-              header: 'Lần kiểm tra cuối',
-              className: 'text-right',
-              render: (item) => (
-                <span className="text-xs tabular-nums text-muted-foreground">{item.checkedAt}</span>
-              ),
-            },
-          ]}
-        />
-      </div>
+      <ServiceHealthTable services={services} loading={loading} />
 
       {/* Recent Business Activity Stream Summary */}
       <div className="space-y-3">
