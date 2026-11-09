@@ -6,9 +6,8 @@ import { FlaskConical, Plus, Pencil } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { Ingredient } from '@/lib/demo/types';
 import { Button, Select, Alert, SearchInput } from '@/components/workspace/fields';
-import { DataTable } from '@/components/workspace/data-table';
 import { IngredientCategoryPanel, IngredientCategoryEditing } from '@/components/workspace/ingredient-category-panel';
-import { CatalogPageHeader, CatalogTabs, CodeChip, StateToggle, editIconButtonClass } from '@/components/workspace/catalog-ui';
+import { CatalogPageHeader, CatalogTabs, StateToggle, editIconButtonClass } from '@/components/workspace/catalog-ui';
 import { CatalogItem } from '@/lib/api/backend-repository';
 
 type IngredientTab = 'ingredients' | 'categories';
@@ -145,77 +144,13 @@ export default function RndIngredientsPage() {
     }
   };
 
-  const columns = [
-    {
-      header: 'Mã & Tên Nguyên Liệu',
-      render: (item: Ingredient) => (
-        <div>
-          <div className="flex items-center gap-2">
-            <CodeChip>{item.code}</CodeChip>
-            <Link
-              href={`/rnd/ingredients/${item.id}/edit`}
-              className="font-semibold text-[#1A1917] hover:text-[#B47820] text-sm text-left transition truncate"
-            >
-              {item.name}
-            </Link>
-          </div>
-          {item.note && (
-            <p className="text-xs text-[#706E68] mt-0.5 line-clamp-1 italic">
-              Ghi chú: {item.note}
-            </p>
-          )}
-        </div>
-      ),
-    },
-    {
-      header: 'Loại',
-      render: (item: Ingredient) => (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#F5F0E8] text-[#706E68] border border-[#E8E2D9]">
-          {item.group}
-        </span>
-      ),
-    },
-    {
-      header: 'Đơn Vị Định Mức',
-      render: (item: Ingredient) => (
-        <span className="font-mono text-xs text-[#706E68]">{item.defaultUnit}</span>
-      ),
-    },
-    {
-      header: 'Trạng Thái',
-      render: (item: Ingredient) => (
-        <StateToggle
-          active={item.isActive}
-          disabled={togglingId === item.id}
-          onToggle={() => handleToggleActive(item)}
-          subject={`nguyên liệu "${item.name}"`}
-        />
-      ),
-    },
-    {
-      header: 'Thao Tác',
-      className: 'text-right',
-      render: (item: Ingredient) => (
-        <div className="flex items-center justify-end">
-          <Link
-            href={`/rnd/ingredients/${item.id}/edit`}
-            className={editIconButtonClass}
-            title="Chỉnh sửa nguyên liệu"
-            aria-label="Chỉnh sửa nguyên liệu"
-          >
-            <Pencil className="w-4 h-4" />
-          </Link>
-        </div>
-      ),
-    },
-  ];
 
   return (
     <div className="space-y-6">
       <CatalogPageHeader
         icon={FlaskConical}
-        title={<>Kho Nguyên Liệu R&amp;D</>}
-        description="Quản lý nguyên liệu và loại nguyên liệu dùng để xây dựng công thức."
+        title={<>Nguyên liệu</>}
+        description="Quản lý nguyên liệu, nhóm và đơn vị mặc định dùng trong công thức."
         actions={
           activeTab === 'ingredients' ? (
             <Link href="/rnd/ingredients/new">
@@ -262,7 +197,7 @@ export default function RndIngredientsPage() {
       ) : (
       <>
       {/* Filter Toolbar */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-white border border-[#E8E2D9] p-3 rounded-2xl shadow-xs">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
         <div className="md:col-span-2">
           <SearchInput
             placeholder="Tìm theo mã hoặc tên nguyên liệu..."
@@ -308,26 +243,43 @@ export default function RndIngredientsPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <DataTable
-        columns={columns}
-        data={pagedItems}
-        keyExtractor={(item) => item.id}
-        isLoading={loading}
-        emptyTitle="Chưa tìm thấy nguyên liệu"
-        emptyMessage="Không có nguyên liệu nào khớp với từ khóa, loại hoặc trạng thái đang lọc."
-        emptyAction={
-          <Button variant="secondary" size="sm" onClick={() => { setSearchQuery(''); setGroupFilter('all'); setStatusFilter('all'); }}>
-            Xóa bộ lọc
-          </Button>
-        }
-        pagination={{
-          page: currentPage,
-          totalPages,
-          total: totalItems,
-          onPageChange: setCurrentPage,
-        }}
-      />
+      {loading ? (
+        <div className="rounded-lg border border-border bg-card p-12 text-center text-muted-foreground">Đang tải nguyên liệu...</div>
+      ) : pagedItems.length === 0 ? (
+        <div className="space-y-3 rounded-lg border border-border bg-card p-12 text-center">
+          <p className="font-medium">Chưa tìm thấy nguyên liệu</p>
+          <p className="text-sm text-muted-foreground">Không có nguyên liệu nào khớp với từ khóa, loại hoặc trạng thái đang lọc.</p>
+          <Button variant="secondary" size="sm" onClick={() => { setSearchQuery(''); setGroupFilter('all'); setStatusFilter('all'); }}>Xóa bộ lọc</Button>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+            {pagedItems.map((item) => (
+              <article key={item.id} className="overflow-hidden rounded-xl border border-border bg-card shadow-soft">
+                <div className="flex aspect-[4/3] items-center justify-center bg-muted text-sm text-muted-foreground">Không có ảnh xem trước</div>
+                <div className="space-y-3 p-5">
+                  <p className="text-xs text-muted-foreground">{item.code} · {item.group}</p>
+                  <Link href={`/rnd/ingredients/${item.id}/edit`} className="block text-lg font-semibold text-foreground hover:text-primary">{item.name}</Link>
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <StateToggle active={item.isActive} disabled={togglingId === item.id} onToggle={() => handleToggleActive(item)} subject={`nguyên liệu "${item.name}"`} />
+                    <span>Đơn vị mặc định: {item.defaultUnit}</span>
+                  </div>
+                  {item.warning && <p className="rounded-md bg-destructive-soft px-2 py-1 text-xs text-destructive">{item.warning}</p>}
+                  {item.note && <p className="line-clamp-2 text-xs text-muted-foreground">{item.note}</p>}
+                  <Link href={`/rnd/ingredients/${item.id}/edit`} className={editIconButtonClass} title="Chỉnh sửa nguyên liệu" aria-label={`Chỉnh sửa nguyên liệu ${item.name}`}><Pencil className="h-4 w-4" /></Link>
+                </div>
+              </article>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+            <span>{totalItems} nguyên liệu · Trang {currentPage}/{totalPages}</span>
+            <div className="flex gap-2">
+              <Button variant="secondary" size="sm" disabled={currentPage <= 1} onClick={() => setCurrentPage(currentPage - 1)}>Trước</Button>
+              <Button variant="secondary" size="sm" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(currentPage + 1)}>Sau</Button>
+            </div>
+          </div>
+        </>
+      )}
       </>
       )}
     </div>
