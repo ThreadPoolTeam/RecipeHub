@@ -12,6 +12,7 @@ import {
 import { User } from '@/lib/demo/types';
 import { Button, Select } from '@/components/workspace/fields';
 import { QuizAttemptBadge } from '@/components/workspace/status-badge';
+import { interactiveCardClass, stretchedLinkClass } from '@/components/workspace/interactive-card';
 import {
   ManagementFrame,
   Message,
@@ -228,7 +229,7 @@ export function ManagementResults() {
                 const date = new Date(item.submittedAt || item.startedAt);
                 const isSuccess = item.isPassed ?? (item.score !== null && item.score >= item.passingScore);
                 return (
-                  <article key={item.attemptId} className="grid items-center gap-4 rounded-lg border border-border bg-card p-4 shadow-soft sm:grid-cols-2 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_auto_auto_auto]">
+                  <article key={item.attemptId} className={`grid items-center gap-4 p-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_auto_auto] ${interactiveCardClass}`}>
                     <div className="min-w-0">
                       <p className="font-semibold text-foreground">{displayName}</p>
                       <p className="text-xs text-muted-foreground">{user?.email || 'Tài khoản nội bộ'} · {roleLabel}</p>
@@ -239,7 +240,9 @@ export function ManagementResults() {
                       </p>
                     </div>
                     <div className="min-w-0">
-                      <p className="font-semibold text-foreground">{item.quizTitle}</p>
+                      <p className="font-semibold text-foreground">
+                        <Link href={`${base}/results/${item.attemptId}`} className={stretchedLinkClass}>{item.quizTitle}</Link>
+                      </p>
                       <p className="text-xs text-muted-foreground">{item.quizCode} · v{item.versionNumber}.0</p>
                     </div>
                     <div className="text-sm tabular-nums">
@@ -253,9 +256,6 @@ export function ManagementResults() {
                       )}
                     </div>
                     <QuizAttemptBadge isSubmitted={!!item.submittedAt} isPassed={item.isPassed} />
-                    <Link href={`${base}/results/${item.attemptId}`} className="text-sm font-semibold text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring">
-                      Xem bài làm
-                    </Link>
                   </article>
                 );
               })}
@@ -264,7 +264,7 @@ export function ManagementResults() {
           </>
         ) : (
           <div className="rounded-lg border border-border bg-card p-12 text-center">
-            <h2 className="font-display text-panel">Chưa có kết quả làm bài nào</h2>
+            <h2 className="font-display text-panel font-medium">Chưa có kết quả làm bài nào</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Kết quả sẽ hiển thị ngay khi nhân viên hoàn thành bài kiểm tra SOP.
             </p>
@@ -419,7 +419,7 @@ export function ManagementResultView({ attemptId }: { attemptId: string }) {
                       <span className="px-2 py-0.5 rounded-md bg-secondary border border-border text-xs font-bold text-muted-foreground">
                         Câu {String(index + 1).padStart(2, '0')}
                       </span>
-                      <h4 className="font-semibold text-sm text-foreground">{answer.content}</h4>
+                      <h4 className="text-sm text-foreground font-medium font-display">{answer.content}</h4>
                     </div>
 
                     <span

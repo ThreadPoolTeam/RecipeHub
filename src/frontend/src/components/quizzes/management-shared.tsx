@@ -1,5 +1,7 @@
 'use client';
 
+import { pageTitleClass } from '@/components/workspace/page-header';
+
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useDemo } from '@/lib/demo/provider';
 import type { QuizState } from '@/lib/api/quiz-management';
@@ -9,12 +11,13 @@ export function useManagementContext() {
   const { session, repo } = useDemo();
   return { session, repo, base: '/rnd/quizzes' };
 }
-export function ManagementFrame({ children, title, description, actions }: { children: ReactNode; title: string; description?: string; actions?: ReactNode }) {
+export function ManagementFrame({ children, title, eyebrow, description, actions }: { children: ReactNode; title: string; eyebrow?: string; description?: string; actions?: ReactNode }) {
   const { session } = useManagementContext();
   return <section className="mx-auto max-w-[1360px] pb-16 text-foreground">
     <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
-        <h1 className="font-display text-h2 font-medium sm:text-h1">{title}</h1>
+        {eyebrow && <p className="mb-2 text-pill font-medium uppercase tracking-[0.06em] text-muted-foreground">{eyebrow}</p>}
+        <h1 className={pageTitleClass}>{title}</h1>
         {description && <p className="mt-2 text-sm text-muted-foreground">{description}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}

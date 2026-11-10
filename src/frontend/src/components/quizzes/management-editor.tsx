@@ -11,12 +11,14 @@ import { ManagementQuestion } from './management-question';
 
 import { ManagementPreview } from './management-preview';
 import { Button, Select, TextArea, TextInput } from '@/components/workspace/fields';
+import { useToast } from '@/components/workspace/toast';
 type PendingAction = 'deleteQuiz' | 'deleteVersion' | 'published' | 'archived' | 'clone';
 function toDraft(detail: QuizDetail): QuizDraft {
   return { title: detail.title, description: detail.description, recipeVersionId: detail.version.recipeVersionId, passingScore: detail.version.passingScore, questions: [...detail.version.questions].sort((a, b) => a.sortOrder - b.sortOrder).map(question => ({ ...question, options: [...question.options].sort((a, b) => a.sortOrder - b.sortOrder) })) };
 }
 export function ManagementEditor({ quizId }: { quizId: string }) {
   const { session, base } = useManagementContext();
+  const { toast } = useToast();
   const router = useRouter();
   const params = useSearchParams();
   const requestedVersion = params.get('version');
@@ -28,7 +30,6 @@ export function ManagementEditor({ quizId }: { quizId: string }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
   const [retry, setRetry] = useState(0);
   const [questionIndex, setQuestionIndex] = useState<number | null>(null);
   const [removeQuestion, setRemoveQuestion] = useState<number | null>(null);
@@ -38,7 +39,7 @@ export function ManagementEditor({ quizId }: { quizId: string }) {
     if (!session || session.role === 'viewer') return;
     if (!version) { setError('Đường dẫn cần phiên bản hợp lệ. Mở bộ đề từ danh sách.'); setLoading(false); return; }
     const controller = new AbortController();
-    setLoading(true); setError(''); setMessage(''); setDetail(null); setDraft(null);
+    setLoading(true); setError(''); setDetail(null); setDraft(null);
     quizManagement.detail(session.userId, quizId, version, controller.signal).then(async data => {
       const list = await quizManagement.list(session.userId, { code: data.code, pageSize: 100 }, controller.signal);
       if (controller.signal.aborted) return;
@@ -62,7 +63,7 @@ export function ManagementEditor({ quizId }: { quizId: string }) {
     return () => { window.removeEventListener('beforeunload', beforeUnload); document.removeEventListener('click', navigate, true); };
   }, [dirty]);
   const editable = detail?.version.state === 'draft' && !busy;
-  function update(fields: Partial<QuizDraft>) { setDraft(current => current ? { ...current, ...fields } : current); setDirty(true); setMessage(''); }
+  function update(fields: Partial<QuizDraft>) { setDraft(current => current ? { ...current, ...fields } : current); setDirty(true); }
   function canLeave() { return !dirty || window.confirm('Có thay đổi chưa lưu. Bỏ các thay đổi này?'); }
   function moveQuestion(index: number, direction: -1 | 1) {
     if (!draft) return;
@@ -75,29 +76,29 @@ export function ManagementEditor({ quizId }: { quizId: string }) {
   async function save() {
     if (!session || !draft || !version || busy) return;
     if (!draft.title.trim() || !draft.recipeVersionId || !Number.isFinite(draft.passingScore) || draft.passingScore <= 0 || draft.passingScore > 100) { setError('Nhập tên, chọn công thức và điểm đạt lớn hơn 0, tối đa 100.'); return; }
-    setBusy(true); setError(''); setMessage('');
+    setBusy(true); setError('');
     try {
       const saved = await quizManagement.save(session.userId, quizId, version, { ...draft, title: draft.title.trim(), description: draft.description?.trim() || null, questions: draft.questions.map((question, index) => ({ ...question, sortOrder: index + 1, options: question.options.map((option, optionIndex) => ({ ...option, sortOrder: optionIndex + 1 })) })) });
-      setDetail(saved); setDraft(toDraft(saved)); setDirty(false); setMessage('Đã lưu bản nháp lên hệ thống.');
-    } catch (e) { setError(errorText(e)); } finally { setBusy(false); }
+      setDetail(saved); setDraft(toDraft(saved)); setDirty(false); toast({ type: 'success', title: 'Đã lưu bản nháp' });
+    } catch { toast({ type: 'error', title: 'Không thể lưu bản nháp', description: 'Vui lòng kiểm tra thông tin và thử lại.' }); } finally { setBusy(false); }
   }
   async function executeAction() {
     if (!session || !version || !action || busy) return;
-    setBusy(true); setError(''); setMessage('');
+    setBusy(true); setError('');
     try {
-      if (action === 'deleteQuiz') { await quizManagement.deleteQuiz(session.userId, quizId); setDirty(false); router.push(base); }
+      if (action === 'deleteQuiz') { await quizManagement.deleteQuiz(session.userId, quizId); setDirty(false); toast({ type: 'success', title: 'Đã xóa bộ đề' }); router.push(base); }
       else if (action === 'deleteVersion') {
         await quizManagement.deleteVersion(session.userId, quizId, version);
         const remaining = summary?.versions.filter(item => item.versionNumber !== version).sort((a, b) => b.versionNumber - a.versionNumber)[0];
-        setDirty(false); router.push(remaining ? `${base}/${quizId}?version=${remaining.versionNumber}` : base);
+        setDirty(false); toast({ type: 'success', title: 'Đã xóa bản nháp' }); router.push(remaining ? `${base}/${quizId}?version=${remaining.versionNumber}` : base);
       } else {
         const result = action === 'clone' ? await quizManagement.clone(session.userId, quizId, version) : await quizManagement.transition(session.userId, quizId, version, action);
         setDirty(false);
-        if (action === 'clone') router.push(`${base}/${quizId}?version=${result.version.versionNumber}`);
-        else { setDetail(result); setDraft(toDraft(result)); setMessage(action === 'published' ? 'Đã ban hành phiên bản.' : 'Đã lưu trữ phiên bản.'); setSummary(current => current ? { ...current, versions: current.versions.map(item => item.versionNumber === version ? { ...item, state: result.version.state } : item) } : current); }
+        if (action === 'clone') { toast({ type: 'success', title: 'Đã nhân bản phiên bản' }); router.push(`${base}/${quizId}?version=${result.version.versionNumber}`); }
+        else { setDetail(result); setDraft(toDraft(result)); toast({ type: 'success', title: action === 'published' ? 'Đã ban hành phiên bản' : 'Đã lưu trữ phiên bản' }); setSummary(current => current ? { ...current, versions: current.versions.map(item => item.versionNumber === version ? { ...item, state: result.version.state } : item) } : current); }
       }
       setAction(null);
-    } catch (e) { setError(errorText(e)); setAction(null); } finally { setBusy(false); }
+    } catch { toast({ type: 'error', title: 'Không thể thực hiện thao tác', description: 'Vui lòng thử lại.' }); setAction(null); } finally { setBusy(false); }
   }
   const actionTitle = action === 'deleteQuiz' ? 'Xóa toàn bộ bộ đề?'
     : action === 'deleteVersion' ? `Xóa bản nháp v${version}?`
@@ -120,8 +121,8 @@ export function ManagementEditor({ quizId }: { quizId: string }) {
       </Button>
     )}
   >
-    <Message error={error} message={message} />
-    {error && <Button disabled={busy} onClick={() => { if (canLeave()) setRetry(value => value + 1); }}>Tải lại</Button>}
+    <Message error={error} />
+    {error && !detail && <Button disabled={busy} onClick={() => { if (canLeave()) setRetry(value => value + 1); }}>Tải lại</Button>}
     {loading && <p className="rounded-lg border border-border p-8 text-center text-muted-foreground" role="status">Đang tải phiên bản…</p>}
     {detail && draft && <>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -180,14 +181,14 @@ export function ManagementEditor({ quizId }: { quizId: string }) {
         <div className="space-y-4">
           {!draft.questions.length && (
             <div className="rounded-lg border border-border bg-card p-8 text-center">
-              <h3 className="font-display text-panel">Bắt đầu với câu hỏi đầu tiên</h3>
-              <p className="text-sm text-muted-foreground">Mỗi câu có 2–6 lựa chọn và đúng một đáp án đúng.</p>
+              <h3 className="font-display text-panel font-medium">Bắt đầu với câu hỏi đầu tiên</h3>
+              <p className="text-sm text-muted-foreground">Mỗi câu có từ 2 đến 6 lựa chọn và đúng một đáp án đúng.</p>
             </div>
           )}
           {draft.questions.map((question, index) => <article id={`management-question-${index}`} className="scroll-mt-24 space-y-4 rounded-lg border border-border bg-card p-6 shadow-soft" key={index}>
             <header className="flex flex-wrap items-start gap-3">
               <span className="rounded-md bg-primary-soft px-2 py-1 text-primary">{String(index + 1).padStart(2, '0')}</span>
-              <h3 className="min-w-0 flex-1 whitespace-pre-wrap font-display text-panel">{question.content}</h3>
+              <h3 className="min-w-0 flex-1 whitespace-pre-wrap font-display text-panel font-medium">{question.content}</h3>
               {editable && <div className="flex flex-wrap gap-1">
                 <Button aria-label={`Chuyển câu ${index + 1} lên`} disabled={index === 0} onClick={() => moveQuestion(index, -1)}>↑</Button>
                 <Button aria-label={`Chuyển câu ${index + 1} xuống`} disabled={index === draft.questions.length - 1} onClick={() => moveQuestion(index, 1)}>↓</Button>
@@ -231,7 +232,7 @@ export function ManagementEditor({ quizId }: { quizId: string }) {
           {session && <ManagementRecipePicker actor={session.userId} value={draft.recipeVersionId} onChange={recipeVersionId => update({ recipeVersionId })} disabled={!editable} />}
           {detail.version.state === 'draft' && (
             <div className="space-y-3 rounded-lg border border-border bg-card p-6">
-              <h3 className="font-display text-panel">Xóa bản nháp</h3>
+              <h3 className="font-display text-panel font-medium">Xóa bản nháp</h3>
               <p className="text-sm text-muted-foreground">Chỉ xóa phiên bản nháp chưa có lượt làm bài.</p>
               <div className="flex flex-wrap gap-2">
                 {summary && summary.versions.length > 1 && <Button variant="ghost" className="text-destructive" disabled={busy} onClick={() => setAction('deleteVersion')}>Xóa phiên bản v{version}</Button>}

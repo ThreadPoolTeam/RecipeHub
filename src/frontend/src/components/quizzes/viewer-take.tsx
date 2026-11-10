@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Flag, Save } from 'lucide-react';
 import { ApiError } from '@/lib/api/client';
 import { quizViewerApi, type ViewerAnswer, type ViewerAttempt } from '@/lib/api/quiz-viewer';
-import { attemptUrl, detailUrl, useViewerResource, ViewerEmpty, ViewerError, ViewerFrame, ViewerLoading, viewerError, viewerQuizRoot } from './viewer-shared';
+import { attemptUrl, detailUrl, useViewerResource, ViewerEmpty, ViewerError, ViewerFrame, ViewerLoading, viewerQuizRoot } from './viewer-shared';
+import { useToast } from '@/components/workspace/toast';
 
 export default function ViewerTake({ attemptId }: { attemptId: string }) {
   const router = useRouter();
@@ -22,6 +23,7 @@ export default function ViewerTake({ attemptId }: { attemptId: string }) {
 
 function TakeSession({ initial, actorId }: { initial: ViewerAttempt; actorId: string }) {
   const router = useRouter();
+  const { toast } = useToast();
   const questions = initial.questions;
   const [answers, setAnswers] = useState<Record<number, number | null>>(() => Object.fromEntries(questions.map(question => [question.id, initial.savedAnswers.find(answer => answer.questionId === question.id)?.selectedOptionId ?? null])));
   const answersRef = useRef(answers);
@@ -34,7 +36,6 @@ function TakeSession({ initial, actorId }: { initial: ViewerAttempt; actorId: st
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [leaving, setLeaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
   const pending = useRef<Promise<boolean>>(Promise.resolve(true));
   const stopping = useRef(false);
@@ -54,7 +55,7 @@ function TakeSession({ initial, actorId }: { initial: ViewerAttempt; actorId: st
   const persist = useCallback((items: ViewerAnswer[], currentRevision: number) => {
     const task = pending.current.then(async () => {
       if (stopping.current) return false;
-      if (mounted.current) { setSaving(true); setError(null); }
+      if (mounted.current) setSaving(true);
       try {
         await quizViewerApi.save(actorId, initial.attemptId, items);
         savedRevision.current = currentRevision;
@@ -71,13 +72,13 @@ function TakeSession({ initial, actorId }: { initial: ViewerAttempt; actorId: st
             }
           } catch { /* Keep the original save error and local selections. */ }
         }
-        if (mounted.current) setError(`Chưa lưu được đáp án. Lựa chọn vẫn được giữ trên màn hình. ${viewerError(error)}`);
+        if (mounted.current) toast({ type: 'error', title: 'Chưa lưu được đáp án', description: 'Lựa chọn vẫn được giữ trên màn hình. Vui lòng thử lưu lại.' });
         return false;
       } finally { if (mounted.current) setSaving(false); }
     });
     pending.current = task;
     return task;
-  }, [actorId, initial.attemptId, router]);
+  }, [actorId, initial.attemptId, router, toast]);
 
   useEffect(() => {
     if (confirm && !dialog.current?.open) dialog.current?.showModal();
@@ -100,16 +101,17 @@ function TakeSession({ initial, actorId }: { initial: ViewerAttempt; actorId: st
   };
   const submit = async () => {
     if (stopping.current) return;
-    stopping.current = true; setSubmitting(true); setError(null);
+    stopping.current = true; setSubmitting(true);
     try {
       // Finish any earlier save before submitting the full final answer snapshot.
       await pending.current;
       const result = await quizViewerApi.submit(actorId, initial.attemptId, snapshot());
+      toast({ type: 'success', title: 'Đã nộp bài kiểm tra' });
       savedRevision.current = revisionRef.current;
       router.replace(`${attemptUrl(result.attemptId)}/result`);
-    } catch (error) {
+    } catch {
       stopping.current = false; setSubmitting(false); setConfirm(false);
-      setError(`Chưa nộp được bài; đáp án vẫn được giữ. ${viewerError(error)}`);
+      toast({ type: 'error', title: 'Chưa nộp được bài', description: 'Đáp án vẫn được giữ. Vui lòng thử lại.' });
     }
   };
   const answered = questions.filter(question => answers[question.id] !== null).length;
@@ -123,7 +125,6 @@ function TakeSession({ initial, actorId }: { initial: ViewerAttempt; actorId: st
         <span className="text-muted-foreground" role="status" aria-live="polite">{saving ? 'Đang lưu đáp án…' : revision !== saved ? 'Có thay đổi chưa lưu' : 'Đáp án đã được lưu'}</span>
         <button className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50" disabled={busy || saving} onClick={() => void persist(snapshot(), revisionRef.current)}>Lưu ngay</button>
         </div>
-    {error && <ViewerError message={error} retry={() => void persist(snapshot(), revisionRef.current)} />}
     {!question ? <ViewerEmpty title="Bài kiểm tra không có câu hỏi">
         <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-control hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => router.push(detailUrl(initial.quizId, initial.versionNumber))}>Quay về chi tiết</button>
         </ViewerEmpty> : <div className="grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
@@ -137,7 +138,7 @@ function TakeSession({ initial, actorId }: { initial: ViewerAttempt; actorId: st
         </div>
         <div className="p-6 md:p-8 [&_h2]:break-words [&_h2]:whitespace-pre-wrap [&_h2]:font-display [&_h2]:text-h3 [&_h2]:font-medium" key={question.id}>
         <p className="mb-2 text-pill font-medium uppercase tracking-wide text-muted-foreground">KIẾN THỨC CÔNG THỨC</p>
-        <h2 id={`quiz-question-${question.id}`}>{question.content}</h2>
+        <h2 className="font-display font-medium" id={`quiz-question-${question.id}`}>{question.content}</h2>
         <p className="text-muted-foreground my-5 text-sm">Chọn một đáp án phù hợp nhất.</p>
         <fieldset className="grid min-w-0 grid-cols-1 gap-3 border-0 p-0" disabled={busy} aria-labelledby={`quiz-question-${question.id}`}>
         <legend className="sr-only">Đáp án câu {index + 1}</legend>{question.options.map((option, position) => <label className={`relative flex min-h-16 min-w-0 cursor-pointer items-center gap-4 whitespace-pre-wrap [overflow-wrap:anywhere] [&>span:last-child]:min-w-0 [&>div]:min-w-0 rounded-lg border border-border bg-card p-4 text-left focus-within:ring-2 focus-within:ring-ring [&>input]:sr-only ${answers[question.id] === option.id ? '!border-primary !bg-primary-soft ring-1 ring-primary' : ''}`} key={option.id}>
@@ -159,7 +160,7 @@ function TakeSession({ initial, actorId }: { initial: ViewerAttempt; actorId: st
       <aside className="grid gap-5 lg:order-1">
         <section className="min-w-0 rounded-lg border border-border bg-card shadow-soft p-6">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-4 font-display text-panel font-medium">
-        <h3>Hành trình của bạn</h3>
+        <h3 className="font-display font-medium">Hành trình của bạn</h3>
         <span className="inline-flex items-center justify-center gap-1 rounded-md bg-secondary px-2.5 py-1 text-pill font-medium text-muted-foreground">Đang làm</span>
         </div>
         <progress className="block h-2 w-full overflow-hidden rounded-full accent-primary" value={answered} max={questions.length} aria-label="Số câu đã trả lời" />
@@ -183,7 +184,7 @@ function TakeSession({ initial, actorId }: { initial: ViewerAttempt; actorId: st
         </aside>
     </div>}
     <dialog className="fixed inset-0 m-auto max-h-[calc(100dvh-40px)] w-[min(540px,calc(100%-32px))] overflow-y-auto rounded-lg border border-border bg-card p-6 text-foreground shadow-lift backdrop:bg-foreground/45 [&>p]:mt-4 [&>p]:text-muted-foreground" ref={dialog} aria-labelledby="quiz-confirm-title" onCancel={event => { if (submitting) event.preventDefault(); else setConfirm(false); }} onClose={() => { if (!submitting) setConfirm(false); }}>
-        <h2 id="quiz-confirm-title">{unanswered.length ? 'Bạn còn câu chưa trả lời.' : 'Sẵn sàng nộp bài?'}</h2>
+        <h2 className="font-display font-medium" id="quiz-confirm-title">{unanswered.length ? 'Bạn còn câu chưa trả lời.' : 'Sẵn sàng nộp bài?'}</h2>
         <p>Đã trả lời {answered}/{questions.length} câu. {unanswered.length ? `${unanswered.length} câu chưa trả lời vẫn được gửi là bỏ trống.` : 'Tất cả câu hỏi đã có lựa chọn.'}</p>{unanswered.length > 0 && <div className="mt-4 flex flex-wrap gap-2" aria-label="Các câu chưa trả lời">{unanswered.map(position => <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-control hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" disabled={submitting} key={position} onClick={() => { setIndex(position); setConfirm(false); }}>Câu {position + 1}</button>)}</div>}<p>Sau khi xác nhận, bài làm được chấm trên máy chủ và không thể chỉnh sửa.</p>
         <div className="mt-6 flex flex-wrap justify-end gap-3">
         <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-control hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" disabled={submitting} onClick={() => setConfirm(false)}>Làm tiếp</button>
