@@ -10,7 +10,7 @@ type Props = {
 const input = 'w-full rounded-md border border-input bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring';
 export function EditRecipeSop({ steps, coverPreviews, onAdd, onRemove, onUpdate, onMove, onPick, onAi }: Props) {
   return <section id="recipe-sop" className="scroll-mt-24 space-y-4">
-    <h2 className="text-lg font-semibold"><span className="mr-3 text-primary">03</span>Quy trình SOP</h2>
+    <h2 className="text-lg font-medium font-display"><span className="mr-3 text-primary">03</span>Quy trình SOP</h2>
     <p className="text-sm text-muted-foreground">Sắp xếp thứ tự bước, cập nhật thông số và chọn ảnh minh họa.</p>
     {steps.length === 0 && <p className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">Chưa có bước thao tác nào.</p>}
     {steps.map((step, idx) => <div key={step.id} className="space-y-4 rounded-lg border border-border bg-card p-4">

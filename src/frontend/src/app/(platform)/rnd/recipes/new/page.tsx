@@ -1,5 +1,7 @@
 'use client';
 
+import { pageTitleClass } from '@/components/workspace/page-header';
+
 import React, { useState, useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { useRouter } from 'next/navigation';
@@ -7,6 +9,7 @@ import Link from 'next/link';
 import { useDemo } from '@/lib/demo/provider';
 import { Ingredient, RecipeIngredient, RecipeStep } from '@/lib/demo/types';
 import { Button, Alert } from '@/components/workspace/fields';
+import { useToast } from '@/components/workspace/toast';
 import { UnitItem } from '@/lib/api/backend-repository';
 import { NewRecipeBasicInfo } from '@/components/recipes/new-recipe-basic-info';
 import { NewRecipeIngredients } from '@/components/recipes/new-recipe-ingredients';
@@ -15,6 +18,7 @@ import { NewRecipeStepper } from '@/components/recipes/new-recipe-stepper';
 export default function NewRecipePage() {
   const router = useRouter();
   const { session, repo, touch } = useDemo();
+  const { toast } = useToast();
   const [activeStep, setActiveStep] = useState(0);
 
   // Basic Info
@@ -210,10 +214,15 @@ export default function NewRecipePage() {
       });
 
       touch();
+      toast({ type: 'success', title: 'Đã tạo công thức', description: `${newRecipe.code} · ${newRecipe.name}` });
       router.push(`/rnd/recipes/${newRecipe.id}`);
     } catch (err: unknown) {
       const e = err as Error;
-      setErrorMsg(e.message || 'Lỗi khi khởi tạo công thức.');
+      toast({
+        type: 'error',
+        title: 'Không thể tạo công thức',
+        description: e.message || 'Vui lòng kiểm tra thông tin và thử lại.',
+      });
     } finally {
       setSubmitting(false);
     }
@@ -231,7 +240,7 @@ export default function NewRecipePage() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Tạo công thức</p>
-          <h1 className="mt-2 text-3xl font-medium text-foreground sm:text-4xl">Tạo công thức mới</h1>
+          <h1 className={`mt-2 ${pageTitleClass}`}>Tạo công thức mới</h1>
           <p className="mt-2 text-sm text-muted-foreground">Bắt đầu một hương vị mới, hoàn thiện thành một tiêu chuẩn.</p>
         </div>
         <div className="flex flex-wrap gap-3">

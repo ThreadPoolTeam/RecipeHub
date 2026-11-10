@@ -45,7 +45,7 @@ export default function RecipeDocumentPage() {
   return (
     <div className="mx-auto max-w-md space-y-4 p-12 text-center text-muted-foreground">
       <div className="inline-block h-8 w-8 rounded-full border-b-2 border-primary motion-safe:animate-spin" />
-      <h2 className="flex items-center justify-center gap-2 text-base font-semibold text-foreground">
+      <h2 className="flex items-center justify-center gap-2 text-base text-foreground font-medium font-display">
         <FileText className="h-5 w-5 text-primary" strokeWidth={1.5} /> Đang chuyển sang Không Gian Quản Lý Ấn Phẩm PDF...
       </h2>
       <p className="text-xs text-muted-foreground">

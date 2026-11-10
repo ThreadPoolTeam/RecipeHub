@@ -3,15 +3,15 @@
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Plus, Coffee, History, FileDown } from 'lucide-react';
+import { Plus, FileDown } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { RecipeVersion, RecipeStatus } from '@/lib/demo/types';
-import { Button, Select, SearchInput } from '@/components/workspace/fields';
-import { StatusBadge } from '@/components/workspace/status-badge';
+import { Button } from '@/components/workspace/fields';
 import { Pagination } from '@/components/workspace/pagination';
 import { PageHeader } from '@/components/workspace/page-header';
-import { VersionHistoryDrawer } from '@/components/workspace/version-history-drawer';
 import { getStoredAiDrafts } from '@/lib/ai-draft-storage';
+import { RecipeFilterBar, type RecipeStatusFilter } from './recipe-filter-bar';
+import { RecipeCard } from './recipe-card';
 
 function RecipeListContent() {
   const { session, repo, dataVersion } = useDemo();
@@ -21,34 +21,12 @@ function RecipeListContent() {
   const [recipes, setRecipes] = useState<RecipeVersion[]>([]);
   const [mediaMap, setMediaMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
-
-  // Version History Drawer State
-  const [selectedRecipeForHistory, setSelectedRecipeForHistory] = useState<RecipeVersion | null>(null);
-  const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
-  const [drawerVersions, setDrawerVersions] = useState<RecipeVersion[]>([]);
-  const [, setIsLoadingDrawerVersions] = useState(false);
   const router = useRouter();
   const [selectedRecipeIds, setSelectedRecipeIds] = useState<string[]>([]);
-  const handleOpenHistoryDrawer = async (item: RecipeVersion) => {
-    setSelectedRecipeForHistory(item);
-    setIsHistoryDrawerOpen(true);
-    setDrawerVersions([item]);
-    setIsLoadingDrawerVersions(true);
-    try {
-      const recipeKey = item.recipeId || item.id;
-      const list = await repo.getRecipeVersions(session!, recipeKey);
-      if (list.length > 0) {
-        setDrawerVersions(list);
-      }
-    } catch (err) {
-      console.error('Failed to load recipe versions:', err);
-    } finally {
-      setIsLoadingDrawerVersions(false);
-    }
-  };
+
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<RecipeStatus | 'all'>(
+  const [statusFilter, setStatusFilter] = useState<RecipeStatusFilter>(
     initialStatusParam || 'all'
   );
   const [creatorFilter, setCreatorFilter] = useState('all');
@@ -108,20 +86,6 @@ function RecipeListContent() {
     ];
   }, [recipes]);
 
-  // Group all versions by recipeId
-  const recipeVersionsGroup = useMemo(() => {
-    const map: Record<string, RecipeVersion[]> = {};
-    recipes.forEach((r) => {
-      const key = r.recipeId || r.code;
-      if (!map[key]) map[key] = [];
-      map[key].push(r);
-    });
-    Object.values(map).forEach((list) => {
-      list.sort((a, b) => b.versionNumber - a.versionNumber);
-    });
-    return map;
-  }, [recipes]);
-
   // Distinct recipes: take the latest version of each recipe identity
   const distinctRecipes = useMemo(() => {
     const seen = new Set<string>();
@@ -134,6 +98,20 @@ function RecipeListContent() {
     }
     return result;
   }, [recipes]);
+
+  // Status counts for the segmented filter
+  const statusCounts = useMemo(() => {
+    const counts: Record<RecipeStatusFilter, number> = {
+      all: distinctRecipes.length,
+      Draft: 0,
+      Published: 0,
+      Archived: 0,
+    };
+    distinctRecipes.forEach((recipe) => {
+      counts[recipe.status] += 1;
+    });
+    return counts;
+  }, [distinctRecipes]);
 
   // Filtered recipes
   const filteredRecipes = useMemo(() => {
@@ -158,6 +136,7 @@ function RecipeListContent() {
       return true;
     });
   }, [distinctRecipes, searchQuery, statusFilter, creatorFilter]);
+
   // Pagination slices
   const totalItems = filteredRecipes.length;
   const totalPages = Math.ceil(totalItems / pageSize) || 1;
@@ -166,6 +145,18 @@ function RecipeListContent() {
     return filteredRecipes.slice(start, start + pageSize);
   }, [filteredRecipes, page, pageSize]);
 
+  const resolveCoverUrl = (item: RecipeVersion) => {
+    let coverUrl: string | null = null;
+    if (item.primaryMediaAssetId) {
+      coverUrl = mediaMap[item.primaryMediaAssetId] || null;
+      if (!coverUrl && typeof window !== 'undefined') coverUrl = localStorage.getItem(`recipehub_media_url_${item.primaryMediaAssetId}`) || null;
+    }
+    if (!coverUrl) {
+      const localDrafts = getStoredAiDrafts(item.versionId || item.id, 'final_product');
+      if (localDrafts.length > 0) coverUrl = localDrafts[0].previewUrl;
+    }
+    return coverUrl;
+  };
 
   return (
     <div className="space-y-6">
@@ -202,53 +193,29 @@ function RecipeListContent() {
         </div>
       } />
 
-      {/* Filter Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <div className="md:col-span-2">
-          <SearchInput
-            placeholder="Tìm theo mã hoặc tên công thức..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setPage(1);
-            }}
-            onClear={() => {
-              setSearchQuery('');
-              setPage(1);
-            }}
-          />
-        </div>
-
-        <div className="flex flex-wrap gap-2 md:col-span-4" aria-label="Lọc theo trạng thái">
-          {([
-            ['all', 'Tất cả'],
-            ['Draft', 'Bản nháp'],
-            ['Published', 'Đã phát hành'],
-            ['Archived', 'Lưu trữ'],
-          ] as const).map(([status, label]) => (
-            <button
-              key={status}
-              type="button"
-              aria-pressed={statusFilter === status}
-              onClick={() => { setStatusFilter(status); setPage(1); }}
-              className={`rounded-md border px-3 py-1.5 text-sm font-semibold ${statusFilter === status ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-foreground hover:bg-muted'}`}
-            >
-              {label} ({status === 'all' ? distinctRecipes.length : distinctRecipes.filter((recipe) => recipe.status === status).length})
-            </button>
-          ))}
-        </div>
-
-        <div>
-          <Select
-            value={creatorFilter}
-            onChange={(e) => {
-              setCreatorFilter(e.target.value);
-              setPage(1);
-            }}
-            options={creatorOptions}
-          />
-        </div>
-      </div>
+      <RecipeFilterBar
+        searchQuery={searchQuery}
+        onSearchChange={(value) => {
+          setSearchQuery(value);
+          setPage(1);
+        }}
+        onSearchClear={() => {
+          setSearchQuery('');
+          setPage(1);
+        }}
+        statusFilter={statusFilter}
+        onStatusChange={(value) => {
+          setStatusFilter(value);
+          setPage(1);
+        }}
+        statusCounts={statusCounts}
+        creatorFilter={creatorFilter}
+        onCreatorChange={(value) => {
+          setCreatorFilter(value);
+          setPage(1);
+        }}
+        creatorOptions={creatorOptions}
+      />
 
       {loading ? (
         <div className="rounded-lg border border-border bg-card p-8 text-center text-muted-foreground">Đang tải dữ liệu công thức...</div>
@@ -265,38 +232,16 @@ function RecipeListContent() {
         <>
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
             {paginatedData.map((item) => {
-              let coverUrl: string | null = null;
-              if (item.primaryMediaAssetId) {
-                coverUrl = mediaMap[item.primaryMediaAssetId] || null;
-                if (!coverUrl && typeof window !== 'undefined') coverUrl = localStorage.getItem(`recipehub_media_url_${item.primaryMediaAssetId}`) || null;
-              }
-              if (!coverUrl) {
-                const localDrafts = getStoredAiDrafts(item.versionId || item.id, 'final_product');
-                if (localDrafts.length > 0) coverUrl = localDrafts[0].previewUrl;
-              }
-              const versions = recipeVersionsGroup[item.recipeId || item.code] || [item];
-              const olderCount = Math.max(item.versionNumber ? item.versionNumber - 1 : 0, versions.length - 1);
               const vId = item.versionId || item.id;
               return (
-                <article key={item.id} className="overflow-hidden rounded-xl border border-border bg-card shadow-soft">
-                  <div className="relative aspect-[4/3] bg-muted">
-                    {coverUrl ? <img src={coverUrl} alt={item.name} className="h-full w-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; const icon = e.currentTarget.parentElement?.querySelector('.fallback-coffee'); if (icon) (icon as HTMLElement).style.display = 'block'; }} /> : null}
-                    <Coffee className={`fallback-coffee absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 text-muted-foreground ${coverUrl ? 'hidden' : 'block'}`} />
-                    <input type="checkbox" aria-label={`Chọn ${item.name}`} checked={selectedRecipeIds.includes(vId)} onChange={() => setSelectedRecipeIds((prev) => prev.includes(vId) ? prev.filter((id) => id !== vId) : [...prev, vId])} className="absolute left-4 top-4 h-4 w-4 accent-primary" />
-                  </div>
-                  <div className="space-y-2 p-5">
-                    <p className="text-xs text-muted-foreground">{item.code} · {item.versionLabel}</p>
-                    <h2 className="font-display text-lg font-semibold"><Link href={`/rnd/recipes/${item.id}`} className="hover:text-primary">{item.name}</Link></h2>
-                    <div className="flex flex-wrap items-center gap-2"><StatusBadge status={item.status} /><span className="text-xs text-muted-foreground">{item.creatorEmail ? item.creatorEmail.split('@')[0] : '—'} · {new Date(item.updatedAt).toLocaleDateString('vi-VN')}</span></div>
-                    <p className="text-xs text-muted-foreground">{item.ingredients?.length || '—'} nguyên liệu · {item.steps?.length || '—'} bước</p>
-                    {item.description && <p className="line-clamp-2 text-xs text-muted-foreground">{item.description}</p>}
-                    <div className="flex flex-wrap gap-3 text-xs font-semibold text-primary">
-                      <button type="button" onClick={() => handleOpenHistoryDrawer(item)} className="inline-flex items-center gap-1 hover:underline"><History className="h-3 w-3" />Lịch sử phiên bản{olderCount > 0 ? ` (+${olderCount})` : ''}</button>
-                      <Link href={`/rnd/recipes/${item.id}`} className="hover:underline">Xem</Link>
-                      <Link href={`/rnd/recipes/${item.id}/edit`} className="hover:underline">Sửa</Link>
-                    </div>
-                  </div>
-                </article>
+                <RecipeCard
+                  key={item.id}
+                  item={item}
+                  coverUrl={resolveCoverUrl(item)}
+                  selectionId={vId}
+                  selected={selectedRecipeIds.includes(vId)}
+                  onToggleSelected={(selectionId) => setSelectedRecipeIds((prev) => prev.includes(selectionId) ? prev.filter((id) => id !== selectionId) : [...prev, selectionId])}
+                />
               );
             })}
           </div>
@@ -304,18 +249,6 @@ function RecipeListContent() {
           <p className="text-xs text-muted-foreground">Tổng cộng {totalItems} công thức</p>
         </>
       )}
-
-      {/* Version History Drawer */}
-      <VersionHistoryDrawer
-        isOpen={isHistoryDrawerOpen}
-        onClose={() => {
-          setIsHistoryDrawerOpen(false);
-          setSelectedRecipeForHistory(null);
-        }}
-        recipe={selectedRecipeForHistory}
-        versions={drawerVersions}
-        currentVersionId={selectedRecipeForHistory?.id}
-      />
     </div>
   );
 }

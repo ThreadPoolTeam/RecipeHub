@@ -4,7 +4,7 @@ import { Button } from '@/components/workspace/fields';
 type Props = { imageUrl?: string; hasImage: boolean; onPick: () => void; onAi: () => void; onRemove: () => void; version: string; ingredientCount: number; stepCount: number };
 export function EditRecipeImageRail({ imageUrl, hasImage, onPick, onAi, onRemove, version, ingredientCount, stepCount }: Props) {
   return <aside className="space-y-3 border-t border-border pt-5 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
-    <h2 className="text-sm font-semibold">Ảnh thành phẩm</h2>
+    <h2 className="text-sm font-medium font-display">Ảnh thành phẩm</h2>
     <div className="flex aspect-square max-w-52 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted text-muted-foreground">
       {imageUrl ? <img src={imageUrl} alt="Ảnh bìa thành phẩm" className="h-full w-full object-cover" /> : <div className="text-center text-xs"><Camera className="mx-auto mb-2 h-6 w-6" strokeWidth={1.5} />Chưa có ảnh</div>}
     </div>

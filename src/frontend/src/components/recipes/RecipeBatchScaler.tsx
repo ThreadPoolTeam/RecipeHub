@@ -48,7 +48,7 @@ export function RecipeBatchScaler({ recipe, onScaled }: { recipe: RecipeVersion;
 
   return <section className="space-y-4 rounded-xl border border-border bg-card p-4 sm:p-5" aria-label="Tính quy mô mẻ">
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground"><Scale className="h-4 w-4 text-primary" strokeWidth={1.5} />Tính quy mô mẻ</h2>
+      <h2 className="flex items-center gap-2 text-sm text-foreground font-medium font-display"><Scale className="h-4 w-4 text-primary" strokeWidth={1.5} />Tính quy mô mẻ</h2>
       <UnitConversionModal />
     </div>
     {!hasYield ? <p className="text-sm text-muted-foreground">Cần thiết lập sản lượng chuẩn và đơn vị trước khi tính quy mô mẻ.</p> : <>

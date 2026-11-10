@@ -16,7 +16,7 @@ export function NewRecipeIngredients({ availableIngredients, recipeIngredients, 
     <section id="ingredients" className="scroll-mt-24 space-y-5 border-t border-border pt-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-foreground"><span className="mr-3 text-primary">02</span>Thành phần &amp; định lượng ({recipeIngredients.length})</h2>
+          <h2 className="text-lg text-foreground font-medium font-display"><span className="mr-3 text-primary">02</span>Thành phần &amp; định lượng ({recipeIngredients.length})</h2>
           <p className="mt-1 text-sm text-muted-foreground">Chọn nguyên liệu từ kho chuẩn, nhập định lượng (&gt; 0) và phân tách giai đoạn nếu cần.</p>
         </div>
         <Button type="button" variant="secondary" size="sm" onClick={handleAddIngredient} disabled={availableIngredients.length === 0}>+ Thêm Nguyên Liệu</Button>

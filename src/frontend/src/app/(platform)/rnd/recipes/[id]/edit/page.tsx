@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { pageTitleClass } from '@/components/workspace/page-header';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Save } from 'lucide-react';
@@ -13,6 +15,7 @@ import { EditRecipeSop } from '@/components/recipes/edit-recipe-sop';
 import { EditRecipeImageRail } from '@/components/recipes/edit-recipe-image-rail';
 import { EditRecipeAiDialog } from '@/components/recipes/edit-recipe-ai-dialog';
 import { EditRecipeMediaDialog } from '@/components/recipes/edit-recipe-media-dialog';
+import { useToast } from '@/components/workspace/toast';
 import { UnitItem } from '@/lib/api/backend-repository';
 import {
   PersistentAiDraft,
@@ -20,8 +23,10 @@ import {
   saveStoredAiDraft,
   removeStoredAiDraft,
   syncBackendAiDrafts,
+  loadDraftPreview,
+  getDraftPreview,
+  clearDraftPreviews,
 } from '@/lib/ai-draft-storage';
-import { requestBlob } from '@/lib/api/client';
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Bản published là bất biến: mở trình biên tập sẽ fork thành draft vN+1.
@@ -34,6 +39,7 @@ export default function EditRecipePage() {
   const id = params?.id as string;
 
   const { session, repo, touch } = useDemo();
+  const { toast } = useToast();
 
   // Recipe State
   const [recipe, setRecipe] = useState<RecipeVersion | null>(null);
@@ -58,7 +64,6 @@ export default function EditRecipePage() {
   // Notifications & State
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // AI Image Candidate State
   const [isAiImageModalOpen, setIsAiImageModalOpen] = useState(false);
@@ -67,11 +72,24 @@ export default function EditRecipePage() {
   const [isGeneratingAiImage, setIsGeneratingAiImage] = useState(false);
   const [generatedCandidate, setGeneratedCandidate] = useState<AiCandidate | null>(null);
   const [candidateAssetUrl, setCandidateAssetUrl] = useState<string | null>(null);
-  const [aiImageError, setAiImageError] = useState<string | null>(null);
-  const [forkNotice, setForkNotice] = useState<string | null>(null);
   const [aiTargetType, setAiTargetType] = useState<'hero' | 'step'>('hero');
   const [aiProgressStatus, setAiProgressStatus] = useState<{ attempt: number; state: string; message: string } | null>(null);
   const [activeDrafts, setActiveDrafts] = useState<PersistentAiDraft[]>([]);
+  const [draftErrors, setDraftErrors] = useState<Record<string, boolean>>({});
+  const draftLoad = useRef<AbortController | null>(null);
+  const selectedDraft = useRef<string | null>(null);
+  const acceptedPreviews = useRef(new Set<string>());
+  const forkNoticeShown = useRef(false);
+  useEffect(() => () => {
+    draftLoad.current?.abort();
+    clearDraftPreviews();
+    acceptedPreviews.current.forEach(url => URL.revokeObjectURL(url));
+    acceptedPreviews.current.clear();
+  }, []);
+  useEffect(() => {
+    if (!isAiImageModalOpen) return;
+    return () => { draftLoad.current?.abort(); };
+  }, [isAiImageModalOpen]);
   // Recipe Primary Cover State
   const [primaryMediaAssetId, setPrimaryMediaAssetId] = useState<string | null>(null);
   const [isPickingHeroCover, setIsPickingHeroCover] = useState(false);
@@ -96,10 +114,13 @@ export default function EditRecipePage() {
         pendingForks.set(id, fork);
       }
       const draft = await fork;
-      if (isMounted) {
-        setForkNotice(
-          `Đã tạo bản nháp ${draft.versionLabel} từ bản phát hành ${latest.versionLabel}. Bản phát hành vẫn giữ nguyên cho cửa hàng cho tới khi bạn phát hành bản nháp này.`
-        );
+      if (isMounted && !forkNoticeShown.current) {
+        forkNoticeShown.current = true;
+        toast({
+          type: 'info',
+          title: 'Đã tạo bản nháp mới',
+          description: `Bản nháp ${draft.versionLabel} được tạo từ bản phát hành ${latest.versionLabel}. Bản phát hành vẫn giữ nguyên cho cửa hàng cho tới khi bạn phát hành bản nháp này.`,
+        });
       }
       return draft;
     };
@@ -147,7 +168,7 @@ export default function EditRecipePage() {
     return () => {
       isMounted = false;
     };
-  }, [session, repo, id]);
+  }, [session, repo, id, toast]);
 
   // Ingredients Helpers
   const handleAddIngredient = () => {
@@ -234,32 +255,63 @@ export default function EditRecipePage() {
     return Math.max(0, Math.ceil(diff / (60 * 1000)));
   };
 
-  const handleSelectDraft = async (draft: PersistentAiDraft) => {
-    let preview = draft.previewUrl;
-    if (!preview) {
-      try {
-        const blob = await requestBlob(`api/v1/content/image-drafts/${draft.id}/image`, null, { method: 'GET' });
-        preview = URL.createObjectURL(blob);
-        draft.previewUrl = preview;
-        setActiveDrafts((prev) => prev.map((item) => (item.id === draft.id ? { ...item, previewUrl: preview } : item)));
-      } catch (err) {
-        console.error('Failed to load blob preview for draft', draft.id, err);
-      }
-    }
-
+  const handleSelectDraft = (draft: PersistentAiDraft) => {
+    selectedDraft.current = draft.id;
+    const preview = getDraftPreview(draft.id) || draft.previewUrl;
     setGeneratedCandidate({
-      id: draft.id,
-      stepId: draft.stepId || undefined,
-      targetKind: draft.targetKind,
-      prompt: draft.prompt,
-      mediaAssetId: draft.mediaAssetId,
-      previewUrl: preview,
-      state: 'Generated',
-      expiresAt: draft.expiresAt,
-      createdAt: draft.createdAt,
+      id: draft.id, stepId: draft.stepId || undefined, targetKind: draft.targetKind,
+      prompt: draft.prompt, mediaAssetId: draft.mediaAssetId, previewUrl: preview,
+      state: 'Generated', expiresAt: draft.expiresAt, createdAt: draft.createdAt,
     });
     setCandidateAssetUrl(preview || null);
     setImagePrompt(draft.prompt);
+  };
+
+  const loadThumbnail = async (draft: PersistentAiDraft, controller: AbortController) => {
+    setDraftErrors(previous => ({ ...previous, [draft.id]: false }));
+    try {
+      const previewUrl = draft.previewUrl || await loadDraftPreview(draft.id);
+      if (controller.signal.aborted) return;
+      setActiveDrafts(previous => previous.map(item => item.id === draft.id ? { ...item, previewUrl } : item));
+      if (selectedDraft.current === draft.id) setCandidateAssetUrl(previewUrl);
+    } catch {
+      if (!controller.signal.aborted) setDraftErrors(previous => ({ ...previous, [draft.id]: true }));
+    }
+  };
+
+  const loadDraftList = (drafts: PersistentAiDraft[], controller: AbortController) => {
+    let next = 0;
+    const worker = async () => {
+      while (!controller.signal.aborted && next < drafts.length) {
+        const draft = drafts[next++];
+        await loadThumbnail(draft, controller);
+      }
+    };
+    return Promise.all(Array.from({ length: Math.min(4, drafts.length) }, () => worker()));
+  };
+
+  const openDrafts = (versionId: string, target: 'final_product' | 'step_instruction', stepId?: string) => {
+    draftLoad.current?.abort();
+    const controller = new AbortController();
+    draftLoad.current = controller;
+    selectedDraft.current = null;
+    setDraftErrors({});
+    const stored = getStoredAiDrafts(versionId, target, stepId);
+    setActiveDrafts(stored);
+    if (stored.length) handleSelectDraft(stored[0]);
+    else { setGeneratedCandidate(null); setCandidateAssetUrl(null); }
+    const initialLoads = loadDraftList(stored, controller);
+    if (versionId) void syncBackendAiDrafts(versionId, target, stepId).then(async remote => {
+      if (controller.signal.aborted || !remote.length) return;
+      setActiveDrafts(remote.map(draft => ({ ...draft, previewUrl: getDraftPreview(draft.id) || draft.previewUrl })));
+      if (!selectedDraft.current) handleSelectDraft(remote[0]);
+      await initialLoads;
+      if (!controller.signal.aborted) await loadDraftList(remote, controller);
+    }).catch(() => {});
+  };
+
+  const retryDraft = (draft: PersistentAiDraft) => {
+    if (draftLoad.current) void loadThumbnail(draft, draftLoad.current);
   };
 
   // AI Image Triggers
@@ -267,33 +319,12 @@ export default function EditRecipePage() {
     setErrorMsg(null);
     setAiTargetType('hero');
     setActiveStepForImage(null);
-    setAiImageError(null);
     const versionId = recipe?.versionId || recipe?.id || '';
-    const stored = getStoredAiDrafts(versionId, 'final_product');
-    setActiveDrafts(stored);
-
-    if (stored.length > 0) {
-      handleSelectDraft(stored[0]);
-    } else {
-      setGeneratedCandidate(null);
-      setCandidateAssetUrl(null);
-      setImagePrompt(generateSuggestedPrompt('hero'));
-    }
+    setImagePrompt(generateSuggestedPrompt('hero'));
+    openDrafts(versionId, 'final_product');
 
     setIsAiImageModalOpen(true);
 
-    if (versionId) {
-      syncBackendAiDrafts(versionId, 'final_product')
-        .then((remote) => {
-          if (remote.length > 0) {
-            setActiveDrafts(remote);
-            handleSelectDraft(remote[0]);
-          }
-        })
-        .catch((err) => {
-          console.error('Failed to sync backend AI drafts for hero', err);
-        });
-    }
   };
 
   const handleOpenHeroMediaPicker = () => {
@@ -311,40 +342,18 @@ export default function EditRecipePage() {
     setErrorMsg(null);
     setAiTargetType('step');
     setActiveStepForImage(step);
-    setAiImageError(null);
     const versionId = recipe?.versionId || recipe?.id || '';
-    const stored = getStoredAiDrafts(versionId, 'step_instruction', step.id);
-    setActiveDrafts(stored);
-
-    if (stored.length > 0) {
-      handleSelectDraft(stored[0]);
-    } else {
-      setGeneratedCandidate(null);
-      setCandidateAssetUrl(null);
-      setImagePrompt(generateSuggestedPrompt('step', step));
-    }
+    setImagePrompt(generateSuggestedPrompt('step', step));
+    openDrafts(versionId, 'step_instruction', step.id);
 
     setIsAiImageModalOpen(true);
 
-    if (versionId) {
-      syncBackendAiDrafts(versionId, 'step_instruction', step.id)
-        .then((remote) => {
-          if (remote.length > 0) {
-            setActiveDrafts(remote);
-            handleSelectDraft(remote[0]);
-          }
-        })
-        .catch((err) => {
-          console.error('Failed to sync backend AI drafts for step', err);
-        });
-    }
   };
 
   const handleGenerateAiImage = async () => {
     if (!session || !recipe) return;
     try {
       setIsGeneratingAiImage(true);
-      setAiImageError(null);
       const isHero = aiTargetType === 'hero';
       const targetStepId = isHero ? null : activeStepForImage?.id;
       const targetKind = isHero ? 'final_product' : 'step_instruction';
@@ -396,8 +405,11 @@ export default function EditRecipePage() {
       const refreshed = getStoredAiDrafts(versionId, targetKind, targetStepId);
       setActiveDrafts(refreshed);
     } catch (err: unknown) {
-      const e = err as Error;
-      setAiImageError(e.message || 'Lỗi khi sinh ảnh AI Candidate.');
+      toast({
+        type: 'error',
+        title: 'Không thể tạo ảnh AI',
+        description: err instanceof Error ? err.message : 'Vui lòng thử lại.',
+      });
     } finally {
       setIsGeneratingAiImage(false);
       setAiProgressStatus(null);
@@ -414,16 +426,23 @@ export default function EditRecipePage() {
       const versionId = recipe.versionId || recipe.id;
 
       const permanentMediaId = await repo.acceptAiCandidate(session, generatedCandidate.id, recipe.id, targetStepId);
+      let acceptedPreview = candidateAssetUrl;
+      if (candidateAssetUrl?.startsWith('blob:')) {
+        try {
+          acceptedPreview = URL.createObjectURL(await (await fetch(candidateAssetUrl)).blob());
+          acceptedPreviews.current.add(acceptedPreview);
+        } catch { acceptedPreview = null; }
+      }
 
       // Remove accepted draft from storage
       removeStoredAiDraft(generatedCandidate.id);
 
       if (isHero) {
         setPrimaryMediaAssetId(permanentMediaId);
-        if (candidateAssetUrl) {
-          setCoverPreviews((prev) => ({ ...prev, [permanentMediaId]: candidateAssetUrl }));
+        if (acceptedPreview) {
+          setCoverPreviews((prev) => ({ ...prev, [permanentMediaId]: acceptedPreview }));
         }
-        setSuccessMsg('Đã chấp nhận và đặt làm ảnh bìa thành phẩm thành công!');
+        toast({ type: 'success', title: 'Đã đặt ảnh AI làm ảnh bìa thành phẩm' });
       } else if (activeStepForImage) {
         const updatedSteps = steps.map((s) => {
           if (s.id === activeStepForImage.id) {
@@ -437,10 +456,14 @@ export default function EditRecipePage() {
         });
         setSteps(updatedSteps);
 
-        if (candidateAssetUrl) {
-          setCoverPreviews((prev) => ({ ...prev, [permanentMediaId]: candidateAssetUrl }));
+        if (acceptedPreview) {
+          setCoverPreviews((prev) => ({ ...prev, [permanentMediaId]: acceptedPreview }));
         }
-        setSuccessMsg(`Đã gắn ảnh AI vào bước "${activeStepForImage.title || activeStepForImage.stepNumber}" thành công!`);
+        toast({
+          type: 'success',
+          title: 'Đã gắn ảnh AI vào bước',
+          description: activeStepForImage.title || `Bước ${activeStepForImage.stepNumber}`,
+        });
       }
 
       touch();
@@ -452,8 +475,11 @@ export default function EditRecipePage() {
       const remaining = getStoredAiDrafts(versionId, targetKind, targetStepId);
       setActiveDrafts(remaining);
     } catch (err: unknown) {
-      const e = err as Error;
-      setAiImageError(e.message || 'Không thể chấp nhận đề xuất ảnh AI.');
+      toast({
+        type: 'error',
+        title: 'Không thể chấp nhận ảnh AI',
+        description: err instanceof Error ? err.message : 'Vui lòng thử lại.',
+      });
     } finally {
       setIsGeneratingAiImage(false);
     }
@@ -535,7 +561,6 @@ export default function EditRecipePage() {
   const handleSaveRecipe = async () => {
     if (!session || !recipe || generatingCode || saving) return;
     setErrorMsg(null);
-    setSuccessMsg(null);
 
     const cleanCode = code.trim().toUpperCase();
     const cleanName = name.trim();
@@ -577,11 +602,14 @@ export default function EditRecipePage() {
       setRecipe(updated);
       setIngredients(updated.ingredients);
       setSteps(updated.steps);
-      setSuccessMsg('Đã lưu bản nháp thành công!');
+      toast({ type: 'success', title: 'Đã lưu bản nháp', description: `${updated.code} · ${updated.versionLabel}` });
       touch();
     } catch (err: unknown) {
-      const e = err as Error;
-      setErrorMsg(e.message || 'Lỗi khi lưu bản thảo công thức.');
+      toast({
+        type: 'error',
+        title: 'Không thể lưu bản nháp',
+        description: err instanceof Error ? err.message : 'Vui lòng thử lại.',
+      });
     } finally {
       setSaving(false);
     }
@@ -610,11 +638,8 @@ export default function EditRecipePage() {
   return (
     <div className="mx-auto max-w-[1360px] space-y-6 pb-16">
       <header className="flex flex-wrap items-end justify-between gap-4">
-        <div><h1 className="text-3xl font-medium text-foreground sm:text-4xl">Chỉnh sửa công thức</h1><p className="mt-2 text-sm text-muted-foreground">{recipe.code} · {recipe.versionLabel}</p></div>
-        <div className="flex gap-2"><Link href={`/rnd/recipes/${recipe.id}`}><Button variant="secondary">Xem Chi Tiết</Button></Link><Button variant="gold" size="sm" isLoading={saving} disabled={generatingCode} onClick={handleSaveRecipe}><Save className="mr-1 h-4 w-4" strokeWidth={1.5} />Lưu Bản Nháp</Button></div>
+        <div><h1 className={pageTitleClass}>Chỉnh sửa công thức</h1><p className="mt-2 text-sm text-muted-foreground">{recipe.code} · {recipe.versionLabel}</p></div>
       </header>
-      {forkNotice && <Alert type="info" message={forkNotice} onClose={() => setForkNotice(null)} />}
-      {successMsg && <Alert type="success" message={successMsg} onClose={() => setSuccessMsg(null)} />}
       {errorMsg && <Alert type="error" message={errorMsg} onClose={() => setErrorMsg(null)} />}
       <div className="grid gap-6 lg:grid-cols-[180px_minmax(0,1fr)_200px]">
         <nav aria-label="Các phần công thức" className="flex gap-2 overflow-x-auto lg:flex-col lg:border-r lg:border-border lg:pr-5">
@@ -637,7 +662,7 @@ export default function EditRecipePage() {
         <EditRecipeImageRail imageUrl={primaryMediaAssetId ? coverPreviews[primaryMediaAssetId] : undefined} hasImage={!!primaryMediaAssetId} onPick={handleOpenHeroMediaPicker} onAi={handleOpenHeroAiModal} onRemove={() => setPrimaryMediaAssetId(null)} version={recipe.versionLabel} ingredientCount={ingredients.length} stepCount={steps.length} />
       </div>
       <div className="flex items-center justify-between border-t border-border pt-4"><Link href={`/rnd/recipes/${recipe.id}`}><Button variant="secondary">Quay Lại Chi Tiết</Button></Link><Button variant="gold" size="lg" isLoading={saving} disabled={generatingCode} onClick={handleSaveRecipe}><Save className="mr-1.5 h-4 w-4" strokeWidth={1.5} />Lưu Bản Nháp</Button></div>
-      <EditRecipeAiDialog isAiImageModalOpen={isAiImageModalOpen} setIsAiImageModalOpen={setIsAiImageModalOpen} isGeneratingAiImage={isGeneratingAiImage} aiTargetType={aiTargetType} activeStepForImage={activeStepForImage} generatedCandidate={generatedCandidate} handleAcceptCandidate={handleAcceptCandidate} aiImageError={aiImageError} imagePrompt={imagePrompt} setImagePrompt={setImagePrompt} generateSuggestedPrompt={generateSuggestedPrompt} handleGenerateAiImage={handleGenerateAiImage} aiProgressStatus={aiProgressStatus} candidateAssetUrl={candidateAssetUrl} handleDiscardCandidate={handleDiscardCandidate} getRemainingMinutes={getRemainingMinutes} activeDrafts={activeDrafts} handleSelectDraft={handleSelectDraft} />
+      <EditRecipeAiDialog isAiImageModalOpen={isAiImageModalOpen} setIsAiImageModalOpen={setIsAiImageModalOpen} isGeneratingAiImage={isGeneratingAiImage} aiTargetType={aiTargetType} activeStepForImage={activeStepForImage} generatedCandidate={generatedCandidate} handleAcceptCandidate={handleAcceptCandidate} imagePrompt={imagePrompt} setImagePrompt={setImagePrompt} generateSuggestedPrompt={generateSuggestedPrompt} handleGenerateAiImage={handleGenerateAiImage} aiProgressStatus={aiProgressStatus} candidateAssetUrl={candidateAssetUrl} handleDiscardCandidate={handleDiscardCandidate} getRemainingMinutes={getRemainingMinutes} activeDrafts={activeDrafts} handleSelectDraft={handleSelectDraft} draftErrors={draftErrors} retryDraft={retryDraft} />
       <EditRecipeMediaDialog isOpen={isMediaPickerOpen} isPickingHeroCover={isPickingHeroCover} onClose={() => { setIsMediaPickerOpen(false); setIsPickingHeroCover(false); }} onSelect={handleSelectMediaForStep} />
     </div>
   );

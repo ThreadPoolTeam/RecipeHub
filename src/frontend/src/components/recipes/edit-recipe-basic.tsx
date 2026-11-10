@@ -12,7 +12,7 @@ type Props = {
 
 export function EditRecipeBasic(p: Props) {
   return <section id="recipe-basic" className="scroll-mt-24 space-y-5">
-    <h2 className="text-lg font-semibold"><span className="mr-3 text-primary">01</span>Thông tin cơ bản &amp; định mức</h2>
+    <h2 className="text-lg font-medium font-display"><span className="mr-3 text-primary">01</span>Thông tin cơ bản &amp; định mức</h2>
     <div className="grid gap-4 md:grid-cols-2">
       <CodeInput label="Mã Công Thức" value={p.code} onChange={(e) => p.setCode(e.target.value.toUpperCase())}
         onGenerate={p.onGenerate} generateLabel="Tạo mã công thức" generating={p.generating}

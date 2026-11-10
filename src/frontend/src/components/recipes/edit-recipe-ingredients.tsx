@@ -10,7 +10,7 @@ type Props = {
 
 export function EditRecipeIngredients({ ingredients, availableIngredients, onAdd, onRemove, onUpdate }: Props) {
   return <section id="recipe-ingredients" className="scroll-mt-24 space-y-4">
-    <h2 className="text-lg font-semibold"><span className="mr-3 text-primary">02</span>Thành phần &amp; định lượng</h2>
+    <h2 className="text-lg font-medium font-display"><span className="mr-3 text-primary">02</span>Thành phần &amp; định lượng</h2>
     <p className="text-sm text-muted-foreground">Thay đổi định lượng, đơn vị hoặc giai đoạn sử dụng nguyên liệu.</p>
     {ingredients.length === 0 ? <p className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">Chưa có nguyên liệu nào.</p> :
       <div className="space-y-3">{ingredients.map((item, idx) => <div key={idx} className="grid items-end gap-3 rounded-lg border border-border bg-card p-3 md:grid-cols-12">

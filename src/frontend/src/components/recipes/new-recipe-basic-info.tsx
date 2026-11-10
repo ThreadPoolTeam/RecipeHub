@@ -16,7 +16,7 @@ type Props = {
 export function NewRecipeBasicInfo({ code, setCode, generatingCode, codeError, handleGenerateCode, hasSession, submitting, name, setName, description, setDescription, targetYield, setTargetYield, yieldUnit, setYieldUnit, availableUnits }: Props) {
   return (
     <section id="basic-info" className="scroll-mt-24 space-y-5">
-      <h2 className="text-lg font-semibold text-foreground"><span className="mr-3 text-primary">01</span>Thông tin cơ bản &amp; định mức</h2>
+      <h2 className="text-lg text-foreground font-medium font-display"><span className="mr-3 text-primary">01</span>Thông tin cơ bản &amp; định mức</h2>
       <div className="grid gap-4 md:grid-cols-2">
         <CodeInput label="Mã Công Thức" placeholder="VD: REC-001" value={code}
           onChange={(e) => setCode(e.target.value.toUpperCase())} onGenerate={handleGenerateCode}

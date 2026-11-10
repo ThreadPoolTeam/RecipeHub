@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { Check, Clock, History, Image as ImageIcon, Sparkles, Trash2 } from 'lucide-react';
-import { Button, TextArea, Alert } from '@/components/workspace/fields';
+import { AlertCircle, Check, Clock, History, Image as ImageIcon, Sparkles, Trash2 } from 'lucide-react';
+import { Button, TextArea } from '@/components/workspace/fields';
 import { Dialog } from '@/components/workspace/dialog';
 import type { AiCandidate, RecipeStep } from '@/lib/demo/types';
 import type { PersistentAiDraft } from '@/lib/ai-draft-storage';
@@ -12,13 +12,14 @@ const PROMPT_CHIPS = ['Ly thủy tinh cao cấp', 'Tách sứ bọt kem latte ar
 type Props = {
   isAiImageModalOpen: boolean; setIsAiImageModalOpen: Dispatch<SetStateAction<boolean>>; isGeneratingAiImage: boolean;
   aiTargetType: 'hero' | 'step'; activeStepForImage: RecipeStep | null; generatedCandidate: AiCandidate | null;
-  handleAcceptCandidate: () => void; aiImageError: string | null; imagePrompt: string;
+  handleAcceptCandidate: () => void; imagePrompt: string;
   setImagePrompt: Dispatch<SetStateAction<string>>; generateSuggestedPrompt: (target: 'hero' | 'step', step?: RecipeStep | null) => string;
   handleGenerateAiImage: () => void; aiProgressStatus: { attempt: number; state: string; message: string } | null;
   candidateAssetUrl: string | null; handleDiscardCandidate: (id?: string) => void;
   getRemainingMinutes: (expiresAt?: string) => number; activeDrafts: PersistentAiDraft[]; handleSelectDraft: (draft: PersistentAiDraft) => void;
+  draftErrors: Record<string, boolean>; retryDraft: (draft: PersistentAiDraft) => void;
 };
-export function EditRecipeAiDialog({ isAiImageModalOpen, setIsAiImageModalOpen, isGeneratingAiImage, aiTargetType, activeStepForImage, generatedCandidate, handleAcceptCandidate, aiImageError, imagePrompt, setImagePrompt, generateSuggestedPrompt, handleGenerateAiImage, aiProgressStatus, candidateAssetUrl, handleDiscardCandidate, getRemainingMinutes, activeDrafts, handleSelectDraft }: Props) {
+export function EditRecipeAiDialog({ isAiImageModalOpen, setIsAiImageModalOpen, isGeneratingAiImage, aiTargetType, activeStepForImage, generatedCandidate, handleAcceptCandidate, imagePrompt, setImagePrompt, generateSuggestedPrompt, handleGenerateAiImage, aiProgressStatus, candidateAssetUrl, handleDiscardCandidate, getRemainingMinutes, activeDrafts, handleSelectDraft, draftErrors, retryDraft }: Props) {
   return (
       <Dialog
         isOpen={isAiImageModalOpen}
@@ -38,7 +39,6 @@ export function EditRecipeAiDialog({ isAiImageModalOpen, setIsAiImageModalOpen, 
         maxWidth="4xl"
       >
         <div className="py-1">
-          {aiImageError && <Alert type="error" message={aiImageError} />}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start mt-1">
             <div className="lg:col-span-5 space-y-4">
               <div className="space-y-1.5">
@@ -168,21 +168,21 @@ export function EditRecipeAiDialog({ isAiImageModalOpen, setIsAiImageModalOpen, 
                         <button
                           key={d.id}
                           type="button"
-                          onClick={() => handleSelectDraft(d)}
+                          onClick={() => draftErrors[d.id] ? retryDraft(d) : handleSelectDraft(d)}
                           className={`w-20 h-16 rounded-xl border overflow-hidden shrink-0 transition cursor-pointer relative group ${
                             isSelected
                               ? 'ring-2 ring-primary border-primary shadow-sm'
                               : 'border-border hover:border-primary opacity-80 hover:opacity-100'
                           }`}
-                          title={`Prompt: ${d.prompt}\nCòn lại: ~${mins} phút`}
+                          title={draftErrors[d.id] ? 'Không tải được. Bấm để thử lại.' : `Prompt: ${d.prompt}\nCòn lại: ~${mins} phút`}
                         >
                           {d.previewUrl ? (
-                            <img src={d.previewUrl} alt="" className="w-full h-full object-cover" />
+                            <img src={d.previewUrl} alt="" loading="eager" decoding="async" className="w-full h-full object-cover" />
+                          ) : draftErrors[d.id] ? (
+                            <span className="flex h-full flex-col items-center justify-center gap-1 bg-secondary p-1 text-xs text-destructive"><AlertCircle className="h-4 w-4" />Không tải được</span>
                           ) : (
-                            <div className="w-full h-full bg-secondary flex flex-col items-center justify-center text-primary p-1">
-                              <Sparkles className="w-3.5 h-3.5 motion-safe:animate-pulse text-primary" />
-                              <span className="text-[9px] font-medium text-muted-foreground mt-0.5">Đang tải...</span>
-                            </div>                           )}
+                            <span aria-label="Đang tải ảnh" className="block h-full w-full bg-secondary motion-safe:animate-pulse" />
+                          )}
                           <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[9px] font-mono py-0.5 text-center">
                             {mins}p
                           </div>                           {isSelected && (

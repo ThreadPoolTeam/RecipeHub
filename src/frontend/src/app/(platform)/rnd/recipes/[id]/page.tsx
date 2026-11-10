@@ -1,5 +1,7 @@
 'use client';
 
+import { pageTitleClass } from '@/components/workspace/page-header';
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -24,6 +26,7 @@ import { Button, TextInput, Alert } from '@/components/workspace/fields';
 import { StatusBadge } from '@/components/workspace/status-badge';
 import { Dialog } from '@/components/workspace/dialog';
 import { VersionHistoryDrawer } from '@/components/workspace/version-history-drawer';
+import { useToast } from '@/components/workspace/toast';
 import { getStoredAiDrafts } from '@/lib/ai-draft-storage';
 
 export default function RecipeDetailPage() {
@@ -32,6 +35,7 @@ export default function RecipeDetailPage() {
   const id = params?.id as string;
 
   const { session, repo, dataVersion, touch } = useDemo();
+  const { toast } = useToast();
   const [recipe, setRecipe] = useState<RecipeVersion | null>(null);
   const [scaledIngredients, setScaledIngredients] = useState<RecipeIngredient[] | null>(null);
   const [ingredientsMap, setIngredientsMap] = useState<Record<string, Ingredient>>({});
@@ -39,7 +43,6 @@ export default function RecipeDetailPage() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [mediaWarning, setMediaWarning] = useState<string | null>(null);
-  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [failedCoverUrl, setFailedCoverUrl] = useState<string | null>(null);
 
   // Version History State
@@ -130,10 +133,14 @@ export default function RecipeDetailPage() {
       const updated = await repo.publishRecipe(session, recipe.id);
       setRecipe(updated);
       touch();
-      setActionSuccess('Đã phát hành công thức thành công.');
+      toast({ type: 'success', title: 'Đã phát hành công thức', description: `${updated.code} · ${updated.versionLabel}` });
     } catch (err: unknown) {
       const e = err as Error;
-      setErrorMsg(e.message || 'Không thể phát hành công thức.');
+      toast({
+        type: 'error',
+        title: 'Không thể phát hành công thức',
+        description: e.message || 'Vui lòng thử lại.',
+      });
     } finally {
       setIsPublishing(false);
     }
@@ -163,10 +170,15 @@ export default function RecipeDetailPage() {
       const copiedRecipe = await repo.copyRecipe(session, recipe.id, cleanCode, cleanName);
       touch();
       setIsCopyDialogOpen(false);
+      toast({ type: 'success', title: 'Đã tạo bản sao công thức', description: `${cleanCode} · ${cleanName}` });
       router.push(`/rnd/recipes/${copiedRecipe.id}`);
     } catch (err: unknown) {
       const e = err as Error;
-      setCopyError(e.message || 'Không thể sao chép công thức.');
+      toast({
+        type: 'error',
+        title: 'Không thể sao chép công thức',
+        description: e.message || 'Vui lòng thử lại.',
+      });
     } finally {
       setCopySubmitting(false);
     }
@@ -182,10 +194,14 @@ export default function RecipeDetailPage() {
       setRecipe(updated);
       touch();
       setIsArchiveConfirmOpen(false);
-      setActionSuccess('Đã chuyển công thức vào kho lưu trữ thành công!');
+      toast({ type: 'success', title: 'Đã lưu trữ công thức', description: `${updated.code} · ${updated.versionLabel}` });
     } catch (err: unknown) {
       const e = err as Error;
-      setErrorMsg(e.message || 'Lỗi khi lưu trữ công thức.');
+      toast({
+        type: 'error',
+        title: 'Không thể lưu trữ công thức',
+        description: e.message || 'Vui lòng thử lại.',
+      });
     } finally {
       setIsArchiving(false);
     }
@@ -200,10 +216,14 @@ export default function RecipeDetailPage() {
       const updated = await repo.activateRecipe(session, recipe.id);
       setRecipe(updated);
       touch();
-      setActionSuccess('Đã khôi phục công thức về trạng thái hoạt động thành công!');
+      toast({ type: 'success', title: 'Đã khôi phục công thức', description: `${updated.code} · ${updated.versionLabel}` });
     } catch (err: unknown) {
       const e = err as Error;
-      setErrorMsg(e.message || 'Lỗi khi khôi phục công thức.');
+      toast({
+        type: 'error',
+        title: 'Không thể khôi phục công thức',
+        description: e.message || 'Vui lòng thử lại.',
+      });
     } finally {
       setIsActivating(false);
     }
@@ -276,7 +296,7 @@ export default function RecipeDetailPage() {
             <span className="font-semibold text-primary">{recipe.code}</span>
           </div>
           <div className="flex items-center gap-2.5 flex-wrap">
-            <h1 className="font-display text-h2 font-medium text-foreground sm:text-h1">{recipe.name}</h1>
+            <h1 className={pageTitleClass}>{recipe.name}</h1>
             {versions.length > 1 ? (
               <div className="relative inline-block">
                 <button
@@ -400,14 +420,6 @@ export default function RecipeDetailPage() {
       </div>
       </div>
 
-      {actionSuccess && (
-        <Alert
-          type="success"
-          message={actionSuccess}
-          onClose={() => setActionSuccess(null)}
-        />
-      )}
-
       {errorMsg && (
         <Alert
           type="error"
@@ -503,7 +515,7 @@ export default function RecipeDetailPage() {
                       <td className="px-3 py-2 text-xs text-muted-foreground">{index + 1}</td>
                       <td className="py-2 px-3">
                         <span className="mr-2 text-xs text-primary">
-                          {ing ? ing.code : '—'}
+                          {ing ? ing.code : 'Chưa cập nhật'}
                         </span>
                         <span className="font-medium text-foreground">
                           {ing ? ing.name : 'Nguyên liệu chưa cập nhật'}
@@ -517,7 +529,7 @@ export default function RecipeDetailPage() {
                       </td>
                       <td className="px-3 py-2 text-xs text-muted-foreground">{item.unit}</td>
                       <td className="px-3 py-2 text-xs italic text-muted-foreground">
-                        {item.stageNote || item.notes || '—'}
+                        {item.stageNote || item.notes || 'Chưa cập nhật'}
                       </td>
                     </tr>
                   );
@@ -556,7 +568,7 @@ export default function RecipeDetailPage() {
                       <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
                         {idx + 1}
                       </span>
-                      <h3 className="text-sm font-semibold text-foreground">{step.title}</h3>
+                      <h3 className="text-sm text-foreground font-medium font-display">{step.title}</h3>
                     </div>
 
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
