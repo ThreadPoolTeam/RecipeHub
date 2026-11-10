@@ -26,7 +26,7 @@ const config: Config = {
         input: "var(--color-input)",
         ring: "var(--color-ring)",
         ink: { DEFAULT: "var(--color-ink)", foreground: "var(--color-ink-foreground)" },
-        success: { DEFAULT: "var(--color-success)", soft: "var(--color-success-soft)" },
+        success: { DEFAULT: "var(--color-success)", soft: "var(--color-success-soft)", medium: "var(--color-success-medium)" },
         info: { DEFAULT: "var(--color-info)", soft: "var(--color-info-soft)" },
         destructive: { DEFAULT: "var(--color-destructive)", foreground: "var(--color-destructive-foreground)", soft: "var(--color-destructive-soft)", tint: "var(--color-destructive-tint)", border: "var(--color-destructive-border)" },
         cinematic: { bg: "var(--cinematic-bg)", ink: "var(--cinematic-ink)", muted: "var(--cinematic-muted)", border: "var(--cinematic-border)", gold: "var(--cinematic-gold)" },

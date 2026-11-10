@@ -5,6 +5,15 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display font-medium;
+  }
+}
+
 @font-face {
   font-family: 'Google Sans';
   font-style: normal;
@@ -38,6 +47,7 @@
   --color-ink-foreground: #FCFCFC;
   --color-success: #2F6633;
   --color-success-soft: #E4F8E4;
+  --color-success-medium: #CFEFD0;
   --color-info: #3F55BA;
   --color-info-soft: #EAF0FF;
   --color-destructive: #C83B2C;
@@ -76,7 +86,7 @@
 }
 
 [data-role="admin"] {
-  --role-accent: var(--color-ink);
+  --role-accent: var(--color-primary);
   --role-page-bg: var(--color-secondary);
   --role-density: 28px;
   --role-control-height: 40px;
