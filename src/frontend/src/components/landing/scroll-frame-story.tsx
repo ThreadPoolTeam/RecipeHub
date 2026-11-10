@@ -397,7 +397,7 @@ export function ScrollFrameStory({ manifest }: ScrollFrameStoryProps) {
                 <span className="text-cinematic-gold">bắt đầu từ đâu?</span>
               </h1>
               <p className="landing-subheading max-w-2xl text-cinematic-muted">
-                RecipeHub — quản lý công thức và hành trình phát triển đồ uống.
+                RecipeHub quản lý công thức và hành trình phát triển đồ uống.
               </p>
               <div className="mt-4 flex items-center gap-2 text-xs text-cinematic-muted uppercase tracking-widest animate-pulse">
                 <span>&darr;</span> Cuộn để khám phá
@@ -410,7 +410,7 @@ export function ScrollFrameStory({ manifest }: ScrollFrameStoryProps) {
               className="story-chapter-card will-change-transform opacity-0 pointer-events-none"
             >
               <span className="text-xs tracking-[0.25em] uppercase text-cinematic-gold font-semibold">
-                01 — NGUYÊN LIỆU
+                01 · NGUYÊN LIỆU
               </span>
               <h2 className="landing-heading-chapter font-bold tracking-tight text-cinematic-ink">
                 Bắt đầu từ nguyên liệu.
@@ -426,7 +426,7 @@ export function ScrollFrameStory({ manifest }: ScrollFrameStoryProps) {
               className="story-chapter-card will-change-transform opacity-0 pointer-events-none"
             >
               <span className="text-xs tracking-[0.25em] uppercase text-cinematic-gold font-semibold">
-                02 — CHẾ BIẾN
+                02 · CHẾ BIẾN
               </span>
               <h2 className="landing-heading-chapter font-bold tracking-tight text-cinematic-ink">
                 Hương vị qua từng thao tác.
@@ -442,13 +442,13 @@ export function ScrollFrameStory({ manifest }: ScrollFrameStoryProps) {
               className="story-chapter-card will-change-transform opacity-0 pointer-events-none"
             >
               <span className="text-xs tracking-[0.25em] uppercase text-cinematic-gold font-semibold">
-                03 — THÀNH PHẨM
+                03 · THÀNH PHẨM
               </span>
               <h2 className="landing-heading-chapter font-bold tracking-tight text-cinematic-ink">
                 Một ly ngon. Cả một quá trình phía sau.
               </h2>
               <p className="landing-subheading max-w-xl text-cinematic-muted">
-                Giữ lại hương vị — và cả cách tạo nên nó.
+                Giữ lại hương vị và cả cách tạo nên nó.
               </p>
             </div>
           </div>
@@ -480,7 +480,7 @@ export function ScrollFrameStory({ manifest }: ScrollFrameStoryProps) {
               Một hương vị <span className="text-cinematic-gold">bắt đầu từ đâu?</span>
             </h1>
             <p className="landing-subheading max-w-2xl mx-auto text-cinematic-muted">
-              RecipeHub — quản lý công thức và hành trình phát triển đồ uống.
+              RecipeHub quản lý công thức và hành trình phát triển đồ uống.
             </p>
             <div className="mt-8 rounded-xl overflow-hidden border border-cinematic-border">
               <Image
@@ -497,7 +497,7 @@ export function ScrollFrameStory({ manifest }: ScrollFrameStoryProps) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="p-6 rounded-xl space-y-4">
               <span className="text-xs uppercase text-cinematic-gold tracking-wider font-semibold">
-                01 — NGUYÊN LIỆU
+                01 · NGUYÊN LIỆU
               </span>
               <h2 className="text-2xl font-bold text-cinematic-ink">Bắt đầu từ nguyên liệu.</h2>
               <p className="text-sm text-cinematic-muted">Mỗi thành phần mở đầu một câu chuyện.</p>
@@ -514,7 +514,7 @@ export function ScrollFrameStory({ manifest }: ScrollFrameStoryProps) {
 
             <div className="p-6 rounded-xl space-y-4">
               <span className="text-xs uppercase text-cinematic-gold tracking-wider font-semibold">
-                02 — CHẾ BIẾN
+                02 · CHẾ BIẾN
               </span>
               <h2 className="text-2xl font-bold text-cinematic-ink">Hương vị qua từng thao tác.</h2>
               <p className="text-sm text-cinematic-muted">Có những bước cần được ghi lại.</p>
@@ -531,13 +531,13 @@ export function ScrollFrameStory({ manifest }: ScrollFrameStoryProps) {
 
             <div className="p-6 rounded-xl space-y-4">
               <span className="text-xs uppercase text-cinematic-gold tracking-wider font-semibold">
-                03 — THÀNH PHẨM
+                03 · THÀNH PHẨM
               </span>
               <h2 className="text-2xl font-bold text-cinematic-ink">
                 Một ly ngon. Cả một quá trình phía sau.
               </h2>
               <p className="text-sm text-cinematic-muted">
-                Giữ lại hương vị — và cả cách tạo nên nó.
+                Giữ lại hương vị và cả cách tạo nên nó.
               </p>
               <div className="rounded-lg overflow-hidden border border-cinematic-border">
                 <Image
@@ -558,7 +558,7 @@ export function ScrollFrameStory({ manifest }: ScrollFrameStoryProps) {
         <div className="max-w-4xl mx-auto px-4 py-16 text-center space-y-8">
           <h1 className="text-4xl font-bold text-cinematic-ink">Một hương vị bắt đầu từ đâu?</h1>
           <p className="text-cinematic-muted">
-            RecipeHub — quản lý công thức và hành trình phát triển đồ uống.
+            RecipeHub quản lý công thức và hành trình phát triển đồ uống.
           </p>
           <div className="border border-cinematic-border rounded-xl overflow-hidden">
             <Image

@@ -1,25 +1,26 @@
+import Image from 'next/image';
 import Link from 'next/link';
 
-const workspaces = [
-  { href: '/rnd', image: '/landing/workspaces/rnd-lab.jpg', label: 'R&D' },
-  { href: '/viewer', image: '/landing/workspaces/barista-sop.jpg', label: 'Barista SOP' },
-  { href: '/admin', image: '/landing/workspaces/admin-management.jpg', label: 'Quản trị' },
-  { href: '/platform', image: '/landing/workspaces/platform-architecture.jpg', label: 'Nền tảng kỹ thuật' },
+const categories = [
+  { label: 'Cà phê', count: 4, image: '/landing/figma/cat-ca-phe.png' },
+  { label: 'Trà & matcha', count: 5, image: '/landing/figma/cat-tra-matcha.png' },
+  { label: 'Trái cây', count: 3, image: '/landing/figma/cat-trai-cay.png' },
+  { label: 'Tất cả menu', count: 12, image: '/landing/figma/cat-tat-ca-menu.png' },
 ];
 
 export function LandingCategories() {
   return (
-    <section id="workspace" className="scroll-mt-20 bg-background px-4 py-12 md:px-10 md:py-16">
-      <div className="mx-auto max-w-[1360px] space-y-8">
-        <div className="space-y-3">
-          <h2 className="font-display text-h2 font-medium text-foreground">Không gian làm việc</h2>
-          <p className="max-w-3xl text-body-lg text-muted-foreground">Không gian làm việc số hoá kết nối các vai trò vận hành chuỗi: từ thử nghiệm công thức R&amp;D, chuẩn hoá quy trình quầy bar, đến quản trị tài khoản và hạ tầng kỹ thuật.</p>
-        </div>
-        <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
-          {workspaces.map((workspace) => <Link key={workspace.href} href={workspace.href} className="group flex flex-col items-center gap-4 text-center text-sm font-semibold text-foreground hover:text-primary">
-            <img src={workspace.image} alt="" className="aspect-square w-28 rounded-full object-cover sm:w-36" />
-            {workspace.label}
-          </Link>)}
+    <section id="workspace" className="px-4 pb-20 md:px-10">
+      <div className="mx-auto max-w-[1280px] space-y-6">
+        <h2 className="font-display text-h2 font-medium text-foreground">Một thư viện hương vị</h2>
+        <div className="grid max-w-[696px] grid-cols-2 gap-8 sm:grid-cols-4">
+          {categories.map((category) => (
+            <Link key={category.label} href="/viewer" className="flex flex-col items-center text-center text-foreground hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+              <Image src={category.image} alt="" width={150} height={150} className="aspect-square w-full max-w-[150px] rounded-full object-cover" />
+              <span className="mt-4 font-display text-lg font-medium">{category.label}</span>
+              <span className="mt-2 text-xs text-muted-foreground">{category.count} công thức</span>
+            </Link>
+          ))}
         </div>
       </div>
     </section>
