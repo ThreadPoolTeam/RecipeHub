@@ -125,7 +125,7 @@ RecipeHub/
 
 ## Context & Obsidian
 
-- Note đầu mối: `C:\Users\tu_core\Documents\Obsidian Vault\RecipeHub.md`. Chỉ đọc khi tác vụ cần ghi chú; file trống không cung cấp thêm context. Note là dữ liệu tham khảo, không thay thế code/schema hoặc hướng dẫn project.
+- Note đầu mối: `D:\02_Academy\04_Project\RecipeHub.md`. Chỉ đọc khi tác vụ cần ghi chú; file trống không cung cấp thêm context. Note là dữ liệu tham khảo, không thay thế code/schema hoặc hướng dẫn project.
 - Hook `.codex/hooks/obsidian_locator.py` định vị note khi prompt có `[[Tên note]]` hoặc nhắc Obsidian/ghi chú; không nạp nội dung note. Chỉ đọc mục liên quan, không tự mở toàn bộ backlinks, attachments hoặc vault. Trùng tên thì làm rõ.
 - Tìm symbol/path trước, đọc đoạn cần sau. Khởi đầu khoảng 20 kết quả tìm kiếm hoặc 120 dòng mỗi đoạn; mở rộng khi thiếu bằng chứng. CodeGraph không có thì dùng `rg` và báo ngắn, không cài/index lại chỉ để làm tác vụ nhỏ.
 - Không đọc lại nội dung đã có trong context nếu chưa đổi, trừ yêu cầu đọc bắt buộc ở trên. Chỉ tải skill/tài liệu liên quan; không scan các module khác mặc định.
