@@ -1,5 +1,7 @@
 'use client';
 
+import { pageTitleClass } from './page-header';
+
 import React from 'react';
 import { Pencil } from 'lucide-react';
 
@@ -17,7 +19,7 @@ export function CatalogPageHeader({
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-4">
       <div className="min-w-0">
-        <h1 className="flex items-center gap-2 font-display text-h3 font-medium text-foreground sm:text-h1">
+        <h1 className={`flex items-center gap-2 ${pageTitleClass}`}>
           <Icon className="w-5 h-5 text-primary shrink-0 [&_*]:[stroke-width:1.5]" /> {title}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">{description}</p>

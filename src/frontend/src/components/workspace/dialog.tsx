@@ -13,6 +13,7 @@ interface DialogProps {
   children?: React.ReactNode;
   onConfirm?: () => void;
   confirmLabel?: string;
+  cancelLabel?: string;
   confirmVariant?: 'primary' | 'danger' | 'gold';
   isConfirming?: boolean;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
@@ -36,6 +37,7 @@ export function Dialog({
   children,
   onConfirm,
   confirmLabel = 'Xác nhận',
+  cancelLabel = 'Hủy bỏ',
   confirmVariant = 'gold',
   isConfirming = false,
   maxWidth = 'lg',
@@ -133,7 +135,7 @@ export function Dialog({
 
         <div className="flex shrink-0 items-center justify-end gap-3 pt-4">
           <Button variant="ghost" onClick={onClose} disabled={isConfirming}>
-            Hủy bỏ
+            {cancelLabel}
           </Button>
           {onConfirm && (
             <Button

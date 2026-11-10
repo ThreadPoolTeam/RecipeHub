@@ -24,6 +24,7 @@ import {
   DocumentType,
 } from '@/lib/api/pdf-document-types';
 import { Button, Alert } from './fields';
+import { useToast } from './toast';
 import { PdfDocumentPreview } from './pdf-document-preview';
 import { PdfRecipeSelector } from './pdf-recipe-selector';
 
@@ -64,6 +65,7 @@ export function PdfDocumentWorkspace({
 }: PdfDocumentWorkspaceProps) {
   const router = useRouter();
   const { session, repo } = useDemo();
+  const { toast } = useToast();
 
   // Capabilities
   const [capabilities, setCapabilities] = useState<PdfCapabilitiesResponse | null>(null);
@@ -78,6 +80,7 @@ export function PdfDocumentWorkspace({
   // Preview State
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [snapshotHash, setSnapshotHash] = useState<string | null>(null);
+  const [snapshotDocumentType, setSnapshotDocumentType] = useState<DocumentType | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [isStale, setIsStale] = useState(false);
@@ -86,7 +89,6 @@ export function PdfDocumentWorkspace({
   const [isExportingDraft, setIsExportingDraft] = useState(false);
   const [isExportingOfficial, setIsExportingOfficial] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
-  const [generalSuccess, setGeneralSuccess] = useState<string | null>(null);
 
   // Recipe Catalog State
   const [catalogRecipes, setCatalogRecipes] = useState<GroupedRecipe[]>([]);
@@ -281,6 +283,7 @@ export function PdfDocumentWorkspace({
   const markStale = useCallback(() => {
     setIsStale(true);
     setSnapshotHash(null);
+    setSnapshotDocumentType(null);
   }, []);
 
   // Filter Catalog
@@ -324,7 +327,11 @@ export function PdfDocumentWorkspace({
     } else {
       const max = capabilities?.maxItems || 50;
       if (selectedItems.length >= max) {
-        alert(`Số lượng món tối đa cho một tài liệu là ${max}`);
+        toast({
+          type: 'info',
+          title: 'Đã đạt giới hạn công thức',
+          description: `Mỗi tài liệu chỉ chứa tối đa ${max} công thức.`,
+        });
         return;
       }
 
@@ -493,6 +500,7 @@ export function PdfDocumentWorkspace({
       const result = await previewPdf(request, session?.userId || null);
       setPreviewBlob(result.blob);
       setSnapshotHash(result.snapshotHash);
+      setSnapshotDocumentType(request.documentType);
       setIsStale(false);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Kết xuất xem trước thất bại';
@@ -518,14 +526,13 @@ export function PdfDocumentWorkspace({
     }
 
     setGeneralError(null);
-    setGeneralSuccess(null);
     if (docType === 'draft') setIsExportingDraft(true);
     else setIsExportingOfficial(true);
 
     try {
       // Auto-preview if needed to ensure valid snapshotHash
       let validSnapshotHash = snapshotHash;
-      if (!validSnapshotHash || isStale) {
+      if (!validSnapshotHash || isStale || snapshotDocumentType !== docType) {
         const previewReq: PreviewPdfRequest = {
           documentType: docType,
           title: collectionTitle.trim(),
@@ -533,8 +540,9 @@ export function PdfDocumentWorkspace({
           items: buildItemsPayload(),
         };
         const prevResult = await previewPdf(previewReq, session?.userId || null);
-        setPreviewBlob(prevResult.blob);
+        if (docType === 'draft') setPreviewBlob(prevResult.blob);
         setSnapshotHash(prevResult.snapshotHash);
+        setSnapshotDocumentType(docType);
         setIsStale(false);
         validSnapshotHash = prevResult.snapshotHash;
       }
@@ -552,9 +560,11 @@ export function PdfDocumentWorkspace({
       };
 
       const result = await exportPdf(request, session?.userId || null);
-      setGeneralSuccess(
-        `Đã xuất bản thành công tài liệu: "${result.title}". File đã lưu vào kho.`
-      );
+      toast({
+        type: 'success',
+        title: docType === 'draft' ? 'Đã xuất bản nháp' : 'Đã xuất bản chính thức',
+        description: result.title,
+      });
 
       if (onSuccess) {
         onSuccess(result.fileName);
@@ -564,8 +574,11 @@ export function PdfDocumentWorkspace({
         }, 1200);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Xuất bản tài liệu thất bại';
-      setGeneralError(msg);
+      toast({
+        type: 'error',
+        title: 'Không thể xuất tài liệu',
+        description: err instanceof Error ? err.message : 'Vui lòng thử lại.',
+      });
     } finally {
       if (docType === 'draft') setIsExportingDraft(false);
       else setIsExportingOfficial(false);
@@ -577,11 +590,6 @@ export function PdfDocumentWorkspace({
       {generalError && (
         <Alert variant="error" title="Lỗi thao tác">
           {generalError}
-        </Alert>
-      )}
-      {generalSuccess && (
-        <Alert variant="success" title="Thành công">
-          {generalSuccess}
         </Alert>
       )}
 
@@ -604,7 +612,7 @@ export function PdfDocumentWorkspace({
             onRemove={handleRemoveItem}
           />
           <div className="space-y-4 border-t border-border pt-4">
-            <h2 className="text-lg font-medium text-foreground">2 · Thiết lập tài liệu</h2>
+            <h2 className="text-lg font-medium text-foreground font-display">2 · Thiết lập tài liệu</h2>
             <label className="block space-y-1.5 text-xs font-medium text-foreground">
               <span>Tiêu đề</span>
               <input
@@ -637,7 +645,7 @@ export function PdfDocumentWorkspace({
 
         <section className="min-w-0 overflow-hidden rounded-lg border border-border bg-secondary p-4">
           <div className="flex items-center justify-between gap-3 pb-4 text-sm">
-            <h2 className="font-medium text-foreground">Xem trước</h2>
+            <h2 className="font-medium text-foreground font-display">Xem trước</h2>
             <span className="text-xs text-muted-foreground">A4 ngang</span>
           </div>
           <div className="h-[620px] overflow-hidden rounded-lg border border-border">
@@ -654,7 +662,7 @@ export function PdfDocumentWorkspace({
         </section>
 
         <aside className="space-y-4 rounded-lg border border-border bg-card p-5 shadow-soft lg:col-span-2 xl:col-span-1">
-          <h2 className="text-lg font-medium text-foreground">Tóm tắt xuất bản</h2>
+          <h2 className="text-lg font-medium text-foreground font-display">Tóm tắt xuất bản</h2>
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Công thức</dt><dd className="font-medium">{selectedItems.length}</dd></div>
             <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Khổ giấy</dt><dd className="font-medium">A4 ngang</dd></div>

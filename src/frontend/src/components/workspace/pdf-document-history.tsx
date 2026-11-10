@@ -15,6 +15,7 @@ import {
   downloadPdfDocumentFile,
 } from '@/lib/api/pdf-documents';
 import { Button, Select, SearchInput, Alert } from './fields';
+import { useToast } from './toast';
 import { PdfDocumentCards } from './pdf-document-cards';
 import { Dialog } from './dialog';
 import { PdfDocumentPreview } from './pdf-document-preview';
@@ -28,6 +29,7 @@ export function PdfDocumentHistory({
   actorId = null,
   refreshKey = 0,
 }: PdfDocumentHistoryProps) {
+  const { toast } = useToast();
   const [documents, setDocuments] = useState<PdfDocumentSummaryResponse[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -122,9 +124,13 @@ export function PdfDocumentHistory({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      toast({ type: 'success', title: 'Đã tải tệp PDF', description: name });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Tải tệp PDF thất bại';
-      alert(msg);
+      toast({
+        type: 'error',
+        title: 'Không thể tải tệp PDF',
+        description: err instanceof Error ? err.message : 'Vui lòng thử lại.',
+      });
     } finally {
       setDownloadingId(null);
     }

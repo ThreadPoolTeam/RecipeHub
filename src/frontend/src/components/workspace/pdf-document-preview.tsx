@@ -71,7 +71,7 @@ export function PdfDocumentPreview({
           <AlertCircle className="h-5 w-5" strokeWidth={1.5} />
         </div>
         <div className="space-y-1">
-          <h4 className="text-sm font-bold text-destructive">Không thể kết xuất xem trước</h4>
+          <h4 className="text-sm text-destructive font-medium font-display">Không thể kết xuất xem trước</h4>
           <p className="max-w-md text-xs text-destructive">{error}</p>
         </div>
         {onRefreshPreview && (
@@ -90,7 +90,7 @@ export function PdfDocumentPreview({
           <FileText className="h-6 w-6 text-muted-foreground" strokeWidth={1.5} />
         </div>
         <div className="max-w-sm space-y-1">
-          <h4 className="text-sm font-semibold text-foreground">Chưa có bản xem trước</h4>
+          <h4 className="text-sm text-foreground font-medium font-display">Chưa có bản xem trước</h4>
           <p className="text-xs text-muted-foreground">
             Chọn công thức bên trái và nhấn &quot;Xem trước&quot; để hiển thị tài liệu SOP.
           </p>
@@ -107,7 +107,7 @@ export function PdfDocumentPreview({
           {isStale ? (
             <span className="inline-flex items-center gap-1.5 rounded-md bg-info-soft px-2.5 py-1 font-medium text-info">
               <span className="h-1.5 w-1.5 rounded-full bg-info" />
-              Nội dung đã đổi — Cần kết xuất lại để xem bản mới nhất
+              Nội dung đã đổi. Cần kết xuất lại để xem bản mới nhất.
             </span>
           ) : (
             <span className="flex items-center gap-1.5 font-medium text-muted-foreground">

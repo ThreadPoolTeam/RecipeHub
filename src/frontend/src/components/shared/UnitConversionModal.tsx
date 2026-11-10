@@ -66,13 +66,13 @@ export function UnitConversionModal({ inline = false }: { inline?: boolean }) {
       <div className="space-y-4">
         <TextInput id={inline ? 'quick-conversion-value' : 'conversion-value'} label="Giá trị cần đổi" type="number" min="0" step="any" value={value} onChange={e => { setValue(e.target.value); touch(); }} />
         <div className={inline ? 'space-y-4' : 'grid grid-cols-1 sm:grid-cols-2 gap-3'}>
-          <Select id={inline ? 'quick-conversion-source' : 'conversion-source'} label="Đơn vị gốc" value={source} disabled={catalogLoading} options={units.map(unit => ({ value: unit.code, label: `${unit.code} — ${unit.name}` }))}
+          <Select id={inline ? 'quick-conversion-source' : 'conversion-source'} label="Đơn vị gốc" value={source} disabled={catalogLoading} options={units.map(unit => ({ value: unit.code, label: `${unit.code} · ${unit.name}` }))}
             onChange={e => {
               setSource(e.target.value);
               const next = units.find(unit => unit.code === e.target.value);
               if (!units.some(unit => unit.code === target && unit.categoryId === next?.categoryId)) setTarget(next?.code ?? '');
             }} />
-          <Select id={inline ? 'quick-conversion-target' : 'conversion-target'} label="Đơn vị đích" value={target} disabled={catalogLoading} options={targets.map(unit => ({ value: unit.code, label: `${unit.code} — ${unit.name}` }))}
+          <Select id={inline ? 'quick-conversion-target' : 'conversion-target'} label="Đơn vị đích" value={target} disabled={catalogLoading} options={targets.map(unit => ({ value: unit.code, label: `${unit.code} · ${unit.name}` }))}
             onChange={e => setTarget(e.target.value)} />
         </div>
         {error && <Alert variant="error">{error}</Alert>}

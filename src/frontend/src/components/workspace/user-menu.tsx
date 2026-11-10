@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, HelpCircle, LogOut, Settings, User } from 'lucide-react';
+import { ChevronDown, HelpCircle, LogOut, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useDemo } from '@/lib/demo/provider';
 
@@ -42,7 +42,8 @@ export function UserMenu() {
         <div className="my-1 border-t border-border" />
         {[
           { href: '/profile', label: 'Hồ sơ cá nhân', icon: User },
-          { href: '/settings', label: 'Cài đặt hệ thống', icon: Settings },
+          // TODO: tạm ẩn; sau này chỉ hiện cho Admin.
+          // { href: '/settings', label: 'Cài đặt hệ thống', icon: Settings },
           { href: '/help', label: 'Trợ giúp & Hướng dẫn', icon: HelpCircle },
         ].map(({ href, label, icon: Icon }) => <Link key={href} href={href} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-secondary"><Icon className="h-4 w-4" strokeWidth={1.5} />{label}</Link>)}
         <div className="my-1 border-t border-border" />

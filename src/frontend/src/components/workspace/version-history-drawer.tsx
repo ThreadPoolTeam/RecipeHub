@@ -69,7 +69,7 @@ export function VersionHistoryDrawer({
               <History className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="flex items-center gap-1.5 font-display text-sm font-semibold text-foreground">
+              <h3 className="flex items-center gap-1.5 font-display text-sm text-foreground font-medium">
                 Lịch Sử Phiên Bản
               </h3>
               <p className="font-mono text-xs text-muted-foreground">

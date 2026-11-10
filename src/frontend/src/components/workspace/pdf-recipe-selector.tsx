@@ -28,7 +28,7 @@ export function PdfRecipeSelector({ selectedItems, loadingCatalog, paginatedCata
       <div className="flex items-center justify-between gap-2 border-b border-border pb-3">
         <div className="flex items-center gap-2">
           <Coffee className="h-4 w-4 text-primary" strokeWidth={1.5} />
-          <h2 className="text-lg font-medium text-foreground">1 · Chọn công thức</h2>
+          <h2 className="text-lg font-medium text-foreground font-display">1 · Chọn công thức</h2>
           <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-muted-foreground">{selectedItems.length > 0 ? `${selectedItems.length} đã chọn` : 'Chưa chọn'}</span>
         </div>
         {selectedItems.length > 0 && <button type="button" onClick={onClear} className="text-xs text-muted-foreground hover:text-destructive">Bỏ chọn tất cả</button>}

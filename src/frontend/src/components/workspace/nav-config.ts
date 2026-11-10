@@ -27,7 +27,7 @@ export const navConfig: Record<string, NavItem[]> = {
     { href: '/admin', label: 'Tổng quan Admin', icon: Settings, options: { exact: true } },
     { href: '/admin/users', label: 'Tài khoản & Quyền', icon: Users },
     { href: '/admin/system', label: 'Giám sát hệ thống', icon: Activity },
-    { href: '/admin/logs', label: 'Nhật ký Audit Logs', icon: FileText },
+    { href: '/admin/logs', label: 'Nhật ký hoạt động', icon: FileText },
   ],
 };
 

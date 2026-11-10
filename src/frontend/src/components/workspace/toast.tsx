@@ -71,7 +71,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ toast, dismiss }}>
       {children}
-      <div aria-label="Thông báo" className="pointer-events-none fixed right-4 top-4 z-50 flex w-[min(400px,calc(100vw-2rem))] flex-col gap-2 [&>*]:pointer-events-auto">
+      <div aria-label="Thông báo" className="pointer-events-none fixed right-4 top-4 z-[10000] flex w-[min(400px,calc(100vw-2rem))] flex-col gap-2 [&>*]:pointer-events-auto">
         {entries.map(entry => <ToastItem key={entry.id} entry={entry} dismiss={dismiss} />)}
       </div>
     </ToastContext.Provider>

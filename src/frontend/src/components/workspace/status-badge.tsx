@@ -2,7 +2,7 @@ import React from 'react';
 import { Sparkles, Camera, AlertTriangle, Check, Archive } from 'lucide-react';
 import { RecipeStatus, MediaSource, MediaState, Role } from '@/lib/demo/types';
 
-export function StatusBadge({ status }: { status: RecipeStatus }) {
+export function StatusBadge({ status, dot = false }: { status: RecipeStatus; dot?: boolean }) {
   switch (status) {
     case 'Draft':
       return (
@@ -14,7 +14,7 @@ export function StatusBadge({ status }: { status: RecipeStatus }) {
     case 'Published':
       return (
         <span className="inline-flex items-center gap-1.5 rounded-md bg-success-soft px-2.5 py-1 text-pill font-medium text-success">
-          <Check className="h-3 w-3" strokeWidth={1.5} />
+          {dot ? <span className="h-1.5 w-1.5 rounded-full bg-current" /> : <Check className="h-3 w-3" strokeWidth={1.5} />}
           Đã phát hành
         </span>
       );
@@ -68,13 +68,13 @@ export function RoleBadge({ role }: { role: Role }) {
 
   if (role === 'rnd') {
     roleText = 'Chuyên viên R&D';
-    roleColor = 'bg-primary-soft text-primary';
+    roleColor = 'bg-success-medium text-success';
   } else if (role === 'viewer') {
     roleText = 'Nhân viên pha chế';
     roleColor = 'bg-info-soft text-info';
   } else if (role === 'admin') {
     roleText = 'Quản trị hệ thống';
-    roleColor = 'bg-secondary text-foreground';
+    roleColor = 'bg-ink text-ink-foreground';
   }
   return (
     <div className="inline-flex items-center gap-1.5">
