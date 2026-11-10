@@ -1,5 +1,7 @@
 'use client';
 
+import { pageTitleClass } from '@/components/workspace/page-header';
+
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AlertCircle, ArrowLeft, BookOpen, GraduationCap, Loader2 } from 'lucide-react';
@@ -19,7 +21,7 @@ export function viewerError(error: unknown): string {
   return error instanceof Error ? error.message : 'Không thể kết nối máy chủ. Vui lòng thử lại.';
 }
 export function viewerDate(value: string | null) {
-  if (!value) return '—';
+  if (!value) return 'Chưa cập nhật';
   return new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 }
 
@@ -48,21 +50,21 @@ export function ViewerFrame({ title, eyebrow, description, back, actions, childr
   title: string; eyebrow?: string; description?: string; back?: { href: string; label: string }; actions?: ReactNode; children: ReactNode;
 }) {
   const { session, loading } = useDemo();
-  return <div className="qv-root">
-    {back && <Link className="qv-back" href={back.href}><ArrowLeft size={15} />{back.label}</Link>}
-    <header className="qv-heading"><div>{eyebrow && <p className="qv-eyebrow">{eyebrow}</p>}<h1><GraduationCap className="w-6 h-6 text-[#B47820] inline-block mr-2.5 shrink-0 align-middle" />{title}</h1>{description && <p className="qv-muted">{description}</p>}</div><div className="qv-actions">{actions}</div></header>
+  return <div className="mx-auto max-w-[1360px] pb-16 text-foreground">
+    {back && <Link className="mb-5 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary" href={back.href}><ArrowLeft size={15} />{back.label}</Link>}
+    <header className="mb-8 flex flex-wrap items-end justify-between gap-6"><div>{eyebrow && <p className="mb-2 text-pill font-medium uppercase tracking-wide text-muted-foreground">{eyebrow}</p>}<h1 className={pageTitleClass}><GraduationCap className="w-6 h-6 text-primary inline-block mr-2.5 shrink-0 align-middle" />{title}</h1>{description && <p className="text-muted-foreground">{description}</p>}</div><div className="flex shrink-0 gap-3">{actions}</div></header>
     {loading ? <ViewerLoading /> : session?.role !== 'viewer' ? <ViewerError message="Không gian làm bài dành cho tài khoản Viewer. Vui lòng đăng nhập bằng tài khoản phù hợp." /> : children}
   </div>;
 }
-export function ViewerLoading() { return <div className="qv-state" role="status"><Loader2 className="qv-spin" size={24} /><p>Đang tải bài kiểm tra…</p></div>; }
+export function ViewerLoading() { return <div className="flex min-h-60 flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border p-8 text-center text-muted-foreground" role="status"><Loader2 className="motion-safe:animate-spin" size={24} /><p>Đang tải bài kiểm tra…</p></div>; }
 export function ViewerError({ message, retry }: { message: string; retry?: () => void }) {
-  return <div className="qv-error" role="alert"><AlertCircle size={20} /><div><p>{message}</p>{retry && <button className="qv-button" onClick={retry}>Thử lại</button>}</div></div>;
+  return <div className="my-4 flex items-start gap-3 rounded-lg border border-destructive-border bg-destructive-tint p-4 text-destructive" role="alert"><AlertCircle size={20} className="shrink-0" /><div className="min-w-0 [overflow-wrap:anywhere]"><p>{message}</p>{retry && <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-control hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" onClick={retry}>Thử lại</button>}</div></div>;
 }
 export function ViewerEmpty({ title, children }: { title: string; children?: ReactNode }) {
-  return <div className="qv-state"><BookOpen size={30} /><h2>{title}</h2>{children}</div>;
+  return <div className="flex min-h-60 flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border p-8 text-center text-muted-foreground"><BookOpen size={30} /><h2 className="font-display font-medium">{title}</h2>{children}</div>;
 }
 export function ViewerPagination({ page, total, pageSize, onChange }: { page: number; total: number; pageSize: number; onChange: (page: number) => void }) {
   const pages = Math.max(1, Math.ceil(total / pageSize));
   if (pages < 2) return null;
-  return <nav className="qv-pagination" aria-label="Phân trang"><button className="qv-button" disabled={page <= 1} onClick={() => onChange(page - 1)}>← Trước</button><span>Trang {page} / {pages} · {total} mục</span><button className="qv-button" disabled={page >= pages} onClick={() => onChange(page + 1)}>Sau →</button></nav>;
+  return <nav className="mt-7 flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground" aria-label="Phân trang"><button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-control hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" disabled={page <= 1} onClick={() => onChange(page - 1)}>← Trước</button><span>Trang {page} / {pages} · {total} mục</span><button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-control hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" disabled={page >= pages} onClick={() => onChange(page + 1)}>Sau →</button></nav>;
 }

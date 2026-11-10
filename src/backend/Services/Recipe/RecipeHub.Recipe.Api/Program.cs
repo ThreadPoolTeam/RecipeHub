@@ -1,3 +1,4 @@
+using Prometheus;
 using RecipeHub.BuildingBlocks.Audit;
 using RecipeHub.Recipe.Api;
 using RecipeHub.Recipe.Api.Swagger;
@@ -53,6 +54,13 @@ builder.Services.AddAuditActivityPublisher();
 
 var app = builder.Build();
 
+app.UseRouting();
+app.UseWhen(
+    context => !context.Request.Path.StartsWithSegments("/metrics")
+        && !context.Request.Path.StartsWithSegments("/health"),
+    branch => branch.UseHttpMetrics());
+app.MapMetrics().WithMetadata(new HttpMethodMetadata([HttpMethods.Get])).AllowAnonymous().ExcludeFromDescription();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -69,10 +77,14 @@ app.Use(async (context, next) =>
 {
     var path = context.Request.Path;
     var calculation = path.StartsWithSegments("/api/v1/recipes/calculate") || path == "/api/v1/recipes/units/convert";
-    if (path.StartsWithSegments("/api/v1/recipes") && !HttpMethods.IsGet(context.Request.Method) && !calculation)
+    if (path.StartsWithSegments("/api/v1/recipes") && path != "/api/v1/recipes/info")
     {
-        if (context.User.Identity?.IsAuthenticated != true) { await context.ChallengeAsync(); return; }
-        if (!context.User.IsInRole("rnd") && !context.User.IsInRole("admin")) { await context.ForbidAsync(); return; }
+        if (context.User.IsInRole("admin")) { await context.ForbidAsync(); return; }
+        if (!HttpMethods.IsGet(context.Request.Method) && !calculation)
+        {
+            if (context.User.Identity?.IsAuthenticated != true) { await context.ChallengeAsync(); return; }
+            if (!context.User.IsInRole("rnd")) { await context.ForbidAsync(); return; }
+        }
     }
     await next();
 });
@@ -89,6 +101,25 @@ app.MapGet("/", () => Results.Ok(new
 }));
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "Live" }));
-app.MapGet("/health/ready", () => Results.Ok(new { status = "Ready" }));
+app.MapGet("/health/ready", async (RecipeDbContext db, CancellationToken ct) =>
+{
+    var canConnect = await db.Database.CanConnectAsync(ct);
+    return canConnect
+        ? Results.Ok(new { status = "Ready", database = "Connected" })
+        : Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+});
+
+app.MapGet("/api/v1/recipes/info", async (RecipeDbContext db, CancellationToken ct) =>
+{
+    var canConnect = await db.Database.CanConnectAsync(ct);
+    return Results.Ok(new
+    {
+        service = "RecipeHub.Recipe.Api",
+        version = "1.0.0",
+        status = canConnect ? "Ready" : "Degraded",
+        database = canConnect ? "Connected" : "Unreachable",
+        timestampUtc = DateTime.UtcNow
+    });
+});
 
 app.Run();

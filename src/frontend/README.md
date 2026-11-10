@@ -25,8 +25,8 @@ Security reference: [npm Next.js advisories](https://registry.npmjs.org/-/npm/v1
 
 ## Navigation & Performance Optimization
 
-- **Sidebar Link Prefetching (`prefetch={true}`):** Main navigation links in `WorkspaceShell` have explicit `prefetch={true}` enabled to ensure browser prefetching of route chunks for instantaneous tab switching.
-- **Platform Loading Boundary (`(platform)/loading.tsx`):** Immediate skeleton feedback inside the platform workspace during route segment compilation and navigation, keeping the sidebar persistent and interactive.
+- **Navigation Link Prefetching (`prefetch={true}`):** Main navigation links in `WorkspaceShell` (top-nav and mobile drawer) have explicit `prefetch={true}` enabled to ensure browser prefetching of route chunks for instantaneous tab switching.
+- **Platform Loading Boundary (`(platform)/loading.tsx`):** Immediate skeleton feedback inside the platform workspace during route segment compilation and navigation, keeping the top navigation persistent and interactive.
 - **Repository In-Memory Cache:** `BackendRepository` maintains in-memory caching and in-flight deduplication for recipes and ingredients to eliminate redundant network requests on tab revisits.
 
 ## Getting Started
@@ -47,7 +47,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the landing route at `src/app/page.tsx`. The page auto-updates as you edit the file.
 
-The app loads local Google Sans WOFF2 subsets through `src/app/globals.css`, including Vietnamese support. Shared visual rules live in [`docs/DESIGN.md`](../../docs/DESIGN.md).
+Fonts are Outfit and Figtree (via `@fontsource-variable`) with local Google Sans WOFF2 subsets in `src/app/globals.css` as the Vietnamese-glyph fallback. Shared visual rules live in [`docs/DESIGN.md`](../../docs/DESIGN.md).
 
 ## Learn More
 

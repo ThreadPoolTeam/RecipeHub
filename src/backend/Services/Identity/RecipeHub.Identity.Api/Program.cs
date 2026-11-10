@@ -1,3 +1,4 @@
+using Prometheus;
 using RecipeHub.BuildingBlocks.Audit;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
@@ -48,6 +49,12 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+app.UseRouting();
+app.UseWhen(
+    context => !context.Request.Path.StartsWithSegments("/metrics")
+        && !context.Request.Path.StartsWithSegments("/health"),
+    branch => branch.UseHttpMetrics());
+app.MapMetrics().WithMetadata(new HttpMethodMetadata([HttpMethods.Get])).AllowAnonymous().ExcludeFromDescription();
 app.UseExceptionHandler(errorApp => errorApp.Run(async context =>
 {
     var error = context.Features.Get<IExceptionHandlerFeature>()?.Error;
@@ -75,6 +82,17 @@ app.MapGrpcService<IdentitySessionService>();
 app.MapGet("/", () => Results.Ok(new { service = "RecipeHub.Identity.Api", status = "Healthy" }));
 app.MapGet("/health/live", () => Results.Ok(new { status = "Live" }));
 app.MapGet("/health/ready", async (IdentityDbContext db, CancellationToken ct) =>
-    await db.Database.CanConnectAsync(ct) ? Results.Ok(new { status = "Ready" }) : Results.StatusCode(503));
-app.MapGet("/api/v1/identity/info", () => Results.Ok(new { service = "RecipeHub.Identity.Api", version = "1.0.0", status = "Ready" }));
+    await db.Database.CanConnectAsync(ct) ? Results.Ok(new { status = "Ready", database = "Connected" }) : Results.StatusCode(503));
+app.MapGet("/api/v1/identity/info", async (IdentityDbContext db, CancellationToken ct) =>
+{
+    var canConnect = await db.Database.CanConnectAsync(ct);
+    return Results.Ok(new
+    {
+        service = "RecipeHub.Identity.Api",
+        version = "1.0.0",
+        status = canConnect ? "Ready" : "Degraded",
+        database = canConnect ? "Connected" : "Unreachable",
+        timestampUtc = DateTime.UtcNow
+    });
+});
 app.Run();

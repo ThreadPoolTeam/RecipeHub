@@ -1,17 +1,8 @@
-/* RecipeHub Cinematic Landing & Warm Editorial Styles */
+/* RecipeHub landing styles */
 
 .landing {
-  --cinematic-bg: #0C0C0E;
-  --cinematic-fg: #F2F0EB;
-  --cinematic-muted: #9E9A90;
-  --cinematic-gold: #C9A84C;
-  --cinematic-gold-hover: #DEBF64;
-  --cinematic-surface: #151518;
-  --cinematic-border: rgba(242, 240, 235, 0.12);
-
-  background-color: var(--canvas, #FAF9F5);
-  color: var(--ink, #1A1917);
-  font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
   overflow-x: clip;
   position: relative;
   min-height: 100vh;
@@ -35,14 +26,9 @@
 .landing-subheading {
   font-size: clamp(1rem, 2vw, 1.35rem);
   line-height: 1.6;
-  color: var(--muted, #706E68);
+  color: var(--cinematic-muted);
 }
 
-.landing-body-text {
-  font-size: clamp(0.95rem, 1.25vw, 1.125rem);
-  line-height: 1.65;
-  color: var(--muted, #706E68);
-}
 /* Story Track & Sticky Canvas */
 .story-track {
   position: relative;
@@ -138,7 +124,7 @@
 
 .story-progress-dot.active {
   height: 24px;
-  background-color: var(--noir-gold);
+  background-color: var(--cinematic-gold);
   box-shadow: 0 0 10px rgba(201, 168, 76, 0.5);
 }
 /* Reduced Motion Fallback */

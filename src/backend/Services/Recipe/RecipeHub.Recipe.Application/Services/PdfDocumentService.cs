@@ -82,7 +82,7 @@ public sealed class PdfDocumentService : IPdfDocumentService
             request.Title,
             request.Subtitle,
             request.Items,
-            $"User-{userId:N}",
+            "Người dùng hệ thống",
             userSessionToken,
             ct);
 
@@ -379,8 +379,7 @@ public sealed class PdfDocumentService : IPdfDocumentService
                 throw new UnauthorizedAccessException("Công thức nguồn đã bị lưu trữ hoặc chưa được phát hành.");
             }
         }
-        else if (!string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase) &&
-                 !string.Equals(role, "rnd", StringComparison.OrdinalIgnoreCase))
+        else if (!string.Equals(role, "rnd", StringComparison.OrdinalIgnoreCase))
         {
             throw new UnauthorizedAccessException("Không có quyền truy cập tài liệu PDF.");
         }
@@ -448,7 +447,7 @@ public sealed class PdfDocumentService : IPdfDocumentService
             }
             if (!string.Equals(versionEntity.Status, "published", StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidOperationException($"Không thể tạo tài liệu PDF vì công thức '{versionEntity.Name}' (v{versionEntity.VersionNumber}) chưa được duyệt phát hành (Status={versionEntity.Status}). Chỉ công thức đã phát hành mới đủ điều kiện xuất PDF.");
+                throw new ValidationException($"Không thể tạo tài liệu PDF vì công thức '{versionEntity.Name}' (v{versionEntity.VersionNumber}) chưa được duyệt phát hành. Vui lòng phát hành công thức trước khi tạo tài liệu PDF.");
             }
             if (versionEntity.Recipe.ArchivedAt.HasValue)
             {
@@ -545,7 +544,8 @@ public sealed class PdfDocumentService : IPdfDocumentService
                 UnitName = ing.Unit?.Name ?? "",
                 StageName = ing.StageName,
                 SortOrder = ing.SortOrder,
-                Note = ing.Note
+                Note = ing.Note,
+                Warning = ing.IngredientWarningSnapshot
             }).ToList();
 
             var frozenYield = version.RecipeYield != null ? new FrozenYieldModel
@@ -561,6 +561,7 @@ public sealed class PdfDocumentService : IPdfDocumentService
                 RecipeVersionId = version.PublicId,
                 RecipeCode = version.Recipe.Code,
                 RecipeName = version.Name,
+                Description = version.Description,
                 TitleOverride = reqItem.TitleOverride,
                 VersionNumber = version.VersionNumber,
                 VersionStatus = version.Status,

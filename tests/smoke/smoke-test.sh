@@ -3,10 +3,12 @@ set -e
 set -o pipefail
 
 # RecipeHub Platform Smoke Test Scenario
-# Strict verification across YARP, Services, gRPC, and Redis Streams consumption/ACK
+# Strict verification across YARP, 5 Microservices, PostgreSQL Readiness, pgAdmin, Grafana, and Frontend
 
 GATEWAY_URL="${GATEWAY_URL:-http://localhost:5000}"
 FRONTEND_URL="${FRONTEND_URL:-http://localhost:3000}"
+PGADMIN_URL="${PGADMIN_URL:-http://localhost:5050}"
+GRAFANA_URL="${GRAFANA_URL:-http://localhost:3001}"
 REDIS_CONTAINER="${REDIS_CONTAINER:-recipehub-redis}"
 WORKER_CONTAINER="${WORKER_CONTAINER:-recipehub-worker}"
 SMOKE_USER="${SMOKE_USER:-rd@recipehub.demo}"
@@ -17,9 +19,10 @@ echo "      RecipeHub Platform Foundation Smoke Verification    "
 echo "=========================================================="
 echo "Gateway Target:  $GATEWAY_URL"
 echo "Frontend Target: $FRONTEND_URL"
+echo "pgAdmin Target:  $PGADMIN_URL"
+echo "Grafana Target:  $GRAFANA_URL"
 echo ""
 
-# Prerequisite: Docker daemon must be available to exercise runtime container checks
 if ! command -v docker >/dev/null 2>&1; then
   echo "[FATAL] 'docker' CLI not found in PATH. Cannot perform runtime container verification." >&2
   exit 1
@@ -36,13 +39,12 @@ if ! docker ps --format '{{.Names}}' | grep -q "$WORKER_CONTAINER"; then
 fi
 
 # 1. Test Gateway Health
-echo "[1/5] Checking YARP Gateway Health..."
+echo "[1/6] Checking YARP Gateway Health..."
 curl -s -f "$GATEWAY_URL/health/live" > /dev/null
 echo "  [OK] Gateway Liveness Probe passed."
 
-# 2. Test YARP Proxied Endpoints
-echo "[2/5] Testing Proxied Service Endpoints (/api/v1/...)..."
-echo "  Logging in as $SMOKE_USER (R&D) via Gateway:"
+# 2. Authenticate R&D demo user & test proxied service info endpoints
+echo "[2/6] Authenticating $SMOKE_USER via Gateway & Testing Proxied Service Info (/api/v1/{service}/info)..."
 LOGIN_RES=$(curl -s -f -X POST "$GATEWAY_URL/api/v1/identity/auth/login" \
   -H "Content-Type: application/json" \
   -d "{\"username\":\"$SMOKE_USER\",\"password\":\"$SMOKE_PASSWORD\"}")
@@ -52,37 +54,29 @@ if [ -z "$TOKEN" ]; then
   exit 1
 fi
 AUTH_HEADER="Authorization: Bearer $TOKEN"
-echo "  [OK] Access token acquired."
+echo "  [OK] Access token acquired via Identity Service."
 
-echo "  Testing Identity Service via Gateway:"
-curl -s -f "$GATEWAY_URL/api/v1/identity/info" | grep -q "RecipeHub.Identity.Api"
-echo "  [OK] Identity proxied info response verified."
-
-echo "  Testing Recipe Service via Gateway:"
-curl -s -f -H "$AUTH_HEADER" "$GATEWAY_URL/api/v1/recipes/unit-categories" > /dev/null
-echo "  [OK] Recipe proxied catalog response verified."
-
-echo "  Testing Content Service via Gateway:"
-curl -s -f -H "$AUTH_HEADER" "$GATEWAY_URL/api/v1/content/info" | grep -q "RecipeHub.Content.Api"
-echo "  [OK] Content proxied info response verified."
-
-echo "  Testing Audit Service via Gateway:"
-curl -s -f "$GATEWAY_URL/api/v1/audit/info" | grep -q "RecipeHub.Audit.Api"
-echo "  [OK] Audit proxied info response verified."
-
-echo "  Testing Quiz Service via Gateway:"
-curl -s -f "$GATEWAY_URL/api/v1/quiz/info" | grep -q "RecipeHub.Quiz.Api"
-echo "  [OK] Quiz proxied info response verified."
+# Identity/Recipe/Audit/Quiz info endpoints are anonymous; Content info requires a token (ContentReaders).
+# The token is sent to all of them: harmless where anonymous, mandatory for Content.
+for svc in identity:RecipeHub.Identity.Api recipes:RecipeHub.Recipe.Api content:RecipeHub.Content.Api audit:RecipeHub.Audit.Api quiz:RecipeHub.Quiz.Api; do
+  route="${svc%%:*}"
+  expected="${svc##*:}"
+  echo "  Testing /api/v1/$route/info via Gateway:"
+  INFO_RES=$(curl -s -f -H "$AUTH_HEADER" "$GATEWAY_URL/api/v1/$route/info")
+  echo "$INFO_RES" | grep -q "$expected"
+  echo "$INFO_RES" | grep -q "Connected"
+  echo "  [OK] /api/v1/$route/info verified ($expected, Database: Connected)."
+done
 
 # 3. Test gRPC Communication (Content -> Recipe)
-echo "[3/5] Testing gRPC Channel (Content.Api -> Recipe.Api via ServiceProbe.Ping)..."
+echo "[3/6] Testing gRPC Channel (Content.Api -> Recipe.Api via ServiceProbe.Ping)..."
 GRPC_RES=$(curl -s -f -H "$AUTH_HEADER" "$GATEWAY_URL/api/v1/content/probe-recipe")
 echo "  gRPC Response: $GRPC_RES"
 echo "$GRPC_RES" | grep -q "Healthy"
 echo "  [OK] gRPC Probe Ping confirmed."
 
 # 4. Trigger Redis Heartbeat Event & Verify Worker Consumer & ACK
-echo "[4/5] Testing Redis Streams Producer -> Consumer -> ACK Cycle..."
+echo "[4/6] Testing Redis Streams Producer -> Consumer -> ACK Cycle..."
 
 EVENT_ID=$(cat /proc/sys/kernel/random/uuid 2>/dev/null || date +%s%N)
 # Worker đọc field "payload" chứa EventEnvelope<PlatformHeartbeatEvent> (System.Text.Json, PascalCase)
@@ -114,9 +108,19 @@ if [ "$ACK_CONFIRMED" -ne 1 ]; then
   exit 1
 fi
 
-echo "  Verifying BackgroundWorker log entry..."
-WORKER_LOGS=$(docker logs "$WORKER_CONTAINER" 2>&1)
-if echo "$WORKER_LOGS" | grep -q "\[ACK\]"; then
+echo "  Verifying BackgroundWorker log entry (up to 15s)..."
+ACK_LOG_FOUND=0
+for i in {1..15}; do
+  WORKER_LOGS=$(docker logs "$WORKER_CONTAINER" 2>&1 || true)
+  if echo "$WORKER_LOGS" | grep -q "\[ACK\]"; then
+    ACK_LOG_FOUND=1
+    break
+  fi
+  echo "  Waiting for worker [ACK] log line (attempt $i/15)..."
+  sleep 1
+done
+
+if [ "$ACK_LOG_FOUND" -eq 1 ]; then
   echo "$WORKER_LOGS" | grep "\[ACK\]" | tail -n 2
   echo "  [OK] Worker processing & ACK log entry confirmed."
 else
@@ -124,8 +128,15 @@ else
   exit 1
 fi
 
-# 5. Test Frontend Health
-echo "[5/5] Testing Next.js Frontend Liveness Probe..."
+# 5. Test Observability & DB Tools (Grafana & pgAdmin)
+echo "[5/6] Testing Observability & DB Management Containers (Grafana & pgAdmin 4)..."
+curl -s -f "$GRAFANA_URL/api/health" | grep -q "ok"
+echo "  [OK] Grafana Health Endpoint responded ($GRAFANA_URL/api/health)."
+curl -s -I "$PGADMIN_URL/misc/ping" | grep -q "200"
+echo "  [OK] pgAdmin 4 Ping Endpoint responded ($PGADMIN_URL/misc/ping)."
+
+# 6. Test Frontend Health
+echo "[6/6] Testing Next.js Frontend Liveness Probe..."
 curl -s -f "$FRONTEND_URL/api/health" | grep -q "recipehub-web"
 echo "  [OK] Frontend Health Endpoint responded."
 

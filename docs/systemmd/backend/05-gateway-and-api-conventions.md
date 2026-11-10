@@ -44,12 +44,14 @@
 
 ### 2.4. Phân Quyền & Xác Thực (Authorization Policies)
 - API nghiệp vụ bắt buộc xác thực Bearer JWT token từ Identity, ngoại trừ login/refresh. Tuyệt đối không chấp nhận fake actor header `X-User-Id`.
-- Endpoint liveness/readiness `/health/live` và `/health/ready` là public (nằm ngoài tiền tố nghiệp vụ `/api/v1/*`).
+- Endpoint liveness/readiness `/health/live` và `/health/ready` là public (nằm ngoài tiền tố nghiệp vụ `/api/v1/*`). Cả 5 microservices thực thi kiểm tra kết nối PostgreSQL thực tế (`CanConnectAsync`) tại `/health/ready` và `/api/v1/{service}/info`.
 - Quyền truy cập dùng chung:
-  - `ContentEditors`: role `admin` hoặc `rnd` (quản lý media và bản nháp AI).
-  - `ContentReaders`: role `admin`, `rnd` hoặc `viewer`; viewer phải qua resource check recipe published/active.
+  - `Recipe.Api`: Role `admin` bị từ chối 403 trên mọi `/api/v1/recipes/*` (đọc lẫn ghi, gồm nguyên liệu, đơn vị, danh mục, PDF, tính toán); chỉ `/api/v1/recipes/info` và `/health/*` mở cho giám sát. Thao tác ghi (`POST/PUT/PATCH/DELETE`, ngoại trừ `/calculate` và `/units/convert`) chỉ role `rnd`; viewer chỉ đọc theo quy tắc published/active.
+  - `ContentEditors`: chỉ role `rnd` (quản lý media và bản nháp AI).
+  - `Quiz.Api`: quản lý đề (tạo/sửa/xóa, ban hành, lưu trữ) và xem kết quả chỉ role `rnd`; làm bài/xem lịch sử là `viewer`. `admin` không quản lý quiz.
+  - `ContentReaders`: role `rnd` hoặc `viewer`; viewer phải qua resource check recipe published/active. `admin` không đọc dữ liệu Content, chỉ gọi `/api/v1/content/info`.
   - Audit logs: role `admin` qua `[Authorize(Roles = "admin")]`.
-  - PDF: `admin`/`rnd` được preview, xuất và xem lịch sử/chi tiết. Mọi user đã xác thực được đọc capabilities.
+  - PDF: chỉ `rnd` được preview, xuất và xem lịch sử/chi tiết. Mọi user đã xác thực được đọc capabilities.
   - Viewer chỉ tra cứu/tải PDF chính thức dạng `single` có nguồn `published`, chưa archive; không preview, xuất, đọc lịch sử/chi tiết hay tải bộ. Recipe kiểm tra quyền trong middleware/controller/service.
 
 ### 2.5. Quy Định Endpoint Nhị Phân (Binary Endpoints)
@@ -76,3 +78,9 @@
 }
 ```
 - Không bao giờ để rò rỉ StackTrace kỹ thuật hoặc thông tin kết nối CSDL ra response bên ngoài.
+
+## 4. Metrics vận hành
+
+- Gateway và năm API xuất `GET /metrics` định dạng Prometheus, ngoài `/api/v1/*`, không phải API nghiệp vụ và không đưa vào Swagger. Prometheus gọi trực tiếp từng service; Gateway không proxy metrics của service khác.
+- HTTP metrics dùng method/status và route template có số lượng giá trị hữu hạn; không gắn raw URL, UUID hay user vào label. Không tính scrape `/metrics` và probe `/health/*` vào lưu lượng nghiệp vụ.
+- Tách ba tín hiệu: scrape thành công, readiness HTTP và metric tài nguyên; một tín hiệu không thay thế hai tín hiệu còn lại. Cấu hình nguồn và giới hạn Docker Desktop nằm trong [README](../../../README.md#giám-sát-vận-hành-grafana--prometheus).

@@ -110,16 +110,16 @@ export function IngredientCategoryPanel({
               <div>
                 <div className="flex items-center gap-2">
                   <CodeChip>{item.code}</CodeChip>
-                  <span className="font-semibold text-[#1A1917] text-sm truncate">{item.name}</span>
+                  <span className="font-semibold text-foreground text-sm truncate">{item.name}</span>
                 </div>
-                {item.description && <p className="text-xs text-[#706E68] mt-0.5 line-clamp-1">{item.description}</p>}
+                {item.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{item.description}</p>}
               </div>
             ),
           },
           {
             header: 'Số Nguyên Liệu',
             render: (item) => (
-              <span className="text-sm text-[#706E68] tabular-nums">{countIngredients(item)} nguyên liệu</span>
+              <span className="text-sm text-muted-foreground tabular-nums">{countIngredients(item)} nguyên liệu</span>
             ),
           },
           {
@@ -157,7 +157,7 @@ export function IngredientCategoryPanel({
       >
         <div className="space-y-4">
           {formError && (
-            <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+            <p role="alert" className="rounded-lg border border-destructive-border bg-destructive-tint px-3 py-2 text-sm text-destructive">
               {formError}
             </p>
           )}

@@ -1,26 +1,25 @@
 'use client';
 
+import { pageTitleClass } from '@/components/workspace/page-header';
+
 import { listAuditLogs } from '@/lib/api/audit';
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Users,
+  Activity,
   ShieldCheck,
-  Image,
-  ArrowRight,
+  Database,
+  BarChart3,
+  ExternalLink,
 } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
-import { Button } from '@/components/workspace/fields';
+import { interactiveCardClass, interactiveCardFocusClass } from '@/components/workspace/interactive-card';
+
 export default function AdminPage() {
   const { repo, dataVersion } = useDemo();
-  const [stats, setStats] = useState({
-    userCount: 0,
-    activeIngredientsCount: 0,
-    totalIngredientsCount: 0,
-    mediaCount: 0,
-    recipeCount: 0,
-  });
+  const [userCount, setUserCount] = useState(0);
   const [auditStatus, setAuditStatus] = useState<{ loading: boolean; error: boolean; count: number }>({
     loading: true,
     error: false,
@@ -32,21 +31,9 @@ export default function AdminPage() {
     let mounted = true;
     async function loadStats() {
       try {
-        const [users, ingredients, media, recipes] = await Promise.all([
-          repo.getUsers(),
-          repo.getIngredients('', 'all', false),
-          repo.getMedia(),
-          repo.getRecipes({ role: 'admin', userId: 'admin', email: 'admin@recipehub.demo', fullName: 'Administrator', lastActiveAt: Date.now() }),
-        ]);
-
+        const users = await repo.getUsers();
         if (mounted) {
-          setStats({
-            userCount: users.length,
-            activeIngredientsCount: ingredients.filter((i) => i.isActive).length,
-            totalIngredientsCount: ingredients.length,
-            mediaCount: media.length,
-            recipeCount: recipes.total,
-          });
+          setUserCount(users.length);
         }
 
         try {
@@ -60,7 +47,7 @@ export default function AdminPage() {
           }
         }
       } catch {
-        // demo stats fallback
+        // fallback
       } finally {
         if (mounted) setLoading(false);
       }
@@ -74,83 +61,74 @@ export default function AdminPage() {
 
   const cards = [
     {
-      title: 'Quản lý người dùng',
-      desc: 'Phân quyền tài khoản Demo (Admin, R&D, Viewer) và giới hạn công thức được phép tra cứu.',
+      title: 'Quản lý Tài khoản & Phân quyền',
+      desc: 'Quản lý danh sách người dùng (Admin, R&D, Barista Viewer), cấp vai trò, đổi mật khẩu và khóa/mở khóa phiên đăng nhập.',
       href: '/admin/users',
       icon: Users,
-      count: `${stats.userCount} người dùng`,
+      count: `${userCount} người dùng`,
       tag: 'Identity & RBAC',
     },
     {
-      title: 'Nhật ký kiểm toán',
-      desc: 'Truy vết toàn diện mọi hành động: tạo, sửa, phát hành công thức, khóa tài khoản và xuất bản tài liệu.',
+      title: 'Giám sát Hệ thống & Xử lý Sự cố',
+      desc: 'Kiểm tra sức khỏe thời gian thực của 5 Microservices qua YARP Gateway và độ trễ kết nối 5 CSDL PostgreSQL.',
+      href: '/admin/system',
+      icon: Activity,
+      count: 'Xem trạng thái dịch vụ',
+      tag: 'System Health',
+    },
+    {
+      title: 'Nhật ký hoạt động',
+      desc: 'Truy vết toàn diện mọi thay đổi dữ liệu trong hệ thống: tạo/sửa/phát hành công thức, quản trị tài khoản và bài kiểm tra.',
       href: '/admin/logs',
       icon: ShieldCheck,
       count: auditStatus.loading ? '...' : auditStatus.error ? 'Không tải được' : `${auditStatus.count} sự kiện ghi nhận`,
-      tag: 'Audit Logs',
-    },
-    {
-      title: 'Quản trị kho ảnh đa phương tiện',
-      desc: 'Kiểm tra ảnh đính kèm theo bước SOP, giải phóng ảnh không liên kết và xử lý ảnh xóa thất bại.',
-      href: '/admin/media',
-      icon: Image,
-      count: `${stats.mediaCount} tệp media`,
-      tag: 'Media Storage',
+      tag: 'Nhật ký hoạt động',
     },
   ];
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E2D9]">
+    <div className="mx-auto w-full max-w-7xl space-y-8">
+      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-2xl font-bold text-[#1A1917] flex items-center gap-2.5">
-            <ShieldCheck className="w-6 h-6 text-[#B47820]" />
-            Hệ thống Quản trị &amp; Điều phối Trung tâm
-          </h1>
-          <p className="text-[#706E68] text-sm mt-1 max-w-2xl">
-            Giám sát nhân sự, danh mục nguyên vật liệu, cơ chế mô phỏng AI và lịch sử thay đổi phiên bản công thức theo tiêu chuẩn BeverageLab.
-          </p>
+          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Quản trị</p>
+          <h1 className={pageTitleClass}>Trung tâm quản trị &amp; giám sát</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Quản lý tài khoản, theo dõi dịch vụ và hoạt động hệ thống.</p>
         </div>
-      </div>
+        <Link href="/admin/users" className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+          Quản lý tài khoản
+        </Link>
+      </header>
 
-      {/* Main Navigation Modules */}
-      <div>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-[#706E68] mb-3">Phân hệ Quản trị Chức năng</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {cards.map((card) => (
-            <Link
-              key={card.href}
-              href={card.href}
-              className="group p-5 bg-white hover:bg-[#FAF9F5] border border-[#E8E2D9] hover:border-[#B47820] rounded-2xl transition duration-200 flex flex-col justify-between shadow-xs"
-            >
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {cards.map((card) => (
+          <Link key={card.href} href={card.href} className={`flex flex-col justify-between p-5 ${interactiveCardClass} ${interactiveCardFocusClass}`}>
+            <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <span className="p-2.5 bg-[#FAF9F5] text-[#B47820] rounded-lg border border-[#E8E2D9] group-hover:scale-105 transition flex items-center justify-center">
-                    <card.icon className="w-5 h-5" />
-                  </span>
-                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[#FAF9F5] text-[#706E68] border border-[#E8E2D9]">
-                    {card.tag}
-                  </span>
-                </div>
-                <h3 className="text-base font-bold text-[#1A1917] group-hover:text-[#B47820] transition">
-                  {card.title}
-                </h3>
-                <p className="text-xs text-[#706E68] mt-1.5 leading-relaxed">
-                  {card.desc}
-                </p>
+                <p className="text-sm text-muted-foreground">{card.title}</p>
+                <p className="mt-3 font-display text-2xl text-foreground tabular-nums">{loading ? '...' : card.count}</p>
               </div>
-
-              <div className="mt-5 pt-3 border-t border-[#E8E2D9] flex items-center justify-between text-xs font-medium">
-                <span className="text-[#706E68] font-mono">{loading ? '...' : card.count}</span>
-                <span className="text-[#B47820] flex items-center gap-1 group-hover:translate-x-1 transition duration-150">
-                  Mở module &rarr;
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
+              <card.icon className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+            </div>
+            <p className="mt-4 text-sm text-muted-foreground">{card.desc}</p>
+          </Link>
+        ))}
       </div>
+
+      <section>
+        <h2 className="mb-4 font-display text-xl font-medium text-foreground">Công cụ hạ tầng &amp; cơ sở dữ liệu</h2>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <a href="http://localhost:3001" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 rounded-lg border border-border bg-card p-5 shadow-soft hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <BarChart3 className="h-5 w-5 shrink-0 text-muted-foreground" strokeWidth={1.5} />
+            <span className="flex-1"><span className="block font-semibold text-foreground">Grafana Observability Dashboard</span><span className="mt-1 block text-sm text-muted-foreground">Mở trang giám sát tại cổng 3001</span></span>
+            <ExternalLink className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+          </a>
+          <a href="http://localhost:5050" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 rounded-lg border border-border bg-card p-5 shadow-soft hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <Database className="h-5 w-5 shrink-0 text-muted-foreground" strokeWidth={1.5} />
+            <span className="flex-1"><span className="block font-semibold text-foreground">pgAdmin 4 PostgreSQL Manager</span><span className="mt-1 block text-sm text-muted-foreground">Mở trang quản trị tại cổng 5050</span></span>
+            <ExternalLink className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+          </a>
+        </div>
+      </section>
     </div>
   );
 }

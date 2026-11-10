@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Flag, Save } from 'lucide-react';
 import { ApiError } from '@/lib/api/client';
 import { quizViewerApi, type ViewerAnswer, type ViewerAttempt } from '@/lib/api/quiz-viewer';
-import { attemptUrl, detailUrl, useViewerResource, ViewerEmpty, ViewerError, ViewerFrame, ViewerLoading, viewerError, viewerQuizRoot } from './viewer-shared';
+import { attemptUrl, detailUrl, useViewerResource, ViewerEmpty, ViewerError, ViewerFrame, ViewerLoading, viewerQuizRoot } from './viewer-shared';
+import { useToast } from '@/components/workspace/toast';
 
 export default function ViewerTake({ attemptId }: { attemptId: string }) {
   const router = useRouter();
@@ -22,6 +23,7 @@ export default function ViewerTake({ attemptId }: { attemptId: string }) {
 
 function TakeSession({ initial, actorId }: { initial: ViewerAttempt; actorId: string }) {
   const router = useRouter();
+  const { toast } = useToast();
   const questions = initial.questions;
   const [answers, setAnswers] = useState<Record<number, number | null>>(() => Object.fromEntries(questions.map(question => [question.id, initial.savedAnswers.find(answer => answer.questionId === question.id)?.selectedOptionId ?? null])));
   const answersRef = useRef(answers);
@@ -34,7 +36,6 @@ function TakeSession({ initial, actorId }: { initial: ViewerAttempt; actorId: st
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [leaving, setLeaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
   const pending = useRef<Promise<boolean>>(Promise.resolve(true));
   const stopping = useRef(false);
@@ -54,7 +55,7 @@ function TakeSession({ initial, actorId }: { initial: ViewerAttempt; actorId: st
   const persist = useCallback((items: ViewerAnswer[], currentRevision: number) => {
     const task = pending.current.then(async () => {
       if (stopping.current) return false;
-      if (mounted.current) { setSaving(true); setError(null); }
+      if (mounted.current) setSaving(true);
       try {
         await quizViewerApi.save(actorId, initial.attemptId, items);
         savedRevision.current = currentRevision;
@@ -71,13 +72,13 @@ function TakeSession({ initial, actorId }: { initial: ViewerAttempt; actorId: st
             }
           } catch { /* Keep the original save error and local selections. */ }
         }
-        if (mounted.current) setError(`Chưa lưu được đáp án. Lựa chọn vẫn được giữ trên màn hình. ${viewerError(error)}`);
+        if (mounted.current) toast({ type: 'error', title: 'Chưa lưu được đáp án', description: 'Lựa chọn vẫn được giữ trên màn hình. Vui lòng thử lưu lại.' });
         return false;
       } finally { if (mounted.current) setSaving(false); }
     });
     pending.current = task;
     return task;
-  }, [actorId, initial.attemptId, router]);
+  }, [actorId, initial.attemptId, router, toast]);
 
   useEffect(() => {
     if (confirm && !dialog.current?.open) dialog.current?.showModal();
@@ -100,16 +101,17 @@ function TakeSession({ initial, actorId }: { initial: ViewerAttempt; actorId: st
   };
   const submit = async () => {
     if (stopping.current) return;
-    stopping.current = true; setSubmitting(true); setError(null);
+    stopping.current = true; setSubmitting(true);
     try {
       // Finish any earlier save before submitting the full final answer snapshot.
       await pending.current;
       const result = await quizViewerApi.submit(actorId, initial.attemptId, snapshot());
+      toast({ type: 'success', title: 'Đã nộp bài kiểm tra' });
       savedRevision.current = revisionRef.current;
       router.replace(`${attemptUrl(result.attemptId)}/result`);
-    } catch (error) {
+    } catch {
       stopping.current = false; setSubmitting(false); setConfirm(false);
-      setError(`Chưa nộp được bài; đáp án vẫn được giữ. ${viewerError(error)}`);
+      toast({ type: 'error', title: 'Chưa nộp được bài', description: 'Đáp án vẫn được giữ. Vui lòng thử lại.' });
     }
   };
   const answered = questions.filter(question => answers[question.id] !== null).length;
@@ -117,17 +119,77 @@ function TakeSession({ initial, actorId }: { initial: ViewerAttempt; actorId: st
   const question = questions[index];
   const busy = submitting || leaving;
   return <>
-    <div className="qv-take-toolbar"><button className="qv-button" onClick={exit} disabled={busy}><Save size={16} />{leaving ? 'Đang lưu…' : 'Lưu & thoát'}</button><span className="qv-muted" role="status" aria-live="polite">{saving ? 'Đang lưu đáp án…' : revision !== saved ? 'Có thay đổi chưa lưu' : 'Đáp án đã được lưu'}</span><button className="qv-text-link" disabled={busy || saving} onClick={() => void persist(snapshot(), revisionRef.current)}>Lưu ngay</button></div>
-    {error && <ViewerError message={error} retry={() => void persist(snapshot(), revisionRef.current)} />}
-    {!question ? <ViewerEmpty title="Bài kiểm tra không có câu hỏi"><button className="qv-button" onClick={() => router.push(detailUrl(initial.quizId, initial.versionNumber))}>Quay về chi tiết</button></ViewerEmpty> : <div className="qv-take-layout">
-      <section className="qv-question-area"><article className="qv-panel qv-question-card"><div className="qv-question-top"><span>CÂU {index + 1} <span className="qv-muted">/ {questions.length}</span></span><button className="qv-flag" disabled={busy} aria-pressed={flags.has(question.id)} onClick={() => setFlags(previous => { const next = new Set(previous); if (next.has(question.id)) next.delete(question.id); else next.add(question.id); return next; })}><Flag size={15} />{flags.has(question.id) ? 'Đã đánh dấu' : 'Xem lại'}</button></div>
-        <div className="qv-question-body" key={question.id}><p className="qv-eyebrow">KIẾN THỨC CÔNG THỨC</p><h2 id={`qv-question-${question.id}`}>{question.content}</h2><p className="qv-muted qv-instruction">Chọn một đáp án phù hợp nhất.</p><fieldset className="qv-options" disabled={busy} aria-labelledby={`qv-question-${question.id}`}><legend className="qv-sr-only">Đáp án câu {index + 1}</legend>{question.options.map((option, position) => <label className={`qv-option ${answers[question.id] === option.id ? 'qv-selected' : ''}`} key={option.id}><input type="radio" name={`question-${question.id}`} value={option.id} checked={answers[question.id] === option.id} onChange={() => choose(question.id, option.id)} /><span className="qv-option-letter">{String.fromCharCode(65 + position)}</span><span>{option.content}</span></label>)}</fieldset>
-          <div className="qv-selected-note"><span>{answers[question.id] == null ? 'Bạn chưa chọn đáp án.' : 'Đã chọn đáp án. Bạn có thể thay đổi trước khi nộp bài.'}</span>{answers[question.id] != null && <button disabled={busy} className="qv-text-link" onClick={() => choose(question.id, null)}>Bỏ lựa chọn</button>}</div>
-        </div></article>
-        <nav className="qv-question-nav" aria-label="Chuyển câu hỏi"><button className="qv-button" disabled={index === 0 || busy} onClick={() => setIndex(value => value - 1)}><ArrowLeft size={16} />Câu trước</button><span className="qv-nav-hint">Theo nhịp của bạn.</span>{index < questions.length - 1 ? <button className="qv-button qv-primary" disabled={busy} onClick={() => setIndex(value => value + 1)}>Câu tiếp<ArrowRight size={16} /></button> : <button className="qv-button qv-primary" disabled={busy} onClick={() => setConfirm(true)}>Nộp bài<ArrowRight size={16} /></button>}</nav>
+    <div className="mb-6 flex flex-wrap items-center gap-4 [&>span]:ml-auto">
+        <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-control hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" onClick={exit} disabled={busy}>
+        <Save size={16} />{leaving ? 'Đang lưu…' : 'Lưu & thoát'}</button>
+        <span className="text-muted-foreground" role="status" aria-live="polite">{saving ? 'Đang lưu đáp án…' : revision !== saved ? 'Có thay đổi chưa lưu' : 'Đáp án đã được lưu'}</span>
+        <button className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50" disabled={busy || saving} onClick={() => void persist(snapshot(), revisionRef.current)}>Lưu ngay</button>
+        </div>
+    {!question ? <ViewerEmpty title="Bài kiểm tra không có câu hỏi">
+        <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-control hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" onClick={() => router.push(detailUrl(initial.quizId, initial.versionNumber))}>Quay về chi tiết</button>
+        </ViewerEmpty> : <div className="grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+      <section className="min-w-0 lg:order-2">
+        <article className="min-w-0 rounded-lg border border-border bg-card shadow-soft overflow-hidden">
+        <div className="flex items-center justify-between gap-3 border-b border-border px-6 py-4 text-sm font-semibold">
+        <span>CÂU {index + 1} <span className="text-muted-foreground">/ {questions.length}</span>
+        </span>
+        <button className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground aria-pressed:bg-primary-soft aria-pressed:text-primary focus-visible:ring-2 focus-visible:ring-ring" disabled={busy} aria-pressed={flags.has(question.id)} onClick={() => setFlags(previous => { const next = new Set(previous); if (next.has(question.id)) next.delete(question.id); else next.add(question.id); return next; })}>
+        <Flag size={15} />{flags.has(question.id) ? 'Đã đánh dấu' : 'Xem lại'}</button>
+        </div>
+        <div className="p-6 md:p-8 [&_h2]:break-words [&_h2]:whitespace-pre-wrap [&_h2]:font-display [&_h2]:text-h3 [&_h2]:font-medium" key={question.id}>
+        <p className="mb-2 text-pill font-medium uppercase tracking-wide text-muted-foreground">KIẾN THỨC CÔNG THỨC</p>
+        <h2 className="font-display font-medium" id={`quiz-question-${question.id}`}>{question.content}</h2>
+        <p className="text-muted-foreground my-5 text-sm">Chọn một đáp án phù hợp nhất.</p>
+        <fieldset className="grid min-w-0 grid-cols-1 gap-3 border-0 p-0" disabled={busy} aria-labelledby={`quiz-question-${question.id}`}>
+        <legend className="sr-only">Đáp án câu {index + 1}</legend>{question.options.map((option, position) => <label className={`relative flex min-h-16 min-w-0 cursor-pointer items-center gap-4 whitespace-pre-wrap [overflow-wrap:anywhere] [&>span:last-child]:min-w-0 [&>div]:min-w-0 rounded-lg border border-border bg-card p-4 text-left focus-within:ring-2 focus-within:ring-ring [&>input]:sr-only ${answers[question.id] === option.id ? '!border-primary !bg-primary-soft ring-1 ring-primary' : ''}`} key={option.id}>
+        <input type="radio" name={`question-${question.id}`} value={option.id} checked={answers[question.id] === option.id} onChange={() => choose(question.id, option.id)} />
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-secondary font-semibold text-muted-foreground">{String.fromCharCode(65 + position)}</span>
+        <span>{option.content}</span>
+        </label>)}</fieldset>
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+        <span>{answers[question.id] == null ? 'Bạn chưa chọn đáp án.' : 'Đã chọn đáp án. Bạn có thể thay đổi trước khi nộp bài.'}</span>{answers[question.id] != null && <button disabled={busy} className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50" onClick={() => choose(question.id, null)}>Bỏ lựa chọn</button>}</div>
+        </div>
+        </article>
+        <nav className="mt-5 flex items-center justify-between gap-3" aria-label="Chuyển câu hỏi">
+        <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-control hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" disabled={index === 0 || busy} onClick={() => setIndex(value => value - 1)}>
+        <ArrowLeft size={16} />Câu trước</button>
+        <span className="hidden text-sm text-muted-foreground sm:inline">Theo nhịp của bạn.</span>{index < questions.length - 1 ? <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-control hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 !border-transparent !bg-primary !text-primary-foreground hover:opacity-90" disabled={busy} onClick={() => setIndex(value => value + 1)}>Câu tiếp<ArrowRight size={16} />
+        </button> : <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-control hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 !border-transparent !bg-primary !text-primary-foreground hover:opacity-90" disabled={busy} onClick={() => setConfirm(true)}>Nộp bài<ArrowRight size={16} />
+        </button>}</nav>
       </section>
-      <aside className="qv-take-aside"><section className="qv-panel qv-progress-panel"><div className="qv-section-heading"><h3>Hành trình của bạn</h3><span className="qv-tag">Đang làm</span></div><progress className="qv-progress" value={answered} max={questions.length} aria-label="Số câu đã trả lời" /><p className="qv-progress-copy">{answered}/{questions.length} câu đã trả lời <span>{Math.round(answered / questions.length * 100)}%</span></p><nav className="qv-palette" aria-label="Danh sách câu hỏi">{questions.map((item, position) => <button key={item.id} disabled={busy} className={`qv-number ${answers[item.id] !== null ? 'qv-answered' : ''} ${position === index ? 'qv-current' : ''}`} aria-current={position === index ? 'step' : undefined} aria-label={`Câu ${position + 1}, ${answers[item.id] !== null ? 'đã trả lời' : 'chưa trả lời'}${flags.has(item.id) ? ', đánh dấu xem lại' : ''}`} onClick={() => setIndex(position)}>{position + 1}{flags.has(item.id) && <span className="qv-flag-dot" />}</button>)}</nav><div className="qv-legend"><span><i className="qv-swatch qv-done" />Đã trả lời</span><span><i className="qv-swatch" />Chưa trả lời</span><span>⚑ Xem lại</span></div><button className="qv-button qv-primary qv-full" disabled={busy} onClick={() => setConfirm(true)}>Hoàn thành & nộp bài</button></section><div className="qv-note qv-desktop-tip"><strong>Không cần vội.</strong><p>Bạn có thể quay lại bất kỳ câu nào. Đúng sai và giải thích chỉ xuất hiện sau khi nộp bài.</p><p>Đánh dấu xem lại chỉ áp dụng trong phiên làm việc này.</p></div></aside>
+      <aside className="grid gap-5 lg:order-1">
+        <section className="min-w-0 rounded-lg border border-border bg-card shadow-soft p-6">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-4 font-display text-panel font-medium">
+        <h3 className="font-display font-medium">Hành trình của bạn</h3>
+        <span className="inline-flex items-center justify-center gap-1 rounded-md bg-secondary px-2.5 py-1 text-pill font-medium text-muted-foreground">Đang làm</span>
+        </div>
+        <progress className="block h-2 w-full overflow-hidden rounded-full accent-primary" value={answered} max={questions.length} aria-label="Số câu đã trả lời" />
+        <p className="my-4 flex justify-between text-sm text-muted-foreground">{answered}/{questions.length} câu đã trả lời <span>{Math.round(answered / questions.length * 100)}%</span>
+        </p>
+        <nav className="my-5 grid grid-cols-5 gap-2" aria-label="Danh sách câu hỏi">{questions.map((item, position) => <button key={item.id} disabled={busy} className={`relative grid min-h-11 w-full place-items-center rounded-full border border-border bg-card text-sm tabular-nums text-muted-foreground hover:border-primary focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 ${answers[item.id] !== null ? '!border-success !bg-success-soft !text-success' : ''} ${position === index ? '!border-primary !bg-primary !text-primary-foreground' : ''}`} aria-current={position === index ? 'step' : undefined} aria-label={`Câu ${position + 1}, ${answers[item.id] !== null ? 'đã trả lời' : 'chưa trả lời'}${flags.has(item.id) ? ', đánh dấu xem lại' : ''}`} onClick={() => setIndex(position)}>{position + 1}{flags.has(item.id) && <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-current" />}</button>)}</nav>
+        <div className="my-5 flex flex-wrap gap-3 text-xs text-muted-foreground [&>span]:flex [&>span]:items-center [&>span]:gap-1">
+        <span>
+        <i className="inline-block h-2.5 w-2.5 rounded-sm border border-border !border-success !bg-success-soft" />Đã trả lời</span>
+        <span>
+        <i className="inline-block h-2.5 w-2.5 rounded-sm border border-border" />Chưa trả lời</span>
+        <span>⚑ Xem lại</span>
+        </div>
+        <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-control hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 !border-transparent !bg-primary !text-primary-foreground hover:opacity-90 w-full" disabled={busy} onClick={() => setConfirm(true)}>Hoàn thành & nộp bài</button>
+        </section>
+        <div className="rounded-lg bg-secondary p-5 text-sm [&_p]:mt-2 [&_p]:text-muted-foreground hidden lg:block">
+        <strong>Không cần vội.</strong>
+        <p>Bạn có thể quay lại bất kỳ câu nào. Đúng sai và giải thích chỉ xuất hiện sau khi nộp bài.</p>
+        <p>Đánh dấu xem lại chỉ áp dụng trong phiên làm việc này.</p>
+        </div>
+        </aside>
     </div>}
-    <dialog className="qv-confirm" ref={dialog} aria-labelledby="qv-confirm-title" onCancel={event => { if (submitting) event.preventDefault(); else setConfirm(false); }} onClose={() => { if (!submitting) setConfirm(false); }}><h2 id="qv-confirm-title">{unanswered.length ? 'Bạn còn câu chưa trả lời.' : 'Sẵn sàng nộp bài?'}</h2><p>Đã trả lời {answered}/{questions.length} câu. {unanswered.length ? `${unanswered.length} câu chưa trả lời vẫn được gửi là bỏ trống.` : 'Tất cả câu hỏi đã có lựa chọn.'}</p>{unanswered.length > 0 && <div className="qv-unanswered" aria-label="Các câu chưa trả lời">{unanswered.map(position => <button className="qv-button" disabled={submitting} key={position} onClick={() => { setIndex(position); setConfirm(false); }}>Câu {position + 1}</button>)}</div>}<p>Sau khi xác nhận, bài làm được chấm trên máy chủ và không thể chỉnh sửa.</p><div className="qv-dialog-actions"><button className="qv-button" disabled={submitting} onClick={() => setConfirm(false)}>Làm tiếp</button><button className="qv-button qv-primary" disabled={submitting} onClick={submit}>{submitting ? 'Đang nộp…' : 'Xác nhận nộp bài'}</button></div></dialog>
+    <dialog className="fixed inset-0 m-auto max-h-[calc(100dvh-40px)] w-[min(540px,calc(100%-32px))] overflow-y-auto rounded-lg border border-border bg-card p-6 text-foreground shadow-lift backdrop:bg-foreground/45 [&>p]:mt-4 [&>p]:text-muted-foreground" ref={dialog} aria-labelledby="quiz-confirm-title" onCancel={event => { if (submitting) event.preventDefault(); else setConfirm(false); }} onClose={() => { if (!submitting) setConfirm(false); }}>
+        <h2 className="font-display font-medium" id="quiz-confirm-title">{unanswered.length ? 'Bạn còn câu chưa trả lời.' : 'Sẵn sàng nộp bài?'}</h2>
+        <p>Đã trả lời {answered}/{questions.length} câu. {unanswered.length ? `${unanswered.length} câu chưa trả lời vẫn được gửi là bỏ trống.` : 'Tất cả câu hỏi đã có lựa chọn.'}</p>{unanswered.length > 0 && <div className="mt-4 flex flex-wrap gap-2" aria-label="Các câu chưa trả lời">{unanswered.map(position => <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-control hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" disabled={submitting} key={position} onClick={() => { setIndex(position); setConfirm(false); }}>Câu {position + 1}</button>)}</div>}<p>Sau khi xác nhận, bài làm được chấm trên máy chủ và không thể chỉnh sửa.</p>
+        <div className="mt-6 flex flex-wrap justify-end gap-3">
+        <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-control hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" disabled={submitting} onClick={() => setConfirm(false)}>Làm tiếp</button>
+        <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-control hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 !border-transparent !bg-primary !text-primary-foreground hover:opacity-90" disabled={submitting} onClick={submit}>{submitting ? 'Đang nộp…' : 'Xác nhận nộp bài'}</button>
+        </div>
+        </dialog>
   </>;
 }

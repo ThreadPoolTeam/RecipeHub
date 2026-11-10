@@ -43,12 +43,12 @@ export default function RecipeDocumentPage() {
     };
   }, [id, session, repo, router]);
   return (
-    <div className="p-12 text-center text-[#706E68] space-y-4 max-w-md mx-auto">
-      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#B47820]" />
-      <h2 className="text-base font-semibold text-[#1A1917] flex items-center justify-center gap-2">
-        <FileText className="w-5 h-5 text-[#B47820]" /> Đang chuyển sang Không Gian Quản Lý Ấn Phẩm PDF...
+    <div className="mx-auto max-w-md space-y-4 p-12 text-center text-muted-foreground">
+      <div className="inline-block h-8 w-8 rounded-full border-b-2 border-primary motion-safe:animate-spin" />
+      <h2 className="flex items-center justify-center gap-2 text-base text-foreground font-medium font-display">
+        <FileText className="h-5 w-5 text-primary" strokeWidth={1.5} /> Đang chuyển sang Không Gian Quản Lý Ấn Phẩm PDF...
       </h2>
-      <p className="text-xs text-[#706E68]">
+      <p className="text-xs text-muted-foreground">
         Nếu trình duyệt không tự chuyển hướng, vui lòng bấm nút bên dưới.
       </p>
       {id && (

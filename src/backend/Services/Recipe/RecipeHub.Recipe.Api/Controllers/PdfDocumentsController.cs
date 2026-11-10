@@ -22,22 +22,28 @@ public sealed class PdfDocumentsController : ControllerBase
     [HttpGet("capabilities")]
     [ProducesResponseType(typeof(PdfCapabilitiesResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<PdfCapabilitiesResponse>> GetCapabilities(CancellationToken cancellationToken)
     {
+        if (!User.IsInRole("rnd"))
+        {
+            return Forbid();
+        }
+
         var capabilities = await _documentService.GetCapabilitiesAsync(cancellationToken);
         return Ok(capabilities);
     }
 
     [HttpPost("preview")]
     [ProducesResponseType(typeof(FileStreamResult), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Preview(
         [FromBody] PreviewPdfRequest request,
         CancellationToken cancellationToken)
     {
-        if (User.IsInRole("viewer"))
+        if (!User.IsInRole("rnd"))
         {
             return Forbid();
         }
@@ -54,7 +60,7 @@ public sealed class PdfDocumentsController : ControllerBase
 
     [HttpPost]
     [ProducesResponseType(typeof(PdfDocumentResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -65,7 +71,7 @@ public sealed class PdfDocumentsController : ControllerBase
         [FromBody] ExportPdfRequest request,
         CancellationToken cancellationToken)
     {
-        if (User.IsInRole("viewer"))
+        if (!User.IsInRole("rnd"))
         {
             return Forbid();
         }
@@ -90,11 +96,13 @@ public sealed class PdfDocumentsController : ControllerBase
         [FromQuery] Guid? createdByUserId,
         [FromQuery] DateTime? fromDate,
         [FromQuery] DateTime? toDate,
+        [FromQuery] DateTime? fromUtc = null,
+        [FromQuery] DateTime? toUtc = null,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
-        if (User.IsInRole("viewer"))
+        if (!User.IsInRole("rnd"))
         {
             return Forbid();
         }
@@ -106,8 +114,8 @@ public sealed class PdfDocumentsController : ControllerBase
             state,
             recipeVersionId,
             createdByUserId,
-            fromDate,
-            toDate,
+            fromDate ?? fromUtc,
+            toDate ?? toUtc,
             page,
             pageSize,
             cancellationToken);
@@ -124,7 +132,7 @@ public sealed class PdfDocumentsController : ControllerBase
         Guid documentId,
         CancellationToken cancellationToken)
     {
-        if (User.IsInRole("viewer"))
+        if (!User.IsInRole("rnd"))
         {
             return Forbid();
         }
@@ -153,7 +161,7 @@ public sealed class PdfDocumentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var userId = RequestActor.GetUserId(HttpContext);
-        var role = User.IsInRole("admin") ? "admin" : (User.IsInRole("rnd") ? "rnd" : (User.IsInRole("viewer") ? "viewer" : "unknown"));
+        var role = User.IsInRole("rnd") ? "rnd" : (User.IsInRole("viewer") ? "viewer" : "unknown");
 
         var fileResult = await _documentService.GetFileStreamAsync(documentId, role, userId, cancellationToken);
         if (fileResult == null)
@@ -178,6 +186,11 @@ public sealed class PdfDocumentsController : ControllerBase
         Guid versionId,
         CancellationToken cancellationToken)
     {
+        if (User.IsInRole("admin"))
+        {
+            return Forbid();
+        }
+
         var doc = await _documentService.GetPublishedForVersionAsync(versionId, cancellationToken);
         if (doc == null)
         {

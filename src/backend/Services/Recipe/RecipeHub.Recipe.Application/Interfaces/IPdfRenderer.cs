@@ -23,6 +23,7 @@ public class FrozenRecipeItemModel
     public Guid RecipeVersionId { get; set; }
     public string RecipeCode { get; set; } = null!;
     public string RecipeName { get; set; } = null!;
+    public string? Description { get; set; }
     public string? TitleOverride { get; set; }
     public int VersionNumber { get; set; }
     public string VersionStatus { get; set; } = null!;
@@ -50,6 +51,7 @@ public class FrozenIngredientModel
     public string? StageName { get; set; }
     public int SortOrder { get; set; }
     public string? Note { get; set; }
+    public string? Warning { get; set; }
 }
 
 public class FrozenStepModel

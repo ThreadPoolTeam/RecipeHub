@@ -5,67 +5,23 @@
 Tất cả các trang thuộc không gian làm việc `(platform)` được quản lý bởi component:
 `src/frontend/src/components/workspace/workspace-shell.tsx`.
 
-```text
-+-----------------------------------------------------------------------------------+
-| Fixed Desktop Sidebar               | Content (mobile: topbar mở sidebar)         |
-| (w-64 expanded / w-16 collapsed)    |---------------------------------------------|
-|                                     | Page Header:                                |
-| - Header Logo & Toggle              |   [Title h1] [Subtitle/Meta]  [Action Btn]  |
-| - Role Section Header               |---------------------------------------------|
-| - Navigation Items (Active State)   | Filter Toolbar:                             |
-| - Account Menu (Profile, Settings, Help) | [SearchInput] [Filter Dropdowns] [Stats] |
-| - Footer User Bar (Avatar, Menu)    |---------------------------------------------|
-|                                     | Main Content Area                           |
-|                                     |   (Transition workspace-page-anim)          |
-|                                     |   - DataTable / Cards Grid / Form Editor    |
-+-----------------------------------------------------------------------------------+
-```
+Header desktop dùng top navigation (`top-nav.tsx`); dưới 768px dùng nút menu và drawer (`mobile-nav-drawer.tsx`). Nội dung có chiều rộng tối đa 1360px, gutter desktop 40px và mobile 16px, theo `docs/DESIGN.md`. Footer có đường phân cách phía trên.
 
-## 2. Quy Chuẩn Sidebar
+Shell đặt `data-role` (`rnd`, `admin`, `viewer`) trên `.workspace-root`; role skin đổi nền trang, accent, density và chiều cao control qua `--role-*` trong `globals.css` (bảng giá trị ở DESIGN.md mục 2). Không dùng menu hay layout riêng cho từng role ngoài skin này.
 
-### 2.1. Kích Thước & Vị Trí
-- **Desktop:** Cố định `fixed inset-y-0 left-0 z-30`.
-  - Mở rộng: `w-64` (256px).
-  - Thu gọn: `w-16` (64px).
-  - Trạng thái thu gọn được toggle bằng nút icon `PanelLeft` hoặc `Menu`.
-- **Mobile:** Slide-over drawer trượt từ trái ra, có lớp phủ mờ backdrop (`bg-[#1A1917]/45`).
-- **Màu sắc:**
-  - Nền: `#F5F0E8` (`--color-surface-soft`).
-  - Viền phải: `1px solid #E8E2D9` (`--color-border`).
+## 2. Điều Hướng Theo Vai Trò
 
-### 2.2. Nhãn Phân Khu (Section Header)
-- Font: 10px, bold 700, viết hoa toàn bộ, tracking-wider, màu `#8C887F`.
-- Phân khu tương ứng từng role:
-  - Admin: `QUẢN TRỊ HỆ THỐNG`
-  - R&D: `KHÔNG GIAN R&D`
-  - Viewer: `VẬN HÀNH CỬA HÀNG`
-  - Menu "Tài liệu PDF" (`FileText` icon):
-    - Admin: Không có menu PDF; route `/admin/documents` và `/admin/documents/new` vẫn dành cho admin.
-    - R&D: Menu `/rnd/documents` mở kho tài liệu; nút tạo mới dẫn `/rnd/documents/new`.
-    - Viewer: Không hiển thị menu tài liệu; chỉ có nút tải PDF chính thức trực tiếp trên trang chi tiết công thức `/viewer/recipes/[id]`.
+- Admin: `/admin`, `/admin/users`, `/admin/system`, `/admin/logs`.
+- R&D: `/rnd`, `/rnd/recipes`, `/rnd/ingredients`, `/rnd/catalogue`, `/rnd/media`, `/rnd/documents`, `/rnd/quizzes`, `/rnd/quizzes/results`.
+- Viewer: `/viewer`, `/viewer/quizzes`, `/viewer/quizzes/history`.
+- Mục active có gạch chân; menu tài khoản gồm `/profile`, `/help` và đăng xuất. `/settings` tạm ẩn khỏi menu mọi role; route không đổi. Không có chuyển role phía client.
+- R&D dùng `/rnd/documents` cho kho tài liệu và `/rnd/documents/new` để tạo tài liệu. Viewer tải PDF chính thức tại chi tiết công thức; Admin không có menu tài liệu.
 
-### 2.3. Menu Item & Active State
-- **Item thường:** Text `#706E68`, hover nền `#F5F0E8`, text `#1A1917`, icon cùng màu.
-- **Item đang chọn (Active):**
-  - Mở rộng: Nền `#ECE6DA`, text `#1A1917` font-semibold, viền trái nhấn `border-l-2 border-[#B47820]`.
-  - Thu gọn: Icon nằm trong ô vuông bo góc `rounded-xl`, nền `#ECE6DA`, shadow-xs.
-- **Micro-interaction:** Nút nav có `active:scale-[0.98] transition-all duration-150`.
-
-### 2.4. Footer Sidebar (User Profile)
-- Avatar: Ký tự đầu tên người dùng trên nền caramel nhạt.
-- Thông tin: Tên hiển thị và nhãn vai trò; email hiển thị trong menu mobile.
-- Menu popover: Hồ sơ cá nhân (`/profile`), Cài đặt (`/settings`), Trợ giúp (`/help`), Đăng xuất. Không có chuyển role phía client.
-
-## 3. Quy Chuẩn Topbar (Header Trên Cùng)
-- Chỉ hiển thị trên mobile (`md:hidden`), cao `h-14` (56px), sticky phía trên.
-- Nền trắng mờ `bg-white/90 backdrop-blur`, viền đáy `#E8E2D9`.
-- Chứa nút hamburger mở sidebar; desktop không có breadcrumb, thông báo hoặc role switcher cố định.
-
-## 4. Bố Cục Trang Nghiệp Vụ 3 Tầng (3-Tier Page Structure)
+## 3. Bố Cục Trang Nghiệp Vụ 3 Tầng (3-Tier Page Structure)
 Mọi trang con trong workspace bắt buộc tổ chức 3 tầng:
 1. **Tầng 1 - Page Header:**
-   - Cụm tiêu đề `h1` (24px–28px, Bold 700, màu `#1A1917`).
-   - Dòng mô tả mục đích (13px–14px, màu `#706E68`).
+   - Tiêu đề `h1` dùng Outfit, `text-foreground` (cỡ h1/h2 theo DESIGN.md mục 3).
+   - Dòng mô tả dùng `text-muted-foreground`.
    - Nút hành động chính (`Primary Action`) đặt góc phải tiêu đề.
 2. **Tầng 2 - Toolbar & Filters:**
    - Thanh tìm kiếm `SearchInput` dạng viên thuốc (`rounded-full`).

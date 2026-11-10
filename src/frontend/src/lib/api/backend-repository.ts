@@ -728,7 +728,7 @@ export class BackendRepository extends DemoRepository {
         description: data.description ?? current.description ?? null,
         warning: data.warning ?? current.warning ?? null,
         note: data.note ?? current.note ?? null,
-        imageAssetRef: data.imageAssetId ?? current.imageAssetId ?? null,
+        imageAssetRef: data.imageAssetId === undefined ? (current.imageAssetId ?? null) : data.imageAssetId,
       }),
     });
     this.ingredientsCache = null;
@@ -1158,6 +1158,7 @@ export class BackendRepository extends DemoRepository {
         const usage = record(value, `media usages.usages[${index}]`);
         const stepOrder = optionalNumber(usage.stepOrder, `media usages.usages[${index}].stepOrder`);
         return {
+          recipeId: text(usage.recipeId, `media usages.usages[${index}].recipeId`),
           versionId: text(usage.recipeVersionId, `media usages.usages[${index}].recipeVersionId`),
           recipeCode: '',
           recipeName: text(usage.recipeTitle, `media usages.usages[${index}].recipeTitle`),

@@ -77,16 +77,16 @@ export function canPublishRecipe(user: User | SessionInfo, recipe: RecipeVersion
 }
 
 export function canViewRecipe(user: User, recipe: RecipeVersion): boolean {
-  if (user.role === 'admin' || user.role === 'rnd') {
+  if (user.role === 'rnd') {
     return true;
   }
   if (user.role === 'viewer') {
-    return recipe.status === 'Published' && (user.allowedRecipeIds || []).includes(recipe.recipeId);
+    return recipe.status === 'Published';
   }
   return false;
 }
 
 export function canManagePdf(user: User | SessionInfo | null): boolean {
   if (!user) return false;
-  return user.role === 'admin' || user.role === 'rnd';
+  return user.role === 'rnd';
 }

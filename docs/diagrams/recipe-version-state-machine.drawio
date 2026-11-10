@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="RecipeHub State Machine" version="24.0.0">
+  <diagram id="recipehub-state-machine" name="State Machine">
+    <mxGraphModel adaptiveColors="auto">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    
+    <mxCell id="entity_badge" value="&lt;b&gt;Business entity:&lt;/b&gt; RecipeVersion (Phiên bản công thức R&amp;D)" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#1e3a8a;fontSize=12;align=center;shadow=1;" vertex="1" parent="1">
+      <mxGeometry x="60" y="40" width="380" height="35" as="geometry" />
+    </mxCell>
+  
+
+    <mxCell id="state_start" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#0f172a;strokeColor=none;shadow=1;" vertex="1" parent="1">
+      <mxGeometry x="60" y="170" width="30" height="30" as="geometry" />
+    </mxCell>
+  
+
+    <mxCell id="state_draft" value="&lt;b&gt;DRAFT&lt;/b&gt;&lt;br&gt;&lt;small&gt;(Bản nháp đang soạn)&lt;/small&gt;" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#3b82f6;strokeWidth=2;fontSize=13;fontColor=#1e3a8a;align=center;shadow=1;" vertex="1" parent="1">
+      <mxGeometry x="150" y="150" width="160" height="70" as="geometry" />
+    </mxCell>
+  
+
+    <mxCell id="state_pending" value="&lt;b&gt;PENDING_APPROVAL&lt;/b&gt;&lt;br&gt;&lt;small&gt;(Chờ duyệt phát hành)&lt;/small&gt;" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#fefce8;strokeColor=#eab308;strokeWidth=2;fontSize=12;fontColor=#713f12;align=center;shadow=1;" vertex="1" parent="1">
+      <mxGeometry x="470" y="150" width="180" height="70" as="geometry" />
+    </mxCell>
+  
+
+    <mxCell id="state_rejected" value="&lt;b&gt;REJECTED&lt;/b&gt;&lt;br&gt;&lt;small&gt;(Từ chối / Yêu cầu sửa)&lt;/small&gt;" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#faf5ff;strokeColor=#a855f7;strokeWidth=2;fontSize=12;fontColor=#581c87;align=center;shadow=1;" vertex="1" parent="1">
+      <mxGeometry x="470" y="340" width="180" height="70" as="geometry" />
+    </mxCell>
+  
+
+    <mxCell id="state_published" value="&lt;b&gt;PUBLISHED&lt;/b&gt;&lt;br&gt;&lt;small&gt;(Đã duyệt · Bất biến [BR-04])&lt;/small&gt;" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#f0fdf4;strokeColor=#16a34a;strokeWidth=2;fontSize=12;fontColor=#14532d;align=center;shadow=1;" vertex="1" parent="1">
+      <mxGeometry x="830" y="150" width="190" height="70" as="geometry" />
+    </mxCell>
+  
+
+    <mxCell id="state_archived" value="&lt;b&gt;ARCHIVED&lt;/b&gt;&lt;br&gt;&lt;small&gt;(Đã lưu trữ / Ngừng phục vụ)&lt;/small&gt;" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#f1f5f9;strokeColor=#64748b;strokeWidth=2;fontSize=12;fontColor=#334155;align=center;shadow=1;" vertex="1" parent="1">
+      <mxGeometry x="830" y="340" width="190" height="70" as="geometry" />
+    </mxCell>
+  
+
+    <mxCell id="state_end" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#0f172a;strokeColor=#cbd5e1;strokeWidth=3;shadow=1;" vertex="1" parent="1">
+      <mxGeometry x="910" y="470" width="30" height="30" as="geometry" />
+    </mxCell>
+  
+
+    <mxCell id="formula_note" value="&lt;b&gt;Transition Formula:&lt;/b&gt; Event [Guard] / Action&lt;br&gt;&lt;small style='color:#64748b;'&gt;Tuân thủ chuẩn UML State Machine &amp; Clean Architecture Domain&lt;/small&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontColor=#0f172a;" vertex="1" parent="1">
+      <mxGeometry x="60" y="460" width="350" height="40" as="geometry" />
+    </mxCell>
+  
+
+    <mxCell id="alert_box" value="&lt;b style='font-size:12px;color:#991b1b;'&gt;CHUYỂN TRẠNG THÁI BỊ CẤM (FORBIDDEN TRANSITIONS - CÓ UNIT/API TEST):&lt;/b&gt;&lt;br&gt;&lt;div style='text-align:left;font-size:11px;color:#7f1d1d;padding:4px;'&gt;• &lt;b&gt;CẤM: DRAFT → PUBLISHED&lt;/b&gt; khi chưa qua duyệt hoặc thiếu Guard [BR-01] (Throw 400 Validation)&lt;br&gt;• &lt;b&gt;CẤM: PUBLISHED → DRAFT&lt;/b&gt; (Không được sửa đè bản phát hành - Vi phạm tính bất biến [BR-04])&lt;br&gt;• &lt;b&gt;CẤM: ARCHIVED → PUBLISHED&lt;/b&gt; trực tiếp (Bắt buộc fork version mới)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef2f2;strokeColor=#f87171;strokeWidth=1.5;align=left;shadow=1;spacing=8;" vertex="1" parent="1">
+      <mxGeometry x="470" y="440" width="550" height="85" as="geometry" />
+    </mxCell>
+  
+
+      <mxCell id="t_start" value="create()" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#1e40af;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="state_start" target="state_draft">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="t_submit" value="submit()&lt;br&gt;&lt;b&gt;[BR-01: validContent]&lt;/b&gt;&lt;br&gt;/ notifyReviewer()" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#1e40af;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="state_draft" target="state_pending">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="t_reject" value="reject(reason)&lt;br&gt;&lt;b&gt;[isLeadOrAdmin]&lt;/b&gt;&lt;br&gt;/ recordFeedback()" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#7c3aed;strokeWidth=1.5;fontColor=#6d28d9;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="state_pending" target="state_rejected">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="t_revise" value="reopenForEdit()&lt;br&gt;/ unlockDraft()" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#7c3aed;strokeWidth=1.5;fontColor=#6d28d9;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="state_rejected" target="state_draft">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="t_publish" value="publish()&lt;br&gt;&lt;b&gt;[isAuthorized BR-05]&lt;/b&gt;&lt;br&gt;/ lockImmutable(BR-04), emitAudit()" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#1e40af;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="state_pending" target="state_published">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="t_archive" value="archive()&lt;br&gt;&lt;b&gt;[isAdmin]&lt;/b&gt;&lt;br&gt;/ setArchivedAt()" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#1e40af;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="state_published" target="state_archived">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="t_end" value="purge()" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563eb;strokeWidth=1.5;fontColor=#1e40af;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="state_archived" target="state_end">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="t_fork" value="forkNewRevision()&lt;br&gt;&lt;b&gt;[BR-04: immutable]&lt;/b&gt;&lt;br&gt;/ cloneToVersion(v+1)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#059669;strokeWidth=2;fontColor=#047857;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="state_published" target="state_draft">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+  </root>
+</mxGraphModel>
+  </diagram>
+</mxfile>

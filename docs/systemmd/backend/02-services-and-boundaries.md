@@ -17,6 +17,7 @@ Ngoài ra còn có:
 - `src/backend/Gateway/RecipeHub.Gateway/`: YARP Reverse Proxy Gateway gom đầu mối API.
 - `src/backend/Workers/RecipeHub.BackgroundWorker/`: Consumer chạy nền xử lý Redis Streams.
 - `src/backend/Contracts/RecipeHub.GrpcContracts/`: Hợp đồng Protobuf dùng chung cho gRPC.
+- Monitoring hạ tầng: Prometheus thu metrics từ Gateway/API và các exporter Docker/PostgreSQL/Redis/HTTP; Grafana hiển thị. Đây không phải microservice nghiệp vụ hay database nghiệp vụ mới. Exporter PostgreSQL dùng role đọc `grafana_reader` với `pg_monitor`; không dùng tài khoản runtime service để triển khai DDL.
 
 ---
 
