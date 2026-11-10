@@ -1,3 +1,4 @@
+import { pageTitleClass } from '@/components/workspace/page-header';
 import Link from 'next/link';
 import { ArrowRight, BookOpen, GraduationCap, ShieldCheck } from 'lucide-react';
 
@@ -20,7 +21,7 @@ export default async function PlatformOverviewPage() {
     <div className="space-y-10">
       <header className="space-y-2">
         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Nền tảng</p>
-        <h1 className="font-display text-3xl font-medium text-foreground sm:text-[40px] sm:leading-[48px]">Chào mừng trở lại</h1>
+        <h1 className={pageTitleClass}>Chào mừng trở lại</h1>
         <p className="text-sm text-muted-foreground">Chọn khu vực làm việc của bạn.</p>
       </header>
 

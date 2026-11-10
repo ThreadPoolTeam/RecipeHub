@@ -1,18 +1,15 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-import Link from 'next/link';
+import { pageTitleClass } from '@/components/workspace/page-header';
+
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Database,
-  RefreshCw,
   ExternalLink,
-  ShieldCheck,
   BarChart3,
 } from 'lucide-react';
 import { requestJson } from '@/lib/api/client';
-import { listAuditLogs, getActionLabel, AuditLogDto } from '@/lib/api/audit';
-import { Button } from '@/components/workspace/fields';
-import { DataTable } from '@/components/workspace/data-table';
+import { usePolling } from '@/components/workspace/use-polling';
 import { ServiceHealthTable } from './service-health-table';
 
 interface ServiceProbeTarget {
@@ -56,7 +53,7 @@ const SERVICE_TARGETS: ServiceProbeTarget[] = [
   {
     key: 'audit',
     name: 'Audit Service',
-    roleLabel: 'Nhật ký kiểm toán & Truy vết sự kiện',
+    roleLabel: 'Nhật ký hoạt động & Truy vết sự kiện',
     dbName: 'recipehub_audit',
     endpoint: 'api/v1/audit/info',
   },
@@ -71,13 +68,12 @@ const SERVICE_TARGETS: ServiceProbeTarget[] = [
 
 export default function AdminSystemMonitoringPage() {
   const [services, setServices] = useState<ServiceHealthResult[]>([]);
-  const [recentLogs, setRecentLogs] = useState<AuditLogDto[]>([]);
-  const [totalAuditCount, setTotalAuditCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [probing, setProbing] = useState(false);
+  const probingRef = useRef(false);
 
   const runSystemProbe = useCallback(async () => {
-    setProbing(true);
+    if (probingRef.current) return;
+    probingRef.current = true;
     try {
       const probePromises = SERVICE_TARGETS.map(async (target): Promise<ServiceHealthResult> => {
         const start = performance.now();
@@ -105,34 +101,24 @@ export default function AdminSystemMonitoringPage() {
             status: 'Unreachable',
             database: 'Unreachable',
             latencyMs,
-            version: '—',
+            version: 'Chưa cập nhật',
             checkedAt: new Date().toLocaleTimeString('vi-VN'),
           };
         }
       });
 
-      const [probeResults, auditRes] = await Promise.all([
-        Promise.all(probePromises),
-        listAuditLogs({ page: 1, pageSize: 15 }).catch(() => ({
-          items: [] as AuditLogDto[],
-          totalCount: 0,
-          page: 1,
-          pageSize: 15,
-        })),
-      ]);
-
+      const probeResults = await Promise.all(probePromises);
       setServices(probeResults);
-      setRecentLogs(auditRes.items);
-      setTotalAuditCount(auditRes.totalCount);
     } finally {
       setLoading(false);
-      setProbing(false);
+      probingRef.current = false;
     }
   }, []);
 
   useEffect(() => {
     void runSystemProbe();
   }, [runSystemProbe]);
+  usePolling(runSystemProbe);
 
   const healthyCount = services.filter((s) => s.status === 'Ready').length;
   const avgLatency =
@@ -145,12 +131,9 @@ export default function AdminSystemMonitoringPage() {
       <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Quản trị</p>
-          <h1 className="font-display text-3xl font-medium text-foreground sm:text-4xl">Giám sát hệ thống &amp; sự cố</h1>
+          <h1 className={pageTitleClass}>Giám sát hệ thống &amp; sự cố</h1>
           <p className="mt-2 text-sm text-muted-foreground">Kiểm tra trạng thái dịch vụ và kết nối cơ sở dữ liệu.</p>
         </div>
-        <Button variant="secondary" className="h-10" isLoading={probing} onClick={runSystemProbe}>
-          <RefreshCw className="mr-2 h-4 w-4" strokeWidth={1.5} /> Kiểm tra lại
-        </Button>
       </header>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -182,59 +165,6 @@ export default function AdminSystemMonitoringPage() {
 
       <ServiceHealthTable services={services} loading={loading} />
 
-      {/* Recent Business Activity Stream Summary */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="flex items-center gap-2 font-display text-xl font-medium text-foreground">
-              <ShieldCheck className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-              Hoạt động hệ thống gần đây ({totalAuditCount} sự kiện)
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Các sự kiện thay đổi dữ liệu quan trọng được đẩy qua Redis Streams vào Audit Service.
-            </p>
-          </div>
-          <Link href="/admin/logs">
-            <Button variant="secondary" className="h-10">
-              Xem toàn bộ nhật ký
-            </Button>
-          </Link>
-        </div>
-
-        <DataTable<AuditLogDto>
-          data={recentLogs}
-          keyExtractor={(item) => item.id}
-          isLoading={loading}
-          emptyTitle="Chưa ghi nhận sự kiện hệ thống"
-          emptyMessage="Các thao tác tạo/sửa công thức, khóa tài khoản hoặc nộp bài thi sẽ hiển thị tại đây."
-          columns={[
-            {
-              header: 'Thời gian',
-              render: (item) => (
-                <span className="text-xs tabular-nums text-muted-foreground">
-                  {new Date(item.occurredAt).toLocaleString('vi-VN')}
-                </span>
-              ),
-            },
-            {
-              header: 'Thao tác nghiệp vụ',
-              render: (item) => (
-                <span className="text-xs font-semibold text-foreground">{getActionLabel(item.action)}</span>
-              ),
-            },
-            {
-              header: 'Người thực hiện',
-              render: (item) => (
-                <span className="text-xs text-foreground">{item.actorName || 'Hệ thống'}</span>
-              ),
-            },
-            {
-              header: 'Mô tả sự kiện',
-              render: (item) => <span className="text-xs text-muted-foreground">{item.summary}</span>,
-            },
-          ]}
-        />
-      </div>
     </div>
   );
 }

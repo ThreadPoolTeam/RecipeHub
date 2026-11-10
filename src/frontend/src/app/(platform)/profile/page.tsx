@@ -1,27 +1,29 @@
 'use client';
 
+import { pageTitleClass } from '@/components/workspace/page-header';
+
 import React, { useState } from 'react';
-import Link from 'next/link';
-import { Mail, Pencil, ArrowRight } from 'lucide-react';
+import { Mail, Save } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { Button, TextInput, Alert } from '@/components/workspace/fields';
-import { Dialog } from '@/components/workspace/dialog';
 import { RoleBadge } from '@/components/workspace/status-badge';
 import { ChangePasswordModal } from '@/components/shared/ChangePasswordModal';
+import { useToast } from '@/components/workspace/toast';
 
 export default function ProfilePage() {
   const { session, currentUser, repo, refresh } = useDemo();
+  const { toast } = useToast();
 
-  // Edit Name Modal State
-  const [openEditName, setOpenEditName] = useState(false);
-  const [nameInput, setNameInput] = useState('');
+  const [nameInput, setNameInput] = useState<string | null>(null);
   const [savingName, setSavingName] = useState(false);
   const [nameError, setNameError] = useState('');
-  const [nameSuccess, setNameSuccess] = useState('');
 
   const fullName = currentUser?.fullName || session?.fullName || '';
   const email = session?.email || currentUser?.email || '';
   const role = session?.role || currentUser?.role || 'rnd';
+  const editedName = nameInput ?? fullName;
+  const trimmedName = editedName.trim();
+  const canSaveName = trimmedName.length >= 2 && trimmedName.length <= 100 && trimmedName !== fullName.trim();
 
   const initials = fullName
     ? fullName
@@ -33,14 +35,8 @@ export default function ProfilePage() {
         .toUpperCase()
     : 'U';
 
-  const handleOpenEditName = () => {
-    setNameInput(fullName);
-    setNameError('');
-    setOpenEditName(true);
-  };
-
   const handleSaveName = async () => {
-    const trimmed = nameInput.trim();
+    const trimmed = editedName.trim();
     if (!trimmed) {
       setNameError('Họ và tên không được để trống.');
       return;
@@ -60,11 +56,10 @@ export default function ProfilePage() {
     try {
       await repo.updateProfile(session, trimmed);
       await refresh();
-      setOpenEditName(false);
-      setNameSuccess('Cập nhật họ tên thành công.');
-      setTimeout(() => setNameSuccess(''), 3000);
-    } catch (err) {
-      setNameError(err instanceof Error ? err.message : 'Không thể cập nhật họ tên. Vui lòng thử lại.');
+      setNameInput(null);
+      toast({ type: 'success', title: 'Cập nhật họ tên thành công' });
+    } catch {
+      toast({ type: 'error', title: 'Không thể cập nhật họ tên', description: 'Vui lòng thử lại.' });
     } finally {
       setSavingName(false);
     }
@@ -76,23 +71,18 @@ export default function ProfilePage() {
       ? 'Soạn thảo và chuẩn hóa công thức đồ uống, tính toán định mức, xuất bản SOP và tài liệu kỹ thuật.'
       : role === 'viewer'
       ? 'Tra cứu quy trình pha chế chuẩn, quy đổi sản lượng thực tế và thực hiện bài kiểm tra SOP.'
-      : 'Quản trị tài khoản, giám sát hệ thống và theo dõi nhật ký kiểm toán.';
-  const workspaceUrl = role === 'viewer' ? '/viewer/recipes' : role === 'admin' ? '/admin' : '/rnd/recipes';
-  const workspaceLabel =
-    role === 'viewer' ? 'Mở Kho công thức vận hành' : role === 'admin' ? 'Mở Trung tâm Quản trị' : 'Mở Không gian R&D công thức';
+      : 'Quản trị tài khoản, giám sát hệ thống và theo dõi nhật ký hoạt động.';
 
   return (
     <div className="mx-auto space-y-8 pb-12">
       <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Tài khoản</p>
-          <h1 className="mt-2 font-display text-3xl font-medium text-foreground sm:text-4xl">Hồ sơ cá nhân</h1>
+          <h1 className={`mt-2 ${pageTitleClass}`}>Hồ sơ cá nhân</h1>
           <p className="mt-2 text-sm text-muted-foreground">Thông tin hiển thị cho đồng nghiệp trong RecipeHub.</p>
         </div>
         <ChangePasswordModal />
       </header>
-
-      {nameSuccess && <Alert variant="success">{nameSuccess}</Alert>}
 
       <div className="grid gap-6 md:grid-cols-[280px_minmax(0,1fr)]">
         <section className="flex flex-col items-center rounded-lg border border-border bg-card p-8 text-center shadow-soft">
@@ -110,45 +100,20 @@ export default function ProfilePage() {
         <section className="rounded-lg border border-border bg-card p-6 shadow-soft">
           <h2 className="font-display text-lg font-medium text-card-foreground">Thông tin</h2>
           <div className="mt-5 grid gap-5 sm:grid-cols-2">
-            <TextInput label="Họ và tên" value={fullName || 'Chưa cập nhật'} readOnly />
+            <TextInput label="Họ và tên" value={editedName} onChange={(e) => { setNameInput(e.target.value); setNameError(''); }} disabled={savingName} helper="Tối thiểu 2 ký tự, tối đa 100 ký tự." />
             <TextInput label="Email" value={email || 'Chưa cập nhật'} readOnly />
             <TextInput label="Vai trò" value={roleLabel} readOnly />
           </div>
+          {nameError && <div className="mt-5"><Alert variant="error">{nameError}</Alert></div>}
           <p className="mt-5 text-sm text-muted-foreground">{roleDescription}</p>
           <div className="mt-5 flex flex-wrap gap-3">
-            <Button variant="primary" size="sm" onClick={handleOpenEditName}>
-              <Pencil className="mr-1.5 h-4 w-4" strokeWidth={1.5} />Sửa họ tên
+            <Button variant="primary" size="sm" onClick={handleSaveName} disabled={!canSaveName} isLoading={savingName}>
+              <Save className="mr-1.5 h-4 w-4" strokeWidth={1.5} />Lưu
             </Button>
-            <Link href={workspaceUrl} className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
-              {workspaceLabel}<ArrowRight className="h-4 w-4" strokeWidth={1.5} />
-            </Link>
           </div>
         </section>
       </div>
 
-      <Dialog
-        isOpen={openEditName}
-        onClose={() => {
-          if (!savingName) setOpenEditName(false);
-        }}
-        title="Chỉnh sửa họ và tên"
-        description="Cập nhật tên hiển thị của bạn trong toàn bộ hệ thống RecipeHub."
-        onConfirm={handleSaveName}
-        confirmLabel="Lưu thay đổi"
-        isConfirming={savingName}
-      >
-        <div className="space-y-3">
-          {nameError && <Alert variant="error">{nameError}</Alert>}
-          <TextInput
-            label="Họ và tên hiển thị"
-            value={nameInput}
-            onChange={(e) => setNameInput(e.target.value)}
-            placeholder="Ví dụ: Nguyễn Văn A"
-            helper="Tối thiểu 2 ký tự, tối đa 100 ký tự."
-            autoFocus
-          />
-        </div>
-      </Dialog>
     </div>
   );
 }

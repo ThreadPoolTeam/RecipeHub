@@ -1,5 +1,7 @@
 'use client';
 
+import { pageTitleClass } from '@/components/workspace/page-header';
+
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Coffee } from 'lucide-react';
@@ -7,6 +9,7 @@ import { useDemo } from '@/lib/demo/provider';
 import { RecipeVersion } from '@/lib/demo/types';
 import { Alert, SearchInput } from '@/components/workspace/fields';
 import { StatusBadge } from '@/components/workspace/status-badge';
+import { interactiveCardClass, interactiveCardFocusClass } from '@/components/workspace/interactive-card';
 export default function ViewerPage() {
   const { session, repo, dataVersion } = useDemo();
   const [recipes, setRecipes] = useState<RecipeVersion[]>([]);
@@ -50,7 +53,7 @@ export default function ViewerPage() {
     <div className="mx-auto max-w-7xl space-y-8 pb-12">
       <header className="rounded-lg border border-border bg-card p-6 shadow-soft sm:p-10">
         <p className="text-xs font-medium uppercase tracking-wider text-primary">Sổ tay cửa hàng</p>
-        <h1 className="mt-3 font-display text-h2 font-medium text-foreground sm:text-h1">
+        <h1 className={`mt-3 ${pageTitleClass}`}>
           {session?.fullName ? `Hôm nay pha gì, ${session.fullName}?` : 'Hôm nay pha gì?'}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">Tra cứu công thức và quy trình pha chế đã phát hành.</p>
@@ -89,7 +92,7 @@ export default function ViewerPage() {
             <Link
               key={recipe.id}
               href={`/viewer/recipes/${recipe.id}`}
-              className="group block rounded-lg border border-border bg-card p-5 shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className={`block p-5 ${interactiveCardClass} ${interactiveCardFocusClass}`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                 <span>{recipe.code} · {recipe.versionLabel}</span>

@@ -1,5 +1,7 @@
 'use client';
 
+import { pageTitleClass } from '@/components/workspace/page-header';
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -22,6 +24,7 @@ import {
   MediaAsset,
 } from '@/lib/demo/types';
 import { Button, Alert } from '@/components/workspace/fields';
+import { useToast } from '@/components/workspace/toast';
 import { StatusBadge, MediaSourceBadge } from '@/components/workspace/status-badge';
 import { RecipeBatchScaler } from '@/components/recipes/RecipeBatchScaler';
 import {
@@ -35,6 +38,7 @@ export default function ViewerRecipeDetailPage() {
   const id = typeof params?.id === 'string' ? params.id : Array.isArray(params?.id) ? params.id[0] : '';
 
   const { session, repo, dataVersion } = useDemo();
+  const { toast } = useToast();
 
   const [recipe, setRecipe] = useState<RecipeVersion | null>(null);
   const [scaledIngredients, setScaledIngredients] = useState<RecipeIngredient[] | null>(null);
@@ -47,7 +51,6 @@ export default function ViewerRecipeDetailPage() {
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [mediaWarning, setMediaWarning] = useState<string | null>(null);
-  const [pdfWarning, setPdfWarning] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   useEffect(() => {
     let isMounted = true;
@@ -138,7 +141,6 @@ export default function ViewerRecipeDetailPage() {
   const handleDownloadPdf = async () => {
     const versionId = recipe?.versionId || id;
     setIsDownloading(true);
-    setPdfWarning(null);
     try {
       let doc = publishedDoc;
       if (!doc) {
@@ -149,7 +151,7 @@ export default function ViewerRecipeDetailPage() {
       }
 
       if (!doc) {
-        setPdfWarning('Công thức này chưa có bản PDF chính thức được xuất bản.');
+        toast({ type: 'info', title: 'Chưa có PDF chính thức', description: 'Công thức này chưa có bản PDF chính thức được xuất bản.' });
         return;
       }
 
@@ -163,9 +165,9 @@ export default function ViewerRecipeDetailPage() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch (e: unknown) {
-      const err = e as Error;
-      setPdfWarning(err.message || 'Không thể tải tệp PDF chính thức.');
+      toast({ type: 'success', title: 'Đã tải PDF chính thức' });
+    } catch {
+      toast({ type: 'error', title: 'Không thể tải PDF', description: 'Vui lòng thử lại.' });
     } finally {
       setIsDownloading(false);
     }
@@ -207,12 +209,11 @@ export default function ViewerRecipeDetailPage() {
           <Lock className="h-4 w-4" strokeWidth={1.5} /> Chế độ chỉ đọc
         </span>
       </div>
-      {pdfWarning && <Alert type="info" message={pdfWarning} onClose={() => setPdfWarning(null)} />}
       {mediaWarning && <Alert variant="warning">{mediaWarning}</Alert>}
 
       <header className="flex flex-col justify-between gap-6 border-b border-border pb-8 lg:flex-row lg:items-end">
         <div className="space-y-3">
-          <h1 className="font-display text-h2 font-medium text-foreground sm:text-h1">{recipe.name}</h1>
+          <h1 className={pageTitleClass}>{recipe.name}</h1>
           {recipe.description && <p className="max-w-2xl text-sm text-muted-foreground">{recipe.description}</p>}
           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             <span className="text-primary">{recipe.code}</span>
@@ -269,7 +270,7 @@ export default function ViewerRecipeDetailPage() {
                       <td className="px-4 py-4">{ingInfo?.code && <div className="text-xs text-muted-foreground">{ingInfo.code}</div>}{ingInfo ? ingInfo.name : 'Chưa xác định'}</td>
                       <td className="px-4 py-4 text-right tabular-nums">{item.quantity}</td>
                       <td className="px-4 py-4">{item.unit}</td>
-                      <td className="px-4 py-4 text-muted-foreground">{item.notes || item.stageNote || '—'}</td>
+                      <td className="px-4 py-4 text-muted-foreground">{item.notes || item.stageNote || 'Chưa cập nhật'}</td>
                     </tr>;
                   })}
                 </tbody>
@@ -295,9 +296,9 @@ export default function ViewerRecipeDetailPage() {
                     </div>
                     <div className="grid gap-5 pt-4 lg:grid-cols-3">
                       <div className="space-y-4 lg:col-span-2">
-                        <div><h4 className="mb-1 text-xs font-semibold text-muted-foreground">Hướng dẫn thao tác</h4><p className="whitespace-pre-line text-sm">{step.instruction}</p></div>
-                        {step.completionCriteria && <div className="rounded-lg bg-success-soft p-3 text-sm"><h4 className="mb-1 flex items-center gap-1 text-xs font-semibold text-success"><CheckCircle2 className="h-4 w-4" strokeWidth={1.5} />Tiêu chuẩn hoàn thành</h4>{step.completionCriteria}</div>}
-                        {step.notes && <div className="rounded-lg bg-muted p-3 text-sm"><h4 className="mb-1 text-xs font-semibold text-muted-foreground">Lưu ý quan trọng</h4>{step.notes}</div>}
+                        <div><h4 className="mb-1 text-xs text-muted-foreground font-medium font-display">Hướng dẫn thao tác</h4><p className="whitespace-pre-line text-sm">{step.instruction}</p></div>
+                        {step.completionCriteria && <div className="rounded-lg bg-success-soft p-3 text-sm"><h4 className="mb-1 flex items-center gap-1 text-xs text-success font-medium font-display"><CheckCircle2 className="h-4 w-4" strokeWidth={1.5} />Tiêu chuẩn hoàn thành</h4>{step.completionCriteria}</div>}
+                        {step.notes && <div className="rounded-lg bg-muted p-3 text-sm"><h4 className="mb-1 text-xs text-muted-foreground font-medium font-display">Lưu ý quan trọng</h4>{step.notes}</div>}
                       </div>
                       <div>
                         {coverUrl ? <div className="space-y-2">

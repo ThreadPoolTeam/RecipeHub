@@ -1,15 +1,14 @@
 'use client';
 
+import { pageTitleClass } from '@/components/workspace/page-header';
+
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import {
-  AuditLogDto,
-  listAuditLogs,
-  AUDIT_ACTIONS,
-  AUDIT_TARGET_TYPES,
-} from '@/lib/api/audit';
-import { Button, TextInput, SearchInput, Select } from '@/components/workspace/fields';
+import { AuditLogDto, listAuditLogs } from '@/lib/api/audit';
+import { Button } from '@/components/workspace/fields';
+import { AuditLogFilters } from './audit-log-filters';
 import { AuditLogTable } from './audit-log-table';
-import { RefreshCw, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
+import { usePolling } from '@/components/workspace/use-polling';
 
 export default function AdminAuditLogsPage() {
   const [logs, setLogs] = useState<AuditLogDto[]>([]);
@@ -17,7 +16,6 @@ export default function AdminAuditLogsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Pagination
   const [page, setPage] = useState(1);
   const pageSize = 20;
 
@@ -31,6 +29,7 @@ export default function AdminAuditLogsPage() {
 
   // Generation guard against out-of-order responses
   const generationRef = useRef(0);
+  const pendingRef = useRef(0);
 
   // Debounce actorQuery by 300ms
   useEffect(() => {
@@ -41,10 +40,9 @@ export default function AdminAuditLogsPage() {
     return () => clearTimeout(handler);
   }, [actorQuery]);
 
-  const fetchLogs = useCallback(async () => {
+  const fetchLogs = useCallback(async (silent = false) => {
     const currentGen = ++generationRef.current;
-    setLoading(true);
-    setError(null);
+    pendingRef.current++;
 
     // Parse date boundaries
     let fromIso: string | undefined;
@@ -72,6 +70,7 @@ export default function AdminAuditLogsPage() {
       });
 
       if (currentGen === generationRef.current) {
+        setError(null);
         setLogs(response.items);
         setTotalCount(response.totalCount);
         // If page is out of range, clamp to page 1
@@ -81,13 +80,14 @@ export default function AdminAuditLogsPage() {
         }
       }
     } catch {
-      if (currentGen === generationRef.current) {
+      if (!silent && currentGen === generationRef.current) {
         setError('Không thể kết nối đến máy chủ hoặc phiên làm việc đã hết hạn. Vui lòng thử lại sau.');
         setLogs([]);
         setTotalCount(0);
       }
     } finally {
-      if (currentGen === generationRef.current) {
+      pendingRef.current--;
+      if (!silent && currentGen === generationRef.current) {
         setLoading(false);
       }
     }
@@ -96,6 +96,11 @@ export default function AdminAuditLogsPage() {
   useEffect(() => {
     fetchLogs();
   }, [fetchLogs]);
+
+  const pollLogs = useCallback(async () => {
+    if (pendingRef.current === 0) await fetchLogs(true);
+  }, [fetchLogs]);
+  usePolling(pollLogs);
 
   const handleActionChange = (val: string) => {
     setSelectedAction(val);
@@ -107,13 +112,13 @@ export default function AdminAuditLogsPage() {
     setPage(1);
   };
 
-  const handleFromDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFromDate(e.target.value);
+  const handleFromDateChange = (value: string) => {
+    setFromDate(value);
     setPage(1);
   };
 
-  const handleToDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setToDate(e.target.value);
+  const handleToDateChange = (value: string) => {
+    setToDate(value);
     setPage(1);
   };
 
@@ -162,19 +167,10 @@ export default function AdminAuditLogsPage() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Quản trị</p>
-          <h1 className="font-display text-3xl font-medium text-foreground sm:text-4xl">Nhật ký truy vết hoạt động</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Ai đã làm gì, lúc nào — chỉ đọc.</p>
+          <h1 className={pageTitleClass}>Nhật ký hoạt động</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Ai đã làm gì, lúc nào. Chỉ đọc.</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            variant="secondary"
-            onClick={handleRefresh}
-            className="flex h-10 items-center gap-1.5"
-            disabled={loading}
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'motion-safe:animate-spin' : ''}`} strokeWidth={1.5} />
-            Làm mới
-          </Button>
           <div className="text-xs text-muted-foreground tabular-nums">
             Tổng cộng: <span className="font-semibold text-foreground">{totalCount}</span> sự kiện
           </div>
@@ -187,7 +183,7 @@ export default function AdminAuditLogsPage() {
           <div className="flex items-start gap-2.5">
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" strokeWidth={1.5} />
             <div>
-              <p className="font-semibold">Lỗi kết nối nhật ký kiểm toán</p>
+              <p className="font-semibold">Lỗi kết nối nhật ký hoạt động</p>
               <p className="mt-0.5 text-xs text-destructive">{error}</p>
             </div>
           </div>
@@ -197,48 +193,7 @@ export default function AdminAuditLogsPage() {
         </div>
       )}
 
-      {/* Filter toolbar */}
-      <div className="flex w-full min-w-0 flex-col flex-wrap items-stretch gap-3 md:flex-row md:items-center">
-        <div className="flex-1 min-w-[220px]">
-          <SearchInput
-            placeholder="Tìm theo tên người thực hiện..."
-            value={actorQuery}
-            onChange={(e) => setActorQuery(e.target.value)}
-            onClear={() => setActorQuery('')}
-          />
-        </div>
-        <div className="w-full sm:w-48">
-          <Select
-            value={selectedAction}
-            onChange={(e) => handleActionChange(e.target.value)}
-            options={AUDIT_ACTIONS.map((a) => ({ label: a.label, value: a.value }))}
-          />
-        </div>
-        <div className="w-full sm:w-44">
-          <Select
-            value={selectedTargetType}
-            onChange={(e) => handleTargetTypeChange(e.target.value)}
-            options={AUDIT_TARGET_TYPES.map((t) => ({ label: t.label, value: t.value }))}
-          />
-        </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <TextInput
-            type="date"
-            value={fromDate}
-            onChange={handleFromDateChange}
-            aria-label="Từ ngày"
-            className="text-xs flex-1 min-w-0 sm:w-36 sm:flex-initial"
-          />
-          <span className="text-xs text-muted-foreground shrink-0">—</span>
-          <TextInput
-            type="date"
-            value={toDate}
-            onChange={handleToDateChange}
-            aria-label="Đến ngày"
-            className="text-xs flex-1 min-w-0 sm:w-36 sm:flex-initial"
-          />
-        </div>
-      </div>
+      <AuditLogFilters actor={actorQuery} action={selectedAction} target={selectedTargetType} from={fromDate} to={toDate} onActor={setActorQuery} onAction={handleActionChange} onTarget={handleTargetTypeChange} onFrom={handleFromDateChange} onTo={handleToDateChange} />
 
       <AuditLogTable logs={logs} loading={loading} page={page} totalPages={totalPages} totalCount={totalCount} onPageChange={setPage} formatTimestamp={formatTimestamp} getActionColor={getActionColor} />
     </div>

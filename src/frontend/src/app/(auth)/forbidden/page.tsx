@@ -1,5 +1,7 @@
 'use client';
 
+import { pageTitleClass } from '@/components/workspace/page-header';
+
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -16,7 +18,7 @@ export default function ForbiddenPage() {
     <div className="w-full max-w-lg space-y-8 text-center">
       <ShieldAlert aria-hidden="true" className="mx-auto h-7 w-7 text-primary" strokeWidth={1.5} />
       <div className="space-y-2">
-        <h1 className="font-display text-3xl font-medium text-foreground sm:text-[40px] sm:leading-[48px]">
+        <h1 className={pageTitleClass}>
           Không đủ quyền truy cập
         </h1>
         <p className="text-sm leading-6 text-muted-foreground">

@@ -1,5 +1,7 @@
 'use client';
 
+import { pageTitleClass } from '@/components/workspace/page-header';
+
 import React from 'react';
 import Link from 'next/link';
 import { HelpCircle } from 'lucide-react';
@@ -20,10 +22,10 @@ const adminGuides = [
     linkLabel: 'Mở giám sát hệ thống',
   },
   {
-    title: '3. Nhật ký Audit',
+    title: '3. Nhật ký hoạt động',
     description: 'Tra cứu lịch sử thao tác quan trọng: ai làm gì, vào lúc nào, trên đối tượng nào.',
     href: '/admin/logs',
-    linkLabel: 'Mở nhật ký Audit',
+    linkLabel: 'Mở nhật ký hoạt động',
   },
 ];
 
@@ -58,20 +60,20 @@ export default function HelpPage() {
   const { session } = useDemo();
   const isAdmin = session?.role === 'admin';
   const description = isAdmin
-    ? 'Quản trị viên phụ trách tài khoản, giám sát hệ thống và nhật ký Audit. Dữ liệu công thức do bộ phận R&D quản lý.'
+    ? 'Quản trị viên phụ trách tài khoản, giám sát hệ thống và nhật ký hoạt động. Dữ liệu công thức do bộ phận R&D quản lý.'
     : 'Tài liệu quy chuẩn về vòng đời công thức, kiểm định định mức và xuất bản SOP quầy pha chế.';
 
   return (
     <div className="space-y-8 pb-12">
       <header className="space-y-2">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{isAdmin ? 'Trung tâm Hướng dẫn Quản trị' : 'Trung tâm Hướng dẫn R&D'}</p>
-        <h1 className="font-display text-3xl font-medium text-foreground sm:text-4xl">{isAdmin ? 'Cẩm nang Quản trị RecipeHub' : 'Cẩm nang Vận hành RecipeHub BeverageLab'}</h1>
+        <h1 className={pageTitleClass}>{isAdmin ? 'Cẩm nang Quản trị RecipeHub' : 'Cẩm nang Vận hành RecipeHub BeverageLab'}</h1>
         <p className="text-sm text-muted-foreground">{description}</p>
       </header>
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(240px,1fr)]">
         <section className="rounded-lg border border-border bg-card p-6 shadow-soft">
-          <h2 className="mb-4 text-lg font-medium text-card-foreground">Hướng dẫn</h2>
+          <h2 className="mb-4 text-lg font-medium text-card-foreground font-display">Hướng dẫn</h2>
           <div className="space-y-3">
             {(isAdmin ? adminGuides : guides).map((guide) => (
               <Accordion key={guide.title} title={guide.title} open>
@@ -85,7 +87,7 @@ export default function HelpPage() {
         </section>
         <aside className="rounded-lg border border-border bg-card p-6 shadow-soft">
           <HelpCircle className="h-6 w-6 text-primary" strokeWidth={1.5} aria-hidden="true" />
-          <h2 className="mt-4 text-lg font-medium text-card-foreground">{isAdmin ? 'Trung tâm Hướng dẫn Quản trị' : 'Trung tâm Hướng dẫn R&D'}</h2>
+          <h2 className="mt-4 text-lg font-medium text-card-foreground font-display">{isAdmin ? 'Trung tâm Hướng dẫn Quản trị' : 'Trung tâm Hướng dẫn R&D'}</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
         </aside>
       </div>

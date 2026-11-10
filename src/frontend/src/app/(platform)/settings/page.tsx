@@ -1,5 +1,7 @@
 'use client';
 
+import { pageTitleClass } from '@/components/workspace/page-header';
+
 import React, { useState } from 'react';
 import { Bell, Palette, Shield, Save, Check } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
@@ -22,13 +24,13 @@ export default function SettingsPage() {
     <div className="space-y-8 pb-12">
       <header className="space-y-2">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Tài khoản</p>
-        <h1 className="font-display text-3xl font-medium text-foreground sm:text-4xl">Cài đặt Tài khoản &amp; Hệ thống</h1>
+        <h1 className={pageTitleClass}>Cài đặt Tài khoản &amp; Hệ thống</h1>
         <p className="text-sm text-muted-foreground">Tùy chỉnh giao diện, thông báo phát hành SOP và cấu hình phiên làm việc R&amp;D.</p>
       </header>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-lg border border-border bg-card p-6 shadow-soft">
-          <h2 className="flex items-center gap-2 text-lg font-medium text-card-foreground">
+          <h2 className="flex items-center gap-2 text-lg font-medium text-card-foreground font-display">
             <Bell className="h-5 w-5 text-primary" strokeWidth={1.5} /> Thông báo công thức
           </h2>
           <div className="mt-4 divide-y divide-border">
@@ -50,7 +52,7 @@ export default function SettingsPage() {
         </section>
 
         <section className="rounded-lg border border-border bg-card p-6 shadow-soft">
-          <h2 className="flex items-center gap-2 text-lg font-medium text-card-foreground">
+          <h2 className="flex items-center gap-2 text-lg font-medium text-card-foreground font-display">
             <Palette className="h-5 w-5 text-primary" strokeWidth={1.5} /> Giao diện &amp; Chủ đề hiển thị
           </h2>
           <div className="mt-4 divide-y divide-border">
@@ -73,7 +75,7 @@ export default function SettingsPage() {
       </div>
 
       <section className="rounded-lg border border-border bg-card p-6 shadow-soft">
-        <h2 className="flex items-center gap-2 text-lg font-medium text-card-foreground">
+        <h2 className="flex items-center gap-2 text-lg font-medium text-card-foreground font-display">
           <Shield className="h-5 w-5 text-primary" strokeWidth={1.5} /> Thông tin Tài khoản &amp; Phân quyền
         </h2>
         <div className="mt-4 grid gap-4 text-sm sm:grid-cols-2">

@@ -1,5 +1,7 @@
 'use client';
 
+import { pageTitleClass } from '@/components/workspace/page-header';
+
 import { listAuditLogs } from '@/lib/api/audit';
 
 import React, { useEffect, useState } from 'react';
@@ -13,6 +15,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
+import { interactiveCardClass, interactiveCardFocusClass } from '@/components/workspace/interactive-card';
 
 export default function AdminPage() {
   const { repo, dataVersion } = useDemo();
@@ -67,19 +70,19 @@ export default function AdminPage() {
     },
     {
       title: 'Giám sát Hệ thống & Xử lý Sự cố',
-      desc: 'Kiểm tra sức khỏe thời gian thực của 5 Microservices qua YARP Gateway, độ trễ kết nối 5 CSDL PostgreSQL và luồng sự kiện.',
+      desc: 'Kiểm tra sức khỏe thời gian thực của 5 Microservices qua YARP Gateway và độ trễ kết nối 5 CSDL PostgreSQL.',
       href: '/admin/system',
       icon: Activity,
       count: 'Xem trạng thái dịch vụ',
       tag: 'System Health',
     },
     {
-      title: 'Nhật ký kiểm toán',
+      title: 'Nhật ký hoạt động',
       desc: 'Truy vết toàn diện mọi thay đổi dữ liệu trong hệ thống: tạo/sửa/phát hành công thức, quản trị tài khoản và bài kiểm tra.',
       href: '/admin/logs',
       icon: ShieldCheck,
       count: auditStatus.loading ? '...' : auditStatus.error ? 'Không tải được' : `${auditStatus.count} sự kiện ghi nhận`,
-      tag: 'Audit Logs',
+      tag: 'Nhật ký hoạt động',
     },
   ];
 
@@ -88,17 +91,17 @@ export default function AdminPage() {
       <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Quản trị</p>
-          <h1 className="font-display text-3xl font-medium text-foreground sm:text-4xl">Trung tâm quản trị &amp; giám sát</h1>
+          <h1 className={pageTitleClass}>Trung tâm quản trị &amp; giám sát</h1>
           <p className="mt-2 text-sm text-muted-foreground">Quản lý tài khoản, theo dõi dịch vụ và hoạt động hệ thống.</p>
         </div>
-        <Link href="/admin/users" className="inline-flex h-10 items-center justify-center rounded-md bg-ink px-4 text-sm font-semibold text-ink-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+        <Link href="/admin/users" className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
           Quản lý tài khoản
         </Link>
       </header>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {cards.map((card) => (
-          <Link key={card.href} href={card.href} className="group flex flex-col justify-between rounded-lg border border-border bg-card p-5 shadow-soft hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <Link key={card.href} href={card.href} className={`flex flex-col justify-between p-5 ${interactiveCardClass} ${interactiveCardFocusClass}`}>
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-sm text-muted-foreground">{card.title}</p>
@@ -107,7 +110,6 @@ export default function AdminPage() {
               <card.icon className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             </div>
             <p className="mt-4 text-sm text-muted-foreground">{card.desc}</p>
-            <span className="mt-4 text-sm font-semibold text-foreground">Xem chi tiết</span>
           </Link>
         ))}
       </div>

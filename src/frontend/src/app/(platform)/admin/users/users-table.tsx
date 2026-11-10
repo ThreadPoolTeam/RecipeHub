@@ -1,6 +1,6 @@
 import React from 'react';
 import { User } from '@/lib/demo/types';
-import { Button } from '@/components/workspace/fields';
+import { ActionMenu } from '@/components/workspace/action-menu';
 import { DataTable } from '@/components/workspace/data-table';
 import { RoleBadge } from '@/components/workspace/status-badge';
 
@@ -37,7 +37,7 @@ export function UsersTable({ users, loading, currentUserId, lockingUserId, onRes
           header: 'Phạm vi truy cập',
           render: (u) => {
             if (u.role === 'admin') {
-              return <span className="text-xs text-muted-foreground">Quản trị hệ thống, tài khoản &amp; nhật ký Audit</span>;
+              return <span className="text-xs text-muted-foreground">Quản trị hệ thống, tài khoản &amp; nhật ký hoạt động</span>;
             }
             if (u.role === 'rnd') {
               return <span className="text-xs text-muted-foreground">Toàn bộ công thức, nguyên liệu, danh mục &amp; bộ đề</span>;
@@ -58,20 +58,11 @@ export function UsersTable({ users, loading, currentUserId, lockingUserId, onRes
           header: 'Thao tác',
           className: 'text-right',
           render: (u) => (
-            <div className="flex items-center justify-end gap-2">
-              <Button size="sm" disabled={u.id === currentUserId} onClick={() => onResetPassword(u)}>Đổi mật khẩu</Button>
-              <Button size="sm" variant="secondary" onClick={() => onEdit(u)}>Sửa</Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                isLoading={lockingUserId === u.id}
-                disabled={u.id === currentUserId}
-                onClick={() => onToggleLock(u)}
-                title={u.id === currentUserId ? 'Không thể tự khóa chính mình' : undefined}
-              >
-                {u.isLocked ? 'Mở khóa' : 'Khóa'}
-              </Button>
-            </div>
+            <ActionMenu items={[
+              { label: 'Đổi mật khẩu', disabled: u.id === currentUserId, onSelect: () => onResetPassword(u) },
+              { label: 'Sửa', onSelect: () => onEdit(u) },
+              { label: lockingUserId === u.id ? 'Đang xử lý...' : u.isLocked ? 'Mở khóa' : 'Khóa', disabled: u.id === currentUserId || lockingUserId === u.id, title: u.id === currentUserId ? 'Không thể tự khóa chính mình' : undefined, danger: true, separator: true, onSelect: () => onToggleLock(u) },
+            ]} />
           ),
         },
       ]}

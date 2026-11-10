@@ -1,18 +1,22 @@
 'use client';
 
+import { pageTitleClass } from '@/components/workspace/page-header';
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useDemo } from '@/lib/demo/provider';
 import { User, Role } from '@/lib/demo/types';
 import { Button, TextInput, Select, Alert, SearchInput } from '@/components/workspace/fields';
 import { Dialog } from '@/components/workspace/dialog';
+import { useToast } from '@/components/workspace/toast';
 import { UsersTable } from './users-table';
 
 export default function AdminUsersPage() {
   const { session, repo, dataVersion, touch } = useDemo();
+  const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Search & Filter
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,12 +53,13 @@ export default function AdminUsersPage() {
       setLoading(true);
       const userResult = await repo.getUsersPage(searchTerm, filterRole, filterState, page, 10);
       if (sequence !== loadSequence.current) return;
+      setErrorMsg(null);
       setUsers(userResult.items);
       setTotal(userResult.total);
       setTotalPages(userResult.totalPages);
       if (page > userResult.totalPages) setPage(userResult.totalPages);
-    } catch (err: unknown) {
-      if (sequence === loadSequence.current) setErrorMsg(err instanceof Error ? err.message : 'Lỗi khi tải danh sách người dùng');
+    } catch {
+      if (sequence === loadSequence.current) setErrorMsg('Không thể tải danh sách người dùng. Vui lòng thử lại.');
     } finally {
       if (sequence === loadSequence.current) setLoading(false);
     }
@@ -69,12 +74,12 @@ export default function AdminUsersPage() {
   const handleCreateUser = async () => {
     if (!session) return;
     if (!newEmail.trim() || !newFullName.trim()) {
-      setErrorMsg('Vui lòng điền đầy đủ Email và Họ tên');
+      setFormError('Vui lòng điền đầy đủ Email và Họ tên');
       return;
     }
     try {
       setCreateSubmitting(true);
-      setErrorMsg(null);
+      setFormError(null);
       await repo.createUser(session, {
         email: newEmail.trim().toLowerCase(),
         fullName: newFullName.trim(),
@@ -83,7 +88,7 @@ export default function AdminUsersPage() {
         isLocked: false,
         allowedRecipeIds: [],
       });
-      setSuccessMsg(`Đã tạo tài khoản thành công: ${newEmail}`);
+      toast({ type: 'success', title: 'Đã tạo tài khoản', description: newEmail });
       setIsCreateOpen(false);
       setNewEmail('');
       setNewFullName('');
@@ -91,8 +96,8 @@ export default function AdminUsersPage() {
       setNewRole('rnd');
       touch();
       await loadData();
-    } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Lỗi khi tạo người dùng');
+    } catch {
+      toast({ type: 'error', title: 'Không thể tạo tài khoản', description: 'Vui lòng kiểm tra thông tin và thử lại.' });
     } finally {
       setCreateSubmitting(false);
     }
@@ -103,30 +108,30 @@ export default function AdminUsersPage() {
     setEditingUser(u);
     setEditFullName(u.fullName);
     setEditRole(u.role);
-    setErrorMsg(null);
+    setFormError(null);
   };
 
   // Handle Edit User
   const handleEditUser = async () => {
     if (!session || !editingUser) return;
     if (!editFullName.trim()) {
-      setErrorMsg('Họ tên không được để trống');
+      setFormError('Họ tên không được để trống');
       return;
     }
     try {
       setEditSubmitting(true);
-      setErrorMsg(null);
+      setFormError(null);
       await repo.updateUser(session, editingUser.id, {
         fullName: editFullName.trim(),
         role: editRole,
         allowedRecipeIds: [],
       });
-      setSuccessMsg(`Đã cập nhật thông tin tài khoản: ${editingUser.email}`);
+      toast({ type: 'success', title: 'Đã cập nhật tài khoản', description: editingUser.email });
       setEditingUser(null);
       touch();
       await loadData();
-    } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Lỗi khi cập nhật người dùng');
+    } catch {
+      toast({ type: 'error', title: 'Không thể cập nhật tài khoản', description: 'Vui lòng thử lại.' });
     } finally {
       setEditSubmitting(false);
     }
@@ -144,15 +149,15 @@ export default function AdminUsersPage() {
       setErrorMsg(null);
       const updated = await repo.updateUserStatus(session, targetUser.id, targetUser.isLocked);
       const isLocked = updated.isLocked;
-      setSuccessMsg(
-        isLocked
-          ? `Đã khóa tài khoản [${targetUser.email}] và thu hồi mọi session.`
-          : `Đã mở khóa tài khoản [${targetUser.email}].`
-      );
+      toast({
+        type: 'success',
+        title: isLocked ? 'Đã khóa tài khoản' : 'Đã mở khóa tài khoản',
+        description: isLocked ? `${targetUser.email}. Các phiên đăng nhập đã bị thu hồi.` : targetUser.email,
+      });
       touch();
       await loadData();
-    } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Lỗi khi thao tác khóa/mở khóa');
+    } catch {
+      toast({ type: 'error', title: 'Không thể thay đổi trạng thái tài khoản', description: 'Vui lòng thử lại.' });
     } finally {
       setLockingUserId(null);
     }
@@ -161,11 +166,11 @@ export default function AdminUsersPage() {
   const handleResetPassword = async () => {
     if (!session || !passwordUser) return;
     try {
-      setResetSubmitting(true); setErrorMsg(null);
+      setResetSubmitting(true); setFormError(null);
       await repo.resetUserPassword(session, passwordUser.id, resetPassword);
-      setSuccessMsg(`Đã đổi mật khẩu cho ${passwordUser.email} và thu hồi mọi session.`);
+      toast({ type: 'success', title: 'Đã đổi mật khẩu', description: `${passwordUser.email}. Các phiên đăng nhập đã bị thu hồi.` });
       setPasswordUser(null); setResetPassword(''); touch();
-    } catch (err) { setErrorMsg(err instanceof Error ? err.message : 'Không thể đổi mật khẩu.'); }
+    } catch { toast({ type: 'error', title: 'Không thể đổi mật khẩu', description: 'Vui lòng kiểm tra mật khẩu và thử lại.' }); }
     finally { setResetSubmitting(false); }
   };
 
@@ -174,14 +179,14 @@ export default function AdminUsersPage() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Quản trị</p>
-          <h1 className="mt-2 font-display text-3xl font-medium text-foreground sm:text-[40px] sm:leading-[48px]">
+          <h1 className={`mt-2 ${pageTitleClass}`}>
             Tài khoản &amp; phân quyền
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Mỗi tài khoản có đúng một vai trò: Admin, R&amp;D hoặc Viewer.
           </p>
         </div>
-        <Button variant="primary" className="!h-10" onClick={() => setIsCreateOpen(true)}>
+        <Button variant="primary" className="!h-10" onClick={() => { setFormError(null); setIsCreateOpen(true); }}>
           Tạo tài khoản
         </Button>
       </div>
@@ -192,11 +197,6 @@ export default function AdminUsersPage() {
         </Alert>
       )}
 
-      {successMsg && (
-        <Alert variant="success" onClose={() => setSuccessMsg(null)}>
-          {successMsg}
-        </Alert>
-      )}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,320px)_minmax(160px,200px)_minmax(160px,200px)]">
         <div>
@@ -230,7 +230,7 @@ export default function AdminUsersPage() {
         loading={loading}
         currentUserId={session?.userId}
         lockingUserId={lockingUserId}
-        onResetPassword={(u) => { setPasswordUser(u); setResetPassword(''); setErrorMsg(null); }}
+        onResetPassword={(u) => { setPasswordUser(u); setResetPassword(''); setFormError(null); setErrorMsg(null); }}
         onEdit={openEditModal}
         onToggleLock={handleToggleLock}
       />
@@ -246,9 +246,8 @@ export default function AdminUsersPage() {
       <Dialog isOpen={!!passwordUser} onClose={() => { if (!resetSubmitting) { setPasswordUser(null); setResetPassword(''); } }}
         title={`Đổi mật khẩu: ${passwordUser?.email ?? ''}`} description="Mọi session của tài khoản này sẽ bị thu hồi."
         onConfirm={handleResetPassword} confirmLabel="Lưu mật khẩu" isConfirming={resetSubmitting}>
-        {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
         <TextInput label="Mật khẩu mới" type="password" autoComplete="new-password" value={resetPassword} onChange={e => setResetPassword(e.target.value)}
-          helper="8–128 ký tự, gồm chữ hoa, chữ thường và số." />
+          helper="Từ 8 đến 128 ký tự, gồm chữ hoa, chữ thường và số." />
       </Dialog>
 
       {/* Modal Thêm người dùng mới */}
@@ -263,7 +262,7 @@ export default function AdminUsersPage() {
         isConfirming={createSubmitting}
       >
         <div className="space-y-4">
-          {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
+          {formError && <Alert variant="error">{formError}</Alert>}
           <TextInput
             label="Email tài khoản"
             required
@@ -273,7 +272,7 @@ export default function AdminUsersPage() {
           />
 
           <TextInput label="Mật khẩu ban đầu" type="password" autoComplete="new-password" required value={newPassword}
-            onChange={e => setNewPassword(e.target.value)} helper="8–128 ký tự, gồm chữ hoa, chữ thường và số." />
+            onChange={e => setNewPassword(e.target.value)} helper="Từ 8 đến 128 ký tự, gồm chữ hoa, chữ thường và số." />
 
           <TextInput
             label="Họ và tên"
@@ -311,7 +310,7 @@ export default function AdminUsersPage() {
         isConfirming={editSubmitting}
       >
         <div className="space-y-4">
-          {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
+          {formError && <Alert variant="error">{formError}</Alert>}
           <TextInput
             label="Họ và tên"
             required

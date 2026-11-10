@@ -1,22 +1,32 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import { pageTitleClass } from '@/components/workspace/page-header';
+
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Coffee, Eye, EyeOff } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { getDefaultDashboardForRole, isPathAllowedForUser } from '@/lib/demo/permissions';
 import { TextInput, Button, Alert } from '@/components/workspace/fields';
+import { useToast } from '@/components/workspace/toast';
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextParam = searchParams.get('next') || '';
 
   const { login } = useDemo();
+  const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (!sessionStorage.getItem('recipehub-password-changed')) return;
+    sessionStorage.removeItem('recipehub-password-changed');
+    toast({ type: 'success', title: 'Đổi mật khẩu thành công', description: 'Vui lòng đăng nhập lại.' });
+  }, [toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +58,7 @@ function LoginForm() {
         RecipeHub
       </div>
       <div className="space-y-2">
-        <h1 className="font-display text-3xl font-medium text-foreground sm:text-[40px] sm:leading-[48px]">Chào mừng trở lại</h1>
+        <h1 className={pageTitleClass}>Chào mừng trở lại</h1>
         <p className="text-sm text-muted-foreground">Không gian nghiên cứu cà phê &amp; đồ uống.</p>
       </div>
       {errorMsg && (
