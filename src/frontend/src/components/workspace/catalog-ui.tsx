@@ -15,12 +15,12 @@ export function CatalogPageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E8E2D9] pb-4">
+    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-4">
       <div className="min-w-0">
-        <h1 className="text-xl sm:text-2xl font-bold text-[#1A1917] flex items-center gap-2">
-          <Icon className="w-5 h-5 text-[#B47820] shrink-0" /> {title}
+        <h1 className="flex items-center gap-2 font-display text-h3 font-medium text-foreground sm:text-h1">
+          <Icon className="w-5 h-5 text-primary shrink-0 [&_*]:[stroke-width:1.5]" /> {title}
         </h1>
-        <p className="text-xs sm:text-sm text-[#706E68] mt-0.5">{description}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
@@ -39,7 +39,7 @@ export function CatalogTabs<K extends string>({
   onChange: (key: K) => void;
 }) {
   return (
-    <div role="tablist" aria-label={label} className="inline-flex p-1 rounded-full bg-[#F5F0E8] border border-[#E8E2D9]">
+    <div role="tablist" aria-label={label} className="inline-flex max-w-full overflow-x-auto border-b border-border">
       {tabs.map((tab) => (
         <button
           key={tab.key}
@@ -47,14 +47,14 @@ export function CatalogTabs<K extends string>({
           role="tab"
           aria-selected={active === tab.key}
           onClick={() => onChange(tab.key)}
-          className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors duration-150 motion-reduce:transition-none ${
+          className={`border-b-2 px-4 py-3 text-sm font-medium transition-colors motion-reduce:transition-none ${
             active === tab.key
-              ? 'bg-white text-[#1A1917] shadow-xs border-[#E8E2D9]'
-              : 'text-[#706E68] hover:text-[#1A1917] border-transparent'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
           {tab.label}
-          {tab.count !== undefined && <span className="ml-1.5 text-xs text-[#8C887F] tabular-nums">{tab.count}</span>}
+          {tab.count !== undefined && <span className="ml-1.5 text-xs text-muted-foreground tabular-nums">{tab.count}</span>}
         </button>
       ))}
     </div>
@@ -63,7 +63,7 @@ export function CatalogTabs<K extends string>({
 
 export function CodeChip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="font-mono text-[11px] font-semibold px-1.5 py-0.5 rounded bg-[#F5F0E8] text-[#B47820] border border-[#E8E2D9] shrink-0">
+    <span className="shrink-0 rounded-md bg-secondary px-2.5 py-1 text-pill font-medium text-muted-foreground">
       {children}
     </span>
   );
@@ -85,26 +85,26 @@ export function StateToggle({
       type="button"
       onClick={onToggle}
       disabled={disabled}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-colors motion-reduce:transition-none disabled:opacity-60 disabled:cursor-wait ${
+      className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1 text-pill font-medium transition-colors motion-reduce:transition-none disabled:cursor-wait disabled:opacity-60 ${
         active
-          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
-          : 'bg-zinc-100 text-zinc-600 border border-zinc-200 hover:bg-zinc-200'
+          ? 'bg-success-soft text-success hover:opacity-80'
+          : 'bg-secondary text-muted-foreground hover:opacity-80'
       }`}
       title={`Bấm để ${active ? 'tạm khóa' : 'kích hoạt'} ${subject}`}
     >
-      <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
       {active ? 'Đang dùng' : 'Tạm khóa'}
     </button>
   );
 }
 
 const iconButtonClass =
-  'w-8 h-8 rounded-lg flex items-center justify-center text-[#706E68] hover:text-[#B47820] hover:bg-[#F5F0E8] border border-transparent hover:border-[#E8E2D9] transition-colors motion-reduce:transition-none';
+  'w-8 h-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-accent transition-colors motion-reduce:transition-none';
 
 export function EditIconButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} className={iconButtonClass} title={label} aria-label={label}>
-      <Pencil className="w-4 h-4" />
+      <Pencil className="w-4 h-4" strokeWidth={1.5} />
     </button>
   );
 }

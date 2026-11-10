@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ExternalLink, Download, FileText, AlertCircle, RefreshCw } from 'lucide-react';
-import { Button, Alert } from './fields';
+import { Button } from './fields';
 
 interface PdfDocumentPreviewProps {
   blob: Blob | null;
@@ -56,23 +56,23 @@ export function PdfDocumentPreview({
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[420px] bg-[#FAF9F5] rounded-2xl border border-[#E8E2D9] p-8 text-center text-[#706E68]">
-        <div className="w-8 h-8 border-2 border-[#B47820] border-t-transparent rounded-full animate-spin mb-3" />
-        <p className="text-sm font-medium text-[#1A1917]">Đang kết xuất tài liệu PDF...</p>
-        <p className="text-xs text-[#706E68] mt-1">Đang xử lý định dạng ngang A4 sắc nét từ máy chủ</p>
+      <div className="flex min-h-[420px] flex-col items-center justify-center rounded-lg border border-border bg-secondary p-8 text-center text-muted-foreground">
+        <div className="mb-3 h-8 w-8 rounded-full border-2 border-primary border-t-transparent motion-safe:animate-spin" />
+        <p className="text-sm font-medium text-foreground">Đang kết xuất tài liệu PDF...</p>
+        <p className="mt-1 text-xs text-muted-foreground">Đang xử lý định dạng ngang A4 sắc nét từ máy chủ</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[350px] bg-white rounded-2xl border border-rose-200 p-8 text-center space-y-4">
-        <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center text-rose-500">
-          <AlertCircle className="w-5 h-5" />
+      <div className="flex min-h-[350px] flex-col items-center justify-center space-y-4 rounded-lg border border-destructive-border bg-card p-8 text-center">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive-soft text-destructive">
+          <AlertCircle className="h-5 w-5" strokeWidth={1.5} />
         </div>
         <div className="space-y-1">
-          <h4 className="text-sm font-bold text-rose-900">Không thể kết xuất xem trước</h4>
-          <p className="text-xs text-rose-700 max-w-md">{error}</p>
+          <h4 className="text-sm font-bold text-destructive">Không thể kết xuất xem trước</h4>
+          <p className="max-w-md text-xs text-destructive">{error}</p>
         </div>
         {onRefreshPreview && (
           <Button variant="secondary" size="sm" onClick={onRefreshPreview}>
@@ -85,13 +85,13 @@ export function PdfDocumentPreview({
 
   if (!blob || !objectUrl) {
     return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[350px] bg-[#FAF9F5] p-8 text-center text-[#706E68] space-y-3">
-        <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-[#E8E2D9] shadow-2xs">
-          <FileText className="w-6 h-6 text-[#8C887F]" />
+      <div className="flex h-full min-h-[350px] flex-col items-center justify-center space-y-3 bg-secondary p-8 text-center text-muted-foreground">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-card">
+          <FileText className="h-6 w-6 text-muted-foreground" strokeWidth={1.5} />
         </div>
-        <div className="space-y-1 max-w-sm">
-          <h4 className="text-sm font-semibold text-[#1A1917]">Chưa có bản xem trước</h4>
-          <p className="text-xs text-[#706E68]">
+        <div className="max-w-sm space-y-1">
+          <h4 className="text-sm font-semibold text-foreground">Chưa có bản xem trước</h4>
+          <p className="text-xs text-muted-foreground">
             Chọn công thức bên trái và nhấn &quot;Xem trước&quot; để hiển thị tài liệu SOP.
           </p>
         </div>
@@ -100,21 +100,21 @@ export function PdfDocumentPreview({
   }
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-2xl border border-[#E8E2D9] overflow-hidden shadow-xs">
+    <div className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-card">
       {/* Action / Warning Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 bg-[#FAF9F5] border-b border-[#E8E2D9] text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-secondary px-4 py-2.5 text-xs">
         <div className="flex items-center gap-2">
           {isStale ? (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 rounded-md bg-info-soft px-2.5 py-1 font-medium text-info">
+              <span className="h-1.5 w-1.5 rounded-full bg-info" />
               Nội dung đã đổi — Cần kết xuất lại để xem bản mới nhất
             </span>
           ) : (
-            <span className="text-[#706E68] font-medium flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="flex items-center gap-1.5 font-medium text-muted-foreground">
+              <span className="h-1.5 w-1.5 rounded-full bg-success" />
               Bản xem trước sẵn sàng
               {!isSavedHistory && (
-                <span className="text-[#8C887F] text-[11px] font-normal">
+                <span className="text-[11px] font-normal text-muted-foreground">
                   (Bản tạm thời)
                 </span>
               )}
@@ -125,7 +125,7 @@ export function PdfDocumentPreview({
         <div className="flex items-center gap-2">
           {isStale && onRefreshPreview && (
             <Button variant="secondary" size="sm" onClick={onRefreshPreview}>
-              <RefreshCw className="w-3.5 h-3.5 mr-1 text-[#B47820]" /> Cập nhật xem trước
+              <RefreshCw className="mr-1 h-3.5 w-3.5" strokeWidth={1.5} /> Cập nhật xem trước
             </Button>
           )}
           <Button variant="ghost" size="sm" onClick={handleOpenNewTab} title="Mở trong tab mới">
@@ -137,23 +137,23 @@ export function PdfDocumentPreview({
             onClick={handleDownload}
             title={isSavedHistory ? 'Tải tệp PDF' : 'Tải bản xem trước (chưa lưu)'}
           >
-            <Download className="w-3.5 h-3.5 mr-1 text-[#B47820]" />
+            <Download className="mr-1 h-3.5 w-3.5" strokeWidth={1.5} />
             {isSavedHistory ? 'Tải tệp PDF' : 'Tải bản xem trước'}
           </Button>
         </div>
       </div>
 
       {/* PDF View Frame */}
-      <div className="relative flex-1 min-h-[520px] bg-[#525659]">
+      <div className="relative min-h-[520px] flex-1 bg-secondary">
         <iframe
           src={`${objectUrl}#toolbar=1&navpanes=0&view=FitH`}
           className="w-full h-full min-h-[520px] border-none"
           title="Bản xem trước tài liệu PDF"
         />
         <noscript>
-          <div className="p-4 text-center text-white text-xs">
+          <div className="p-4 text-center text-xs text-foreground">
             Trình duyệt không hỗ trợ xem trực tiếp. Vui lòng{' '}
-            <a href={objectUrl} download={fileName} className="underline text-amber-300">
+            <a href={objectUrl} download={fileName} className="text-primary underline">
               bấm vào đây để tải xuống
             </a>.
           </div>

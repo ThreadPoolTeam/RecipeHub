@@ -27,10 +27,10 @@ export function ChangePasswordModal() {
     finally { setSaving(false); }
   };
   return <>
-    <Button size="sm" onClick={() => { setOpen(true); setError(''); }}><KeyRound className="w-4 h-4 mr-1.5" />Đổi mật khẩu</Button>
+    <Button size="sm" onClick={() => { setOpen(true); setError(''); }}><KeyRound className="w-4 h-4 mr-1.5" strokeWidth={1.5} />Đổi mật khẩu</Button>
     <Dialog isOpen={open} onClose={() => { if (!saving) { setOpen(false); setCurrent(''); setPassword(''); setConfirm(''); } }} title="Đổi mật khẩu"
       description="Sau khi đổi, mọi session được thu hồi. Hãy đăng nhập lại bằng mật khẩu mới."
-      onConfirm={save} confirmLabel="Lưu mật khẩu" isConfirming={saving}>
+      onConfirm={save} confirmLabel="Lưu mật khẩu" isConfirming={saving} maxWidth="xl">
       <div className="space-y-3">
         {error && <Alert variant="error">{error}</Alert>}
         <TextInput label="Mật khẩu hiện tại" type="password" autoComplete="current-password" value={current} onChange={e => setCurrent(e.target.value)} />

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { formatVersionLabel, quizManagement, resolveRecipeVersion, type RecipeChoice, type RecipeVersionChoice, type RecipeVersionInfo } from '@/lib/api/quiz-management';
 import { errorText, Message, Pagination } from './management-shared';
+import { Button, Select, TextInput } from '@/components/workspace/fields';
 
 export function ManagementRecipePicker({ actor, value, onChange, disabled }: { actor: string; value: string; onChange: (value: string) => void; disabled?: boolean }) {
   const [search, setSearch] = useState('');
@@ -53,5 +54,24 @@ export function ManagementRecipePicker({ actor, value, onChange, disabled }: { a
     return () => controller.abort();
   }, [actor, value, info, recipe, recipes, versions]);
   const selectedText = !value ? '' : info?.id === value ? `${info.code} · ${info.name} · ${formatVersionLabel(info.versionNumber)}` : resolving ? 'Đang tải thông tin công thức…' : 'Chưa xác định';
-  return <fieldset className="qm-picker" disabled={disabled}><legend>Công thức liên kết</legend>{value && <p className="qm-muted">Phiên bản đang chọn: <strong>{selectedText}</strong></p>}{!disabled && <><label className="qm-field">Tìm công thức đã ban hành<input type="search" value={search} placeholder="Tên hoặc mã công thức…" onChange={event => { setSearch(event.target.value); setPage(1); }} /></label><label className="qm-field">Công thức<select value={recipe} onChange={event => { setRecipe(event.target.value); setVersions([]); }} disabled={loading}><option value="">{loading ? 'Đang tải…' : 'Chọn công thức'}</option>{recipes.map(item => <option key={item.id} value={item.id}>{item.code} · {item.name}</option>)}</select></label>{!loading && !recipes.length && <p className="qm-muted">Không có công thức đã ban hành phù hợp.</p>}<Pagination page={page} total={total} pageSize={12} onPage={setPage} disabled={loading} />{recipe && <label className="qm-field">Phiên bản đã ban hành<select value={versions.some(item => item.id === value) ? value : ''} disabled={versionLoading} onChange={event => onChange(event.target.value)}><option value="">{versionLoading ? 'Đang tải phiên bản…' : 'Chọn phiên bản'}</option>{versions.map(item => <option key={item.id} value={item.id}>{formatVersionLabel(item.versionNumber)} · {item.name}</option>)}</select></label>}<Message error={error} />{error && <button type="button" className="qm-btn" onClick={() => setRetry(value => value + 1)}>Thử lại tải công thức</button>}<p className="qm-muted">Chỉ dùng công thức đang hoạt động, phiên bản đã ban hành. Backend kiểm tra lại khi lưu.</p></>}</fieldset>;
+  return <fieldset className="space-y-4 rounded-lg border border-border bg-card p-6 shadow-soft" disabled={disabled}>
+    <legend className="font-display text-panel font-medium">Công thức liên kết</legend>
+    {value && <p className="text-sm text-muted-foreground">Phiên bản đang chọn: <strong>{selectedText}</strong></p>}
+    {!disabled && <>
+      <TextInput label="Tìm công thức đã ban hành" type="search" value={search} placeholder="Tên hoặc mã công thức…" onChange={event => { setSearch(event.target.value); setPage(1); }} />
+      <Select label="Công thức" value={recipe} onChange={event => { setRecipe(event.target.value); setVersions([]); }} disabled={loading}>
+        <option value="">{loading ? 'Đang tải…' : 'Chọn công thức'}</option>
+        {recipes.map(item => <option key={item.id} value={item.id}>{item.code} · {item.name}</option>)}
+      </Select>
+      {!loading && !recipes.length && <p className="text-sm text-muted-foreground">Không có công thức đã ban hành phù hợp.</p>}
+      <Pagination page={page} total={total} pageSize={12} onPage={setPage} disabled={loading} />
+      {recipe && <Select label="Phiên bản đã ban hành" value={versions.some(item => item.id === value) ? value : ''} disabled={versionLoading} onChange={event => onChange(event.target.value)}>
+        <option value="">{versionLoading ? 'Đang tải phiên bản…' : 'Chọn phiên bản'}</option>
+        {versions.map(item => <option key={item.id} value={item.id}>{formatVersionLabel(item.versionNumber)} · {item.name}</option>)}
+      </Select>}
+      <Message error={error} />
+      {error && <Button type="button" onClick={() => setRetry(value => value + 1)}>Thử lại tải công thức</Button>}
+      <p className="text-sm text-muted-foreground">Chỉ dùng công thức đang hoạt động, phiên bản đã ban hành. Backend kiểm tra lại khi lưu.</p>
+    </>}
+  </fieldset>;
 }

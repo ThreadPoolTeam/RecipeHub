@@ -6,14 +6,10 @@ import {
   listAuditLogs,
   AUDIT_ACTIONS,
   AUDIT_TARGET_TYPES,
-  getActionLabel,
-  getTargetTypeLabel,
 } from '@/lib/api/audit';
 import { Button, TextInput, SearchInput, Select } from '@/components/workspace/fields';
-import { DataTable } from '@/components/workspace/data-table';
-import { Role } from '@/lib/demo/types';
-import { RoleBadge } from '@/components/workspace/status-badge';
-import { ScrollText, RefreshCw, AlertCircle } from 'lucide-react';
+import { AuditLogTable } from './audit-log-table';
+import { RefreshCw, AlertCircle } from 'lucide-react';
 
 export default function AdminAuditLogsPage() {
   const [logs, setLogs] = useState<AuditLogDto[]>([]);
@@ -156,49 +152,43 @@ export default function AdminAuditLogsPage() {
     if (act.includes('cloned') || act.includes('submitted')) {
       return 'bg-amber-50 text-amber-700 border-amber-200';
     }
-    return 'bg-[#FAF9F5] text-[#706E68] border-[#E8E2D9]';
+    return 'bg-secondary text-muted-foreground border-border';
   };
 
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto w-full min-w-0">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E2D9]">
+    <div className="mx-auto w-full min-w-0 max-w-7xl space-y-8">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-2xl font-bold text-[#1A1917] flex items-center gap-2.5">
-            <ScrollText className="w-6 h-6 text-[#B47820]" />
-            Nhật ký Truy vết Hoạt động
-          </h1>
-          <p className="text-[#706E68] text-sm mt-1">
-            Ghi nhận toàn bộ thao tác tạo, sửa, xóa và thay đổi trạng thái đối tượng trên toàn hệ thống.
-          </p>
+          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Quản trị</p>
+          <h1 className="font-display text-3xl font-medium text-foreground sm:text-4xl">Nhật ký truy vết hoạt động</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Ai đã làm gì, lúc nào — chỉ đọc.</p>
         </div>
         <div className="flex items-center gap-3">
           <Button
-            size="sm"
             variant="secondary"
             onClick={handleRefresh}
-            className="flex items-center gap-1.5"
+            className="flex h-10 items-center gap-1.5"
             disabled={loading}
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? 'motion-safe:animate-spin' : ''}`} strokeWidth={1.5} />
             Làm mới
           </Button>
-          <div className="text-xs text-[#706E68] font-mono">
-            Tổng cộng: <span className="text-[#B47820] font-bold">{totalCount}</span> sự kiện
+          <div className="text-xs text-muted-foreground tabular-nums">
+            Tổng cộng: <span className="font-semibold text-foreground">{totalCount}</span> sự kiện
           </div>
         </div>
       </div>
 
       {/* Error state */}
       {error && (
-        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start justify-between gap-3 text-rose-800 text-sm">
+        <div className="flex items-start justify-between gap-3 rounded-lg border border-destructive-border bg-destructive-soft p-4 text-sm text-destructive">
           <div className="flex items-start gap-2.5">
-            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" strokeWidth={1.5} />
             <div>
               <p className="font-semibold">Lỗi kết nối nhật ký kiểm toán</p>
-              <p className="text-xs text-rose-700 mt-0.5">{error}</p>
+              <p className="mt-0.5 text-xs text-destructive">{error}</p>
             </div>
           </div>
           <Button size="sm" variant="secondary" onClick={handleRefresh}>
@@ -208,7 +198,7 @@ export default function AdminAuditLogsPage() {
       )}
 
       {/* Filter toolbar */}
-      <div className="flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-3 p-4 bg-white border border-[#E8E2D9] rounded-2xl shadow-xs w-full min-w-0">
+      <div className="flex w-full min-w-0 flex-col flex-wrap items-stretch gap-3 md:flex-row md:items-center">
         <div className="flex-1 min-w-[220px]">
           <SearchInput
             placeholder="Tìm theo tên người thực hiện..."
@@ -239,7 +229,7 @@ export default function AdminAuditLogsPage() {
             aria-label="Từ ngày"
             className="text-xs flex-1 min-w-0 sm:w-36 sm:flex-initial"
           />
-          <span className="text-xs text-[#706E68] shrink-0">—</span>
+          <span className="text-xs text-muted-foreground shrink-0">—</span>
           <TextInput
             type="date"
             value={toDate}
@@ -250,88 +240,7 @@ export default function AdminAuditLogsPage() {
         </div>
       </div>
 
-      {/* Logs Table */}
-      <DataTable<AuditLogDto>
-        data={logs}
-        keyExtractor={(l) => l.id}
-        isLoading={loading}
-        emptyTitle="Không có nhật ký nào phù hợp"
-        emptyMessage="Hãy điều chỉnh bộ lọc thao tác, đối tượng, khoảng ngày hoặc người thực hiện."
-        pagination={{
-          page,
-          totalPages,
-          total: totalCount,
-          onPageChange: (newPage) => setPage(newPage),
-        }}
-        columns={[
-          {
-            header: 'Thời gian',
-            className: 'w-36 whitespace-nowrap',
-            render: (l) => (
-              <span className="font-mono text-xs text-[#706E68] whitespace-nowrap">
-                {formatTimestamp(l.occurredAt)}
-              </span>
-            ),
-          },
-          {
-            header: 'Người thực hiện',
-            className: 'w-48',
-            render: (l) => {
-              const roleStr = l.actorRole?.toLowerCase();
-              const validRole: Role | null =
-                roleStr === 'admin' ? 'admin' : roleStr === 'rnd' ? 'rnd' : roleStr === 'viewer' ? 'viewer' : null;
-              return (
-                <div>
-                  <div className="text-xs font-semibold text-[#1A1917]">{l.actorName}</div>
-                  <div className="mt-1">
-                    {validRole ? (
-                      <RoleBadge role={validRole} />
-                    ) : (
-                      <span className="px-2 py-0.5 rounded text-[11px] font-medium border border-[#E8E2D9] bg-[#FAF9F5] text-[#706E68]">
-                        {l.actorRole || 'Chưa phân vai trò'}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            },
-          },
-          {
-            header: 'Thao tác',
-            className: 'w-44',
-            render: (l) => (
-              <span
-                className={`inline-block px-2.5 py-1 rounded text-xs font-semibold border ${getActionColor(
-                  l.action
-                )}`}
-                title={`Mã hệ thống: ${l.action}`}
-              >
-                {getActionLabel(l.action)}
-              </span>
-            ),
-          },
-          {
-            header: 'Đối tượng',
-            className: 'w-36',
-            render: (l) => (
-              <span
-                className="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-[#FAF9F5] text-[#706E68] border border-[#E8E2D9]"
-              >
-                {getTargetTypeLabel(l.targetType)}
-              </span>
-            ),
-          },
-          {
-            header: 'Tóm tắt nghiệp vụ',
-            className: 'min-w-[280px]',
-            render: (l) => (
-              <p className="text-xs text-[#1A1917] leading-relaxed break-words">
-                {l.summary}
-              </p>
-            ),
-          },
-        ]}
-      />
+      <AuditLogTable logs={logs} loading={loading} page={page} totalPages={totalPages} totalCount={totalCount} onPageChange={setPage} formatTimestamp={formatTimestamp} getActionColor={getActionColor} />
     </div>
   );
 }

@@ -3,12 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, FlaskConical, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { Ingredient } from '@/lib/demo/types';
 import { Button, TextInput, Select, Alert } from '@/components/workspace/fields';
 import { CodeInput } from '@/components/workspace/code-input';
 import { CatalogItem, UnitItem } from '@/lib/api/backend-repository';
+import { IngredientPreview } from '@/components/workspace/ingredient-preview';
 
 export default function EditIngredientPage() {
   const router = useRouter();
@@ -180,51 +181,34 @@ export default function EditIngredientPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-[#706E68]">
-        <Loader2 className="w-8 h-8 animate-spin text-[#B47820] mb-3" />
+      <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+        <Loader2 className="mb-3 h-8 w-8 animate-spin text-primary" />
         <p className="text-sm">Đang tải thông tin nguyên liệu...</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-12">
+    <div className="space-y-6 pb-12">
       {/* Back button & Page title */}
       <div>
         <Link
           href="/rnd/ingredients"
-          className="inline-flex items-center text-xs font-medium text-[#706E68] hover:text-[#1A1917] mb-2 transition"
+          className="mb-2 inline-flex items-center text-xs font-medium text-muted-foreground hover:text-primary"
         >
           <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Quay lại Kho Nguyên Liệu
         </Link>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#F5F0E8] border border-[#E8E2D9] flex items-center justify-center text-[#B47820] shadow-2xs">
-            <FlaskConical className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-[#1A1917]">
-              Chỉnh Sửa Nguyên Liệu
-            </h1>
-            <p className="text-xs sm:text-sm text-[#706E68]">
-              Cập nhật thông số tiêu chuẩn cho mã nguyên liệu: <span className="font-mono text-[#B47820] font-semibold">{ingredient?.code}</span>
-            </p>
-          </div>
-        </div>
+        <h1 className="text-3xl font-semibold text-foreground sm:text-4xl">Sửa nguyên liệu</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Cập nhật thông tin, đơn vị định mức và lưu ý của nguyên liệu.</p>
       </div>
 
       {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
 
-      {/* Form Card */}
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white border border-[#E8E2D9] rounded-2xl p-6 shadow-xs space-y-6"
-      >
-        <div className="border-b border-[#E8E2D9] pb-4">
-          <h2 className="text-base font-semibold text-[#1A1917]">Thông Tin Cơ Bản</h2>
-          <p className="text-xs text-[#706E68] mt-0.5">
-            Thay đổi mã định danh, tên và đơn vị đo chuẩn của nguyên liệu.
-          </p>
-        </div>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(240px,380px)_1fr]">
+      <IngredientPreview code={code} name={name} category={categories.find((item) => item.id === categoryId)?.name} unit={units.find((item) => item.id === defaultUnitId)?.code} isActive={isActive} note={note} warning={ingredient?.warning} />
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <section className="space-y-5 rounded-2xl border border-border bg-card p-6 shadow-soft">
+          <h2 className="text-lg font-semibold text-foreground"><span className="mr-3 text-primary">01</span>Thông tin cơ bản</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <CodeInput
@@ -295,7 +279,9 @@ export default function EditIngredientPage() {
           />
         </div>
 
-        <div className="border-t border-[#E8E2D9] pt-4 space-y-4">
+        </section>
+        <section className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
+          <h2 className="text-lg font-semibold text-foreground"><span className="mr-3 text-primary">02</span>Cảnh báo &amp; lưu ý</h2>
           <TextInput
             label="Ghi Chú Nhà Cung Cấp / Bảo Quản"
             placeholder="VD: Công ty TNHH Trà Việt - bảo quản nơi khô ráo, kín khí..."
@@ -308,21 +294,25 @@ export default function EditIngredientPage() {
               type="checkbox"
               checked={isActive}
               onChange={(e) => setIsActive(e.target.checked)}
-              className="rounded border-[#E8E2D9] bg-white text-[#B47820] focus:ring-[#B47820] w-4 h-4 cursor-pointer"
+              className="h-4 w-4 cursor-pointer rounded border-input bg-card text-primary focus:ring-ring"
             />
             <div>
-              <span className="text-sm font-medium text-[#1A1917]">
+              <span className="text-sm font-medium text-foreground">
                 Đang kích hoạt sử dụng
               </span>
-              <p className="text-xs text-[#706E68]">
+              <p className="text-xs text-muted-foreground">
                 Bật/tắt trạng thái sử dụng nguyên liệu trong việc tạo và điều chỉnh công thức.
               </p>
             </div>
           </label>
-        </div>
+        </section>
+        <section className="space-y-3 rounded-2xl border border-border bg-card p-6 shadow-soft">
+          <h2 className="text-lg font-semibold text-foreground"><span className="mr-3 text-primary">03</span>Ảnh nguyên liệu</h2>
+          <p className="text-sm text-muted-foreground">Chưa hỗ trợ chọn ảnh nguyên liệu.</p>
+        </section>
 
         {/* Action Buttons */}
-        <div className="border-t border-[#E8E2D9] pt-5 flex items-center justify-end gap-3">
+        <div className="flex items-center justify-end gap-3">
           <Link href="/rnd/ingredients">
             <Button variant="secondary" type="button" disabled={submitting}>
               Hủy Bỏ
@@ -338,6 +328,7 @@ export default function EditIngredientPage() {
           </Button>
         </div>
       </form>
+      </div>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { Plus, Ruler } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { Button, TextInput, Select, TextArea, Alert, SearchInput } from '@/components/workspace/fields';
 import { Dialog } from '@/components/workspace/dialog';
+import { Switch } from '@/components/workspace/switch';
 import { DataTable } from '@/components/workspace/data-table';
 import { UnitConversionModal } from '@/components/shared/UnitConversionModal';
 import { CatalogPageHeader, CodeChip, EditIconButton, StateToggle } from '@/components/workspace/catalog-ui';
@@ -33,6 +34,7 @@ export default function RndCataloguePage() {
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
 
   // Editor dialog
   const [editor, setEditor] = useState<CatalogueEditor | null>(null);
@@ -219,8 +221,8 @@ export default function RndCataloguePage() {
     <div className="space-y-6">
       <CatalogPageHeader
         icon={Ruler}
-        title={<>Đại Lượng &amp; Đơn Vị Đo</>}
-        description="Mỗi đại lượng (Khối lượng, Thể tích…) gom các đơn vị cùng loại và có một đơn vị gốc để quy đổi."
+        title={<>Đại lượng &amp; đơn vị đo</>}
+        description="Định nghĩa đại lượng, đơn vị cơ sở và hệ số quy đổi dùng cho toàn bộ công thức."
         actions={
           <>
             <UnitConversionModal />
@@ -236,7 +238,7 @@ export default function RndCataloguePage() {
       )}
 
       {/* Filter Toolbar */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-white border border-[#E8E2D9] p-3 rounded-2xl shadow-xs">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
         <div className="md:col-span-3">
           <SearchInput
             placeholder="Tìm theo mã hoặc tên đại lượng, đơn vị..."
@@ -283,123 +285,139 @@ export default function RndCataloguePage() {
           }
         />
       ) : (
-        <div className="space-y-4">
-          {groups.map(({ category, units, baseUnit, totalUnits }) => (
-            <section
-              key={category.id}
-              aria-labelledby={`unit-category-${category.id}`}
-              className="bg-white border border-[#E8E2D9] rounded-2xl shadow-xs overflow-hidden"
-            >
-              <header className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-[#FAF9F5] border-b border-[#E8E2D9]">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <CodeChip>{category.code}</CodeChip>
-                    <h2 id={`unit-category-${category.id}`} className="text-base font-bold text-[#1A1917] truncate">
-                      {category.name}
-                    </h2>
+        <div
+          className="grid grid-cols-1 items-start gap-3 lg:grid-cols-[minmax(200px,0.85fr)_minmax(0,1.9fr)_minmax(240px,0.95fr)] lg:gap-6"
+          style={{ gridTemplateRows: `repeat(${groups.length + 1}, min-content)` }}
+        >
+          {groups.map(({ category, units, baseUnit, totalUnits }, index) => (
+            <div key={`${searchQuery}-${statusFilter}-${category.id}`} className="contents">
+              <input
+                className="peer sr-only"
+                type="radio"
+                name="catalogue-category"
+                id={`category-select-${category.id}`}
+                checked={groups.some((group) => group.category.id === selectedCategoryId) ? category.id === selectedCategoryId : index === 0}
+                onChange={() => setSelectedCategoryId(category.id)}
+              />
+              <label
+                htmlFor={`category-select-${category.id}`}
+                className="block cursor-pointer rounded-lg border border-border bg-card p-4 shadow-soft peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary peer-focus-visible:ring-2 peer-focus-visible:ring-ring lg:col-start-1"
+              >
+                <span className="flex items-center justify-between gap-2">
+                  <span className="font-display text-lg font-medium text-foreground">{category.name}</span>
+                  <span className={`rounded-md px-2 py-1 text-xs ${category.state === 'active' ? 'bg-success-soft text-success' : 'bg-secondary text-muted-foreground'}`}>
+                    {category.state === 'active' ? 'Đang dùng' : 'Tạm khóa'}
+                  </span>
+                </span>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  Đơn vị gốc: {baseUnit?.code ?? 'Chưa có'} · {totalUnits} đơn vị
+                </span>
+              </label>
+              <section
+                aria-labelledby={`unit-category-${category.id}`}
+                className="hidden rounded-lg border border-border bg-card p-5 shadow-soft peer-checked:block lg:col-start-2 lg:row-span-full lg:row-start-1"
+              >
+                <header className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 id={`unit-category-${category.id}`} className="font-display text-2xl font-medium text-foreground">{category.name}</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Mã {category.code}{category.description && <> · {category.description}</>}
+                    </p>
                   </div>
-                  <p className="text-xs text-[#706E68] mt-0.5">
-                    {totalUnits} đơn vị · Đơn vị gốc:{' '}
-                    {baseUnit ? (
-                      <span className="font-mono font-semibold text-[#1A1917]">{baseUnit.code}</span>
-                    ) : (
-                      <span className="text-amber-700">chưa có</span>
-                    )}
-                    {category.description && <> · {category.description}</>}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <StateToggle
-                    active={category.state === 'active'}
-                    disabled={togglingId === category.id}
-                    onToggle={() => toggleState('unit-category', category)}
-                    subject={`đại lượng "${category.name}"`}
-                  />
-                  <EditIconButton
-                    label="Chỉnh sửa đại lượng"
-                    onClick={() => openEditor({ kind: 'unit-category', item: category })}
-                  />
-                </div>
-              </header>
+                  <div className="flex items-center gap-2">
+                    <StateToggle
+                      active={category.state === 'active'}
+                      disabled={togglingId === category.id}
+                      onToggle={() => toggleState('unit-category', category)}
+                      subject={`đại lượng "${category.name}"`}
+                    />
+                    <EditIconButton label="Chỉnh sửa đại lượng" onClick={() => openEditor({ kind: 'unit-category', item: category })} />
+                  </div>
+                </header>
 
-              {units.length === 0 ? (
-                <p className="px-4 py-6 text-center text-sm text-[#706E68]">
-                  {totalUnits === 0 ? 'Chưa có đơn vị nào trong đại lượng này.' : 'Không có đơn vị nào khớp bộ lọc.'}
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm border-collapse min-w-[640px]">
-                    <thead>
-                      <tr className="bg-[#F5F0E8] border-b border-[#E8E2D9] text-[#706E68] text-xs uppercase tracking-wider font-semibold">
-                        <th className="px-4 py-2.5 font-semibold">Mã &amp; Tên Đơn Vị</th>
-                        <th className="px-4 py-2.5 font-semibold">Quy Đổi Về Đơn Vị Gốc</th>
-                        <th className="px-4 py-2.5 font-semibold">Số Lẻ</th>
-                        <th className="px-4 py-2.5 font-semibold">Trạng Thái</th>
-                        <th className="px-4 py-2.5 font-semibold text-right">Thao Tác</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#E8E2D9]">
+                {units.length > 0 && (
+                  <div className="mt-5 rounded-lg bg-secondary p-4">
+                    <p className="mb-3 text-xs font-medium text-muted-foreground">Thang quy đổi</p>
+                    <div className="flex flex-wrap gap-2">
                       {units.map((unit) => (
-                        <tr key={unit.id} className="hover:bg-[#FAF9F5] transition-colors motion-reduce:transition-none">
-                          <td className="px-4 py-2.5">
-                            <div className="flex items-center gap-2">
-                              <CodeChip>{unit.code}</CodeChip>
-                              <span className="font-semibold text-[#1A1917]">{unit.name}</span>
-                              {unit.isBase && (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide bg-[#FFF8EC] text-[#9A6416] border border-[#E8D3B0]">
-                                  Đơn vị gốc
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-2.5">
-                            {unit.isBase ? (
-                              <span className="text-xs text-[#706E68]">Chuẩn quy đổi</span>
-                            ) : baseUnit ? (
-                              <span className="font-mono text-xs text-[#1A1917] tabular-nums">
-                                1 {unit.code} = {formatConversionFactor(unit.factorToBase)} {baseUnit.code}
-                              </span>
-                            ) : (
-                              <span className="text-xs text-amber-700">Chưa có đơn vị gốc</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-2.5 text-xs text-[#706E68] tabular-nums">{unit.decimalPlaces} chữ số</td>
-                          <td className="px-4 py-2.5">
-                            <StateToggle
-                              active={unit.state === 'active'}
-                              disabled={togglingId === unit.id}
-                              onToggle={() => toggleState('unit', unit)}
-                              subject={`đơn vị "${unit.name}"`}
-                            />
-                          </td>
-                          <td className="px-4 py-2.5">
-                            <div className="flex justify-end">
-                              <EditIconButton
-                                label="Chỉnh sửa đơn vị"
-                                onClick={() => openEditor({ kind: 'unit', item: unit })}
-                              />
-                            </div>
-                          </td>
-                        </tr>
+                        <div key={unit.id} className={`rounded-lg border px-4 py-3 text-center ${unit.isBase ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-foreground'}`}>
+                          <p className="text-lg font-medium">{unit.code}</p>
+                          <p className="text-xs">{unit.name}{unit.isBase && ' · Cơ sở'}</p>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                    </div>
+                  </div>
+                )}
 
-              {category.state === 'active' && (
-                <div className="px-4 py-2 border-t border-[#E8E2D9]">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openEditor({ kind: 'unit', item: null }, category.id)}
-                  >
-                    <Plus className="w-4 h-4 mr-1" /> Thêm đơn vị {category.name.toLowerCase()}
-                  </Button>
-                </div>
-              )}
-            </section>
+                {units.length === 0 ? (
+                  <p className="py-6 text-center text-sm text-muted-foreground">
+                    {totalUnits === 0 ? 'Chưa có đơn vị nào trong đại lượng này.' : 'Không có đơn vị nào khớp bộ lọc.'}
+                  </p>
+                ) : (
+                  <div className="mt-5 overflow-x-auto rounded-lg border border-border">
+                    <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+                      <thead className="border-b border-border bg-secondary text-xs text-muted-foreground">
+                        <tr>
+                          <th className="px-4 py-3 font-medium">Đơn vị</th>
+                          <th className="px-4 py-3 font-medium">Quy đổi về đơn vị gốc</th>
+                          <th className="px-4 py-3 font-medium">Số lẻ</th>
+                          <th className="px-4 py-3 font-medium">Trạng thái</th>
+                          <th className="px-4 py-3 text-right font-medium">Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {units.map((unit) => (
+                          <tr key={unit.id} className="hover:bg-accent">
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <CodeChip>{unit.code}</CodeChip>
+                                <span className="font-semibold text-foreground">{unit.name}</span>
+                                {unit.isBase && <span className="rounded-md bg-info-soft px-2 py-1 text-xs text-info">Đơn vị gốc</span>}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-xs tabular-nums">
+                              {unit.isBase ? 'Chuẩn quy đổi' : baseUnit
+                                ? `1 ${unit.code} = ${formatConversionFactor(unit.factorToBase)} ${baseUnit.code}`
+                                : 'Chưa có đơn vị gốc'}
+                            </td>
+                            <td className="px-4 py-3 text-xs text-muted-foreground tabular-nums">{unit.decimalPlaces} chữ số</td>
+                            <td className="px-4 py-3">
+                              <StateToggle
+                                active={unit.state === 'active'}
+                                disabled={togglingId === unit.id}
+                                onToggle={() => toggleState('unit', unit)}
+                                subject={`đơn vị "${unit.name}"`}
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex justify-end">
+                                <EditIconButton label="Chỉnh sửa đơn vị" onClick={() => openEditor({ kind: 'unit', item: unit })} />
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                {category.state === 'active' && (
+                  <div className="mt-5">
+                    <Button variant="secondary" size="sm" onClick={() => openEditor({ kind: 'unit', item: null }, category.id)}>
+                      <Plus className="mr-1 h-4 w-4" strokeWidth={1.5} /> Thêm đơn vị {category.name.toLowerCase()}
+                    </Button>
+                  </div>
+                )}
+              </section>
+            </div>
           ))}
+          <div className="lg:col-start-1">
+            <Button className="w-full" size="sm" onClick={() => openEditor({ kind: 'unit-category', item: null })}>
+              <Plus className="mr-1 h-4 w-4" strokeWidth={1.5} /> Thêm đại lượng
+            </Button>
+          </div>
+          <div className="lg:col-start-3 lg:row-span-full lg:row-start-1">
+            <UnitConversionModal inline />
+          </div>
         </div>
       )}
 
@@ -419,7 +437,7 @@ export default function RndCataloguePage() {
       >
         <div className="space-y-4">
           {formError && (
-            <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+            <p role="alert" className="rounded-lg border border-destructive-border bg-destructive-tint px-3 py-2 text-sm text-destructive">
               {formError}
             </p>
           )}
@@ -451,20 +469,19 @@ export default function RndCataloguePage() {
                   .filter((item) => item.state === 'active' || item.id === unitCategoryId)
                   .map((item) => ({ label: item.name, value: item.id }))}
               />
-              <fieldset className="rounded-xl border border-[#E8E2D9] bg-[#FAF9F5] p-4 space-y-3">
-                <legend className="px-1 text-sm font-semibold text-[#1A1917]">Quy đổi</legend>
-                <label className="flex items-center justify-between gap-4 cursor-pointer">
+              <fieldset className="space-y-3 rounded-lg border border-border bg-secondary p-4">
+                <legend className="px-1 text-sm font-semibold text-foreground">Quy đổi</legend>
+                <div className="flex items-center justify-between gap-4">
                   <span>
-                    <span className="block text-sm font-semibold text-[#1A1917]">Là đơn vị gốc</span>
-                    <span className="block text-xs text-[#706E68] mt-0.5">
+                    <span className="block text-sm font-semibold text-foreground">Là đơn vị gốc</span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
                       {selectedCategoryBase
                         ? `Đại lượng này đã có đơn vị gốc: ${selectedCategoryBase.code} — ${selectedCategoryBase.name}.`
                         : 'Mỗi đại lượng chỉ có một đơn vị gốc.'}
                     </span>
                   </span>
-                  <input
-                    type="checkbox"
-                    className="toggle toggle-sm"
+                  <Switch
+                    aria-label="Là đơn vị gốc"
                     checked={unitIsBase}
                     disabled={Boolean(selectedCategoryBase)}
                     onChange={(event) => {
@@ -472,7 +489,7 @@ export default function RndCataloguePage() {
                       if (event.target.checked) setUnitFactorToBase(1);
                     }}
                   />
-                </label>
+                </div>
 
                 <div className={`grid grid-cols-1 gap-3 items-end ${unitIsBase ? '' : 'sm:grid-cols-2'}`}>
                   {!unitIsBase && (
@@ -486,9 +503,9 @@ export default function RndCataloguePage() {
                       onChange={(event) => setUnitFactorToBase(Number(event.target.value))}
                     />
                   )}
-                  <div className="rounded-xl border border-[#E8E2D9] bg-white px-4 py-3 text-center">
-                    <div className="text-[11px] uppercase tracking-wide text-[#706E68]">Xem trước</div>
-                    <div className="mt-1 font-mono text-sm font-bold text-[#1A1917] tabular-nums">
+                  <div className="rounded-lg border border-border bg-card px-4 py-3 text-center">
+                    <div className="text-xs text-muted-foreground">Xem trước</div>
+                    <div className="mt-1 text-sm font-bold text-foreground tabular-nums">
                       1 {unitCodePreview} = {formatConversionFactor(unitIsBase ? 1 : unitFactorToBase)} {baseCodePreview}
                     </div>
                   </div>

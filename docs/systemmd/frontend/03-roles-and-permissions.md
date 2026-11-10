@@ -8,7 +8,6 @@ Hệ thống RecipeHub phục vụ 3 nhóm vai trò rõ ràng, không đè lấn
 |---|---|---|---|
 | **Đối tượng** | Quản trị viên IT, Vận hành hệ thống | Đội ngũ R&D, Chuyên gia pha chế | Barista, Cửa hàng trưởng, Nhân sự pha chế |
 | **Route gốc** | `/admin` | `/rnd` | `/viewer` |
-| **Phân khu Sidebar** | `QUẢN TRỊ HỆ THỐNG` | `KHÔNG GIAN R&D` | `VẬN HÀNH CỬA HÀNG` |
 | **Mục đích** | Quản trị tài khoản, giám sát sức khỏe microservices/DB và xem nhật ký kiểm toán | Sáng tạo công thức, quản lý nguyên liệu, đơn vị đo, media, tài liệu PDF và quiz (soạn, ban hành, lưu trữ, kết quả) | Tra cứu công thức chuẩn đã phát hành, làm bài kiểm tra SOP |
 | **Quyền Recipe** | Không đọc và không ghi dữ liệu công thức (API trả 403); chỉ gọi `/info` và health để giám sát | Toàn quyền biên tập (`POST/PUT/PATCH/DELETE`): soạn/sửa `draft`, phát hành `published`, tạo phiên bản | Chỉ xem `published`, chưa archive |
 | **Quyền Nguyên liệu & Đơn vị** | Không có quyền | Toàn quyền quản lý nguyên liệu, loại nguyên liệu (`/rnd/ingredients`), đại lượng đo và đơn vị đo (`/rnd/catalogue`) | Không có quyền quản lý |
