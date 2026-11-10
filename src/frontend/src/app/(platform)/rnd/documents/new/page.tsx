@@ -1,5 +1,7 @@
 'use client';
 
+import { pageTitleClass } from '@/components/workspace/page-header';
+
 import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -28,7 +30,7 @@ function RndNewDocumentContent() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <p className="mb-2 text-xs font-medium text-muted-foreground">PDF · Ấn phẩm mới</p>
-          <h1 className="text-3xl font-medium text-foreground sm:text-4xl">Xuất bộ công thức PDF</h1>
+          <h1 className={pageTitleClass}>Xuất bộ công thức PDF</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Chọn công thức, xem trước trang A4 ngang rồi xuất bản nháp hoặc bản chính thức.
           </p>

@@ -7,6 +7,7 @@ import { useDemo } from '@/lib/demo/provider';
 import { RecipeVersion } from '@/lib/demo/types';
 import { StatusBadge } from '@/components/workspace/status-badge';
 import { StatCard } from '@/components/workspace/stat-card';
+import { cardActionClass, interactiveCardClass, interactiveCardFocusClass, stretchedLinkClass } from '@/components/workspace/interactive-card';
 export default function RndDashboardPage() {
   const { session, repo, dataVersion } = useDemo();
   const [recipesCount, setRecipesCount] = useState<number>(0);
@@ -53,7 +54,7 @@ export default function RndDashboardPage() {
         <img src="/landing/workspaces/barista-sop.jpg" alt="" className="absolute inset-0 h-full w-full object-cover opacity-30" />
         <div className="relative space-y-4 px-6 py-12 md:px-12 md:py-16">
           <p className="text-xs uppercase tracking-wide">Không gian nghiên cứu &amp; phát triển</p>
-          <h1 className="font-display text-4xl font-medium md:text-6xl">Beverage Lab.</h1>
+          <h1 className="font-display text-4xl font-medium md:text-hero">Beverage Lab.</h1>
           <p className="text-sm">Quản lý công thức, nguyên liệu và SOP pha chế đồ uống.</p>
           <div className="flex flex-wrap gap-3 pt-4">
             <Link href="/rnd/recipes/new" className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"><Plus className="h-4 w-4" strokeWidth={1.5} />Tạo công thức</Link>
@@ -93,11 +94,13 @@ export default function RndDashboardPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {draftRecipes.map((recipe) => (
-              <article key={recipe.id} className="flex flex-col justify-between rounded-lg border border-border bg-card p-5 shadow-soft">
+              <article key={recipe.id} className={`flex flex-col justify-between p-5 ${interactiveCardClass}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-xs text-muted-foreground">{recipe.code} · {recipe.versionLabel}</p>
-                    <h3 className="mt-1 font-display text-lg font-medium text-foreground">{recipe.name}</h3>
+                    <h3 className="mt-1 font-display text-lg font-medium text-foreground">
+                      <Link href={`/rnd/recipes/${recipe.id}`} className={stretchedLinkClass}>{recipe.name}</Link>
+                    </h3>
                     <p className="mt-1 text-xs text-muted-foreground">{recipe.description || 'Chưa có mô tả chi tiết cho công thức này.'}</p>
                   </div>
                   <StatusBadge status={recipe.status} />
@@ -105,8 +108,7 @@ export default function RndDashboardPage() {
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3 text-xs text-muted-foreground">
                   <span>{recipe.ingredients.length} nguyên liệu · {recipe.steps.length} bước · {new Date(recipe.updatedAt).toLocaleDateString('vi-VN')}</span>
                   <div className="flex gap-3 text-primary">
-                    <Link href={`/rnd/recipes/${recipe.id}/edit`} className="font-semibold hover:underline">Sửa</Link>
-                    <Link href={`/rnd/recipes/${recipe.id}`} className="font-semibold hover:underline">Chi tiết</Link>
+                    <Link href={`/rnd/recipes/${recipe.id}/edit`} className={`font-semibold hover:underline ${cardActionClass}`}>Sửa</Link>
                   </div>
                 </div>
               </article>
@@ -127,9 +129,9 @@ export default function RndDashboardPage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {publishedRecipes.map((recipe) => (
-              <Link key={recipe.id} href={`/rnd/recipes/${recipe.id}`} className="space-y-2 rounded-lg border border-border bg-card p-5 shadow-soft hover:border-primary">
+              <Link key={recipe.id} href={`/rnd/recipes/${recipe.id}`} className={`space-y-2 p-5 ${interactiveCardClass} ${interactiveCardFocusClass}`}>
                 <p className="text-xs text-muted-foreground">{recipe.code} · {recipe.versionLabel}</p>
-                <h3 className="font-display text-lg font-medium text-foreground">{recipe.name}</h3>
+                <h3 className="font-display text-lg font-medium text-foreground group-hover:text-primary">{recipe.name}</h3>
                 {recipe.description && <p className="line-clamp-2 text-sm text-muted-foreground">{recipe.description}</p>}
                 <StatusBadge status={recipe.status} />
               </Link>
