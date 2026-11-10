@@ -17,8 +17,8 @@ Chuẩn giao diện web landing, auth và workspace R&D, Admin, Viewer theo Figm
 | secondary, muted | #FAFAFA | Bề mặt phụ |
 | muted-foreground | #606060 | Chữ phụ |
 | border, input | #E6E6E6 | Viền và trường nhập |
-| ink / ink-foreground | #202123 / #FCFCFC | Hành động Admin |
-| success / success-soft | #2F6633 / #E4F8E4 | Thành công |
+| ink / ink-foreground | #202123 / #FCFCFC | Nền tối và nội dung trên nền tối |
+| success / success-soft / success-medium | #2F6633 / #E4F8E4 / #CFEFD0 | Thành công; nền badge vai trò R&D |
 | info / info-soft | #3F55BA / #EAF0FF | Thông tin, bản nháp |
 | destructive / foreground / soft / tint / border | #C83B2C / #FCFCFC / #FAEBEA / #FCF5F4 / #EFC4C0 | Lỗi, xóa |
 
@@ -29,7 +29,7 @@ Figma trích xuất accent gần trắng #FFFCFC; dùng làm hover tint, cần k
 | Role | Nền trang | Accent | Density | Control height |
 |---|---|---|---|---|
 | rnd | #FFFFFF | primary | 24px | 36px |
-| admin | #FAFAFA | ink | 28px | 40px |
+| admin | #FAFAFA | primary | 28px | 40px |
 | viewer | #FFFCFC | primary | 32px | 44px |
 
 Shell đặt `data-role`, dùng `--role-page-bg`, `--role-accent`, `--role-density`, `--role-control-height`. Không thay đổi role guard hoặc điều hướng nghiệp vụ.
@@ -37,6 +37,10 @@ Shell đặt `data-role`, dùng `--role-page-bg`, `--role-accent`, `--role-densi
 ## 3. Typography và tiếng Việt
 
 Outfit variable cho display, heading, chỉ số; Figtree variable cho nội dung và điều khiển. Hai font thiếu glyph tiếng Việt như ấ, ệ, ừ, ỹ; chữ có dấu chồng dùng Google Sans local làm fallback. Giữ khoảng cách dòng đủ thoáng. Tracking mặc định 0; eyebrow uppercase tracking .06em. Số đo dùng tabular numbers.
+
+Nội dung hiển thị không dùng em dash hoặc en dash; viết lại thành câu, dùng “đến” cho khoảng và “·” để phân tách thông tin.
+
+Mọi heading (h1 đến h4, tiêu đề card/panel) dùng Outfit 500 qua `pageTitleClass` (h1 trang), `sectionTitleClass` (h2 mục), `cardTitleClass` (tiêu đề card 19/26) và `panelTitleClass` (panel 18/28), khai báo tại `src/frontend/src/components/workspace/page-header.tsx`; không dùng `font-semibold` hoặc `font-bold` trên heading.
 
 | Kiểu | Font / weight | Cỡ / dòng |
 |---|---|---|
@@ -64,13 +68,14 @@ Lưới spacing 4px: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64. Radius sm 4, md 6, lg
 
 ## 5. Components
 
-- Button: primary, destructive, outline, secondary, ghost, link; cao 36/32/44px, radius 6px, focus ring 2px offset 2px; disabled opacity 50%. Admin primary dùng ink.
-- Badge: radius 6px, padding 10×4px, dot 6px, nhãn 11/16; không viền.
+- Button: primary, destructive, outline, secondary, ghost, link; cao 36/32/44px, radius 6px, focus ring 2px offset 2px; disabled opacity 50%. Admin primary dùng primary.
+- Badge: radius 6px, padding 10×4px, dot 6px, nhãn 11/16; không viền. Vai trò Admin dùng ink/ink-foreground, R&D dùng success-medium/success, Viewer dùng info-soft/info; badge trạng thái giữ nền nhạt.
 - Input: cao 40px, radius 6px, viền input, shadow inset, focus ring; lỗi có helper. Search radius full.
 - Card: radius 8px, viền border, shadow soft; recipe tile ảnh 4:3, shadow lift.
+- Thumbnail nguyên liệu: dùng ảnh thật nếu có `imageAssetId`, nếu không dùng ô biểu tượng theo nhóm; không dùng ảnh mẫu.
 - Table: header cao 56px nền secondary, dòng cao 64px, hover accent; không uppercase header.
 - Modal: radius 8px, padding 24px, backdrop rgba(27,27,27,.45), focus trap, Escape và nút đóng.
-- Toast: 400×89px, radius 18px, icon theo loại, nút đóng, action và progress; success/info tự đóng 5 giây, error/loading giữ lại.
+- Toast: 400×89px, radius 18px, icon theo loại, nút đóng, action và progress; success/info tự đóng 5 giây, error/loading giữ lại. Dùng toast cho kết quả thao tác; validation và trạng thái trang giữ Alert nội tuyến.
 - Nav: header cao 79px, item active có underline primary 2px. Lucide stroke 1.5.
 - Select, textarea, checkbox, radio, skeleton, drawer, tooltip không có spec Figma: suy từ token Input/Button; giữ accessibility và hành vi hiện có.
 
@@ -90,26 +95,13 @@ Chỉ `#story` (`ScrollFrameStory`) và overlay liên quan dùng `--cinematic-bg
 
 ## 9. Ấn phẩm in ấn & Xuất bản PDF (Document Print Preset)
 
-### Tiêu chuẩn kỹ thuật tài liệu PDF (A4 Landscape)
-- **Khổ giấy & Định hướng:** Cố định A4 ngang (`841.89 × 595.28 pt`), lề nội dung `24 pt`; bìa full-bleed, khoảng đệm chữ `48 pt`.
-- **Bảng màu ấn phẩm (Print Palette):**
-  - Nền trang (Canvas): Be sáng ấm `#F5F0EB` (trang bìa) và Trắng ngà `#FAF9F5` (nội dung).
-  - Chữ chính (Ink): Nâu rang đậm `#2C1810` (đảm bảo độ tương phản > 7:1 trên nền sáng).
-  - Màu nhấn (Accent): Vàng kim đất `#B47820` và Đất nung `#CC785C`.
-  - Đường viền/Ngăn cách: `#E7E5E4`.
-- **Typography ấn phẩm:** Nhúng trực tiếp font TTF/OTF hỗ trợ đầy đủ bộ dấu tiếng Việt (Google Sans / Be Vietnam Pro). Số lượng/đơn vị dùng tabular numbers.
-- **Nguyên tắc ngắt trang & Dòng chảy:**
-  - Trang bìa riêng biệt (Cover page) cho mọi tài liệu.
-  - Mục lục (Table of Contents) tự động cho ấn phẩm bộ (từ 2 công thức trở lên) kèm số trang thực tế và internal jump links.
-  - Bảng định lượng nguyên liệu tự động lặp lại tiêu đề cột (Repeat Header) khi tràn sang trang sau.
-  - Đánh dấu bản nháp (Watermark): Dòng chữ "BẢN NHÁP - DRAFT" bán trong suốt xoay góc trên tất cả các trang đối với tài liệu loại nháp. Tài liệu chính thức (Official) không có watermark.
-
-### Layout theo PDF mẫu pha chế (2026-11-01)
-- Mẫu đối chiếu: `recipe-collection-20261007-2345.pdf` do người dùng cung cấp. Áp dụng bố cục cho toàn bộ tài liệu, không chỉ bìa.
-- Bìa: hai mảng 58/42; nâu `#3B281E` bên trái, kem `#FAF7F2` bên phải; logo Phê La đơn sắc từ `docs/materials/logo-phe-la/logo-phe-la.svg` được nhúng vào assembly. Tiêu đề trắng hai tầng, đường nhấn vàng mảnh, subtitle và metadata xuất nhỏ. Đây là palette ngoại lệ có chủ đích để khớp mẫu.
-- Mục lục: số thứ tự, tên món và mã/phiên bản phụ, số trang thực tế bên phải; đường phân cách mảnh, internal links. Không dùng bảng quản trị trạng thái.
-- Trang công thức: dải tiêu đề be `#E8C9A5` với đầu nhấn nâu `#965B22`; sidebar ảnh món hoặc monogram P, nhãn “CÔNG THỨC VẬN HÀNH”; bên phải bảng thành phần/định lượng hai cột và bảng SOP có nhãn bên trái, số bước, ảnh, hướng dẫn.
-- Giữ ghi chú nguyên liệu, sản lượng và thông số từng bước; ảnh AI có chú thích rõ. Footer nhỏ ghi tài liệu đào tạo nội bộ và số trang. Nội dung dài tự ngắt trang; dải tên món lặp lại ở trang tiếp theo.
+### Quy chuẩn ấn phẩm
+- A4 ngang, lề nội dung 36 pt; bìa riêng. Mục lục cho bộ từ hai món, số trang thực và liên kết nội bộ.
+- Nền `#FAF8F5`, mực `#231F20`, chữ phụ `#6E6768`, đường kẻ `#E5DFDB`; nhấn tiết chế `#C4355B` theo thương hiệu. An toàn dùng nền `#F9EAE7`, tiêu chí hoàn thành `#E5F3E8`.
+- Font nhúng OFL: Noto Serif cho tiêu đề, Be Vietnam Pro cho nội dung; hỗ trợ tiếng Việt, không phụ thuộc font hệ thống.
+- Bìa ảnh tràn trang, chữ neo dưới và không có footer; thiếu ảnh dùng nền tối cùng họa tiết vector, không chèn ảnh mẫu. Mục lục có mảng tối toàn chiều cao, danh sách và liên kết trang thật.
+- Tổng quan dùng ảnh lớn hoặc monogram; nguyên liệu tràn dùng toàn bề ngang trang tiếp. Quy trình dùng lưới thẻ đồng chiều rộng, tối đa bốn cột; ảnh bước 16:10 khi có, giữ chú thích người dùng và nhãn AI riêng. Trang kiểm tra dùng checklist chỉ khi có tiêu chí hoàn thành, ảnh lớn và ghi chú sản lượng cạnh số liệu. Không dựng dữ liệu thiếu.
+- Nội dung dài tự ngắt trang; mục lục và bảng nguyên liệu lặp tiêu đề. Footer nội dung có tên ấn phẩm và số trang thực. Bản nháp có watermark `BẢN NHÁP - DRAFT` trên mọi trang; bản chính thức không có.
 
 
 ## 10. Backlog

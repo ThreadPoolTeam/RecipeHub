@@ -13,7 +13,8 @@ Frontend tương tác với Backend qua 2 lớp bảo vệ:
      - `quiz-viewer.ts`: Cho Viewer/Barista (lấy đề thi, nộp bài, xem lịch sử).
      - `backend-repository.ts`: Tra cứu công thức, nguyên liệu, media, người dùng.
      - `pdf-documents.ts`: Quản lý xem trước (`preview`), xuất bản (`export`), tra cứu lịch sử (`history`) và tải tệp PDF nhị phân (`requestBinary`).
-     - `audit.ts`: Tra cứu nhật ký kiểm toán hệ thống (`listAuditLogs`), lọc đa chiều và phân trang.
+     - `audit.ts`: Tra cứu nhật ký hoạt động hệ thống (`listAuditLogs`), lọc đa chiều và phân trang.
+- Màn hình tự cập nhật dùng polling khi cần: tạm dừng lúc tab ẩn, tải lại khi hiện, tránh request polling chồng nhau và giữ dữ liệu cũ nếu polling lỗi.
 
 ## 2. Quản Lý Phiên & Quyền (`DemoProvider`)
 
@@ -42,10 +43,7 @@ Frontend tương tác với Backend qua 2 lớp bảo vệ:
 - Màn hình chờ chuyển route cấp cao dùng `loading.tsx` tại `(platform)/loading.tsx`.
 
 ## 4. Bắt Lỗi & Phản Hồi Người Dùng (Error Handling & Feedback)
-- **Error Banner:**
-  - Khi API trả về lỗi 400/404/500, hiển thị banner `border-destructive-border bg-destructive-tint text-destructive` kèm icon và cách xử lý.
-- **Form Validation:**
-  - Báo lỗi ngay dưới ô nhập liệu (inline error), chữ 12px `text-destructive`.
-- **Toast Notifications:**
-  - Dùng cho thông báo thành công (Lưu nháp thành công, Nộp bài thi hoàn tất): nền `bg-card`, viền `border-border`, icon `text-success`; chi tiết ở DESIGN.md mục 5.
+- **Error Banner:** lỗi tải dữ liệu hoặc trạng thái trang hiển thị nội tuyến kèm cách xử lý.
+- **Form Validation:** báo lỗi ngay dưới ô nhập liệu (inline error), chữ 12px `text-destructive`.
+- **Toast Notifications:** dùng cho kết quả thành công hoặc thất bại của thao tác người dùng; chi tiết ở DESIGN.md mục 5.
 - **Tuyệt đối cấm:** Để lộ JSON raw lỗi backend hoặc để ứng dụng văng màn hình trắng Unhandled Exception.

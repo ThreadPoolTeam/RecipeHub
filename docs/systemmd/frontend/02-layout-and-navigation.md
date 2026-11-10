@@ -14,7 +14,7 @@ Shell đặt `data-role` (`rnd`, `admin`, `viewer`) trên `.workspace-root`; rol
 - Admin: `/admin`, `/admin/users`, `/admin/system`, `/admin/logs`.
 - R&D: `/rnd`, `/rnd/recipes`, `/rnd/ingredients`, `/rnd/catalogue`, `/rnd/media`, `/rnd/documents`, `/rnd/quizzes`, `/rnd/quizzes/results`.
 - Viewer: `/viewer`, `/viewer/quizzes`, `/viewer/quizzes/history`.
-- Mục active có gạch chân; menu tài khoản gồm `/profile`, `/settings`, `/help` và đăng xuất. Không có chuyển role phía client.
+- Mục active có gạch chân; menu tài khoản gồm `/profile`, `/help` và đăng xuất. `/settings` tạm ẩn khỏi menu mọi role; route không đổi. Không có chuyển role phía client.
 - R&D dùng `/rnd/documents` cho kho tài liệu và `/rnd/documents/new` để tạo tài liệu. Viewer tải PDF chính thức tại chi tiết công thức; Admin không có menu tài liệu.
 
 ## 3. Bố Cục Trang Nghiệp Vụ 3 Tầng (3-Tier Page Structure)
