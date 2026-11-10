@@ -32,6 +32,9 @@ export interface CatalogItem {
 export interface UnitItem extends CatalogItem {
   categoryId: string;
   categoryName: string;
+  isBase: boolean;
+  factorToBase: number;
+  offsetToBase: number;
   decimalPlaces: number;
 }
 
@@ -129,6 +132,9 @@ function mapUnit(value: unknown, label: string): UnitItem {
     ...mapCatalog(item, label),
     categoryId: text(item.categoryId, `${label}.categoryId`),
     categoryName: text(item.categoryName, `${label}.categoryName`),
+    isBase: booleanValue(item.isBase, `${label}.isBase`),
+    factorToBase: numberValue(item.factorToBase, `${label}.factorToBase`),
+    offsetToBase: numberValue(item.offsetToBase, `${label}.offsetToBase`),
     decimalPlaces: numberValue(item.decimalPlaces, `${label}.decimalPlaces`),
   };
 }
@@ -561,6 +567,24 @@ export class BackendRepository extends DemoRepository {
     });
     this.units = null;
     return mapUnit(response, 'unit');
+  }
+
+  async updateUnitConversion(
+    actor: SessionInfo,
+    id: string,
+    data: {
+      isBase: boolean;
+      factorToBase: number;
+      offsetToBase: number;
+    }
+  ): Promise<UnitItem> {
+    const response = await requestJson(
+      `api/v1/recipes/units/${id}/conversion`,
+      this.actorId(actor),
+      { method: 'PUT', body: JSON.stringify(data) }
+    );
+    this.units = null;
+    return mapUnit(response, 'unit conversion');
   }
 
   async deactivateUnit(actor: SessionInfo, id: string): Promise<void> {
@@ -1240,6 +1264,9 @@ export class BackendRepository extends DemoRepository {
       'accepted image draft'
     );
     const mediaAssetId = text(accepted.mediaAssetId, 'accepted image draft.mediaAssetId');
+    // Ảnh vừa chấp nhận là media asset mới: bỏ cache để trang chi tiết/biên tập thấy nó.
+    this.mediaCache = null;
+    this.mediaPromise = null;
     const deliveryUrl = optionalText(accepted.deliveryUrl, 'accepted image draft.deliveryUrl');
     const previewBlob = this.draftPreviews.get(candidateId);
     if (previewBlob) {

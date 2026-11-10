@@ -1,0 +1,88 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["prometheus:9090"]
+
+  - job_name: recipehub-api
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["gateway:5000"]
+        labels:
+          service: gateway
+      - targets: ["identity-service:5001"]
+        labels:
+          service: identity
+      - targets: ["recipe-service:5002"]
+        labels:
+          service: recipe
+      - targets: ["content-service:5003"]
+        labels:
+          service: content
+      - targets: ["audit-service:5004"]
+        labels:
+          service: audit
+      - targets: ["quiz-service:5005"]
+        labels:
+          service: quiz
+
+  - job_name: cadvisor
+    static_configs:
+      - targets: ["cadvisor:8080"]
+    metric_relabel_configs:
+      # cAdvisor's Docker name label is a name, not the Compose service label.
+      # Normalize optional leading slash; do not infer names from cgroup IDs.
+      - source_labels: [name]
+        regex: '/?(recipehub-.+)'
+        target_label: container
+        replacement: '${1}'
+
+  - job_name: postgres
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+
+  - job_name: redis
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+
+  - job_name: blackbox-exporter
+    static_configs:
+      - targets: ["blackbox-exporter:9115"]
+
+  - job_name: recipehub-readiness
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets: ["http://frontend:3000/api/health"]
+        labels:
+          service: frontend
+      - targets: ["http://gateway:5000/health/ready"]
+        labels:
+          service: gateway
+      - targets: ["http://identity-service:5001/health/ready"]
+        labels:
+          service: identity
+      - targets: ["http://recipe-service:5002/health/ready"]
+        labels:
+          service: recipe
+      - targets: ["http://content-service:5003/health/ready"]
+        labels:
+          service: content
+      - targets: ["http://audit-service:5004/health/ready"]
+        labels:
+          service: audit
+      - targets: ["http://quiz-service:5005/health/ready"]
+        labels:
+          service: quiz
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115

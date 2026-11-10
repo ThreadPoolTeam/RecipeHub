@@ -9,12 +9,20 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-recipehub_admin}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-recipehub_secret_pw}
       POSTGRES_DB: ${POSTGRES_DB:-recipehub_default}
+      GRAFANA_DB_USER: ${GRAFANA_DB_USER:-grafana_reader}
+      GRAFANA_DB_PASSWORD: ${GRAFANA_DB_PASSWORD:-grafana_reader_pw}
+      IDENTITY_MIGRATOR_USER: ${IDENTITY_MIGRATOR_USER:-identity_migrator}
+      IDENTITY_MIGRATOR_PASSWORD: ${IDENTITY_MIGRATOR_PASSWORD:-identity_migrator_pw}
       IDENTITY_DB_USER: ${IDENTITY_DB_USER:-identity_user}
       IDENTITY_DB_PASSWORD: ${IDENTITY_DB_PASSWORD:-identity_pw}
       IDENTITY_DB_NAME: ${IDENTITY_DB_NAME:-recipehub_identity}
+      RECIPE_MIGRATOR_USER: ${RECIPE_MIGRATOR_USER:-recipe_migrator}
+      RECIPE_MIGRATOR_PASSWORD: ${RECIPE_MIGRATOR_PASSWORD:-recipe_migrator_pw}
       RECIPE_DB_USER: ${RECIPE_DB_USER:-recipe_user}
       RECIPE_DB_PASSWORD: ${RECIPE_DB_PASSWORD:-recipe_pw}
       RECIPE_DB_NAME: ${RECIPE_DB_NAME:-recipehub_recipe}
+      CONTENT_MIGRATOR_USER: ${CONTENT_MIGRATOR_USER:-content_migrator}
+      CONTENT_MIGRATOR_PASSWORD: ${CONTENT_MIGRATOR_PASSWORD:-content_migrator_pw}
       CONTENT_DB_USER: ${CONTENT_DB_USER:-content_user}
       CONTENT_DB_PASSWORD: ${CONTENT_DB_PASSWORD:-content_pw}
       CONTENT_DB_NAME: ${CONTENT_DB_NAME:-recipehub_content}
@@ -30,6 +38,7 @@ services:
       QUIZ_DB_NAME: ${QUIZ_DB_NAME:-recipehub_quiz}
     volumes:
       - ./postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+      - ./postgres/grant-monitoring.sh:/monitoring/grant-monitoring.sh:ro
       - ../docs/database-schema/identity-db:/schema/identity-db:ro
       - ../docs/database-schema/recipe-db:/schema/recipe-db:ro
       - ../docs/database-schema/content-db:/schema/content-db:ro
@@ -37,10 +46,11 @@ services:
       - ../docs/database-schema/audit-db:/schema/audit-db:ro
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-recipehub_admin}"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U ${POSTGRES_USER:-recipehub_admin} -d ${POSTGRES_DB:-recipehub_default}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 12
+      start_period: 20s
 
   redis:
     image: redis:7-alpine
@@ -72,7 +82,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5001/health/live || exit 1"]
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/5001 && printf 'GET /health/live HTTP/1.0\r\n\r\n' >&3 && head -n1 <&3 | grep -q 200"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -89,13 +99,16 @@ services:
       - ConnectionStrings__Redis=redis:6379
       - Grpc__IdentityServiceUrl=http://identity-service:5011
       - Grpc__ContentServiceUrl=http://content-service:5013
+      - Cloudinary__CloudName=${CLOUDINARY_CLOUD_NAME:-}
+      - Cloudinary__ApiKey=${CLOUDINARY_API_KEY:-}
+      - Cloudinary__ApiSecret=${CLOUDINARY_API_SECRET:-}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5002/health/live || exit 1"]
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/5002 && printf 'GET /health/live HTTP/1.0\r\n\r\n' >&3 && head -n1 <&3 | grep -q 200"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -113,6 +126,14 @@ services:
       - Grpc__IdentityServiceUrl=http://identity-service:5011
       - Grpc__RecipeServiceUrl=http://recipe-service:5012
       - TemporaryStorage__BasePath=/app/temp-drafts
+      - GEMINI_API_KEYS=${GEMINI_API_KEYS:-}
+      - Gemini__Model=${GEMINI_MODEL:-gemini-2.5-flash}
+      - Cloudflare__AccountId=${CLOUDFLARE_ACCOUNT_ID:-}
+      - Cloudflare__ApiToken=${CLOUDFLARE_API_TOKEN:-}
+      - Cloudflare__Model=${CLOUDFLARE_MODEL:-@cf/black-forest-labs/flux-1-schnell}
+      - Cloudinary__CloudName=${CLOUDINARY_CLOUD_NAME:-}
+      - Cloudinary__ApiKey=${CLOUDINARY_API_KEY:-}
+      - Cloudinary__ApiSecret=${CLOUDINARY_API_SECRET:-}
     volumes:
       - temp-drafts:/app/temp-drafts
     depends_on:
@@ -125,7 +146,7 @@ services:
       recipe-service:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5003/health/live || exit 1"]
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/5003 && printf 'GET /health/live HTTP/1.0\r\n\r\n' >&3 && head -n1 <&3 | grep -q 200"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -146,7 +167,7 @@ services:
       identity-service:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5004/health/live || exit 1"]
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/5004 && printf 'GET /health/live HTTP/1.0\r\n\r\n' >&3 && head -n1 <&3 | grep -q 200"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -191,6 +212,11 @@ services:
       - ConnectionStrings__AuditDb=Host=postgres;Port=5432;Database=${AUDIT_DB_NAME:-recipehub_audit};Username=${AUDIT_DB_USER:-audit_user};Password=${AUDIT_DB_PASSWORD:-audit_pw}
       - Grpc__RecipeServiceUrl=http://recipe-service:5012
       - TemporaryStorage__BasePath=/app/temp-drafts
+      - GEMINI_API_KEYS=${GEMINI_API_KEYS:-}
+      - Gemini__Model=${GEMINI_MODEL:-gemini-2.5-flash}
+      - Cloudflare__AccountId=${CLOUDFLARE_ACCOUNT_ID:-}
+      - Cloudflare__ApiToken=${CLOUDFLARE_API_TOKEN:-}
+      - Cloudflare__Model=${CLOUDFLARE_MODEL:-@cf/black-forest-labs/flux-1-schnell}
     volumes:
       - temp-drafts:/app/temp-drafts
     depends_on:
@@ -211,6 +237,7 @@ services:
       - "5000:5000"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      # appsettings.Development.json trỏ localhost (chạy IDE); trong Docker phải trỏ tên service
       - ReverseProxy__Clusters__identity-cluster__Destinations__destination1__Address=http://identity-service:5001
       - ReverseProxy__Clusters__recipe-cluster__Destinations__destination1__Address=http://recipe-service:5002
       - ReverseProxy__Clusters__content-cluster__Destinations__destination1__Address=http://content-service:5003
@@ -228,7 +255,7 @@ services:
       quiz-service:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5000/health/live || exit 1"]
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/5000 && printf 'GET /health/live HTTP/1.0\r\n\r\n' >&3 && head -n1 <&3 | grep -q 200"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -258,7 +285,7 @@ services:
     container_name: recipehub-pgadmin
     restart: unless-stopped
     ports:
-      - "${PGADMIN_PORT:-5050}:80"
+      - "127.0.0.1:${PGADMIN_PORT:-5050}:80"
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@recipehub.vn}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
@@ -271,20 +298,89 @@ services:
       postgres:
         condition: service_healthy
 
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    container_name: recipehub-prometheus
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9090:9090"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+
+  cadvisor:
+    image: ghcr.io/google/cadvisor:0.60.6
+    container_name: recipehub-cadvisor
+    restart: unless-stopped
+    privileged: true
+    pid: host
+    cgroup: host
+    command:
+      - --docker_only=true
+      - --housekeeping_interval=15s
+      - --allow_dynamic_housekeeping=false
+      - --enable_metrics=cpu,memory,network
+      - --store_container_labels=false
+      - --whitelisted_container_labels=com.docker.compose.project,com.docker.compose.service
+    # Linux paths belong to Docker Desktop's VM, not the Windows host.
+    # No /dev/kmsg or /dev/disk mapping: these need not exist on Desktop.
+    volumes:
+      - /:/rootfs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /run/containerd:/run/containerd:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.17.1
+    container_name: recipehub-postgres-exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_URI: postgres:5432/${POSTGRES_DB:-recipehub_default}?sslmode=disable
+      DATA_SOURCE_USER: ${GRAFANA_DB_USER:-grafana_reader}
+      DATA_SOURCE_PASS: ${GRAFANA_DB_PASSWORD:-grafana_reader_pw}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.69.0
+    container_name: recipehub-redis-exporter
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.26.0
+    container_name: recipehub-blackbox-exporter
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/blackbox_exporter/blackbox.yml
+    volumes:
+      - ./prometheus/blackbox.yml:/etc/blackbox_exporter/blackbox.yml:ro
+
   grafana:
     image: grafana/grafana:11.2.0
     container_name: recipehub-grafana
     restart: unless-stopped
     ports:
-      - "${GRAFANA_PORT:-3001}:3000"
+      - "127.0.0.1:${GRAFANA_PORT:-3001}:3000"
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin123}
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: "Viewer"
       GF_USERS_ALLOW_SIGN_UP: "false"
-      POSTGRES_USER: ${POSTGRES_USER:-recipehub_admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-recipehub_secret_pw}
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/provisioning/dashboards/recipehub-monitoring.json
+      GRAFANA_DB_USER: ${GRAFANA_DB_USER:-grafana_reader}
+      GRAFANA_DB_PASSWORD: ${GRAFANA_DB_PASSWORD:-grafana_reader_pw}
       IDENTITY_DB_NAME: ${IDENTITY_DB_NAME:-recipehub_identity}
       RECIPE_DB_NAME: ${RECIPE_DB_NAME:-recipehub_recipe}
       CONTENT_DB_NAME: ${CONTENT_DB_NAME:-recipehub_content}
@@ -303,3 +399,4 @@ volumes:
   temp-drafts:
   pgadmin-data:
   grafana-data:
+  prometheus-data:

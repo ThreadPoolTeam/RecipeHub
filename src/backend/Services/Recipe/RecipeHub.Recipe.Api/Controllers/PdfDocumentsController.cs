@@ -22,8 +22,14 @@ public sealed class PdfDocumentsController : ControllerBase
     [HttpGet("capabilities")]
     [ProducesResponseType(typeof(PdfCapabilitiesResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<PdfCapabilitiesResponse>> GetCapabilities(CancellationToken cancellationToken)
     {
+        if (!User.IsInRole("rnd"))
+        {
+            return Forbid();
+        }
+
         var capabilities = await _documentService.GetCapabilitiesAsync(cancellationToken);
         return Ok(capabilities);
     }
@@ -37,7 +43,7 @@ public sealed class PdfDocumentsController : ControllerBase
         [FromBody] PreviewPdfRequest request,
         CancellationToken cancellationToken)
     {
-        if (User.IsInRole("viewer"))
+        if (!User.IsInRole("rnd"))
         {
             return Forbid();
         }
@@ -65,7 +71,7 @@ public sealed class PdfDocumentsController : ControllerBase
         [FromBody] ExportPdfRequest request,
         CancellationToken cancellationToken)
     {
-        if (User.IsInRole("viewer"))
+        if (!User.IsInRole("rnd"))
         {
             return Forbid();
         }
@@ -96,7 +102,7 @@ public sealed class PdfDocumentsController : ControllerBase
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
-        if (User.IsInRole("viewer"))
+        if (!User.IsInRole("rnd"))
         {
             return Forbid();
         }
@@ -126,7 +132,7 @@ public sealed class PdfDocumentsController : ControllerBase
         Guid documentId,
         CancellationToken cancellationToken)
     {
-        if (User.IsInRole("viewer"))
+        if (!User.IsInRole("rnd"))
         {
             return Forbid();
         }
@@ -155,7 +161,7 @@ public sealed class PdfDocumentsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var userId = RequestActor.GetUserId(HttpContext);
-        var role = User.IsInRole("admin") ? "admin" : (User.IsInRole("rnd") ? "rnd" : (User.IsInRole("viewer") ? "viewer" : "unknown"));
+        var role = User.IsInRole("rnd") ? "rnd" : (User.IsInRole("viewer") ? "viewer" : "unknown");
 
         var fileResult = await _documentService.GetFileStreamAsync(documentId, role, userId, cancellationToken);
         if (fileResult == null)
@@ -180,6 +186,11 @@ public sealed class PdfDocumentsController : ControllerBase
         Guid versionId,
         CancellationToken cancellationToken)
     {
+        if (User.IsInRole("admin"))
+        {
+            return Forbid();
+        }
+
         var doc = await _documentService.GetPublishedForVersionAsync(versionId, cancellationToken);
         if (doc == null)
         {

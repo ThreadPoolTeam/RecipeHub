@@ -1,0 +1,2831 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "title": "Thống kê nghiệp vụ (dashboard SQL hiện có)",
+      "type": "link",
+      "url": "/d/recipehub-system-overview",
+      "targetBlank": false,
+      "includeVars": false,
+      "keepTime": true
+    }
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "1. Tình trạng thu thập và readiness",
+      "description": "Scrape thành công không đồng nghĩa ứng dụng sẵn sàng. Readiness là HTTP 200 từ endpoint health, không kiểm thử mọi nghiệp vụ.",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "API: Prometheus đọc được /metrics",
+      "description": "1: đọc được metrics; 0: scrape lỗi. Không thay dữ liệu thiếu bằng 0.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 12,
+        "h": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "max": 1,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Lỗi",
+                  "color": "red"
+                },
+                "1": {
+                  "text": "Sẵn sàng",
+                  "color": "green"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "up{job=\"recipehub-api\",service=~\"$service\"}",
+          "legendFormat": "{{service}}",
+          "instant": true,
+          "range": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Web và API: kiểm tra sẵn sàng",
+      "description": "GET /health/ready cho sáu backend; GET /api/health cho frontend. 1: HTTP 200; 0: probe thất bại. Frontend health không chứng minh SSR/API nghiệp vụ hoạt động.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 1,
+        "w": 12,
+        "h": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "max": 1,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Lỗi",
+                  "color": "red"
+                },
+                "1": {
+                  "text": "Sẵn sàng",
+                  "color": "green"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "probe_success{job=\"recipehub-readiness\",service=~\"$service\"}",
+          "legendFormat": "{{service}}",
+          "instant": true,
+          "range": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Các bộ thu thập metrics",
+      "description": "Chỉ tình trạng scrape exporter. PostgreSQL/Redis có panel kết nối thật riêng bên cạnh.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 7,
+        "w": 12,
+        "h": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "max": 1,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Lỗi",
+                  "color": "red"
+                },
+                "1": {
+                  "text": "Sẵn sàng",
+                  "color": "green"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "up{job=~\"cadvisor|postgres|redis|blackbox-exporter|prometheus\"}",
+          "legendFormat": "{{job}}",
+          "instant": true,
+          "range": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Kết nối thật tới PostgreSQL / Redis",
+      "description": "pg_up và redis_up kiểm tra kết nối exporter tới DB/cache; không lấy up của exporter để thay thế.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 7,
+        "w": 12,
+        "h": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "max": 1,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Lỗi",
+                  "color": "red"
+                },
+                "1": {
+                  "text": "Sẵn sàng",
+                  "color": "green"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "pg_up{job=\"postgres\"}",
+          "legendFormat": "PostgreSQL",
+          "instant": true,
+          "range": false,
+          "editorMode": "code"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "redis_up{job=\"redis\"}",
+          "legendFormat": "Redis",
+          "instant": true,
+          "range": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Thời gian probe readiness",
+      "description": "Thời gian thực hiện HTTP probe, gồm DNS/kết nối/đáp ứng; không phải độ trễ API nghiệp vụ.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "probe_duration_seconds{job=\"recipehub-readiness\",service=~\"$service\"}",
+          "legendFormat": "{{service}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Lịch sử readiness",
+      "description": "1: HTTP 200; 0: probe thất bại. Khoảng trống là thiếu mẫu, không tự nối thành khỏe mạnh.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 13,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "probe_success{job=\"recipehub-readiness\",service=~\"$service\"}",
+          "legendFormat": "{{service}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "row",
+      "title": "2. HTTP API: lưu lượng, lỗi và độ trễ",
+      "description": "Mỗi request có thể được ghi ở gateway và service đích: không cộng các service thành tổng người dùng. Không gồm /metrics và health.",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 21,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Request mỗi giây (RPS)",
+      "description": "Tốc độ HTTP request theo service. Gateway và backend là hai điểm đo riêng. Cần ít nhất hai mẫu scrape trong cửa sổ $interval; lúc mới chạy có thể chưa có dữ liệu.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "sum by (service) (rate(http_requests_received_total{job=\"recipehub-api\",service=~\"$service\"}[$interval]))",
+          "legendFormat": "{{service}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Request theo nhóm mã HTTP",
+      "description": "Nhóm 2xx/3xx/4xx/5xx; series chỉ xuất hiện sau khi có loại response tương ứng. Cần ít nhất hai mẫu scrape trong cửa sổ $interval; lúc mới chạy có thể chưa có dữ liệu.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 22,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "sum by (service, status_class) (label_replace(rate(http_requests_received_total{job=\"recipehub-api\",service=~\"$service\"}[$interval]), \"status_class\", \"${1}xx\", \"code\", \"([1-5])[0-9][0-9]\"))",
+          "legendFormat": "{{service}} · {{status_class}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Lỗi 4xx mỗi giây",
+      "description": "Lỗi phía request, ví dụ 401/403/404. Chưa từng có 4xx có thể không có series; không dựng số 0 giả. Cần ít nhất hai mẫu scrape trong cửa sổ $interval; lúc mới chạy có thể chưa có dữ liệu.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 30,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "sum by (service) (rate(http_requests_received_total{job=\"recipehub-api\",service=~\"$service\",code=~\"4..\"}[$interval]))",
+          "legendFormat": "{{service}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Lỗi 5xx mỗi giây",
+      "description": "Lỗi xử lý phía server. Chưa từng có 5xx có thể không có series; không dựng số 0 giả. Cần ít nhất hai mẫu scrape trong cửa sổ $interval; lúc mới chạy có thể chưa có dữ liệu.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 30,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "sum by (service) (rate(http_requests_received_total{job=\"recipehub-api\",service=~\"$service\",code=~\"5..\"}[$interval]))",
+          "legendFormat": "{{service}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "Tỷ lệ response 4xx",
+      "description": "4xx / tất cả response tại cùng service. Không có request hoặc chưa có series 4xx: không suy ra 0%.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 38,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "sum by (service) (rate(http_requests_received_total{job=\"recipehub-api\",service=~\"$service\",code=~\"4..\"}[$interval])) / sum by (service) (rate(http_requests_received_total{job=\"recipehub-api\",service=~\"$service\"}[$interval]))",
+          "legendFormat": "{{service}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "Tỷ lệ response 5xx",
+      "description": "5xx / tất cả response tại cùng service. Mẫu số 0 là không có tỷ lệ, không coi là khỏe mạnh.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 38,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "sum by (service) (rate(http_requests_received_total{job=\"recipehub-api\",service=~\"$service\",code=~\"5..\"}[$interval])) / sum by (service) (rate(http_requests_received_total{job=\"recipehub-api\",service=~\"$service\"}[$interval]))",
+          "legendFormat": "{{service}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "Độ trễ p50",
+      "description": "50% request hoàn tất trong thời gian này. Ước lượng từ histogram; không request thì không có phân vị. Cần ít nhất hai mẫu scrape trong cửa sổ $interval; lúc mới chạy có thể chưa có dữ liệu.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 46,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "histogram_quantile(0.50, sum by (service, le) (rate(http_request_duration_seconds_bucket{job=\"recipehub-api\",service=~\"$service\"}[$interval])))",
+          "legendFormat": "{{service}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "Độ trễ p95",
+      "description": "95% request hoàn tất trong thời gian này. Bao gồm response lỗi; p95 gateway có cả thời gian proxy. Cần ít nhất hai mẫu scrape trong cửa sổ $interval; lúc mới chạy có thể chưa có dữ liệu.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 46,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (service, le) (rate(http_request_duration_seconds_bucket{job=\"recipehub-api\",service=~\"$service\"}[$interval])))",
+          "legendFormat": "{{service}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "type": "row",
+      "title": "3. Tiến trình .NET",
+      "description": "Default metrics của prometheus-net cho sáu tiến trình HTTP; worker và frontend xem theo container ở hàng kế tiếp.",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 54,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 18,
+      "type": "timeseries",
+      "title": "CPU tiến trình .NET",
+      "description": "rate(process_cpu_seconds_total) × 100. 100% = một CPU core; có thể vượt 100% khi dùng nhiều core. Không phải phần trăm toàn máy Windows. Cần ít nhất hai mẫu scrape trong cửa sổ $interval; lúc mới chạy có thể chưa có dữ liệu.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 55,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "100 * rate(process_cpu_seconds_total{job=\"recipehub-api\",service=~\"$service\"}[$interval])",
+          "legendFormat": "{{service}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "type": "timeseries",
+      "title": "RAM tiến trình .NET",
+      "description": "Working set của tiến trình, đơn vị byte; Grafana tự đổi KiB/MiB/GiB. Không phải managed heap, không cộng với RAM container.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 55,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "process_working_set_bytes{job=\"recipehub-api\",service=~\"$service\"}",
+          "legendFormat": "{{service}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "4. Docker: CPU, RAM, mạng và vòng đời",
+      "description": "Chỉ container tên recipehub-*. cAdvisor đo Linux VM/container của Docker Desktop, không phải CPU/RAM toàn Windows. Thiếu quyền/cgroup/metadata sẽ không có số liệu, không được hiểu là 0.",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 63,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "CPU từng container",
+      "description": "Tổng CPU cores đang dùng × 100; 100% = một core. Bao gồm backend, frontend, worker, DB và monitoring. Cần ít nhất hai mẫu scrape trong cửa sổ $interval; lúc mới chạy có thể chưa có dữ liệu.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 64,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "100 * sum by (container) (rate(container_cpu_usage_seconds_total{job=\"cadvisor\",container=~\"$container\",container=~\"recipehub-.+\",image!=\"\"}[$interval]))",
+          "legendFormat": "{{container}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "type": "timeseries",
+      "title": "RAM từng container",
+      "description": "container_memory_working_set_bytes: bộ nhớ hoạt động (trừ inactive file cache), byte. Không phải giới hạn RAM hay RAM của Windows.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 64,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "max by (container) (container_memory_working_set_bytes{job=\"cadvisor\",container=~\"$container\",container=~\"recipehub-.+\",image!=\"\"})",
+          "legendFormat": "{{container}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "type": "timeseries",
+      "title": "Mạng nhận vào container",
+      "description": "Tổng byte/giây qua các interface, loại loopback. Đây là mạng container, không phải băng thông Internet máy Windows. Cần ít nhất hai mẫu scrape trong cửa sổ $interval; lúc mới chạy có thể chưa có dữ liệu.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 72,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "sum by (container) (rate(container_network_receive_bytes_total{job=\"cadvisor\",container=~\"$container\",container=~\"recipehub-.+\",image!=\"\",interface!=\"lo\"}[$interval]))",
+          "legendFormat": "{{container}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "type": "timeseries",
+      "title": "Mạng gửi ra container",
+      "description": "Tổng byte/giây qua các interface, loại loopback. Cần ít nhất hai mẫu scrape trong cửa sổ $interval; lúc mới chạy có thể chưa có dữ liệu.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 72,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "sum by (container) (rate(container_network_transmit_bytes_total{job=\"cadvisor\",container=~\"$container\",container=~\"recipehub-.+\",image!=\"\",interface!=\"lo\"}[$interval]))",
+          "legendFormat": "{{container}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "type": "timeseries",
+      "title": "Thời gian từ lần khởi động container",
+      "description": "time() − container_start_time_seconds. Đường giảm về gần 0 là container vừa khởi động lại/tạo lại. Không phải bộ đếm restart của Docker.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 80,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "time() - max by (container) (container_start_time_seconds{job=\"cadvisor\",container=~\"$container\",container=~\"recipehub-.+\",image!=\"\"})",
+          "legendFormat": "{{container}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "type": "timeseries",
+      "title": "Độ cũ mẫu quan sát container",
+      "description": "time() − container_last_seen. Giá trị tăng cho thấy cAdvisor chưa cập nhật. Container biến mất sẽ thành no data sau khi series stale; không dùng số này để giả trạng thái chạy.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 80,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "time() - max by (container) (container_last_seen{job=\"cadvisor\",container=~\"$container\",container=~\"recipehub-.+\",image!=\"\"})",
+          "legendFormat": "{{container}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "type": "row",
+      "title": "5. PostgreSQL: kết nối và hoạt động",
+      "description": "Metrics từ pg_stat_database / pg_stat_activity; tài khoản Grafana cần pg_monitor. Bộ chọn Database áp dụng riêng hàng PostgreSQL.",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 88,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 28,
+      "type": "timeseries",
+      "title": "Kết nối PostgreSQL theo database",
+      "description": "Số backend kết nối hiện tại, gồm active và idle; exporter cũng tạo kết nối vào database mặc định.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 89,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "pg_stat_database_numbackends{job=\"postgres\",datname=~\"$database\"}",
+          "legendFormat": "{{datname}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "type": "timeseries",
+      "title": "Hoạt động kết nối theo trạng thái",
+      "description": "Số session từ pg_stat_activity, nhóm active/idle/idle in transaction. Không hiển thị SQL text hoặc thông tin tài khoản.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 89,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "sum by (datname, state) (pg_stat_activity_count{job=\"postgres\",datname=~\"$database\"})",
+          "legendFormat": "{{datname}} · {{state}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "type": "timeseries",
+      "title": "Transaction commit mỗi giây",
+      "description": "Tốc độ commit thực từ PostgreSQL, gồm hoạt động exporter. Cần ít nhất hai mẫu scrape trong cửa sổ $interval; lúc mới chạy có thể chưa có dữ liệu.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 97,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "rate(pg_stat_database_xact_commit{job=\"postgres\",datname=~\"$database\"}[$interval])",
+          "legendFormat": "{{datname}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "type": "timeseries",
+      "title": "Transaction rollback mỗi giây",
+      "description": "Tốc độ rollback thực; khác lỗi HTTP và khác deadlock. Cần ít nhất hai mẫu scrape trong cửa sổ $interval; lúc mới chạy có thể chưa có dữ liệu.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 97,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "rate(pg_stat_database_xact_rollback{job=\"postgres\",datname=~\"$database\"}[$interval])",
+          "legendFormat": "{{datname}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "type": "timeseries",
+      "title": "Tỷ lệ trúng PostgreSQL buffer cache",
+      "description": "blks_hit / (blks_hit + blks_read) theo tốc độ. Không gồm cache hệ điều hành. Không đọc block trong cửa sổ thì tỷ lệ không xác định, không mặc định 100%.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 105,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "rate(pg_stat_database_blks_hit{job=\"postgres\",datname=~\"$database\"}[$interval]) / (rate(pg_stat_database_blks_hit{job=\"postgres\",datname=~\"$database\"}[$interval]) + rate(pg_stat_database_blks_read{job=\"postgres\",datname=~\"$database\"}[$interval]))",
+          "legendFormat": "{{datname}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "type": "timeseries",
+      "title": "Deadlock trong cửa sổ đã chọn",
+      "description": "increase(pg_stat_database_deadlocks[$interval]); có thể là số thập phân do Prometheus ngoại suy. Giá trị 0 dựa trên counter thật. Cần ít nhất hai mẫu scrape trong cửa sổ $interval; lúc mới chạy có thể chưa có dữ liệu.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 105,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "increase(pg_stat_database_deadlocks{job=\"postgres\",datname=~\"$database\"}[$interval])",
+          "legendFormat": "{{datname}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "type": "timeseries",
+      "title": "Dung lượng PostgreSQL database",
+      "description": "pg_database_size, đơn vị byte. Dữ liệu trên đĩa, không phải RAM PostgreSQL.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 113,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "pg_database_size_bytes{job=\"postgres\",datname=~\"$database\"}",
+          "legendFormat": "{{datname}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "type": "timeseries",
+      "title": "Lỗi đọc thống kê PostgreSQL",
+      "description": "0: lần thu thập gần nhất không báo lỗi; 1: có lỗi (ví dụ thiếu pg_monitor). Exporter up không đủ để khẳng định mọi collector thành công.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 113,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "pg_exporter_last_scrape_error{job=\"postgres\"}",
+          "legendFormat": "Lỗi scrape PostgreSQL",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "type": "row",
+      "title": "6. Redis: bộ nhớ, client và cache",
+      "description": "Dữ liệu INFO từ Redis thật. Hit rate chỉ có nghĩa với lệnh truy cập key; Redis Streams hoạt động không đồng nghĩa ứng dụng dùng cache.",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 121,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 37,
+      "type": "timeseries",
+      "title": "Bộ nhớ Redis",
+      "description": "used_memory là bộ nhớ Redis cấp phát; used_memory_rss là RAM resident do hệ điều hành báo. Byte, không cộng hai đường với nhau.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 122,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "redis_memory_used_bytes{job=\"redis\"}",
+          "legendFormat": "Redis cấp phát",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "redis_memory_used_rss_bytes{job=\"redis\"}",
+          "legendFormat": "Redis RSS",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "type": "timeseries",
+      "title": "Client Redis",
+      "description": "Số kết nối client và số client đang bị block (ví dụ XREADGROUP chờ stream). Blocked client không mặc định là lỗi.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 122,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "redis_connected_clients{job=\"redis\"}",
+          "legendFormat": "Đang kết nối",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "redis_blocked_clients{job=\"redis\"}",
+          "legendFormat": "Đang chờ/block",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 39,
+      "type": "timeseries",
+      "title": "Lệnh Redis mỗi giây",
+      "description": "rate(redis_commands_processed_total). Bao gồm lệnh healthcheck/exporter và lệnh ứng dụng. Cần ít nhất hai mẫu scrape trong cửa sổ $interval; lúc mới chạy có thể chưa có dữ liệu.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 130,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "rate(redis_commands_processed_total{job=\"redis\"}[$interval])",
+          "legendFormat": "Lệnh/giây",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "type": "timeseries",
+      "title": "Số key theo Redis database",
+      "description": "redis_db_keys/redis_db_keys_expiring từ INFO keyspace. Redis rỗng có thể chưa xuất hiện series db; không thêm key giả để làm đầy biểu đồ.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 130,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "redis_db_keys{job=\"redis\"}",
+          "legendFormat": "{{db}} · tất cả key",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "redis_db_keys_expiring{job=\"redis\"}",
+          "legendFormat": "{{db}} · có TTL",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "type": "timeseries",
+      "title": "Tỷ lệ trúng keyspace Redis",
+      "description": "hits / (hits + misses) theo tốc độ. Không có lệnh lookup trong cửa sổ thì không có tỷ lệ; không tự đổi thành 0% hoặc 100%.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 138,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "rate(redis_keyspace_hits_total{job=\"redis\"}[$interval]) / (rate(redis_keyspace_hits_total{job=\"redis\"}[$interval]) + rate(redis_keyspace_misses_total{job=\"redis\"}[$interval]))",
+          "legendFormat": "Hit rate",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    },
+    {
+      "id": 42,
+      "type": "timeseries",
+      "title": "Hit / miss Redis mỗi giây",
+      "description": "Counter keyspace lookup, không phải số request HTTP. Cần ít nhất hai mẫu scrape trong cửa sổ $interval; lúc mới chạy có thể chưa có dữ liệu.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 138,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "min": 0,
+          "noValue": "Không có dữ liệu",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "rate(redis_keyspace_hits_total{job=\"redis\"}[$interval])",
+          "legendFormat": "Hit",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "expr": "rate(redis_keyspace_misses_total{job=\"redis\"}[$interval])",
+          "legendFormat": "Miss",
+          "range": true,
+          "instant": false,
+          "editorMode": "code"
+        }
+      ]
+    }
+    ,
+    {
+      "id": 43,
+      "type": "row",
+      "title": "7. Tìm HTTP endpoint chậm hoặc nhiều request",
+      "description": "Endpoint là route template có số lượng hữu hạn, không phải URL/ID người dùng. Chỉ HTTP/REST; mã HTTP không đại diện mã trạng thái ứng dụng gRPC. Không thu log hoặc tiến độ background job.",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {"x": 0, "y": 146, "w": 24, "h": 1}
+    },
+    {
+      "id": 44,
+      "type": "table",
+      "title": "10 HTTP endpoint có p95 chậm nhất",
+      "description": "p95 theo service + method + route template trong $interval. Chỉ request HTTP đã hoàn tất; loại phân vị NaN khi không có request. Gateway và service là hai điểm đo riêng. Cần đủ mẫu scrape để tính tốc độ; đây không phải trạng thái gRPC hay job.",
+      "datasource": {"type": "prometheus", "uid": "recipehub-prometheus"},
+      "gridPos": {"x": 0, "y": 147, "w": 24, "h": 9},
+      "fieldConfig": {
+        "defaults": {"unit": "s", "min": 0, "noValue": "Không có dữ liệu", "custom": {"align": "auto", "cellOptions": {"type": "auto"}, "inspect": false}},
+        "overrides": []
+      },
+      "options": {"showHeader": true, "cellHeight": "sm", "sortBy": [{"displayName": "p95", "desc": true}], "footer": {"show": false}, "enablePagination": true},
+      "targets": [{
+        "refId": "A",
+        "datasource": {"type": "prometheus", "uid": "recipehub-prometheus"},
+        "expr": "topk(10, histogram_quantile(0.95, sum by (service, method, endpoint, le) (rate(http_request_duration_seconds_bucket{job=\"recipehub-api\",service=~\"$service\",endpoint!=\"\"}[$interval]))) >= 0)",
+        "format": "table",
+        "instant": true,
+        "range": false,
+        "editorMode": "code"
+      }],
+      "transformations": [{
+        "id": "organize",
+        "options": {
+          "excludeByName": {"Time": true},
+          "indexByName": {"service": 0, "method": 1, "endpoint": 2, "Value": 3},
+          "renameByName": {"service": "Dịch vụ", "method": "HTTP method", "endpoint": "Route template", "Value": "p95"}
+        }
+      }]
+    },
+    {
+      "id": 45,
+      "type": "table",
+      "title": "HTTP request theo endpoint và mã response",
+      "description": "Số request ước lượng trong $interval bằng increase(counter), phân theo service + method + route template + mã HTTP. Prometheus ngoại suy nên có thể có phần thập phân. Chỉ series đã quan sát; không tự dựng 4xx/5xx bằng 0. Không cộng gateway với backend để đếm người dùng.",
+      "datasource": {"type": "prometheus", "uid": "recipehub-prometheus"},
+      "gridPos": {"x": 0, "y": 156, "w": 24, "h": 10},
+      "fieldConfig": {
+        "defaults": {"unit": "short", "min": 0, "decimals": 1, "noValue": "Không có dữ liệu", "custom": {"align": "auto", "cellOptions": {"type": "auto"}, "inspect": false}},
+        "overrides": [{"matcher": {"id": "byName", "options": "Mã HTTP"}, "properties": [{"id": "unit", "value": "none"}]}]
+      },
+      "options": {"showHeader": true, "cellHeight": "sm", "sortBy": [{"displayName": "Request trong cửa sổ", "desc": true}], "footer": {"show": false}, "enablePagination": true},
+      "targets": [{
+        "refId": "A",
+        "datasource": {"type": "prometheus", "uid": "recipehub-prometheus"},
+        "expr": "sort_desc(sum by (service, method, endpoint, code) (increase(http_requests_received_total{job=\"recipehub-api\",service=~\"$service\",endpoint!=\"\"}[$interval])))",
+        "format": "table",
+        "instant": true,
+        "range": false,
+        "editorMode": "code"
+      }],
+      "transformations": [{
+        "id": "organize",
+        "options": {
+          "excludeByName": {"Time": true},
+          "indexByName": {"service": 0, "method": 1, "endpoint": 2, "code": 3, "Value": 4},
+          "renameByName": {"service": "Dịch vụ", "method": "HTTP method", "endpoint": "Route template", "code": "Mã HTTP", "Value": "Request trong cửa sổ"}
+        }
+      }]
+    }
+  ],
+  "refresh": "15s",
+  "schemaVersion": 39,
+  "tags": [
+    "recipehub",
+    "monitoring",
+    "prometheus"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "Dịch vụ",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "recipehub-prometheus"
+        },
+        "definition": "label_values(up{job=~\"recipehub-api|recipehub-readiness\"}, service)",
+        "query": {
+          "query": "label_values(up{job=~\"recipehub-api|recipehub-readiness\"}, service)",
+          "refId": "var-service"
+        },
+        "refresh": 1,
+        "sort": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "Tất cả",
+          "value": "$__all"
+        },
+        "options": [],
+        "hide": 0,
+        "skipUrlSync": false
+      },
+      {
+        "name": "container",
+        "label": "Container",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "recipehub-prometheus"
+        },
+        "definition": "label_values(container_last_seen{job=\"cadvisor\",container=~\"recipehub-.+\",image!=\"\"}, container)",
+        "query": {
+          "query": "label_values(container_last_seen{job=\"cadvisor\",container=~\"recipehub-.+\",image!=\"\"}, container)",
+          "refId": "var-container"
+        },
+        "refresh": 1,
+        "sort": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "Tất cả",
+          "value": "$__all"
+        },
+        "options": [],
+        "hide": 0,
+        "skipUrlSync": false
+      },
+      {
+        "name": "database",
+        "label": "Database",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "recipehub-prometheus"
+        },
+        "definition": "label_values(pg_stat_database_numbackends{job=\"postgres\",datname!~\"template.*|postgres\",datname!=\"\"}, datname)",
+        "query": {
+          "query": "label_values(pg_stat_database_numbackends{job=\"postgres\",datname!~\"template.*|postgres\",datname!=\"\"}, datname)",
+          "refId": "var-database"
+        },
+        "refresh": 1,
+        "sort": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "Tất cả",
+          "value": "$__all"
+        },
+        "options": [],
+        "hide": 0,
+        "skipUrlSync": false
+      },
+      {
+        "name": "interval",
+        "label": "Cửa sổ tính tốc độ",
+        "type": "interval",
+        "query": "1m,5m,15m,1h",
+        "current": {
+          "selected": true,
+          "text": "5m",
+          "value": "5m"
+        },
+        "options": [
+          {
+            "text": "1m",
+            "value": "1m",
+            "selected": false
+          },
+          {
+            "text": "5m",
+            "value": "5m",
+            "selected": true
+          },
+          {
+            "text": "15m",
+            "value": "15m",
+            "selected": false
+          },
+          {
+            "text": "1h",
+            "value": "1h",
+            "selected": false
+          }
+        ],
+        "auto": false,
+        "refresh": 2,
+        "hide": 0,
+        "skipUrlSync": false
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "15s",
+      "30s",
+      "1m",
+      "5m"
+    ]
+  },
+  "timezone": "browser",
+  "title": "RecipeHub · Giám sát hệ thống trực tiếp",
+  "description": "CPU/RAM container và tiến trình, HTTP, readiness, PostgreSQL và Redis. Không có dữ liệu không đồng nghĩa hệ thống khỏe hoặc tài nguyên bằng 0. Cần chờ đủ mẫu để tính tốc độ; dashboard nghiệp vụ SQL vẫn giữ riêng.",
+  "uid": "recipehub-monitoring",
+  "version": 1
+}

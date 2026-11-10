@@ -83,10 +83,11 @@ export default function ProfilePage() {
       ? 'Soạn thảo và chuẩn hóa công thức đồ uống, tính toán định mức, xuất bản SOP và tài liệu kỹ thuật.'
       : role === 'viewer'
       ? 'Tra cứu quy trình pha chế chuẩn, quy đổi sản lượng thực tế và thực hiện bài kiểm tra SOP.'
-      : 'Quản trị hệ thống, điều phối danh mục, phân quyền tài khoản và giám sát toàn bộ hoạt động.';
+      : 'Quản trị tài khoản, giám sát hệ thống và theo dõi nhật ký kiểm toán.';
 
-  const workspaceUrl = role === 'viewer' ? '/viewer/recipes' : '/rnd/recipes';
-  const workspaceLabel = role === 'viewer' ? 'Mở Kho công thức vận hành' : 'Mở Không gian R&D công thức';
+  const workspaceUrl = role === 'viewer' ? '/viewer/recipes' : role === 'admin' ? '/admin' : '/rnd/recipes';
+  const workspaceLabel =
+    role === 'viewer' ? 'Mở Kho công thức vận hành' : role === 'admin' ? 'Mở Trung tâm Quản trị' : 'Mở Không gian R&D công thức';
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">

@@ -9,20 +9,21 @@ Hệ thống RecipeHub phục vụ 3 nhóm vai trò rõ ràng, không đè lấn
 | **Đối tượng** | Quản trị viên IT, Vận hành hệ thống | Đội ngũ R&D, Chuyên gia pha chế | Barista, Cửa hàng trưởng, Nhân sự pha chế |
 | **Route gốc** | `/admin` | `/rnd` | `/viewer` |
 | **Phân khu Sidebar** | `QUẢN TRỊ HỆ THỐNG` | `KHÔNG GIAN R&D` | `VẬN HÀNH CỬA HÀNG` |
-| **Mục đích** | Quản trị tài khoản, giám sát sức khỏe microservices/DB và xem nhật ký kiểm toán | Sáng tạo công thức, quản lý nguyên liệu, danh mục đơn vị, media, xuất PDF và soạn đề quiz | Tra cứu công thức chuẩn đã phát hành, làm bài kiểm tra SOP |
-| **Quyền Recipe** | Chỉ đọc (`GET`) để phục vụ giám sát/tra cứu; không có quyền ghi công thức/danh mục | Toàn quyền biên tập (`POST/PUT/PATCH/DELETE`): soạn/sửa `draft`, phát hành `published`, tạo phiên bản | Chỉ xem `published`, chưa archive |
-| **Quyền Nguyên liệu & Đơn vị** | Không biên tập danh mục R&D | Toàn quyền quản lý nhóm nguyên liệu, nhóm đơn vị, đơn vị đo (`/rnd/catalogue`) và kho nguyên liệu (`/rnd/ingredients`) | Không có quyền quản lý |
-| **Quyền Quiz** | Theo dõi sự kiện qua Audit Logs | Soạn đề thi, ngân hàng câu hỏi, thống kê kết quả | Làm bài kiểm tra, xem lại lịch sử bài làm của mình |
-| **Quyền Hệ thống** | Quản trị tài khoản (`/admin/users`), giám sát hệ thống (`/admin/system`), xem Audit Logs (`/admin/logs`), truy cập Grafana & pgAdmin | Xem tư liệu media R&D | Cấu hình tài khoản cá nhân |
-| **Quyền Xuất bản PDF** | Không biên tập ấn phẩm PDF | Xem trước, xuất nháp/chính thức và xem lịch sử (`/rnd/documents`, `/rnd/documents/new`) | Chỉ tải PDF chính thức dạng `single` có nguồn `published`, chưa archive |
+| **Mục đích** | Quản trị tài khoản, giám sát sức khỏe microservices/DB và xem nhật ký kiểm toán | Sáng tạo công thức, quản lý nguyên liệu, đơn vị đo, media, tài liệu PDF và quiz (soạn, ban hành, lưu trữ, kết quả) | Tra cứu công thức chuẩn đã phát hành, làm bài kiểm tra SOP |
+| **Quyền Recipe** | Không đọc và không ghi dữ liệu công thức (API trả 403); chỉ gọi `/info` và health để giám sát | Toàn quyền biên tập (`POST/PUT/PATCH/DELETE`): soạn/sửa `draft`, phát hành `published`, tạo phiên bản | Chỉ xem `published`, chưa archive |
+| **Quyền Nguyên liệu & Đơn vị** | Không có quyền | Toàn quyền quản lý nguyên liệu, loại nguyên liệu (`/rnd/ingredients`), đại lượng đo và đơn vị đo (`/rnd/catalogue`) | Không có quyền quản lý |
+| **Quyền Quiz** | Không có workspace quiz; chỉ theo dõi sự kiện qua Audit Logs | Soạn đề, ngân hàng câu hỏi, ban hành/lưu trữ đề, thống kê kết quả (`/rnd/quizzes*`) | Làm bài kiểm tra, xem lại lịch sử bài làm của mình |
+| **Quyền Hệ thống** | Quản trị tài khoản (`/admin/users`), giám sát hệ thống (`/admin/system`), Audit Logs (`/admin/logs`), liên kết Grafana & pgAdmin | Quản lý media R&D (`/rnd/media`) | Cấu hình tài khoản cá nhân |
+| **Quyền Xuất bản PDF** | Không có quyền | Xem trước, xuất nháp/chính thức và xem lịch sử (`/rnd/documents`, `/rnd/documents/new`) | Chỉ tải PDF chính thức dạng `single` có nguồn `published`, chưa archive |
 
 ## 2. Bản Đồ Điều Hướng Theo Role (Navigation Map)
 
 ### 2.1. Phân Hệ Admin (`/admin`)
-- `/admin`: Dashboard quản trị tổng quan (tài khoản, giám sát hệ thống, audit logs, liên kết nhanh Grafana & pgAdmin 4).
+- `/admin`: Dashboard quản trị (tài khoản, giám sát hệ thống, audit logs, liên kết nhanh Grafana & pgAdmin 4).
 - `/admin/users`: Quản lý danh sách tài khoản, khóa/mở khóa, đổi mật khẩu, gán vai trò.
-- `/admin/system`: Giám sát sức khỏe 5 Microservices qua YARP Gateway, kiểm tra kết nối 5 CSDL PostgreSQL, độ trễ phản hồi và luồng hoạt động gần đây.
+- `/admin/system`: Giám sát sức khỏe 5 Microservices qua YARP Gateway, kết nối 5 CSDL PostgreSQL, độ trễ phản hồi và luồng hoạt động gần đây.
 - `/admin/logs`: Xem nhật ký Audit Logs truy vết thao tác nghiệp vụ.
+- Admin không có workspace công thức, nguyên liệu, đơn vị, media, PDF hay quiz; mọi route này thuộc `/rnd`. Không cấp admin quyền vào prefix `/rnd`.
 
 ### 2.2. Phân Hệ R&D (`/rnd`)
 - `/rnd`: Dashboard nghiên cứu tổng quan.
@@ -30,12 +31,12 @@ Hệ thống RecipeHub phục vụ 3 nhóm vai trò rõ ràng, không đè lấn
 - `/rnd/recipes/new`: Soạn thảo công thức mới, tỷ lệ thành phần.
 - `/rnd/recipes/[id]`: Xem chi tiết công thức, quy trình pha chế.
 - `/rnd/recipes/[id]/edit`: Tạo phiên bản mới hoặc cập nhật công thức.
-- `/rnd/ingredients`: Quản lý kho nguyên liệu mẫu, nhà cung cấp.
-- `/rnd/catalogue`: Quản lý danh mục chuẩn R&D (Nhóm nguyên liệu, Nhóm đơn vị, Đơn vị đo).
+- `/rnd/ingredients`: Quản lý kho nguyên liệu và loại nguyên liệu (tab).
+- `/rnd/catalogue`: Quản lý đại lượng đo và đơn vị đo.
 - `/rnd/media`: Thư viện ảnh tư liệu R&D & bản nháp AI.
 - `/rnd/documents`: Kho lưu trữ tài liệu SOP, tra cứu và tải tài liệu PDF.
-- `/rnd/documents/new`: Không gian tạo và xuất bản ấn phẩm SOP mới (chọn món, xem trước bản in A4 ngang, xuất nháp/chính thức).
-- `/rnd/quizzes`: Ngân hàng câu hỏi & bộ đề kiểm tra SOP.
+- `/rnd/documents/new`: Tạo và xuất bản ấn phẩm SOP mới (chọn món, xem trước A4 ngang, xuất nháp/chính thức).
+- `/rnd/quizzes`: Ngân hàng câu hỏi & bộ đề kiểm tra SOP; ban hành ("Ban hành") và lưu trữ ("Lưu trữ") đề.
 - `/rnd/quizzes/new`: Soạn đề thi mới gắn liền với công thức.
 - `/rnd/quizzes/[quizId]`: Biên tập nội dung câu hỏi trắc nghiệm.
 - `/rnd/quizzes/results`: Thống kê kết quả thi theo công thức.

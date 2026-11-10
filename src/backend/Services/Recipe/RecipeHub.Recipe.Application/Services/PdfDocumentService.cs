@@ -379,8 +379,7 @@ public sealed class PdfDocumentService : IPdfDocumentService
                 throw new UnauthorizedAccessException("Công thức nguồn đã bị lưu trữ hoặc chưa được phát hành.");
             }
         }
-        else if (!string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase) &&
-                 !string.Equals(role, "rnd", StringComparison.OrdinalIgnoreCase))
+        else if (!string.Equals(role, "rnd", StringComparison.OrdinalIgnoreCase))
         {
             throw new UnauthorizedAccessException("Không có quyền truy cập tài liệu PDF.");
         }

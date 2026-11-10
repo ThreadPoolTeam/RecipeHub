@@ -351,7 +351,7 @@ export function LandingPage({ manifest }: LandingPageProps) {
                       Bảng điều khiển Quản trị &amp; Phân quyền
                     </h3>
                     <p className="text-sm text-[#706E68] leading-relaxed">
-                      Quản lý danh mục hệ thống, phân quyền người dùng theo vai trò (RBAC) và truy vết nhật ký Audit Log bảo mật.
+                      Quản lý tài khoản, phân quyền người dùng theo vai trò (RBAC), giám sát hệ thống và truy vết nhật ký Audit Log bảo mật.
                     </p>
                   </div>
 

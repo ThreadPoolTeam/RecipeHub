@@ -39,7 +39,7 @@ function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-md bg-white border border-[#E8E2D9] rounded-xl p-8 shadow-xs space-y-6">
+    <div className="w-full max-w-md bg-white border border-[#E8E2D9] rounded-xl p-8 shadow-xs space-y-6 [color-scheme:light]">
       <div className="space-y-1 text-center">
         <h2 className="text-xl font-bold text-[#1A1917] tracking-tight">
           Đăng Nhập RecipeHub

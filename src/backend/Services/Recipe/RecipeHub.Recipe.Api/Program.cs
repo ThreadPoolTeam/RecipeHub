@@ -1,3 +1,4 @@
+using Prometheus;
 using RecipeHub.BuildingBlocks.Audit;
 using RecipeHub.Recipe.Api;
 using RecipeHub.Recipe.Api.Swagger;
@@ -53,6 +54,13 @@ builder.Services.AddAuditActivityPublisher();
 
 var app = builder.Build();
 
+app.UseRouting();
+app.UseWhen(
+    context => !context.Request.Path.StartsWithSegments("/metrics")
+        && !context.Request.Path.StartsWithSegments("/health"),
+    branch => branch.UseHttpMetrics());
+app.MapMetrics().WithMetadata(new HttpMethodMetadata([HttpMethods.Get])).AllowAnonymous().ExcludeFromDescription();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -69,10 +77,14 @@ app.Use(async (context, next) =>
 {
     var path = context.Request.Path;
     var calculation = path.StartsWithSegments("/api/v1/recipes/calculate") || path == "/api/v1/recipes/units/convert";
-    if (path.StartsWithSegments("/api/v1/recipes") && !HttpMethods.IsGet(context.Request.Method) && !calculation)
+    if (path.StartsWithSegments("/api/v1/recipes") && path != "/api/v1/recipes/info")
     {
-        if (context.User.Identity?.IsAuthenticated != true) { await context.ChallengeAsync(); return; }
-        if (!context.User.IsInRole("rnd")) { await context.ForbidAsync(); return; }
+        if (context.User.IsInRole("admin")) { await context.ForbidAsync(); return; }
+        if (!HttpMethods.IsGet(context.Request.Method) && !calculation)
+        {
+            if (context.User.Identity?.IsAuthenticated != true) { await context.ChallengeAsync(); return; }
+            if (!context.User.IsInRole("rnd")) { await context.ForbidAsync(); return; }
+        }
     }
     await next();
 });

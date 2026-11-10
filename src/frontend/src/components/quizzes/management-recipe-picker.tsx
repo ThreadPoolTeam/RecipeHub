@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { quizManagement, type RecipeChoice, type RecipeVersionChoice } from '@/lib/api/quiz-management';
+import { formatVersionLabel, quizManagement, resolveRecipeVersion, type RecipeChoice, type RecipeVersionChoice, type RecipeVersionInfo } from '@/lib/api/quiz-management';
 import { errorText, Message, Pagination } from './management-shared';
 
 export function ManagementRecipePicker({ actor, value, onChange, disabled }: { actor: string; value: string; onChange: (value: string) => void; disabled?: boolean }) {
@@ -15,6 +15,8 @@ export function ManagementRecipePicker({ actor, value, onChange, disabled }: { a
   const [versionLoading, setVersionLoading] = useState(false);
   const [error, setError] = useState('');
   const [retry, setRetry] = useState(0);
+  const [info, setInfo] = useState<(RecipeVersionInfo & { id: string }) | null>(null);
+  const [resolving, setResolving] = useState(false);
   useEffect(() => {
     if (!value && !recipe && recipes.length) setRecipe(recipes[0].id);
   }, [value, recipe, recipes]);
@@ -40,5 +42,16 @@ export function ManagementRecipePicker({ actor, value, onChange, disabled }: { a
     quizManagement.recipeVersions(actor, recipe, controller.signal).then(data => setVersions(data.filter(item => item.status === 'published'))).catch(e => { if (!controller.signal.aborted) setError(errorText(e)); }).finally(() => { if (!controller.signal.aborted) setVersionLoading(false); });
     return () => controller.abort();
   }, [actor, recipe, disabled, retry]);
-  return <fieldset className="qm-picker" disabled={disabled}><legend>Công thức liên kết</legend>{value && <p className="qm-muted">Phiên bản đang chọn: <code>{value}</code></p>}{!disabled && <><label className="qm-field">Tìm công thức đã ban hành<input type="search" value={search} placeholder="Tên hoặc mã công thức…" onChange={event => { setSearch(event.target.value); setPage(1); }} /></label><label className="qm-field">Công thức<select value={recipe} onChange={event => { setRecipe(event.target.value); setVersions([]); }} disabled={loading}><option value="">{loading ? 'Đang tải…' : 'Chọn công thức'}</option>{recipes.map(item => <option key={item.id} value={item.id}>{item.code} · {item.name}</option>)}</select></label>{!loading && !recipes.length && <p className="qm-muted">Không có công thức đã ban hành phù hợp.</p>}<Pagination page={page} total={total} pageSize={12} onPage={setPage} disabled={loading} />{recipe && <label className="qm-field">Phiên bản đã ban hành<select value={versions.some(item => item.id === value) ? value : ''} disabled={versionLoading} onChange={event => onChange(event.target.value)}><option value="">{versionLoading ? 'Đang tải phiên bản…' : 'Chọn phiên bản'}</option>{versions.map(item => <option key={item.id} value={item.id}>v{item.versionNumber} · {item.name}</option>)}</select></label>}<Message error={error} />{error && <button type="button" className="qm-btn" onClick={() => setRetry(value => value + 1)}>Thử lại tải công thức</button>}<p className="qm-muted">Chỉ dùng công thức đang hoạt động, phiên bản đã ban hành. Backend kiểm tra lại khi lưu.</p></>}</fieldset>;
+  useEffect(() => {
+    if (!value || info?.id === value) return;
+    const picked = recipes.find(item => item.id === recipe);
+    const version = versions.find(item => item.id === value);
+    if (picked && version) { setInfo({ id: value, code: picked.code, name: picked.name, versionNumber: version.versionNumber }); return; }
+    const controller = new AbortController();
+    setResolving(true);
+    resolveRecipeVersion(actor, value, controller.signal).then(found => { if (found) setInfo({ id: value, ...found }); }).catch(() => undefined).finally(() => { if (!controller.signal.aborted) setResolving(false); });
+    return () => controller.abort();
+  }, [actor, value, info, recipe, recipes, versions]);
+  const selectedText = !value ? '' : info?.id === value ? `${info.code} · ${info.name} · ${formatVersionLabel(info.versionNumber)}` : resolving ? 'Đang tải thông tin công thức…' : 'Chưa xác định';
+  return <fieldset className="qm-picker" disabled={disabled}><legend>Công thức liên kết</legend>{value && <p className="qm-muted">Phiên bản đang chọn: <strong>{selectedText}</strong></p>}{!disabled && <><label className="qm-field">Tìm công thức đã ban hành<input type="search" value={search} placeholder="Tên hoặc mã công thức…" onChange={event => { setSearch(event.target.value); setPage(1); }} /></label><label className="qm-field">Công thức<select value={recipe} onChange={event => { setRecipe(event.target.value); setVersions([]); }} disabled={loading}><option value="">{loading ? 'Đang tải…' : 'Chọn công thức'}</option>{recipes.map(item => <option key={item.id} value={item.id}>{item.code} · {item.name}</option>)}</select></label>{!loading && !recipes.length && <p className="qm-muted">Không có công thức đã ban hành phù hợp.</p>}<Pagination page={page} total={total} pageSize={12} onPage={setPage} disabled={loading} />{recipe && <label className="qm-field">Phiên bản đã ban hành<select value={versions.some(item => item.id === value) ? value : ''} disabled={versionLoading} onChange={event => onChange(event.target.value)}><option value="">{versionLoading ? 'Đang tải phiên bản…' : 'Chọn phiên bản'}</option>{versions.map(item => <option key={item.id} value={item.id}>{formatVersionLabel(item.versionNumber)} · {item.name}</option>)}</select></label>}<Message error={error} />{error && <button type="button" className="qm-btn" onClick={() => setRetry(value => value + 1)}>Thử lại tải công thức</button>}<p className="qm-muted">Chỉ dùng công thức đang hoạt động, phiên bản đã ban hành. Backend kiểm tra lại khi lưu.</p></>}</fieldset>;
 }

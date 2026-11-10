@@ -86,6 +86,13 @@ public sealed class CatalogsController : ControllerBase
         CancellationToken cancellationToken) => Ok(await _unitService.UpdateAsync(
             publicId, request, RequestActor.GetUserId(HttpContext), cancellationToken));
 
+    [HttpPut("units/{publicId:guid}/conversion")]
+    public async Task<ActionResult<UnitResponse>> UpdateUnitConversion(
+        Guid publicId,
+        [FromBody] UnitConversionRequest request,
+        CancellationToken cancellationToken) => Ok(await _unitService.UpdateConversionAsync(
+            publicId, request, RequestActor.GetUserId(HttpContext), cancellationToken));
+
     [HttpDelete("units/{publicId:guid}")]
     public async Task<IActionResult> DeactivateUnit(Guid publicId, CancellationToken cancellationToken)
     {

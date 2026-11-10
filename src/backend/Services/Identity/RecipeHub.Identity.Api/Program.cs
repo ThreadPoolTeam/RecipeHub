@@ -1,3 +1,4 @@
+using Prometheus;
 using RecipeHub.BuildingBlocks.Audit;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
@@ -48,6 +49,12 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+app.UseRouting();
+app.UseWhen(
+    context => !context.Request.Path.StartsWithSegments("/metrics")
+        && !context.Request.Path.StartsWithSegments("/health"),
+    branch => branch.UseHttpMetrics());
+app.MapMetrics().WithMetadata(new HttpMethodMetadata([HttpMethods.Get])).AllowAnonymous().ExcludeFromDescription();
 app.UseExceptionHandler(errorApp => errorApp.Run(async context =>
 {
     var error = context.Features.Get<IExceptionHandlerFeature>()?.Error;

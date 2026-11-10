@@ -165,10 +165,10 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             prefetch={true}
             onClick={(e) => handleNavClick('/rnd/catalogue', e)}
             className={navLinkStyle(isLinkActive('/rnd/catalogue'), isCollapsed)}
-            title="Đơn vị & Phân nhóm"
+            title="Đại lượng & Đơn vị đo"
           >
             <Package className="w-5 h-5 text-[#706E68]" />
-            {!isCollapsed && <span>Đơn vị &amp; Phân nhóm</span>}
+            {!isCollapsed && <span>Đại lượng &amp; Đơn vị đo</span>}
           </Link>
           <Link
             href="/rnd/media"

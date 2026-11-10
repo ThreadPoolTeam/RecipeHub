@@ -69,8 +69,8 @@ public sealed class QuizRecipeQueryServiceImpl : QuizRecipeQuery.QuizRecipeQuery
             };
         }
 
-        // Allowed roles: admin, rnd, viewer
-        if (actorRole != "admin" && actorRole != "rnd" && actorRole != "viewer")
+        // Allowed roles: rnd, viewer
+        if (actorRole != "rnd" && actorRole != "viewer")
         {
             _logger.LogWarning("QuizRecipeQuery rejected: role '{Role}' unauthorized.", actorRole);
             return new GetQuizRecipeVersionsResponse

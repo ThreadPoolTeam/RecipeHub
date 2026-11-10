@@ -9,11 +9,11 @@ import './management-styles.css';
 
 export function useManagementContext() {
   const { session, repo } = useDemo();
-  return { session, repo, base: session?.role === 'admin' ? '/admin/quizzes' : '/rnd/quizzes' };
+  return { session, repo, base: '/rnd/quizzes' };
 }
 export function ManagementFrame({ children, title, description, actions }: { children: ReactNode; title: string; description?: string; actions?: ReactNode }) {
   const { session } = useManagementContext();
-  return <section className="qm-page"><div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E2D9] mb-6"><div><h1 className="text-2xl font-bold text-[#1A1917] flex items-center gap-2.5"><GraduationCap className="w-6 h-6 text-[#B47820]" />{title}</h1>{description && <p className="text-[#706E68] text-sm mt-1">{description}</p>}</div>{actions && <div className="flex items-center gap-2.5 flex-wrap">{actions}</div>}</div>{session && session.role !== 'viewer' ? children : <p role="status">Không có quyền quản lý Quiz.</p>}</section>;
+  return <section className="qm-page"><div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E2D9] mb-6"><div><h1 className="text-2xl font-bold text-[#1A1917] flex items-center gap-2.5"><GraduationCap className="w-6 h-6 text-[#B47820]" />{title}</h1>{description && <p className="text-[#706E68] text-sm mt-1">{description}</p>}</div>{actions && <div className="flex items-center gap-2.5 flex-wrap">{actions}</div>}</div>{session?.role === 'rnd' ? children : <p role="status">Không có quyền quản lý Quiz.</p>}</section>;
 }
 export function QuizStatus({ state }: { state: QuizState }) {
   return <span className={`qm-status qm-status-${state}`}>{state === 'draft' ? '◷ Bản nháp' : state === 'published' ? '✓ Đã ban hành' : '▤ Đã lưu trữ'}</span>;

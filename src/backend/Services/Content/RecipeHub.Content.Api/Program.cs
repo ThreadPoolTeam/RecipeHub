@@ -1,3 +1,4 @@
+using Prometheus;
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
@@ -69,10 +70,12 @@ builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("ContentEditors", policy =>
         policy.RequireAuthenticatedUser()
-              .RequireRole("admin", "rnd"));
+              .RequireRole("rnd"));
     options.AddPolicy("ContentReaders", policy =>
         policy.RequireAuthenticatedUser()
-              .RequireRole("admin", "rnd", "viewer"));
+              .RequireRole("rnd", "viewer"));
+    options.AddPolicy("ServiceInfo", policy =>
+        policy.RequireAuthenticatedUser());
 });
 
 builder.Services.AddHealthChecks();
@@ -88,6 +91,13 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(redisOptions));
 
 var app = builder.Build();
+
+app.UseRouting();
+app.UseWhen(
+    context => !context.Request.Path.StartsWithSegments("/metrics")
+        && !context.Request.Path.StartsWithSegments("/health"),
+    branch => branch.UseHttpMetrics());
+app.MapMetrics().WithMetadata(new HttpMethodMetadata([HttpMethods.Get])).AllowAnonymous().ExcludeFromDescription();
 
 if (app.Environment.IsDevelopment())
 {
@@ -133,7 +143,7 @@ app.MapGet("/api/v1/content/info", async (ContentDbContext db, CancellationToken
         description = "Content AI & Media Management Service",
         timestampUtc = DateTime.UtcNow
     });
-}).RequireAuthorization("ContentReaders");
+}).RequireAuthorization("ServiceInfo");
 
 // Endpoint trigger gRPC Ping to Recipe.Api
 app.MapGet("/api/v1/content/probe-recipe", async (IConfiguration config) =>

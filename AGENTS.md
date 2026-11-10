@@ -6,7 +6,7 @@
 - **Giữ `docs/systemmd/` tinh gọn (BẮT BUỘC):** Đây là bộ chuẩn dùng chung để thống nhất hệ thống, không phải nơi ghi mọi tính năng, kế hoạch, nhật ký, kết quả test hay chi tiết triển khai. Luôn đọc mục liên quan để tuân thủ; chỉ sửa khi có sai lệch đã đối chiếu với code/schema hoặc thay đổi thật sự đối với chuẩn kiến trúc, ownership, quyền, điều hướng hay contract dùng chung. Ưu tiên sửa đúng mục hiện có, nội dung ngắn và dẫn link nguồn chuyên biệt; chỉ bổ sung mục/file khi thật sự cần và chưa có nơi phù hợp. Không chép lại schema/API/runbook, không thêm quy định hoặc mở rộng phạm vi chỉ để “đủ tài liệu”. Tính năng tuân thủ chuẩn hiện hữu không bắt buộc sửa `docs/systemmd/`.
 
 - **Caveman skill (BẮT BUỘC):** Luôn đọc và sử dụng skill `caveman` khi bắt đầu phiên làm việc; duy trì trong mọi phản hồi. Giao tiếp tiếng Việt, ngắn gọn, giữ nguyên thuật ngữ/code/API/CLI. Dùng `sequential-thinking` khi cần suy luận có cấu trúc.
-- **CodeGraph**: Project indexed with CodeGraph. Use `codegraph_explore` MCP or `codegraph explore` CLI BEFORE `grep` or Read.
+- **CodeGraph (BẮT BUỘC khi khảo sát code):** Dùng `codegraph_explore` MCP hoặc `codegraph explore` CLI trước khi tìm/đọc source thủ công. Khi bật CodeGraph cho checkout mới, xác nhận đang ở root Git repo rồi chạy `codegraph status .`; chưa có index thì `codegraph init .`, có rồi thì `codegraph sync .`, không full reindex mỗi tin nhắn. Hook project `.omp/hooks/pre/codegraph-sync.ts` tự sync lúc `session_start` và `agent_end`, chỉ khi cwd trùng root chứa hook và có `.git` cùng `.codegraph/`; không tự init, index ổ đĩa hoặc unlock. Nếu sửa code ngoài OMP trong phiên, chạy `codegraph sync .` trước truy vấn tiếp theo. Nếu MCP chưa nhận index, dùng CLI ngay; vẫn dùng LSP để xác nhận symbol/references khi sửa code.
 - **Design System (BẮT BUỘC):** Mọi công việc Web FE (trừ mobile) BẮT BUỘC đọc `docs/DESIGN.md` trước khi thiết kế/chỉnh sửa; mọi quyết định UI/UX phải giải thích rõ lý do căn cứ theo DESIGN.md.
 - **System Design Reference (BẮT BUỘC TOÀN HỆ THỐNG):** Mọi công việc phát triển tính năng mới hoặc chỉnh sửa (cả Frontend và Backend) **BẮT BUỘC** phải đọc và tuân thủ bộ tài liệu chuẩn hóa tại `docs/systemmd/` (Frontend tại `docs/systemmd/frontend/`, Backend tại `docs/systemmd/backend/`, quy tắc quản trị tại `docs/systemmd/governance.md`).
 
@@ -35,7 +35,8 @@ RecipeHub/
 │   │   │   └── Quiz/     (Domain, Application, Infrastructure, Api)
 │   │   └── Workers/
 │   │       └── RecipeHub.BackgroundWorker/                  # Redis Streams consumer with MKSTREAM & ACK
-│   └── frontend/                                            # Next.js 16 App Router (Standalone)
+│   ├── frontend/                                            # Next.js 16 App Router (Standalone)
+│   └── mobile/                                              # Flutter app com.recipehub.mobile (Viewer/Admin, NomadKit)
 ├── infra/
 │   ├── compose.yaml                                         # Full-stack Docker Compose
 │   └── postgres/init-databases.sh                           # 5 independent databases bootstrap
@@ -96,6 +97,10 @@ RecipeHub/
   - Tách tài khoản triển khai SQL có quyền DDL khỏi tài khoản runtime chỉ có quyền dữ liệu cần thiết. Không cấp quyền cho `PUBLIC` hoặc superuser để né lỗi.
   - Chỉ gỡ EF migrations/factory/cấu hình cũ sau khi SQL thay thế đã được kiểm chứng; giữ lịch sử đã áp dụng và dữ liệu trong DB. Tắt `ApplyMigrations` đơn thuần không được tính là hoàn thành DB First.
   - Nếu không ảnh hưởng DB, vẫn đối chiếu schema và ghi rõ không cần sửa. Giữ database-per-service, không FK xuyên database; cập nhật seed, tài liệu, caller và kiểm chứng đường chạy thực tế sau chuyển đổi.
+- **Mobile (`src/mobile/`):**
+  - Flutter, package `com.recipehub.mobile`, 2 vai trò: Viewer (Barista) và Admin (quản lý cửa hàng). Soạn/duyệt công thức, CRUD nguyên liệu, quản trị người dùng và xuất PDF thuộc web.
+  - Nguồn yêu cầu: `requirements-draft.md` mục 10 (M-01 đến M-17). Tài liệu mobile: `src/mobile/README.md`, `DESIGN.md`, `flutter-handoff.md`, `ux/`. Plugin Figma ở `tools/figma-prototype-plugin/` đọc `src/mobile/lib`, nên đổi UI hoặc route phải chạy lại plugin.
+  - Mọi ảnh trong `src/mobile/assets/` phải có tham chiếu trong `lib/`; ảnh không dùng thì xóa.
 - **Language & Style:** Communication in Vietnamese, concise/terse caveman style unless asked otherwise.
 - **Git Workflow:** Atomic commits (no big-bang commits). Include scope prefixes: `feat:`, `fix:`, `docs:`, `refactor:`, `chore:`.
 - **Validation:** Always verify changes (`dotnet build src/backend/RecipeHub.sln`, `npm run build`) before claiming completion.

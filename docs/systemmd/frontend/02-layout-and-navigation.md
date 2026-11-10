@@ -40,7 +40,7 @@ Tất cả các trang thuộc không gian làm việc `(platform)` được qu�
   - R&D: `KHÔNG GIAN R&D` (`/rnd`, `/rnd/recipes`, `/rnd/ingredients`, `/rnd/catalogue`, `/rnd/media`, `/rnd/documents`, `/rnd/quizzes`, `/rnd/quizzes/results`).
   - Viewer: `VẬN HÀNH CỬA HÀNG` (`/viewer`, `/viewer/quizzes`, `/viewer/quizzes/history`).
   - Menu "Tài liệu PDF" (`FileText` icon):
-    - Admin: Không quản lý xuất bản PDF R&D; tập trung quản trị tài khoản, giám sát hệ thống và nhật ký kiểm toán.
+    - Admin: Không có menu tài liệu; admin chỉ quản trị tài khoản, giám sát hệ thống (`/admin/system`) và nhật ký kiểm toán (`/admin/logs`).
     - R&D: Menu `/rnd/documents` mở kho tài liệu; nút tạo mới dẫn `/rnd/documents/new`.
     - Viewer: Không hiển thị menu tài liệu; chỉ có nút tải PDF chính thức trực tiếp trên trang chi tiết công thức `/viewer/recipes/[id]`.
 

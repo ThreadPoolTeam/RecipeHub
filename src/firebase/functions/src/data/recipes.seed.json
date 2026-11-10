@@ -1,0 +1,369 @@
+[
+  {
+    "code": "CF-BACXIU",
+    "name": "Bạc Xỉu",
+    "description": "Nhiều sữa, ít cà phê, vị ngọt béo dễ uống.",
+    "status": "published",
+    "versionNumber": 1,
+    "ingredients": [
+      {
+        "name": "Espresso",
+        "quantity": 30.0,
+        "unit": "ml",
+        "stage": "Cốt"
+      },
+      {
+        "name": "Sữa đặc",
+        "quantity": 30.0,
+        "unit": "ml"
+      },
+      {
+        "name": "Sữa tươi",
+        "quantity": 60.0,
+        "unit": "ml",
+        "warning": "Bảo quản 2–4°C, dùng trong 24 giờ sau khi mở"
+      },
+      {
+        "name": "Đá viên",
+        "quantity": 120.0,
+        "unit": "g"
+      }
+    ],
+    "steps": [
+      {
+        "title": "Pha sữa",
+        "description": "Khuấy sữa đặc với sữa tươi trong ly.",
+        "durationSeconds": 10
+      },
+      {
+        "title": "Thêm đá",
+        "description": "Cho đá đầy 2/3 ly.",
+        "durationSeconds": 5
+      },
+      {
+        "title": "Rót cà phê",
+        "description": "Rót espresso từ từ tạo tầng màu.",
+        "durationSeconds": 10,
+        "safetyNote": "Rót chậm để giữ tầng"
+      }
+    ],
+    "searchKeywords": [
+      "bac",
+      "bacxiu",
+      "cf",
+      "xiu"
+    ]
+  },
+  {
+    "code": "CF-COLDBREW",
+    "name": "Cold Brew Cam Vàng",
+    "description": "Cold brew ủ lạnh 16 giờ, cam vàng tươi.",
+    "status": "published",
+    "versionNumber": 1,
+    "ingredients": [
+      {
+        "name": "Cốt Cold Brew",
+        "quantity": 150.0,
+        "unit": "ml",
+        "stage": "Cốt"
+      },
+      {
+        "name": "Siro đường",
+        "quantity": 10.0,
+        "unit": "ml"
+      },
+      {
+        "name": "Cam vàng",
+        "quantity": 2.0,
+        "unit": "lát",
+        "stage": "Topping"
+      },
+      {
+        "name": "Đá viên",
+        "quantity": 150.0,
+        "unit": "g"
+      }
+    ],
+    "steps": [
+      {
+        "title": "Chuẩn bị ly",
+        "description": "Cho đá đầy ly, thêm 1 lát cam ép nhẹ.",
+        "durationSeconds": 10
+      },
+      {
+        "title": "Rót cold brew",
+        "description": "Rót cold brew và siro, khuấy 5 vòng.",
+        "durationSeconds": 15,
+        "temperatureCelsius": 4.0,
+        "equipment": "Thìa bar"
+      },
+      {
+        "title": "Trang trí",
+        "description": "Cài lát cam lên miệng ly.",
+        "durationSeconds": 5
+      }
+    ],
+    "searchKeywords": [
+      "brew",
+      "cam",
+      "cf",
+      "cold",
+      "coldbrew",
+      "vang"
+    ]
+  },
+  {
+    "code": "CF-MUOI",
+    "name": "Cà Phê Muối",
+    "description": "Espresso đậm, sữa đặc, lớp kem muối mặn béo trên mặt.",
+    "status": "published",
+    "versionNumber": 1,
+    "ingredients": [
+      {
+        "name": "Espresso",
+        "quantity": 40.0,
+        "unit": "ml",
+        "stage": "Cốt"
+      },
+      {
+        "name": "Sữa đặc",
+        "quantity": 25.0,
+        "unit": "ml"
+      },
+      {
+        "name": "Kem muối",
+        "quantity": 40.0,
+        "unit": "ml",
+        "stage": "Lớp phủ",
+        "warning": "Chứa sữa – cảnh báo dị ứng"
+      },
+      {
+        "name": "Đá viên",
+        "quantity": 120.0,
+        "unit": "g"
+      }
+    ],
+    "steps": [
+      {
+        "title": "Chiết xuất",
+        "description": "Chiết 2 shot espresso 40 ml trong 25–30 giây.",
+        "durationSeconds": 28,
+        "temperatureCelsius": 93.0,
+        "equipment": "Máy espresso"
+      },
+      {
+        "title": "Pha nền",
+        "description": "Khuấy espresso với sữa đặc, thêm đá.",
+        "durationSeconds": 15
+      },
+      {
+        "title": "Phủ kem muối",
+        "description": "Rót nhẹ kem muối qua mặt muỗng tạo lớp dày 1 cm.",
+        "durationSeconds": 10,
+        "equipment": "Muỗng bar"
+      }
+    ],
+    "searchKeywords": [
+      "ca",
+      "cf",
+      "muoi",
+      "phe"
+    ]
+  },
+  {
+    "code": "TS-MATCHA",
+    "name": "Matcha Latte",
+    "description": "Matcha Nhật đánh bọt, sữa tươi lạnh.",
+    "status": "published",
+    "versionNumber": 1,
+    "ingredients": [
+      {
+        "name": "Bột Matcha",
+        "quantity": 4.0,
+        "unit": "g",
+        "stage": "Cốt",
+        "warning": "Rây mịn trước khi đánh để tránh vón cục"
+      },
+      {
+        "name": "Sữa tươi",
+        "quantity": 180.0,
+        "unit": "ml",
+        "stage": "Sữa",
+        "warning": "Bảo quản 2–4°C, dùng trong 24 giờ sau khi mở"
+      },
+      {
+        "name": "Siro đường",
+        "quantity": 15.0,
+        "unit": "ml"
+      },
+      {
+        "name": "Đá viên",
+        "quantity": 120.0,
+        "unit": "g"
+      }
+    ],
+    "steps": [
+      {
+        "title": "Đánh matcha",
+        "description": "Rây 4 g matcha, thêm 40 ml nước 75°C, đánh chữ W đến khi nổi bọt.",
+        "durationSeconds": 30,
+        "temperatureCelsius": 75.0,
+        "equipment": "Chổi tre",
+        "safetyNote": "Không dùng nước sôi – matcha bị đắng"
+      },
+      {
+        "title": "Rót sữa",
+        "description": "Cho đá, sữa tươi, siro vào ly.",
+        "durationSeconds": 10
+      },
+      {
+        "title": "Phủ matcha",
+        "description": "Rót matcha lên trên tạo tầng xanh.",
+        "durationSeconds": 10
+      }
+    ],
+    "searchKeywords": [
+      "latte",
+      "matcha",
+      "ts"
+    ]
+  },
+  {
+    "code": "TS-OOLONG",
+    "name": "Trà Sữa Oolong",
+    "description": "Trà Oolong rang vừa, sữa tươi béo nhẹ, trân châu đen.",
+    "status": "published",
+    "versionNumber": 1,
+    "ingredients": [
+      {
+        "name": "Trà Oolong ủ",
+        "quantity": 150.0,
+        "unit": "ml",
+        "stage": "Cốt"
+      },
+      {
+        "name": "Sữa tươi",
+        "quantity": 60.0,
+        "unit": "ml",
+        "stage": "Sữa",
+        "warning": "Bảo quản 2–4°C, dùng trong 24 giờ sau khi mở"
+      },
+      {
+        "name": "Siro đường",
+        "quantity": 20.0,
+        "unit": "ml"
+      },
+      {
+        "name": "Trân châu đen",
+        "quantity": 50.0,
+        "unit": "g",
+        "stage": "Topping"
+      },
+      {
+        "name": "Đá viên",
+        "quantity": 150.0,
+        "unit": "g"
+      }
+    ],
+    "steps": [
+      {
+        "title": "Ủ trà",
+        "description": "Ủ 8 g Oolong với 200 ml nước 90°C, lọc lấy 150 ml.",
+        "durationSeconds": 300,
+        "temperatureCelsius": 90.0,
+        "equipment": "Bình ủ",
+        "safetyNote": "Nước nóng – cầm bằng tay cầm"
+      },
+      {
+        "title": "Lắc",
+        "description": "Cho trà, sữa, siro, đá vào shaker, lắc 15 lần.",
+        "durationSeconds": 20,
+        "equipment": "Shaker"
+      },
+      {
+        "title": "Hoàn thiện",
+        "description": "Cho trân châu vào ly, rót hỗn hợp, đậy nắp.",
+        "durationSeconds": 15
+      }
+    ],
+    "searchKeywords": [
+      "oolong",
+      "sua",
+      "tra",
+      "ts"
+    ]
+  },
+  {
+    "code": "TT-DAOCAMSA",
+    "name": "Trà Đào Cam Sả",
+    "description": "Trà đen thanh, đào ngâm, cam vàng và sả thơm.",
+    "status": "published",
+    "versionNumber": 1,
+    "ingredients": [
+      {
+        "name": "Trà đen ủ",
+        "quantity": 150.0,
+        "unit": "ml",
+        "stage": "Cốt"
+      },
+      {
+        "name": "Siro đào",
+        "quantity": 25.0,
+        "unit": "ml"
+      },
+      {
+        "name": "Siro đường",
+        "quantity": 10.0,
+        "unit": "ml"
+      },
+      {
+        "name": "Đào ngâm",
+        "quantity": 3.0,
+        "unit": "lát",
+        "stage": "Topping"
+      },
+      {
+        "name": "Cam vàng",
+        "quantity": 2.0,
+        "unit": "lát"
+      },
+      {
+        "name": "Sả cây",
+        "quantity": 5.0,
+        "unit": "g"
+      },
+      {
+        "name": "Đá viên",
+        "quantity": 150.0,
+        "unit": "g"
+      }
+    ],
+    "steps": [
+      {
+        "title": "Đập sả",
+        "description": "Đập dập sả, cho vào shaker cùng 1 lát cam.",
+        "durationSeconds": 10,
+        "equipment": "Chày gỗ"
+      },
+      {
+        "title": "Lắc",
+        "description": "Thêm trà, siro, đá, lắc mạnh 15 lần.",
+        "durationSeconds": 20,
+        "equipment": "Shaker"
+      },
+      {
+        "title": "Trang trí",
+        "description": "Rót ra ly, thêm 3 lát đào và 1 lát cam trên mặt.",
+        "durationSeconds": 15
+      }
+    ],
+    "searchKeywords": [
+      "cam",
+      "dao",
+      "daocamsa",
+      "sa",
+      "tra",
+      "tt"
+    ]
+  }
+]

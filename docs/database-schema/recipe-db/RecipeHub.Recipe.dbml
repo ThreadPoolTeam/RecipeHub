@@ -26,10 +26,10 @@ Table recipe_db.unit_category {
     `state IN ('active', 'inactive')` [name: 'unit_category_state_check']
   }
 
-  Note: 'Nhóm phân loại đơn vị; API quy đổi metric chỉ chấp nhận cùng nhóm và cùng đại lượng vật lý. Phép tính không ghi DB.'
+  Note: 'Nhóm các đơn vị cùng đại lượng vật lý. API quy đổi metric và cấu hình quy đổi về base unit chỉ chấp nhận các đơn vị trong cùng nhóm.'
 }
 
-// Display units grouped by category.
+// Units convert to the category base with: base_value = value * factor_to_base + offset_to_base.
 Table recipe_db.unit {
   id bigint [pk, increment]
   public_id uuid [not null, unique]
@@ -37,6 +37,9 @@ Table recipe_db.unit {
   normalized_code text [not null, unique]
   name text [not null]
   category_id bigint [not null]
+  is_base boolean [not null, default: false, note: 'Đơn vị gốc duy nhất trong category.']
+  factor_to_base numeric(18,8) [not null, default: 1, note: 'base_value = value * factor_to_base + offset_to_base.']
+  offset_to_base numeric(18,8) [not null, default: 0, note: 'Độ lệch khi quy đổi; phần lớn đơn vị đồ uống dùng 0.']
   decimal_places smallint [not null, default: 2, note: 'Số chữ số thập phân khi làm tròn.']
   state text [not null, default: 'active']
   created_by_user_ref uuid [not null]
@@ -49,11 +52,13 @@ Table recipe_db.unit {
   }
 
   checks {
+    `factor_to_base > 0` [name: 'unit_factor_check']
+    `is_base = false OR (factor_to_base = 1 AND offset_to_base = 0)` [name: 'unit_base_conversion_check']
     `decimal_places BETWEEN 0 AND 6` [name: 'unit_decimal_places_check']
     `state IN ('active', 'inactive')` [name: 'unit_state_check']
   }
 
-  Note: 'Đơn vị thuộc một nhóm. Quy đổi metric mg/g/kg và ml/cl/dl/l dùng hệ số vật lý cố định; đơn vị khác chỉ đổi sang chính nó. Không suy đoán cup/shot hoặc khối lượng sang thể tích.'
+  Note: 'PostgreSQL migration tạo partial unique index trên category_id WHERE is_base = true. Đơn vị được cấu hình về base unit trong cùng category; API metric vẫn chỉ quy đổi các đại lượng vật lý tương thích.'
 }
 
 // Ingredient categories used to group and filter the shared catalog.
