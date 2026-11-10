@@ -465,7 +465,7 @@ export const SEED_DOCUMENT_DRAFTS: DocumentDraft[] = [
     id: 'draft_doc_olong',
     sourceVersionId: 'ver_olong_01_v1',
     template: 'standard-sop',
-    titleOverride: 'Quy Trình Chuẩn (SOP) — Trà Ô Long Sữa Nướng Đậm Vị',
+    titleOverride: 'Quy Trình Chuẩn (SOP) · Trà Ô Long Sữa Nướng Đậm Vị',
     coverMediaIdOverride: 'media_olong_cover',
     stepCaptionOverrides: {
       step_olo_1: 'Bước 1: Giữ ấm cốt trà ở 60°C',
