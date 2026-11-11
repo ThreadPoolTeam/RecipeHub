@@ -1,5 +1,7 @@
 'use client';
 
+import { pageTitleClass } from '@/components/workspace/page-header';
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -24,6 +26,7 @@ import { Button, TextInput, Alert } from '@/components/workspace/fields';
 import { StatusBadge } from '@/components/workspace/status-badge';
 import { Dialog } from '@/components/workspace/dialog';
 import { VersionHistoryDrawer } from '@/components/workspace/version-history-drawer';
+import { useToast } from '@/components/workspace/toast';
 import { getStoredAiDrafts } from '@/lib/ai-draft-storage';
 
 export default function RecipeDetailPage() {
@@ -32,6 +35,7 @@ export default function RecipeDetailPage() {
   const id = params?.id as string;
 
   const { session, repo, dataVersion, touch } = useDemo();
+  const { toast } = useToast();
   const [recipe, setRecipe] = useState<RecipeVersion | null>(null);
   const [scaledIngredients, setScaledIngredients] = useState<RecipeIngredient[] | null>(null);
   const [ingredientsMap, setIngredientsMap] = useState<Record<string, Ingredient>>({});
@@ -39,7 +43,6 @@ export default function RecipeDetailPage() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [mediaWarning, setMediaWarning] = useState<string | null>(null);
-  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [failedCoverUrl, setFailedCoverUrl] = useState<string | null>(null);
 
   // Version History State
@@ -130,10 +133,14 @@ export default function RecipeDetailPage() {
       const updated = await repo.publishRecipe(session, recipe.id);
       setRecipe(updated);
       touch();
-      setActionSuccess('Đã phát hành công thức thành công.');
+      toast({ type: 'success', title: 'Đã phát hành công thức', description: `${updated.code} · ${updated.versionLabel}` });
     } catch (err: unknown) {
       const e = err as Error;
-      setErrorMsg(e.message || 'Không thể phát hành công thức.');
+      toast({
+        type: 'error',
+        title: 'Không thể phát hành công thức',
+        description: e.message || 'Vui lòng thử lại.',
+      });
     } finally {
       setIsPublishing(false);
     }
@@ -163,10 +170,15 @@ export default function RecipeDetailPage() {
       const copiedRecipe = await repo.copyRecipe(session, recipe.id, cleanCode, cleanName);
       touch();
       setIsCopyDialogOpen(false);
+      toast({ type: 'success', title: 'Đã tạo bản sao công thức', description: `${cleanCode} · ${cleanName}` });
       router.push(`/rnd/recipes/${copiedRecipe.id}`);
     } catch (err: unknown) {
       const e = err as Error;
-      setCopyError(e.message || 'Không thể sao chép công thức.');
+      toast({
+        type: 'error',
+        title: 'Không thể sao chép công thức',
+        description: e.message || 'Vui lòng thử lại.',
+      });
     } finally {
       setCopySubmitting(false);
     }
@@ -182,10 +194,14 @@ export default function RecipeDetailPage() {
       setRecipe(updated);
       touch();
       setIsArchiveConfirmOpen(false);
-      setActionSuccess('Đã chuyển công thức vào kho lưu trữ thành công!');
+      toast({ type: 'success', title: 'Đã lưu trữ công thức', description: `${updated.code} · ${updated.versionLabel}` });
     } catch (err: unknown) {
       const e = err as Error;
-      setErrorMsg(e.message || 'Lỗi khi lưu trữ công thức.');
+      toast({
+        type: 'error',
+        title: 'Không thể lưu trữ công thức',
+        description: e.message || 'Vui lòng thử lại.',
+      });
     } finally {
       setIsArchiving(false);
     }
@@ -200,10 +216,14 @@ export default function RecipeDetailPage() {
       const updated = await repo.activateRecipe(session, recipe.id);
       setRecipe(updated);
       touch();
-      setActionSuccess('Đã khôi phục công thức về trạng thái hoạt động thành công!');
+      toast({ type: 'success', title: 'Đã khôi phục công thức', description: `${updated.code} · ${updated.versionLabel}` });
     } catch (err: unknown) {
       const e = err as Error;
-      setErrorMsg(e.message || 'Lỗi khi khôi phục công thức.');
+      toast({
+        type: 'error',
+        title: 'Không thể khôi phục công thức',
+        description: e.message || 'Vui lòng thử lại.',
+      });
     } finally {
       setIsActivating(false);
     }
@@ -211,8 +231,8 @@ export default function RecipeDetailPage() {
 
   if (loading) {
     return (
-      <div className="p-12 text-center text-[#706E68]">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#B47820]" />
+      <div className="p-12 text-center text-muted-foreground">
+        <div className="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
         <p className="mt-3 text-sm">Đang tải hồ sơ công thức...</p>
       </div>
     );
@@ -232,38 +252,70 @@ export default function RecipeDetailPage() {
   if (!recipe) return null;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-12">
+    <div className="space-y-8 pb-12">
+      <div className="grid items-center gap-8 lg:grid-cols-2">
       {/* Breadcrumb & Top Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E8E2D9] pb-4">
+      {/* Hero Cover Image (if available) */}
+      {(() => {
+        let coverUrl: string | null = null;
+        if (recipe.primaryMediaAssetId) {
+          coverUrl = mediaMap[recipe.primaryMediaAssetId] || null;
+          if (!coverUrl && typeof window !== 'undefined') {
+            coverUrl = localStorage.getItem(`recipehub_media_url_${recipe.primaryMediaAssetId}`) || null;
+          }
+
+        }
+        if (!coverUrl) {
+          const versionId = recipe.versionId || recipe.id;
+          const localDrafts = getStoredAiDrafts(versionId, 'final_product');
+          if (localDrafts.length > 0) {
+            coverUrl = localDrafts[0].previewUrl;
+          }
+        }
+
+        if (!coverUrl || coverUrl === failedCoverUrl) return null;
+
+        return (
+          <div className="relative overflow-hidden rounded-2xl border border-border bg-muted shadow-soft">
+            <img
+              src={coverUrl}
+              alt={recipe.name}
+              className="aspect-square w-full object-contain"
+              onError={() => setFailedCoverUrl(coverUrl)}
+            />
+          </div>
+        );
+      })()}
+      <div className="space-y-5">
         <div>
-          <div className="flex items-center gap-2 text-xs text-[#706E68] mb-1">
-            <Link href="/rnd/recipes" className="hover:text-[#1A1917] flex items-center gap-1 font-medium">
+          <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
+            <Link href="/rnd/recipes" className="flex items-center gap-1 font-medium hover:text-primary">
               <ArrowLeft className="w-3 h-3" /> Công thức R&amp;D
             </Link>
             <span>/</span>
-            <span className="font-mono text-[#B47820] font-semibold">{recipe.code}</span>
+            <span className="font-semibold text-primary">{recipe.code}</span>
           </div>
           <div className="flex items-center gap-2.5 flex-wrap">
-            <h1 className="text-xl sm:text-2xl font-bold text-[#1A1917]">{recipe.name}</h1>
+            <h1 className={pageTitleClass}>{recipe.name}</h1>
             {versions.length > 1 ? (
               <div className="relative inline-block">
                 <button
                   type="button"
                   onClick={() => setIsVersionDropdownOpen(!isVersionDropdownOpen)}
-                  className="inline-flex items-center gap-1 font-mono text-xs px-2.5 py-1 rounded-lg bg-[#F5F0E8] hover:bg-[#EAE3D6] text-[#B47820] font-bold border border-[#E8E2D9] transition cursor-pointer shadow-2xs"
+                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted px-2.5 py-1 text-xs font-bold text-primary hover:bg-accent"
                   title="Chuyển đổi phiên bản công thức"
                 >
                   <span>{recipe.versionLabel}</span>
                   <ChevronDown
-                    className={`w-3 h-3 text-[#B47820] transition-transform ${
+                    className={`w-3 h-3 text-primary transition-transform ${
                       isVersionDropdownOpen ? 'rotate-180' : ''
                     }`}
                   />
                 </button>
 
                 {isVersionDropdownOpen && (
-                  <div className="absolute left-0 mt-1.5 w-60 bg-white border border-[#E8E2D9] rounded-xl shadow-xl p-1.5 z-30 space-y-1 animate-fade-in">
-                    <div className="text-[10px] uppercase font-bold text-[#8C887F] px-2 py-1">
+                  <div className="absolute left-0 z-30 mt-1.5 w-60 space-y-1 rounded-xl border border-border bg-card p-1.5 shadow-xl">
+                    <div className="px-2 py-1 text-xs font-bold uppercase text-muted-foreground">
                       Phiên bản công thức
                     </div>
                     {versions.map((v) => {
@@ -278,17 +330,17 @@ export default function RecipeDetailPage() {
                           }}
                           className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer text-left ${
                             isCurrent
-                              ? 'bg-[#F5F0E8] text-[#B47820] font-bold'
-                              : 'text-[#1A1917] hover:bg-[#FAF9F5]'
+                              ? 'bg-muted text-primary font-bold'
+                              : 'text-foreground hover:bg-muted'
                           }`}
                         >
                           <div className="flex items-center gap-2">
                             <span className="font-mono">{v.versionLabel}</span>
-                            <span className="text-[11px] text-[#706E68]">
+                            <span className="text-xs text-muted-foreground">
                               {v.status === 'Draft' ? 'Bản nháp' : v.status === 'Published' ? 'Đã phát hành' : 'Lưu trữ'}
                             </span>
                           </div>
-                          {isCurrent && <Check className="w-3.5 h-3.5 text-[#B47820]" />}
+                          {isCurrent && <Check className="h-3.5 w-3.5 text-primary" />}
                         </button>
                       );
                     })}
@@ -296,7 +348,7 @@ export default function RecipeDetailPage() {
                 )}
               </div>
             ) : (
-              <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#F5F0E8] text-[#B47820] font-semibold border border-[#E8E2D9]">
+              <span className="rounded border border-border bg-muted px-2 py-0.5 text-xs font-semibold text-primary">
                 {recipe.versionLabel}
               </span>
             )}
@@ -326,7 +378,7 @@ export default function RecipeDetailPage() {
           )}
 
           <Button variant="secondary" size="sm" onClick={handleOpenCopyDialog} title="Tạo một công thức độc lập từ dữ liệu hiện tại">
-            <Copy className="w-3.5 h-3.5 mr-1 text-[#706E68]" /> Sao chép
+            <Copy className="mr-1 h-3.5 w-3.5 text-muted-foreground" /> Sao chép
           </Button>
           <Button
             variant="secondary"
@@ -334,12 +386,12 @@ export default function RecipeDetailPage() {
             onClick={() => setIsHistoryDrawerOpen(true)}
             title="Xem lịch sử các phiên bản"
           >
-            <History className="w-3.5 h-3.5 mr-1 text-[#B47820]" /> Lịch sử ({versions.length})
+            <History className="mr-1 h-3.5 w-3.5 text-primary" /> Lịch sử ({versions.length})
           </Button>
 
           <Link href={`/rnd/documents/new?recipeId=${recipe.recipeId || id}&versionId=${recipe.versionId || id}`}>
             <Button variant="secondary" size="sm">
-              <FileDown className="w-3.5 h-3.5 mr-1 text-[#B47820]" /> Xuất bản PDF
+              <FileDown className="mr-1 h-3.5 w-3.5 text-primary" /> Xuất bản PDF
             </Button>
           </Link>
           {recipe.status === 'Archived' ? (
@@ -366,14 +418,7 @@ export default function RecipeDetailPage() {
 
         </div>
       </div>
-
-      {actionSuccess && (
-        <Alert
-          type="success"
-          message={actionSuccess}
-          onClose={() => setActionSuccess(null)}
-        />
-      )}
+      </div>
 
       {errorMsg && (
         <Alert
@@ -396,68 +441,42 @@ export default function RecipeDetailPage() {
         </div>
       )}
 
-      {/* Hero Cover Image (if available) */}
-      {(() => {
-        let coverUrl: string | null = null;
-        if (recipe.primaryMediaAssetId) {
-          coverUrl = mediaMap[recipe.primaryMediaAssetId] || null;
-          if (!coverUrl && typeof window !== 'undefined') {
-            coverUrl = localStorage.getItem(`recipehub_media_url_${recipe.primaryMediaAssetId}`) || null;
-          }
 
-        }
-        if (!coverUrl) {
-          const versionId = recipe.versionId || recipe.id;
-          const localDrafts = getStoredAiDrafts(versionId, 'final_product');
-          if (localDrafts.length > 0) {
-            coverUrl = localDrafts[0].previewUrl;
-          }
-        }
-
-        if (!coverUrl || coverUrl === failedCoverUrl) return null;
-
-        return (
-          <div className="rounded-2xl overflow-hidden border border-[#E8E2D9] max-h-72 bg-[#FAF9F5] shadow-xs relative">
-            <img
-              src={coverUrl}
-              alt={recipe.name}
-              className="w-full h-64 object-cover"
-              onError={() => setFailedCoverUrl(coverUrl)}
-            />
-          </div>
-        );
-      })()}
-
-      <div className="bg-white border border-[#E8E2D9] rounded-xl p-5 space-y-3 shadow-xs">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-[#706E68]">
+      <div className="space-y-3 rounded-xl border border-border bg-card p-5 shadow-soft">
+        <h2 className="font-display text-h3 font-medium text-foreground">
           Thông số kỹ thuật
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-          <div>
-            <span className="text-xs text-[#8C887F] block">Mã công thức</span>
-            <span className="font-mono font-semibold text-[#1A1917]">{recipe.code}</span>
+        <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+          <div className="rounded-lg border border-border bg-secondary p-4">
+            <span className="block text-xs text-muted-foreground">Nguyên liệu</span>
+            <span className="font-semibold text-foreground">{recipe.ingredients.length}</span>
           </div>
-          <div>
-            <span className="text-xs text-[#8C887F] block">Sản lượng chuẩn</span>
-            <span className="font-semibold text-[#1A1917]">
+          <div className="rounded-lg border border-border bg-secondary p-4">
+            <span className="block text-xs text-muted-foreground">Sản lượng chuẩn</span>
+            <span className="font-semibold text-foreground">
               {recipe.targetYield !== null && recipe.yieldUnit ? `${recipe.targetYield} ${recipe.yieldUnit}` : 'Chưa thiết lập'}
             </span>
           </div>
-          <div>
-            <span className="text-xs text-[#8C887F] block">Người khởi tạo</span>
-            <span className="font-mono text-[#706E68] text-xs">{recipe.creatorEmail}</span>
+          <div className="rounded-lg border border-border bg-secondary p-4">
+            <span className="block text-xs text-muted-foreground">Bước thực hiện</span>
+            <span className="font-semibold text-foreground">{recipe.steps.length}</span>
           </div>
-          <div>
-            <span className="text-xs text-[#8C887F] block">Thời điểm phát hành</span>
-            <span className="font-mono text-[#706E68] text-xs">
-              {recipe.publishedAt ? new Date(recipe.publishedAt).toLocaleString('vi-VN') : 'Chưa phát hành'}
+          <div className="rounded-lg border border-border bg-secondary p-4">
+            <span className="block text-xs text-muted-foreground">Tổng thời gian</span>
+            <span className="font-semibold text-foreground">
+              {recipe.steps.some((step) => step.durationSeconds) ? `${recipe.steps.reduce((sum, step) => sum + (step.durationSeconds || 0), 0)} giây` : 'Chưa cập nhật'}
             </span>
           </div>
         </div>
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
+          <span>Mã công thức: <strong className="text-foreground">{recipe.code}</strong></span>
+          <span>Người khởi tạo: {recipe.creatorEmail || 'Chưa cập nhật'}</span>
+          <span>Thời điểm phát hành: {recipe.publishedAt ? new Date(recipe.publishedAt).toLocaleString('vi-VN') : 'Chưa phát hành'}</span>
+        </div>
 
         {recipe.description && (
-          <div className="border-t border-[#E8E2D9] pt-2.5 text-xs text-[#706E68]">
-            <span className="font-semibold text-[#1A1917] mr-1">Mô tả hương vị:</span>
+          <div className="border-t border-border pt-2.5 text-xs text-muted-foreground">
+            <span className="mr-1 font-semibold text-foreground">Mô tả hương vị:</span>
             {recipe.description}
           </div>
         )}
@@ -465,21 +484,21 @@ export default function RecipeDetailPage() {
       {/* Ingredients Section */}
       {mediaWarning && <Alert variant="warning">{mediaWarning}</Alert>}
       <RecipeBatchScaler key={recipe.versionId ?? recipe.id} recipe={recipe} onScaled={setScaledIngredients} />
-      <div className="bg-white border border-[#E8E2D9] rounded-xl p-5 space-y-3 shadow-xs">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-[#706E68] flex items-center justify-between">
+      <div className="space-y-3 rounded-xl border border-border bg-card p-5 shadow-soft">
+        <h2 className="flex items-center justify-between font-display text-h3 font-medium text-foreground">
           <span>Định lượng nguyên liệu ({recipe.ingredients.length})</span>
-          <span className="text-xs font-normal normal-case text-[#8C887F]">
+          <span className="text-xs font-normal normal-case text-muted-foreground">
             Định mức: {recipe.targetYield !== null && recipe.yieldUnit ? `${recipe.targetYield} ${recipe.yieldUnit}` : 'Chưa thiết lập'}
           </span>
         </h2>
 
         {recipe.ingredients.length === 0 ? (
-          <p className="text-sm text-[#8C887F] italic">Chưa có nguyên liệu nào trong công thức.</p>
+          <p className="text-sm italic text-muted-foreground">Chưa có nguyên liệu nào trong công thức.</p>
         ) : (
-          <div className="overflow-x-auto rounded-md border border-[#E8E2D9]">
+          <div className="overflow-x-auto rounded-md border border-border">
             <table className="w-full text-left text-sm border-collapse">
               <thead>
-                <tr className="bg-[#F5F0E8] border-b border-[#E8E2D9] text-xs text-[#706E68] uppercase tracking-wider font-semibold">
+                <tr className="border-b border-border bg-muted text-xs font-semibold text-muted-foreground">
                   <th className="py-2 px-3">STT</th>
                   <th className="py-2 px-3">Mã &amp; Tên nguyên liệu</th>
                   <th className="py-2 px-3">Nhóm</th>
@@ -488,29 +507,29 @@ export default function RecipeDetailPage() {
                   <th className="py-2 px-3">Ghi chú</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E8E2D9]">
+              <tbody className="divide-y divide-border">
                 {(scaledIngredients ?? recipe.ingredients).map((item, index) => {
                   const ing = ingredientsMap[item.ingredientId];
                   return (
-                    <tr key={index} className="hover:bg-[#FAF8F2] transition-colors">
-                      <td className="py-2 px-3 font-mono text-xs text-[#A8A29E]">{index + 1}</td>
+                    <tr key={index} className="hover:bg-muted">
+                      <td className="px-3 py-2 text-xs text-muted-foreground">{index + 1}</td>
                       <td className="py-2 px-3">
-                        <span className="font-mono text-xs text-[#B47820] mr-2">
-                          {ing ? ing.code : '—'}
+                        <span className="mr-2 text-xs text-primary">
+                          {ing ? ing.code : 'Chưa cập nhật'}
                         </span>
-                        <span className="font-medium text-[#1C1917]">
+                        <span className="font-medium text-foreground">
                           {ing ? ing.name : 'Nguyên liệu chưa cập nhật'}
                         </span>
                       </td>
-                      <td className="py-2 px-3 text-xs text-[#78716C]">
+                      <td className="px-3 py-2 text-xs text-muted-foreground">
                         {ing ? ing.group : 'Khác'}
                       </td>
-                      <td className="py-2 px-3 text-right font-mono font-bold text-[#1C1917]">
+                      <td className="px-3 py-2 text-right font-bold text-foreground">
                         {item.quantity}
                       </td>
-                      <td className="py-2 px-3 font-mono text-[#78716C] text-xs">{item.unit}</td>
-                      <td className="py-2 px-3 text-xs text-[#78716C] italic">
-                        {item.stageNote || item.notes || '—'}
+                      <td className="px-3 py-2 text-xs text-muted-foreground">{item.unit}</td>
+                      <td className="px-3 py-2 text-xs italic text-muted-foreground">
+                        {item.stageNote || item.notes || 'Chưa cập nhật'}
                       </td>
                     </tr>
                   );
@@ -522,15 +541,15 @@ export default function RecipeDetailPage() {
       </div>
 
       {/* Steps Section */}
-      <div className="bg-white border border-[#E8E2D9] rounded-xl p-5 space-y-3 shadow-xs">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-[#706E68]">
+      <div className="space-y-3 rounded-xl border border-border bg-card p-5 shadow-soft">
+        <h2 className="font-display text-h3 font-medium text-foreground">
           Quy trình chuẩn thao tác SOP ({recipe.steps.length} bước)
         </h2>
 
         {recipe.steps.length === 0 ? (
-          <p className="text-sm text-[#8C887F] italic">Chưa có các bước hướng dẫn thao tác.</p>
+          <p className="text-sm italic text-muted-foreground">Chưa có các bước hướng dẫn thao tác.</p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 border-l-2 border-primary/20 pl-4">
             {recipe.steps.map((step, idx) => {
               const coverUrl = step.coverMediaAssetId
                 ? mediaMap[step.coverMediaAssetId] ||
@@ -542,20 +561,20 @@ export default function RecipeDetailPage() {
               return (
                 <div
                   key={step.id}
-                  className="bg-[#FAF9F5] border border-[#E8E2D9] rounded-xl p-4 space-y-2.5"
+                  className="space-y-2.5 rounded-xl border border-border bg-card p-4"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-full bg-[#C9A84C]/15 text-[#B47820] flex items-center justify-center font-bold text-xs">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
                         {idx + 1}
                       </span>
-                      <h3 className="font-bold text-[#1A1917] text-sm">{step.title}</h3>
+                      <h3 className="text-sm text-foreground font-medium font-display">{step.title}</h3>
                     </div>
 
-                    <div className="flex items-center gap-2 text-xs text-[#706E68] font-mono">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       {step.durationSeconds && (
                         <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-[#B47820]" /> {step.durationSeconds}s
+                          <Clock className="h-3 w-3 text-primary" /> {step.durationSeconds}s
                         </span>
                       )}
                       {step.temperatureCelsius && (
@@ -566,19 +585,19 @@ export default function RecipeDetailPage() {
                     </div>
                   </div>
 
-                  <p className="text-xs sm:text-sm text-[#1A1917] whitespace-pre-wrap pl-7 leading-relaxed">
+                  <p className="whitespace-pre-wrap pl-9 text-sm leading-relaxed text-foreground">
                     {step.instruction}
                   </p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-7 pt-1 text-xs text-[#706E68]">
+                  <div className="grid grid-cols-1 gap-2 pl-9 pt-1 text-xs text-muted-foreground sm:grid-cols-2">
                     {step.equipment && (
                       <div>
-                        <span className="font-semibold text-[#1A1917]">Dụng cụ:</span> {step.equipment}
+                        <span className="font-semibold text-foreground">Dụng cụ:</span> {step.equipment}
                       </div>
                     )}
                     {step.completionCriteria && (
                       <div>
-                        <span className="font-semibold text-[#1A1917]">Tiêu chí đạt:</span> {step.completionCriteria}
+                        <span className="font-semibold text-foreground">Tiêu chí đạt:</span> {step.completionCriteria}
                       </div>
                     )}
                   </div>
@@ -587,7 +606,7 @@ export default function RecipeDetailPage() {
                   {/* Media Preview & Cover Badge */}
                   {coverUrl && (
                     <div className="pl-7 pt-1">
-                      <div className="relative inline-block border border-[#E8E2D9] rounded-md overflow-hidden bg-white shadow-xs">
+                      <div className="relative inline-block overflow-hidden rounded-md border border-border bg-card shadow-soft">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={coverUrl}

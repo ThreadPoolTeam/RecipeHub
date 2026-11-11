@@ -3,15 +3,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  FileText,
   FileDown,
-  ArrowUp,
-  ArrowDown,
-  Trash2,
   AlertTriangle,
   Eye,
   ShieldCheck,
-  Coffee,
 } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { RecipeVersion } from '@/lib/demo/types';
@@ -28,8 +23,10 @@ import {
   PdfCapabilitiesResponse,
   DocumentType,
 } from '@/lib/api/pdf-document-types';
-import { Button, SearchInput, Alert } from './fields';
+import { Button, Alert } from './fields';
+import { useToast } from './toast';
 import { PdfDocumentPreview } from './pdf-document-preview';
+import { PdfRecipeSelector } from './pdf-recipe-selector';
 
 export interface GroupedRecipe {
   recipeId: string;
@@ -68,6 +65,7 @@ export function PdfDocumentWorkspace({
 }: PdfDocumentWorkspaceProps) {
   const router = useRouter();
   const { session, repo } = useDemo();
+  const { toast } = useToast();
 
   // Capabilities
   const [capabilities, setCapabilities] = useState<PdfCapabilitiesResponse | null>(null);
@@ -82,6 +80,7 @@ export function PdfDocumentWorkspace({
   // Preview State
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [snapshotHash, setSnapshotHash] = useState<string | null>(null);
+  const [snapshotDocumentType, setSnapshotDocumentType] = useState<DocumentType | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [isStale, setIsStale] = useState(false);
@@ -90,7 +89,6 @@ export function PdfDocumentWorkspace({
   const [isExportingDraft, setIsExportingDraft] = useState(false);
   const [isExportingOfficial, setIsExportingOfficial] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
-  const [generalSuccess, setGeneralSuccess] = useState<string | null>(null);
 
   // Recipe Catalog State
   const [catalogRecipes, setCatalogRecipes] = useState<GroupedRecipe[]>([]);
@@ -285,6 +283,7 @@ export function PdfDocumentWorkspace({
   const markStale = useCallback(() => {
     setIsStale(true);
     setSnapshotHash(null);
+    setSnapshotDocumentType(null);
   }, []);
 
   // Filter Catalog
@@ -328,7 +327,11 @@ export function PdfDocumentWorkspace({
     } else {
       const max = capabilities?.maxItems || 50;
       if (selectedItems.length >= max) {
-        alert(`Số lượng món tối đa cho một tài liệu là ${max}`);
+        toast({
+          type: 'info',
+          title: 'Đã đạt giới hạn công thức',
+          description: `Mỗi tài liệu chỉ chứa tối đa ${max} công thức.`,
+        });
         return;
       }
 
@@ -497,6 +500,7 @@ export function PdfDocumentWorkspace({
       const result = await previewPdf(request, session?.userId || null);
       setPreviewBlob(result.blob);
       setSnapshotHash(result.snapshotHash);
+      setSnapshotDocumentType(request.documentType);
       setIsStale(false);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Kết xuất xem trước thất bại';
@@ -522,14 +526,13 @@ export function PdfDocumentWorkspace({
     }
 
     setGeneralError(null);
-    setGeneralSuccess(null);
     if (docType === 'draft') setIsExportingDraft(true);
     else setIsExportingOfficial(true);
 
     try {
       // Auto-preview if needed to ensure valid snapshotHash
       let validSnapshotHash = snapshotHash;
-      if (!validSnapshotHash || isStale) {
+      if (!validSnapshotHash || isStale || snapshotDocumentType !== docType) {
         const previewReq: PreviewPdfRequest = {
           documentType: docType,
           title: collectionTitle.trim(),
@@ -537,8 +540,9 @@ export function PdfDocumentWorkspace({
           items: buildItemsPayload(),
         };
         const prevResult = await previewPdf(previewReq, session?.userId || null);
-        setPreviewBlob(prevResult.blob);
+        if (docType === 'draft') setPreviewBlob(prevResult.blob);
         setSnapshotHash(prevResult.snapshotHash);
+        setSnapshotDocumentType(docType);
         setIsStale(false);
         validSnapshotHash = prevResult.snapshotHash;
       }
@@ -556,9 +560,11 @@ export function PdfDocumentWorkspace({
       };
 
       const result = await exportPdf(request, session?.userId || null);
-      setGeneralSuccess(
-        `Đã xuất bản thành công tài liệu: "${result.title}". File đã lưu vào kho.`
-      );
+      toast({
+        type: 'success',
+        title: docType === 'draft' ? 'Đã xuất bản nháp' : 'Đã xuất bản chính thức',
+        description: result.title,
+      });
 
       if (onSuccess) {
         onSuccess(result.fileName);
@@ -568,8 +574,11 @@ export function PdfDocumentWorkspace({
         }, 1200);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Xuất bản tài liệu thất bại';
-      setGeneralError(msg);
+      toast({
+        type: 'error',
+        title: 'Không thể xuất tài liệu',
+        description: err instanceof Error ? err.message : 'Vui lòng thử lại.',
+      });
     } finally {
       if (docType === 'draft') setIsExportingDraft(false);
       else setIsExportingOfficial(false);
@@ -583,215 +592,29 @@ export function PdfDocumentWorkspace({
           {generalError}
         </Alert>
       )}
-      {generalSuccess && (
-        <Alert variant="success" title="Thành công">
-          {generalSuccess}
-        </Alert>
-      )}
 
-      {/* 2-Column Split Studio */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Recipe Selection (5 cols) */}
-        <div className="lg:col-span-5 bg-white border border-[#E8E2D9] rounded-2xl p-5 shadow-xs space-y-4">
-          {/* Header */}
-          <div className="flex items-center justify-between pb-3 border-b border-[#E8E2D9]">
-            <div className="flex items-center gap-2">
-              <Coffee className="w-4 h-4 text-[#B47820]" />
-              <h2 className="text-sm font-bold text-[#1A1917] uppercase tracking-wide">
-                Chọn công thức
-              </h2>
-              <span className="px-2 py-0.5 rounded-full bg-[#FAF9F5] border border-[#E8E2D9] text-xs font-medium text-[#706E68]">
-                {selectedItems.length > 0 ? `${selectedItems.length} đã chọn` : 'Chưa chọn'}
-              </span>
-            </div>
-
-            {selectedItems.length > 0 && (
-              <button
-                type="button"
-                onClick={handleClearAllSelections}
-                className="text-xs text-[#706E68] hover:text-rose-600 transition-colors"
-              >
-                Bỏ chọn tất cả
-              </button>
-            )}
-          </div>
-
-          {/* Search Bar */}
-          <SearchInput
-            value={catalogSearch}
-            onChange={(e) => {
-              setCatalogSearch(e.target.value);
-              setCatalogPage(1);
-            }}
-            placeholder="Tìm theo tên hoặc mã công thức..."
-            onClear={() => {
-              setCatalogSearch('');
-              setCatalogPage(1);
-            }}
+      <div className="grid grid-cols-1 gap-6 items-start lg:grid-cols-[minmax(240px,1fr)_minmax(0,1.7fr)] xl:grid-cols-[minmax(260px,1fr)_minmax(0,1.7fr)_minmax(220px,0.75fr)]">
+        <div className="min-w-0 rounded-lg border border-border bg-card p-5 shadow-soft space-y-4">
+          <PdfRecipeSelector
+            selectedItems={selectedItems}
+            loadingCatalog={loadingCatalog}
+            paginatedCatalog={paginatedCatalog}
+            filteredCount={filteredCatalog.length}
+            catalogSearch={catalogSearch}
+            catalogPage={catalogPage}
+            catalogTotalPages={catalogTotalPages}
+            setCatalogSearch={setCatalogSearch}
+            setCatalogPage={setCatalogPage}
+            onClear={handleClearAllSelections}
+            onToggle={handleToggleSelectRecipe}
+            onVersionChange={handleVersionChange}
+            onMove={handleMoveItem}
+            onRemove={handleRemoveItem}
           />
-
-          {/* Recipe List */}
-          <div className="divide-y divide-[#E8E2D9] border border-[#E8E2D9] rounded-xl overflow-hidden max-h-[360px] overflow-y-auto">
-            {loadingCatalog ? (
-              <div className="p-8 text-center text-[#706E68]">
-                <div className="w-5 h-5 border-2 border-[#B47820] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                <p className="text-xs">Đang tải công thức...</p>
-              </div>
-            ) : paginatedCatalog.length === 0 ? (
-              <div className="p-8 text-center text-xs text-[#706E68]">
-                Không có công thức đã phát hành phù hợp.
-              </div>
-            ) : (
-              paginatedCatalog.map((group) => {
-                const isSelected = selectedItems.some((it) => it.recipeId === group.recipeId);
-                const selectedItem = selectedItems.find((it) => it.recipeId === group.recipeId);
-                const currentVersionId = selectedItem?.recipeVersionId || group.selectedVersionId;
-
-                return (
-                  <div
-                    key={group.recipeId}
-                    className={`px-3 py-2.5 flex items-center justify-between gap-3 transition-colors ${
-                      isSelected ? 'bg-amber-50/50 hover:bg-amber-50/70' : 'bg-white hover:bg-[#FAF9F5]'
-                    }`}
-                  >
-                    <label className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => handleToggleSelectRecipe(group)}
-                        className="rounded text-[#B47820] focus:ring-[#B47820] h-4 w-4 shrink-0 cursor-pointer"
-                      />
-                      <div className="flex items-baseline gap-2 min-w-0 truncate">
-                        <span className="font-medium text-sm text-[#1A1917] truncate">
-                          {group.recipeName}
-                        </span>
-                        <span className="text-[11px] font-mono text-[#8C887F] shrink-0">
-                          {group.recipeCode}
-                        </span>
-                      </div>
-                    </label>
-
-                    <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
-                      {group.versions.length > 1 ? (
-                        <select
-                          value={currentVersionId}
-                          onChange={(e) => handleVersionChange(group.recipeId, e.target.value)}
-                          className="text-xs font-mono font-medium bg-white border border-[#E8E2D9] rounded-lg px-2 py-1 text-[#1A1917] hover:border-[#D5CEBF] focus:border-[#B47820] focus:ring-0 cursor-pointer"
-                          title="Chọn phiên bản công thức"
-                        >
-                          {group.versions.map((v) => (
-                            <option key={v.versionId || v.id} value={v.versionId || v.id}>
-                              {v.versionLabel || `v${v.versionNumber || 1}.0`}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-[#FAF9F5] border border-[#E8E2D9] text-[#706E68]">
-                          {group.versions[0]?.versionLabel || 'v1.0'}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          {/* Mini Pagination */}
-          {catalogTotalPages > 1 && (
-            <div className="flex items-center justify-between text-xs text-[#706E68] pt-1">
-              <span>
-                {catalogPage} / {catalogTotalPages} ({filteredCatalog.length} món)
-              </span>
-              <div className="flex gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={catalogPage <= 1}
-                  onClick={() => setCatalogPage((p) => p - 1)}
-                >
-                  Trước
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={catalogPage >= catalogTotalPages}
-                  onClick={() => setCatalogPage((p) => p + 1)}
-                >
-                  Sau
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Selected Items Order (Only shown when > 1 recipe selected) */}
-          {selectedItems.length > 1 && (
-            <div className="pt-3 border-t border-[#E8E2D9] space-y-2">
-              <div className="text-xs font-semibold text-[#1A1917]">
-                Thứ tự trong tài liệu ({selectedItems.length} món):
-              </div>
-              <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1">
-                {selectedItems.map((item, idx) => (
-                  <div
-                    key={item.recipeVersionId}
-                    className="flex items-center justify-between p-2 rounded-lg bg-[#FAF9F5] border border-[#E8E2D9] text-xs"
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      <span className="w-5 h-5 rounded-full bg-white border border-[#E8E2D9] flex items-center justify-center font-bold text-[10px] text-[#706E68]">
-                        {idx + 1}
-                      </span>
-                      <span className="font-medium text-[#1A1917] truncate">{item.recipeName}</span>
-                    </div>
-
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        type="button"
-                        disabled={idx === 0}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMoveItem(idx, -1);
-                        }}
-                        className="p-1 hover:bg-white rounded text-[#706E68] disabled:opacity-30"
-                        title="Đưa lên"
-                      >
-                        <ArrowUp className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        disabled={idx === selectedItems.length - 1}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMoveItem(idx, 1);
-                        }}
-                        className="p-1 hover:bg-white rounded text-[#706E68] disabled:opacity-30"
-                        title="Đưa xuống"
-                      >
-                        <ArrowDown className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveItem(item.recipeVersionId);
-                        }}
-                        className="p-1 hover:bg-white rounded text-rose-600 hover:text-rose-700"
-                        title="Bỏ chọn"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Right Column: Title + Action Bar + Live Preview (7 cols) */}
-        <div className="lg:col-span-7 bg-white border border-[#E8E2D9] rounded-2xl p-5 shadow-xs space-y-4">
-          {/* Top Bar: Clean Editorial Title + Export Buttons */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E8E2D9]">
-            <div className="flex-1 min-w-[200px] space-y-0.5">
+          <div className="space-y-4 border-t border-border pt-4">
+            <h2 className="text-lg font-medium text-foreground font-display">2 · Thiết lập tài liệu</h2>
+            <label className="block space-y-1.5 text-xs font-medium text-foreground">
+              <span>Tiêu đề</span>
               <input
                 type="text"
                 value={collectionTitle}
@@ -801,8 +624,11 @@ export function PdfDocumentWorkspace({
                   markStale();
                 }}
                 placeholder="Tên tài liệu PDF..."
-                className="w-full text-base font-bold text-[#1A1917] placeholder:text-[#8C887F] bg-transparent border-0 border-b border-transparent hover:border-[#E8E2D9] focus:border-[#B47820] focus:ring-0 px-0 py-0.5 transition-colors"
+                className="h-10 w-full rounded-md border border-input bg-card px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
+            </label>
+            <label className="block space-y-1.5 text-xs font-medium text-foreground">
+              <span>Phụ đề</span>
               <input
                 type="text"
                 value={collectionSubtitle}
@@ -811,58 +637,18 @@ export function PdfDocumentWorkspace({
                   markStale();
                 }}
                 placeholder="Tiêu đề phụ (tuỳ chọn)..."
-                className="w-full text-xs text-[#706E68] placeholder:text-[#8C887F] bg-transparent border-0 border-b border-transparent hover:border-[#E8E2D9] focus:border-[#B47820] focus:ring-0 px-0 py-0.5 transition-colors"
+                className="h-10 w-full rounded-md border border-input bg-card px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRunPreview}
-                isLoading={isPreviewLoading}
-                disabled={selectedItems.length === 0 || hasNonPublishedVersions}
-              >
-                <Eye className="w-4 h-4 mr-1 text-[#B47820]" />
-                Xem trước
-              </Button>
-
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => handleExport('draft')}
-                isLoading={isExportingDraft}
-                disabled={selectedItems.length === 0 || hasNonPublishedVersions}
-                title="Bản nháp có watermark"
-              >
-                <FileDown className="w-4 h-4 mr-1 text-[#B47820]" />
-                Xuất nháp
-              </Button>
-
-              <Button
-                variant="gold"
-                size="sm"
-                onClick={() => handleExport('published')}
-                isLoading={isExportingOfficial}
-                disabled={selectedItems.length === 0 || hasNonPublishedVersions}
-                title="Bản chính thức lưu hành"
-              >
-                <ShieldCheck className="w-4 h-4 mr-1" />
-                Xuất chính thức
-              </Button>
-            </div>
+            </label>
           </div>
+        </div>
 
-          {/* Non-published Alert (if any) */}
-          {hasNonPublishedVersions && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-              <span>Chỉ công thức đã phát hành (&quot;Published&quot;) mới được phép xuất tài liệu PDF.</span>
-            </div>
-          )}
-
-          {/* PDF Preview Frame */}
-          <div className="h-[620px] rounded-xl overflow-hidden border border-[#E8E2D9]">
+        <section className="min-w-0 overflow-hidden rounded-lg border border-border bg-secondary p-4">
+          <div className="flex items-center justify-between gap-3 pb-4 text-sm">
+            <h2 className="font-medium text-foreground font-display">Xem trước</h2>
+            <span className="text-xs text-muted-foreground">A4 ngang</span>
+          </div>
+          <div className="h-[620px] overflow-hidden rounded-lg border border-border">
             <PdfDocumentPreview
               blob={previewBlob}
               fileName={`${collectionTitle || 'document'}.pdf`}
@@ -873,7 +659,33 @@ export function PdfDocumentWorkspace({
               isSavedHistory={false}
             />
           </div>
-        </div>
+        </section>
+
+        <aside className="space-y-4 rounded-lg border border-border bg-card p-5 shadow-soft lg:col-span-2 xl:col-span-1">
+          <h2 className="text-lg font-medium text-foreground font-display">Tóm tắt xuất bản</h2>
+          <dl className="space-y-3 text-sm">
+            <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Công thức</dt><dd className="font-medium">{selectedItems.length}</dd></div>
+            <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Khổ giấy</dt><dd className="font-medium">A4 ngang</dd></div>
+          </dl>
+          <p className="rounded-lg bg-info-soft p-3 text-xs text-info">Bản chính thức chỉ gồm công thức đã phát hành. Nội dung được chốt tại thời điểm xuất.</p>
+          {hasNonPublishedVersions && (
+            <div className="flex items-center gap-2 rounded-lg border border-destructive-border bg-destructive-tint p-3 text-xs text-destructive">
+              <AlertTriangle className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+              <span>Chỉ công thức đã phát hành (&quot;Published&quot;) mới được phép xuất tài liệu PDF.</span>
+            </div>
+          )}
+          <div className="grid gap-2">
+            <Button variant="secondary" onClick={handleRunPreview} isLoading={isPreviewLoading} disabled={selectedItems.length === 0 || hasNonPublishedVersions}>
+              <Eye className="mr-1 h-4 w-4" strokeWidth={1.5} /> Cập nhật xem trước
+            </Button>
+            <Button variant="secondary" onClick={() => handleExport('draft')} isLoading={isExportingDraft} disabled={selectedItems.length === 0 || hasNonPublishedVersions} title="Bản nháp có watermark">
+              <FileDown className="mr-1 h-4 w-4" strokeWidth={1.5} /> Xuất bản nháp
+            </Button>
+            <Button variant="primary" onClick={() => handleExport('published')} isLoading={isExportingOfficial} disabled={selectedItems.length === 0 || hasNonPublishedVersions || isStale} title="Bản chính thức lưu hành">
+              <ShieldCheck className="mr-1 h-4 w-4" strokeWidth={1.5} /> Xuất chính thức
+            </Button>
+          </div>
+        </aside>
       </div>
     </div>
   );

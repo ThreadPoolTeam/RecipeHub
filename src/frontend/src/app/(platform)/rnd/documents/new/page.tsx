@@ -1,9 +1,10 @@
 'use client';
 
+import { pageTitleClass } from '@/components/workspace/page-header';
+
 import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { FileText, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/workspace/fields';
 import { PdfDocumentWorkspace } from '@/components/workspace/pdf-document-workspace';
 
@@ -25,23 +26,18 @@ function RndNewDocumentContent() {
   }, [recipeId, versionId, recipesParam]);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E2D9]">
+    <div className="mx-auto space-y-6">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-2xl font-bold text-[#1A1917] flex items-center gap-2.5">
-            <FileText className="w-6 h-6 text-[#B47820]" />
-            Tạo ấn phẩm PDF mới
-          </h1>
-          <p className="text-[#706E68] text-sm mt-1">
-            Chọn công thức nguồn đã hoàn thiện, xem trước bản in A4 ngang và phát hành tài liệu PDF.
+          <p className="mb-2 text-xs font-medium text-muted-foreground">PDF · Ấn phẩm mới</p>
+          <h1 className={pageTitleClass}>Xuất bộ công thức PDF</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Chọn công thức, xem trước trang A4 ngang rồi xuất bản nháp hoặc bản chính thức.
           </p>
         </div>
 
         <Link href="/rnd/documents">
-          <Button variant="ghost" size="sm" className="flex items-center gap-1.5 text-[#706E68] hover:text-[#1A1917]">
-            <ArrowLeft className="w-4 h-4" /> Quay lại danh sách
-          </Button>
+          <Button variant="primary" size="sm">Quay lại kho</Button>
         </Link>
       </div>
 
@@ -54,8 +50,8 @@ export default function RndNewDocumentPage() {
   return (
     <Suspense
       fallback={
-        <div className="p-12 text-center text-[#706E68]">
-          <div className="w-8 h-8 border-2 border-[#B47820] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <div className="p-12 text-center text-muted-foreground">
+          <div className="mx-auto mb-3 h-8 w-8 rounded-full border-2 border-primary border-t-transparent motion-safe:animate-spin" />
           <p className="text-xs">Đang tải...</p>
         </div>
       }

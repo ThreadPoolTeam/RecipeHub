@@ -11,12 +11,13 @@ import {
 } from '@/lib/api/quiz-management';
 import { User } from '@/lib/demo/types';
 import { Button, Select } from '@/components/workspace/fields';
-import { DataTable } from '@/components/workspace/data-table';
 import { QuizAttemptBadge } from '@/components/workspace/status-badge';
+import { interactiveCardClass, stretchedLinkClass } from '@/components/workspace/interactive-card';
 import {
   ManagementFrame,
   Message,
   errorText,
+  Pagination,
   useManagementContext,
 } from './management-shared';
 
@@ -115,119 +116,12 @@ export function ManagementResults() {
   }, [quizId, quizzes]);
 
 
-  // Human-first table columns (Zero raw UUIDs)
-  const columns = [
-    {
-      header: 'Bộ đề Quiz',
-      render: (item: ManagementResult) => (
-        <div className="space-y-0.5">
-          <div className="font-semibold text-sm text-[#1A1917]">{item.quizTitle}</div>
-          <div className="text-xs text-[#706E68] font-mono flex items-center gap-1.5">
-            <span>{item.quizCode}</span>
-            <span>•</span>
-            <span>v{item.versionNumber}.0</span>
-          </div>
-        </div>
-      ),
-    },
-    {
-      header: 'Nhân viên / Thí sinh',
-      render: (item: ManagementResult) => {
-        const user = usersMap[item.userRef];
-        const displayName = user?.fullName || user?.email || 'Nhân viên (Không xác định)';
-        const roleLabel =
-          user?.role === 'viewer'
-            ? 'Barista'
-            : user?.role === 'rnd'
-            ? 'R&D'
-            : user?.role === 'admin'
-            ? 'Quản trị'
-            : user?.role
-            ? user.role
-            : 'Chưa cập nhật';
-
-        return (
-          <div className="space-y-0.5">
-            <div className="font-semibold text-sm text-[#1A1917]">{displayName}</div>
-            <div className="text-xs text-[#706E68] flex items-center gap-1.5">
-              <span>{user?.email || 'Tài khoản nội bộ'}</span>
-              <span>•</span>
-              <span className="text-[#8C887F]">{roleLabel}</span>
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      header: 'Điểm số',
-      render: (item: ManagementResult) => {
-        if (!item.submittedAt || item.score === null) {
-          return <span className="text-xs text-[#8C887F]">Đang thực hiện</span>;
-        }
-
-        const isSuccess = item.isPassed ?? item.score >= item.passingScore;
-        return (
-          <div className="space-y-0.5">
-            <div
-              className={`font-bold text-sm tabular-nums ${
-                isSuccess ? 'text-emerald-700' : 'text-rose-700'
-              }`}
-            >
-              {item.score}%
-            </div>
-            <div className="text-[11px] text-[#706E68] tabular-nums">
-              Ngưỡng đạt: {item.passingScore}%
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      header: 'Kết quả',
-      render: (item: ManagementResult) => (
-        <QuizAttemptBadge isSubmitted={!!item.submittedAt} isPassed={item.isPassed} />
-      ),
-    },
-    {
-      header: 'Thời gian',
-      render: (item: ManagementResult) => {
-        const dateObj = new Date(item.submittedAt || item.startedAt);
-        return (
-          <div className="text-xs text-[#706E68] space-y-0.5">
-            <div className="text-[#1A1917] font-medium">
-              {dateObj.toLocaleDateString('vi-VN')}
-            </div>
-            <div className="text-[11px] text-[#8C887F]">
-              {item.submittedAt
-                ? `Nộp bài lúc ${dateObj.toLocaleTimeString('vi-VN', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}`
-                : 'Bắt đầu làm bài'}
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      header: 'Thao tác',
-      className: 'text-right',
-      render: (item: ManagementResult) => (
-        <div className="flex items-center justify-end">
-          <Link href={`${base}/results/${item.attemptId}`}>
-            <Button variant="secondary" size="sm">
-              Xem bài làm
-            </Button>
-          </Link>
-        </div>
-      ),
-    },
-  ];
 
   return (
     <ManagementFrame
-      title="Kết quả làm bài Quiz"
-      description="Theo dõi điểm số, đánh giá năng lực và kiểm tra chi tiết bài làm của nhân viên."
+      title="Kết quả làm bài"
+      description="Theo dõi điểm số và tiến bộ của nhân viên theo từng bộ đề."
+      actions={<Link href={base} className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-control focus-visible:ring-2 focus-visible:ring-ring">Về bộ đề</Link>}
     >
       <div className="space-y-4">
         {/* Server-Backed Filter Toolbar */}
@@ -318,21 +212,64 @@ export function ManagementResults() {
           </Button>
         )}
 
-        {/* Human-Friendly Data Table */}
-        <DataTable
-          columns={columns}
-          data={data?.items || []}
-          keyExtractor={(item) => item.attemptId}
-          isLoading={loading}
-          emptyTitle="Chưa có kết quả làm bài nào"
-          emptyMessage="Kết quả sẽ hiển thị ngay khi nhân viên hoàn thành bài kiểm tra SOP."
-          pagination={{
-            page,
-            total: data?.total || 0,
-            totalPages: Math.max(1, Math.ceil((data?.total || 0) / pageSize)),
-            onPageChange: (newPage) => setPage(newPage),
-          }}
-        />
+        {loading ? (
+          <div className="rounded-lg border border-border bg-card p-12 text-center text-muted-foreground" role="status">
+            Đang tải kết quả…
+          </div>
+        ) : data?.items.length ? (
+          <>
+            <div className="space-y-3">
+              {data.items.map((item) => {
+                const user = usersMap[item.userRef];
+                const displayName = user?.fullName || user?.email || 'Nhân viên (Không xác định)';
+                const roleLabel = user?.role === 'viewer' ? 'Barista'
+                  : user?.role === 'rnd' ? 'R&D'
+                  : user?.role === 'admin' ? 'Quản trị'
+                  : user?.role || 'Chưa cập nhật';
+                const date = new Date(item.submittedAt || item.startedAt);
+                const isSuccess = item.isPassed ?? (item.score !== null && item.score >= item.passingScore);
+                return (
+                  <article key={item.attemptId} className={`grid items-center gap-4 p-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1.2fr)_auto_auto] ${interactiveCardClass}`}>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-foreground">{displayName}</p>
+                      <p className="text-xs text-muted-foreground">{user?.email || 'Tài khoản nội bộ'} · {roleLabel}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {date.toLocaleDateString('vi-VN')} · {item.submittedAt
+                          ? `Nộp bài lúc ${date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`
+                          : 'Bắt đầu làm bài'}
+                      </p>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-foreground">
+                        <Link href={`${base}/results/${item.attemptId}`} className={stretchedLinkClass}>{item.quizTitle}</Link>
+                      </p>
+                      <p className="text-xs text-muted-foreground">{item.quizCode} · v{item.versionNumber}.0</p>
+                    </div>
+                    <div className="text-sm tabular-nums">
+                      {!item.submittedAt || item.score === null ? (
+                        <span className="text-muted-foreground">Đang thực hiện</span>
+                      ) : (
+                        <>
+                          <p className={`font-semibold ${isSuccess ? 'text-success' : 'text-destructive'}`}>{item.score}%</p>
+                          <p className="text-xs text-muted-foreground">Ngưỡng đạt: {item.passingScore}%</p>
+                        </>
+                      )}
+                    </div>
+                    <QuizAttemptBadge isSubmitted={!!item.submittedAt} isPassed={item.isPassed} />
+                  </article>
+                );
+              })}
+            </div>
+            <Pagination page={page} total={data.total} pageSize={pageSize} onPage={setPage} />
+          </>
+        ) : (
+          <div className="rounded-lg border border-border bg-card p-12 text-center">
+            <h2 className="font-display text-panel font-medium">Chưa có kết quả làm bài nào</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Kết quả sẽ hiển thị ngay khi nhân viên hoàn thành bài kiểm tra SOP.
+            </p>
+          </div>
+        )}
       </div>
     </ManagementFrame>
   );
@@ -416,8 +353,8 @@ export function ManagementResultView({ attemptId }: { attemptId: string }) {
       )}
 
       {loading && (
-        <div className="p-12 text-center text-[#706E68]">
-          <div className="w-8 h-8 border-2 border-[#B47820] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <div className="p-12 text-center text-muted-foreground">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full motion-safe:animate-spin mx-auto mb-3" />
           <p className="text-xs">Đang tải chi tiết bài làm...</p>
         </div>
       )}
@@ -425,42 +362,42 @@ export function ManagementResultView({ attemptId }: { attemptId: string }) {
       {data && (
         <div className="space-y-6">
           {/* Summary Panel */}
-          <section className="bg-white border border-[#E8E2D9] rounded-2xl p-6 shadow-xs grid grid-cols-1 md:grid-cols-2 gap-6">
+          <section className="bg-card border border-border rounded-lg p-6 shadow-soft grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#B47820] block mb-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-primary block mb-1">
                 KẾT QUẢ TỔNG QUAN
               </span>
-              <h2 className="text-2xl font-bold text-[#1A1917]">
+              <h2 className="font-display text-h2 font-medium text-foreground">
                 {data.submittedAt
                   ? `${data.score}% • ${data.isPassed ? 'Đạt yêu cầu' : 'Chưa đạt'}`
                   : 'Đang làm bài'}
               </h2>
-              <p className="text-sm text-[#706E68] mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Tiêu chuẩn đạt: tối thiểu {data.passingScore}%
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-xs border-t md:border-t-0 md:border-l border-[#E8E2D9] pt-4 md:pt-0 md:pl-6">
+            <div className="grid grid-cols-2 gap-4 text-xs border-t md:border-t-0 md:border-l border-border pt-4 md:pt-0 md:pl-6">
               <div>
-                <span className="text-[#8C887F] block">Nhân viên</span>
-                <span className="font-semibold text-sm text-[#1A1917] block mt-0.5">
+                <span className="text-muted-foreground block">Nhân viên</span>
+                <span className="font-semibold text-sm text-foreground block mt-0.5">
                   {candidateName}
                 </span>
                 {userInfo?.email && (
-                  <span className="text-[#706E68] block mt-0.5">
+                  <span className="text-muted-foreground block mt-0.5">
                     {userInfo.email} {userInfo.role ? `• ${userInfo.role}` : ''}
                   </span>
                 )}
               </div>
 
               <div>
-                <span className="text-[#8C887F] block">Thời gian nộp</span>
-                <span className="font-medium text-[#1A1917] block mt-0.5">
+                <span className="text-muted-foreground block">Thời gian nộp</span>
+                <span className="font-medium text-foreground block mt-0.5">
                   {data.submittedAt
                     ? new Date(data.submittedAt).toLocaleString('vi-VN')
                     : 'Chưa nộp bài'}
                 </span>
-                <span className="text-[#8C887F] block mt-0.5">
+                <span className="text-muted-foreground block mt-0.5">
                   Bắt đầu: {new Date(data.startedAt).toLocaleString('vi-VN')}
                 </span>
               </div>
@@ -469,27 +406,27 @@ export function ManagementResultView({ attemptId }: { attemptId: string }) {
 
           {/* Question Review */}
           <div className="space-y-4">
-            <h3 className="text-lg font-bold text-[#1A1917]">Đối chiếu câu trả lời</h3>
+            <h3 className="font-display text-panel font-medium text-foreground">Đối chiếu câu trả lời</h3>
 
             <div className="space-y-4">
               {data.answers.map((answer, index) => (
                 <article
-                  className="bg-white border border-[#E8E2D9] rounded-2xl p-5 shadow-xs space-y-3"
+                  className="bg-card border border-border rounded-lg p-5 shadow-soft space-y-3"
                   key={answer.questionId}
                 >
                   <header className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3">
-                      <span className="px-2 py-0.5 rounded-md bg-[#FAF9F5] border border-[#E8E2D9] text-xs font-bold text-[#706E68]">
+                      <span className="px-2 py-0.5 rounded-md bg-secondary border border-border text-xs font-bold text-muted-foreground">
                         Câu {String(index + 1).padStart(2, '0')}
                       </span>
-                      <h4 className="font-semibold text-sm text-[#1A1917]">{answer.content}</h4>
+                      <h4 className="text-sm text-foreground font-medium font-display">{answer.content}</h4>
                     </div>
 
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 ${
                         answer.isCorrect
-                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                          : 'bg-rose-50 text-rose-800 border border-rose-200'
+                          ? 'bg-success-soft text-success border border-success'
+                          : 'bg-destructive-soft text-destructive border border-destructive-border'
                       }`}
                     >
                       {answer.selectedOptionId === null
@@ -512,14 +449,14 @@ export function ManagementResultView({ attemptId }: { attemptId: string }) {
                             key={option.id}
                             className={`p-3 rounded-xl border text-xs flex items-center justify-between gap-3 ${
                               isCorrect
-                                ? 'bg-emerald-50/70 border-emerald-300 text-emerald-900 font-medium'
+                                ? 'bg-success-soft border-success text-success font-medium'
                                 : isSelected
-                                ? 'bg-rose-50/70 border-rose-300 text-rose-900 font-medium'
-                                : 'bg-[#FAF9F5] border-[#E8E2D9] text-[#706E68]'
+                                ? 'bg-destructive-soft border-destructive-border text-destructive font-medium'
+                                : 'bg-secondary border-border text-muted-foreground'
                             }`}
                           >
                             <div className="flex items-center gap-2.5">
-                              <span className="w-5 h-5 rounded-full bg-white border border-[#E8E2D9] flex items-center justify-center font-bold text-[10px] shrink-0">
+                              <span className="w-5 h-5 rounded-full bg-card border border-border flex items-center justify-center font-bold text-[10px] shrink-0">
                                 {String.fromCharCode(65 + optionIndex)}
                               </span>
                               <span>{option.content}</span>
@@ -527,10 +464,10 @@ export function ManagementResultView({ attemptId }: { attemptId: string }) {
 
                             <div className="text-[11px] shrink-0 font-medium">
                               {isSelected && !isCorrect && (
-                                <span className="text-rose-700">Đã chọn</span>
+                                <span className="text-destructive">Đã chọn</span>
                               )}
                               {isCorrect && (
-                                <span className="text-emerald-700">✓ Đáp án đúng</span>
+                                <span className="text-success">✓ Đáp án đúng</span>
                               )}
                             </div>
                           </li>
@@ -539,7 +476,7 @@ export function ManagementResultView({ attemptId }: { attemptId: string }) {
                   </ol>
 
                   {answer.explanation && (
-                    <div className="p-3 bg-amber-50/60 border border-amber-200 rounded-xl text-xs text-amber-900 mt-2">
+                    <div className="p-3 bg-info-soft border border-border rounded-lg text-xs text-info mt-2">
                       <strong className="font-semibold">Giải thích chi tiết:</strong>{' '}
                       {answer.explanation}
                     </div>
@@ -549,7 +486,7 @@ export function ManagementResultView({ attemptId }: { attemptId: string }) {
             </div>
 
             {!data.answers.length && (
-              <div className="p-8 text-center text-xs text-[#706E68] bg-white border border-[#E8E2D9] rounded-2xl">
+              <div className="p-8 text-center text-xs text-muted-foreground bg-card border border-border rounded-lg">
                 Chưa có dữ liệu câu trả lời cho bài kiểm tra này.
               </div>
             )}

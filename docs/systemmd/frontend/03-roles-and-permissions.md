@@ -8,21 +8,20 @@ Hệ thống RecipeHub phục vụ 3 nhóm vai trò rõ ràng, không đè lấn
 |---|---|---|---|
 | **Đối tượng** | Quản trị viên IT, Vận hành hệ thống | Đội ngũ R&D, Chuyên gia pha chế | Barista, Cửa hàng trưởng, Nhân sự pha chế |
 | **Route gốc** | `/admin` | `/rnd` | `/viewer` |
-| **Phân khu Sidebar** | `QUẢN TRỊ HỆ THỐNG` | `KHÔNG GIAN R&D` | `VẬN HÀNH CỬA HÀNG` |
-| **Mục đích** | Quản trị tài khoản, giám sát sức khỏe microservices/DB và xem nhật ký kiểm toán | Sáng tạo công thức, quản lý nguyên liệu, đơn vị đo, media, tài liệu PDF và quiz (soạn, ban hành, lưu trữ, kết quả) | Tra cứu công thức chuẩn đã phát hành, làm bài kiểm tra SOP |
+| **Mục đích** | Quản trị tài khoản, giám sát sức khỏe microservices/DB và xem nhật ký hoạt động | Sáng tạo công thức, quản lý nguyên liệu, đơn vị đo, media, tài liệu PDF và quiz (soạn, ban hành, lưu trữ, kết quả) | Tra cứu công thức chuẩn đã phát hành, làm bài kiểm tra SOP |
 | **Quyền Recipe** | Không đọc và không ghi dữ liệu công thức (API trả 403); chỉ gọi `/info` và health để giám sát | Toàn quyền biên tập (`POST/PUT/PATCH/DELETE`): soạn/sửa `draft`, phát hành `published`, tạo phiên bản | Chỉ xem `published`, chưa archive |
 | **Quyền Nguyên liệu & Đơn vị** | Không có quyền | Toàn quyền quản lý nguyên liệu, loại nguyên liệu (`/rnd/ingredients`), đại lượng đo và đơn vị đo (`/rnd/catalogue`) | Không có quyền quản lý |
-| **Quyền Quiz** | Không có workspace quiz; chỉ theo dõi sự kiện qua Audit Logs | Soạn đề, ngân hàng câu hỏi, ban hành/lưu trữ đề, thống kê kết quả (`/rnd/quizzes*`) | Làm bài kiểm tra, xem lại lịch sử bài làm của mình |
-| **Quyền Hệ thống** | Quản trị tài khoản (`/admin/users`), giám sát hệ thống (`/admin/system`), Audit Logs (`/admin/logs`), liên kết Grafana & pgAdmin | Quản lý media R&D (`/rnd/media`) | Cấu hình tài khoản cá nhân |
+| **Quyền Quiz** | Không có workspace quiz; chỉ theo dõi sự kiện qua nhật ký hoạt động | Soạn đề, ngân hàng câu hỏi, ban hành/lưu trữ đề, thống kê kết quả (`/rnd/quizzes*`) | Làm bài kiểm tra, xem lại lịch sử bài làm của mình |
+| **Quyền Hệ thống** | Quản trị tài khoản (`/admin/users`), giám sát hệ thống (`/admin/system`), nhật ký hoạt động (`/admin/logs`), liên kết Grafana & pgAdmin | Quản lý media R&D (`/rnd/media`) | Cấu hình tài khoản cá nhân |
 | **Quyền Xuất bản PDF** | Không có quyền | Xem trước, xuất nháp/chính thức và xem lịch sử (`/rnd/documents`, `/rnd/documents/new`) | Chỉ tải PDF chính thức dạng `single` có nguồn `published`, chưa archive |
 
 ## 2. Bản Đồ Điều Hướng Theo Role (Navigation Map)
 
 ### 2.1. Phân Hệ Admin (`/admin`)
-- `/admin`: Dashboard quản trị (tài khoản, giám sát hệ thống, audit logs, liên kết nhanh Grafana & pgAdmin 4).
+- `/admin`: Dashboard quản trị (tài khoản, giám sát hệ thống, nhật ký hoạt động, liên kết nhanh Grafana & pgAdmin 4).
 - `/admin/users`: Quản lý danh sách tài khoản, khóa/mở khóa, đổi mật khẩu, gán vai trò.
-- `/admin/system`: Giám sát sức khỏe 5 Microservices qua YARP Gateway, kết nối 5 CSDL PostgreSQL, độ trễ phản hồi và luồng hoạt động gần đây.
-- `/admin/logs`: Xem nhật ký Audit Logs truy vết thao tác nghiệp vụ.
+- `/admin/system`: Giám sát sức khỏe 5 Microservices qua YARP Gateway, kết nối 5 CSDL PostgreSQL và độ trễ phản hồi.
+- `/admin/logs`: Xem nhật ký hoạt động truy vết thao tác nghiệp vụ.
 - Admin không có workspace công thức, nguyên liệu, đơn vị, media, PDF hay quiz; mọi route này thuộc `/rnd`. Không cấp admin quyền vào prefix `/rnd`.
 
 ### 2.2. Phân Hệ R&D (`/rnd`)

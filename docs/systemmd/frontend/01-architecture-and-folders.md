@@ -14,7 +14,7 @@ src/frontend/
 ├── tailwind.config.ts
 ├── src/
 │   ├── app/                                 # App Router Next.js 16
-│   │   ├── layout.tsx                       # Root layout (Google Sans font, metadata)
+│   │   ├── layout.tsx                       # Root layout (font và metadata)
 │   │   ├── globals.css                      # Semantic tokens, Tailwind base
 │   │   ├── (auth)/                          # Route group xác thực (Centered card)
 │   │   │   ├── layout.tsx
@@ -22,7 +22,7 @@ src/frontend/
 │   │   │   └── forbidden/page.tsx
 │   │   ├── (platform)/                      # Route group không gian làm việc chính
 │   │   │   ├── layout.tsx                   # Bọc WorkspaceShell toàn bộ role
-│   │   │   ├── loading.tsx                  # Loading indicator chuẩn Warm Editorial
+│   │   │   ├── loading.tsx                  # Loading indicator
 │   │   │   ├── platform/page.tsx            # Hub chọn không gian làm việc
 │   │   │   ├── settings/page.tsx            # Cấu hình tài khoản cá nhân
 │   │   │   ├── help/page.tsx                # Hướng dẫn thao tác SOP
@@ -32,16 +32,17 @@ src/frontend/
 │   │   └── api/backend/[...path]/route.ts   # Next.js API proxy chuyển tiếp sang Gateway
 │   ├── components/                          # UI components tái sử dụng
 │   │   ├── workspace/                       # Khung làm việc dùng chung
-│   │   │   ├── workspace-shell.tsx          # Shell chứa Sidebar, Topbar, User Menu
-│   │   │   ├── workspace.css                # Animation & rules
+│   │   │   ├── workspace-shell.tsx          # Shell: top-nav, drawer mobile, footer, đặt data-role
+│   │   │   ├── top-nav.tsx                  # Điều hướng desktop; mobile-nav-drawer.tsx cho <768px
+│   │   │   ├── workspace.css                # Scrollbar, focus, animation vào trang, nền theo role
 │   │   │   ├── data-table.tsx               # Bảng dữ liệu chuẩn
 │   │   │   ├── status-badge.tsx             # Badge trạng thái & Role badge
 │   │   │   ├── dialog.tsx                   # Modal dialog chuẩn hóa
-│   │   │   ├── fields.tsx                   # Input, Button, Select chuẩn Warm Editorial
+│   │   │   ├── fields.tsx                   # Input, Button, Select dùng chung
 │   │   │   ├── media-library.tsx            # Trình quản lý media tập trung
 │   │   │   └── pdf-document-workspace.tsx   # Biên tập và xem trước tài liệu PDF
 │   │   ├── quizzes/                         # Phân hệ Quiz (Viewer & Management)
-│   │   └── landing/                         # Trang giới thiệu ngoài
+│   │   └── landing/                         # Trang giới thiệu ngoài (landing.css, ScrollFrameStory)
 │   └── lib/
 │   │   ├── api/                             # API clients kết nối backend
 │   │   │   ├── client.ts                    # HTTP fetcher cơ sở
@@ -61,7 +62,7 @@ src/frontend/
 2. **Components:**
    - Đặt trong `components/<tên-module>/<tên-thành-phần>.tsx`.
    - Viết PascalCase cho tên Component export (`export function DataTable(...)`).
-   - Tái sử dụng style hiện có (`workspace.css`, `viewer-quiz.css`); không thêm CSS biệt lập làm phân mảnh semantic tokens.
+   - Dùng Tailwind với semantic token; chỉ giữ CSS dùng chung hiện có (`globals.css`, `workspace.css`, `landing.css`), không thêm file CSS lẻ.
 3. **API Repositories:**
    - Tách riêng theo nghiệp vụ trong `src/lib/api/`.
    - Không gọi `fetch()` rải rác bên trong components; bắt buộc đóng gói qua client/repository.

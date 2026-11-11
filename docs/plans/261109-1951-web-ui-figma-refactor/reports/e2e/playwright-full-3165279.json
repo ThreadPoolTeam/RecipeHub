@@ -1,0 +1,86 @@
+{
+  "tag": "E2E-3165279",
+  "errors": [
+    {
+      "name": "navigation",
+      "error": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+    },
+    {
+      "name": "results",
+      "error": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+    },
+    {
+      "name": "results",
+      "error": "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+    }
+  ],
+  "http": [
+    {
+      "name": "navigation",
+      "status": 403,
+      "url": "http://localhost:3000/api/backend/api/v1/identity/users?page=1&pageSize=100"
+    },
+    {
+      "name": "results",
+      "status": 403,
+      "url": "http://localhost:3000/api/backend/api/v1/identity/users?page=1&pageSize=100"
+    },
+    {
+      "name": "results",
+      "status": 403,
+      "url": "http://localhost:3000/api/backend/api/v1/identity/users?page=1&pageSize=100"
+    }
+  ],
+  "remaining": [
+    "E2E-3165279 đơn vị: tạm khóa",
+    "E2E-3165279-image.png: kiểm tra tham chiếu trước khi dọn",
+    "E2E-3165279 quiz và lượt làm: đã lưu trữ",
+    "E2E-3165279 công thức: đã lưu trữ",
+    "E2E-3165279 nguyên liệu: tạm khóa"
+  ],
+  "results": [
+    {
+      "name": "navigation",
+      "result": "PASS"
+    },
+    {
+      "name": "catalogue",
+      "result": "PASS"
+    },
+    {
+      "name": "ingredient",
+      "result": "PASS"
+    },
+    {
+      "name": "media",
+      "result": "PASS"
+    },
+    {
+      "name": "recipe",
+      "result": "PASS"
+    },
+    {
+      "name": "pdf",
+      "result": "PASS"
+    },
+    {
+      "name": "quiz",
+      "result": "PASS"
+    },
+    {
+      "name": "viewer",
+      "result": "PASS"
+    },
+    {
+      "name": "results",
+      "result": "PASS"
+    },
+    {
+      "name": "cleanup",
+      "result": "PASS"
+    }
+  ],
+  "ingredientCreated": true,
+  "recipe": "http://localhost:3000/rnd/recipes/6189fb4d-c8e4-4f97-a60f-5d4f780e6ce8",
+  "quiz": "http://localhost:3000/rnd/quizzes/50b667db-58bb-4d78-8100-2d381ba0e251?version=1"
+}

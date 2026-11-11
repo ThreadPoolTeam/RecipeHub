@@ -46,12 +46,12 @@ export function RecipeBatchScaler({ recipe, onScaled }: { recipe: RecipeVersion;
     return () => { window.clearTimeout(timer); controller.abort(); };
   }, [target, recipe, hasYield, repo, onScaled]);
 
-  return <section className="rounded-2xl border border-[#E8E2D9] bg-[#FAF9F5] p-4 sm:p-5 space-y-4" aria-label="Tính quy mô mẻ">
+  return <section className="space-y-4 rounded-xl border border-border bg-card p-4 sm:p-5" aria-label="Tính quy mô mẻ">
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <h2 className="text-sm font-semibold text-[#1A1917] flex items-center gap-2"><Scale className="w-4 h-4 text-[#B47820]" />Tính quy mô mẻ</h2>
+      <h2 className="flex items-center gap-2 text-sm text-foreground font-medium font-display"><Scale className="h-4 w-4 text-primary" strokeWidth={1.5} />Tính quy mô mẻ</h2>
       <UnitConversionModal />
     </div>
-    {!hasYield ? <p className="text-sm text-[#706E68]">Cần thiết lập sản lượng chuẩn và đơn vị trước khi tính quy mô mẻ.</p> : <>
+    {!hasYield ? <p className="text-sm text-muted-foreground">Cần thiết lập sản lượng chuẩn và đơn vị trước khi tính quy mô mẻ.</p> : <>
       <div className="flex flex-col sm:flex-row sm:items-end gap-3">
         <TextInput label={`Sản lượng mong muốn (${recipe.yieldUnit})`} type="number" min="0.000001" step="any" value={target}
           onChange={e => { setTarget(e.target.value); touch(); }} helper={`Mẻ chuẩn: ${recipe.targetYield} ${recipe.yieldUnit}`} />
@@ -61,9 +61,9 @@ export function RecipeBatchScaler({ recipe, onScaled }: { recipe: RecipeVersion;
         </div>
       </div>
       {error && <Alert variant="error">{error}</Alert>}
-      <div role="status" aria-live="polite" className="text-xs text-[#706E68] space-y-1">
+      <div role="status" aria-live="polite" className="space-y-1 text-xs text-muted-foreground">
         {loading ? <p>Đang tính định lượng...</p> : appliedYield !== null ? <>
-          <p>Đang hiển thị mẻ <strong className="text-[#1A1917]">{appliedYield} {recipe.yieldUnit}</strong> ({(appliedYield / recipe.targetYield!).toLocaleString('vi-VN', { maximumFractionDigits: 6 })}x).</p>
+          <p>Đang hiển thị mẻ <strong className="text-foreground">{appliedYield} {recipe.yieldUnit}</strong> ({(appliedYield / recipe.targetYield!).toLocaleString('vi-VN', { maximumFractionDigits: 6 })}x).</p>
           <p>Tổng theo đơn vị: {totals.map(total => `${total.quantity.toLocaleString('vi-VN', { maximumFractionDigits: 6 })} ${total.unit}`).join(' · ')}</p>
         </> : <p>Bảng đang hiển thị định lượng mẻ chuẩn.</p>}
         <p>Scale chỉ dùng để pha chế, không lưu thay đổi vào công thức chuẩn.</p>

@@ -1,5 +1,7 @@
 'use client';
 
+import { pageTitleClass } from '@/components/workspace/page-header';
+
 import { listAuditLogs } from '@/lib/api/audit';
 
 import React, { useEffect, useState } from 'react';
@@ -13,6 +15,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
+import { interactiveCardClass, interactiveCardFocusClass } from '@/components/workspace/interactive-card';
 
 export default function AdminPage() {
   const { repo, dataVersion } = useDemo();
@@ -67,126 +70,65 @@ export default function AdminPage() {
     },
     {
       title: 'Giám sát Hệ thống & Xử lý Sự cố',
-      desc: 'Kiểm tra sức khỏe thời gian thực của 5 Microservices qua YARP Gateway, độ trễ kết nối 5 CSDL PostgreSQL và luồng sự kiện.',
+      desc: 'Kiểm tra sức khỏe thời gian thực của 5 Microservices qua YARP Gateway và độ trễ kết nối 5 CSDL PostgreSQL.',
       href: '/admin/system',
       icon: Activity,
-      count: '5 Microservices · 5 DBs',
+      count: 'Xem trạng thái dịch vụ',
       tag: 'System Health',
     },
     {
-      title: 'Nhật ký kiểm toán',
+      title: 'Nhật ký hoạt động',
       desc: 'Truy vết toàn diện mọi thay đổi dữ liệu trong hệ thống: tạo/sửa/phát hành công thức, quản trị tài khoản và bài kiểm tra.',
       href: '/admin/logs',
       icon: ShieldCheck,
       count: auditStatus.loading ? '...' : auditStatus.error ? 'Không tải được' : `${auditStatus.count} sự kiện ghi nhận`,
-      tag: 'Audit Logs',
+      tag: 'Nhật ký hoạt động',
     },
   ];
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E2D9]">
+    <div className="mx-auto w-full max-w-7xl space-y-8">
+      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-2xl font-bold text-[#1A1917] flex items-center gap-2.5">
-            <ShieldCheck className="w-6 h-6 text-[#B47820]" />
-            Trung Tâm Quản Trị &amp; Giám Sát Hệ Thống
-          </h1>
-          <p className="text-[#706E68] text-sm mt-1 max-w-2xl">
-            Quản lý tài khoản nhân sự, giám sát tình trạng vận hành 5 Microservices, xử lý sự cố hạ tầng và kiểm toán bảo mật.
-          </p>
+          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Quản trị</p>
+          <h1 className={pageTitleClass}>Trung tâm quản trị &amp; giám sát</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Quản lý tài khoản, theo dõi dịch vụ và hoạt động hệ thống.</p>
         </div>
-      </div>
+        <Link href="/admin/users" className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+          Quản lý tài khoản
+        </Link>
+      </header>
 
-      {/* Main Navigation Modules */}
-      <div>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-[#706E68] mb-3">Phân hệ Quản trị Trọng tâm</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {cards.map((card) => (
-            <Link
-              key={card.href}
-              href={card.href}
-              className="group p-5 bg-white hover:bg-[#FAF9F5] border border-[#E8E2D9] hover:border-[#B47820] rounded-2xl transition duration-200 flex flex-col justify-between shadow-xs"
-            >
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {cards.map((card) => (
+          <Link key={card.href} href={card.href} className={`flex flex-col justify-between p-5 ${interactiveCardClass} ${interactiveCardFocusClass}`}>
+            <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <span className="p-2.5 bg-[#FAF9F5] text-[#B47820] rounded-lg border border-[#E8E2D9] group-hover:scale-105 transition flex items-center justify-center">
-                    <card.icon className="w-5 h-5" />
-                  </span>
-                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[#FAF9F5] text-[#706E68] border border-[#E8E2D9]">
-                    {card.tag}
-                  </span>
-                </div>
-                <h3 className="text-base font-bold text-[#1A1917] group-hover:text-[#B47820] transition">
-                  {card.title}
-                </h3>
-                <p className="text-xs text-[#706E68] mt-1.5 leading-relaxed">
-                  {card.desc}
-                </p>
+                <p className="text-sm text-muted-foreground">{card.title}</p>
+                <p className="mt-3 font-display text-2xl text-foreground tabular-nums">{loading ? '...' : card.count}</p>
               </div>
-
-              <div className="mt-5 pt-3 border-t border-[#E8E2D9] flex items-center justify-between text-xs font-medium">
-                <span className="text-[#706E68] font-mono">{loading ? '...' : card.count}</span>
-                <span className="text-[#B47820] flex items-center gap-1 group-hover:translate-x-1 transition duration-150">
-                  Mở phân hệ &rarr;
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* Infrastructure & DB Tools */}
-      <div>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-[#706E68] mb-3">
-          Công cụ Hạ tầng &amp; Cơ sở dữ liệu (Docker)
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <a
-            href="http://localhost:3001"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group p-4 bg-white hover:bg-[#FAF9F5] border border-[#E8E2D9] hover:border-[#B47820] rounded-2xl transition flex items-center justify-between shadow-xs"
-          >
-            <div className="flex items-center gap-3.5">
-              <span className="p-2.5 bg-[#FAF9F5] text-[#B47820] rounded-lg border border-[#E8E2D9]">
-                <BarChart3 className="w-5 h-5" />
-              </span>
-              <div>
-                <div className="text-sm font-bold text-[#1A1917] group-hover:text-[#B47820] transition">
-                  Grafana Observability Dashboard (Cổng 3001)
-                </div>
-                <div className="text-xs text-[#706E68] mt-0.5">
-                  Biểu đồ thống kê trực tiếp từ 5 PostgreSQL datasources đã cấu hình sẵn.
-                </div>
-              </div>
+              <card.icon className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             </div>
-            <ExternalLink className="w-4 h-4 text-[#B47820] shrink-0" />
+            <p className="mt-4 text-sm text-muted-foreground">{card.desc}</p>
+          </Link>
+        ))}
+      </div>
+
+      <section>
+        <h2 className="mb-4 font-display text-xl font-medium text-foreground">Công cụ hạ tầng &amp; cơ sở dữ liệu</h2>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <a href="http://localhost:3001" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 rounded-lg border border-border bg-card p-5 shadow-soft hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <BarChart3 className="h-5 w-5 shrink-0 text-muted-foreground" strokeWidth={1.5} />
+            <span className="flex-1"><span className="block font-semibold text-foreground">Grafana Observability Dashboard</span><span className="mt-1 block text-sm text-muted-foreground">Mở trang giám sát tại cổng 3001</span></span>
+            <ExternalLink className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
           </a>
-
-          <a
-            href="http://localhost:5050"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group p-4 bg-white hover:bg-[#FAF9F5] border border-[#E8E2D9] hover:border-[#B47820] rounded-2xl transition flex items-center justify-between shadow-xs"
-          >
-            <div className="flex items-center gap-3.5">
-              <span className="p-2.5 bg-[#FAF9F5] text-[#B47820] rounded-lg border border-[#E8E2D9]">
-                <Database className="w-5 h-5" />
-              </span>
-              <div>
-                <div className="text-sm font-bold text-[#1A1917] group-hover:text-[#B47820] transition">
-                  pgAdmin 4 PostgreSQL Manager (Cổng 5050)
-                </div>
-                <div className="text-xs text-[#706E68] mt-0.5">
-                  Trình quản lý CSDL trực quan nạp sẵn cấu hình 5 database-per-service.
-                </div>
-              </div>
-            </div>
-            <ExternalLink className="w-4 h-4 text-[#B47820] shrink-0" />
+          <a href="http://localhost:5050" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 rounded-lg border border-border bg-card p-5 shadow-soft hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <Database className="h-5 w-5 shrink-0 text-muted-foreground" strokeWidth={1.5} />
+            <span className="flex-1"><span className="block font-semibold text-foreground">pgAdmin 4 PostgreSQL Manager</span><span className="mt-1 block text-sm text-muted-foreground">Mở trang quản trị tại cổng 5050</span></span>
+            <ExternalLink className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
           </a>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
