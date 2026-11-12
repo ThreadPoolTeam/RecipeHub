@@ -112,6 +112,22 @@ export default function EditIngredientPage() {
               }))}
           />
         </div>
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-foreground">Trạng thái</p>
+          <label className="flex cursor-pointer items-start gap-3">
+            <input
+              type="checkbox"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+              disabled={submitting}
+              className="mt-0.5 h-4 w-4 rounded border-input bg-card text-primary focus:ring-ring"
+            />
+            <span>
+              <span className="block text-sm font-medium text-foreground">Đang dùng</span>
+              <span className="block text-xs text-muted-foreground">Nguyên liệu tạm khóa không thể được chọn khi tạo hoặc chỉnh sửa công thức. Trạng thái được lưu khi nhấn Lưu thay đổi.</span>
+            </span>
+          </label>
+        </div>
 
         </section>
         <section className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
@@ -123,22 +139,6 @@ export default function EditIngredientPage() {
             onChange={(e) => setNote(e.target.value)}
           />
 
-          <label className="flex items-center gap-3 cursor-pointer pt-2">
-            <input
-              type="checkbox"
-              checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-              className="h-4 w-4 cursor-pointer rounded border-input bg-card text-primary focus:ring-ring"
-            />
-            <div>
-              <span className="text-sm font-medium text-foreground">
-                Đang kích hoạt sử dụng
-              </span>
-              <p className="text-xs text-muted-foreground">
-                Bật/tắt trạng thái sử dụng nguyên liệu trong việc tạo và điều chỉnh công thức.
-              </p>
-            </div>
-          </label>
         </section>
         <IngredientImageField imageAssetId={imageAssetId} imageUrl={imageAssetId ? previews[imageAssetId] : undefined}
           group={categories.find((item) => item.id === categoryId)?.name ?? ''} name={name}
