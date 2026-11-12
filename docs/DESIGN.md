@@ -97,10 +97,10 @@ Chỉ `#story` (`ScrollFrameStory`) và overlay liên quan dùng `--cinematic-bg
 
 ### Quy chuẩn ấn phẩm
 - A4 ngang, lề nội dung 36 pt; bìa riêng. Mục lục cho bộ từ hai món, số trang thực và liên kết nội bộ.
-- Nền `#FAF8F5`, mực `#231F20`, chữ phụ `#6E6768`, đường kẻ `#E5DFDB`; nhấn tiết chế `#C4355B` theo thương hiệu. An toàn dùng nền `#F9EAE7`, tiêu chí hoàn thành `#E5F3E8`.
+- Nền `#FAF8F5`, mực `#231F20`, chữ phụ `#6E6768`, đường kẻ `#E5DFDB`; nhấn tiết chế `#C4355B` theo thương hiệu.
 - Font nhúng OFL: Noto Serif cho tiêu đề, Be Vietnam Pro cho nội dung; hỗ trợ tiếng Việt, không phụ thuộc font hệ thống.
-- Bìa ảnh tràn trang, chữ neo dưới và không có footer; thiếu ảnh dùng nền tối cùng họa tiết vector, không chèn ảnh mẫu. Mục lục có mảng tối toàn chiều cao, danh sách và liên kết trang thật.
-- Tổng quan dùng ảnh lớn hoặc monogram; nguyên liệu tràn dùng toàn bề ngang trang tiếp. Quy trình dùng lưới thẻ đồng chiều rộng, tối đa bốn cột; ảnh bước 16:10 khi có, giữ chú thích người dùng và nhãn AI riêng. Trang kiểm tra dùng checklist chỉ khi có tiêu chí hoàn thành, ảnh lớn và ghi chú sản lượng cạnh số liệu. Không dựng dữ liệu thiếu.
+- Bìa nền tối ấm nâu cà phê vẽ vector (đốm sáng bokeh hổ phách, lớp phủ tối dần), không dùng ảnh món, chữ neo dưới và không có footer, không hộp mục lục hay tổng quan; mục lục của bộ nhiều món nằm ở trang 2, mảng tối toàn chiều cao, danh sách và liên kết trang thật.
+- Tổng quan dùng thẻ công thức bên trái. Cột phải có nhãn nhỏ “Nguyên liệu” và danh sách tên + số lượng (đơn vị viết tắt); ít nguyên liệu thì một cột kèm dải số liệu (sản lượng, số bước, thời gian) ở đáy; nhiều nguyên liệu thì hai cột, số liệu ở thẻ trái; không in giai đoạn hay ghi chú nguyên liệu. Quy trình dùng lưới thẻ đồng chiều rộng, tối đa bốn cột; ảnh bước 16:10 khi có, giữ chú thích người dùng và nhãn AI riêng; thẻ bước có dòng “Nguyên liệu: ...” gồm nguyên liệu gắn với bước; không in lưu ý an toàn; không có quy trình tóm tắt hay lưu ý gộp. Không dựng dữ liệu thiếu.
 - Nội dung dài tự ngắt trang; mục lục và bảng nguyên liệu lặp tiêu đề. Footer nội dung có tên ấn phẩm và số trang thực. Bản nháp có watermark `BẢN NHÁP - DRAFT` trên mọi trang; bản chính thức không có.
 
 
