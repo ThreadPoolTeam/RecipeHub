@@ -1,22 +1,28 @@
-import { BookOpen, GraduationCap, Users } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import { LandingReveal } from './landing-reveal';
 
-const features = [
-  { icon: BookOpen, title: 'R&D công thức', description: 'Soạn bản nháp, quản lý phiên bản, nhân mẻ và phát hành.' },
-  { icon: GraduationCap, title: 'Đào tạo barista', description: 'Bài kiểm tra theo công thức, chấm điểm và lịch sử.' },
-  { icon: Users, title: 'Quản trị an toàn', description: 'Phân quyền theo vai trò, giám sát và nhật ký hoạt động.' },
+const roles = [
+  { name: 'Đội R&D', description: 'Soạn, phát hành · Quản lý nguyên liệu và đơn vị đo' },
+  { name: 'Barista', description: 'Xem sổ tay · Làm bài kiểm tra' },
+  { name: 'Quản trị', description: 'Phân quyền · Xem nhật ký hoạt động' },
 ];
 
 export function LandingFeatures() {
   return (
-    <section id="features" className="px-4 pb-20 md:px-10 md:pb-[84px]">
-      <div className="mx-auto grid max-w-[1280px] items-stretch gap-6 md:grid-cols-3">
-        {features.map(({ icon: Icon, title, description }) => (
-          <article key={title} className="space-y-3 rounded-2xl border border-border bg-secondary p-7 shadow-soft">
-            <Icon className="h-8 w-8 text-muted-foreground" strokeWidth={1.5} />
-            <h3 className="font-display text-card-title font-medium text-foreground">{title}</h3>
-            <p className="text-sm leading-5 text-muted-foreground">{description}</p>
-          </article>
-        ))}
+    <section id="features" className="px-4 py-12 md:px-10 md:py-20">
+      <div className="mx-auto grid max-w-[1280px] gap-8 md:grid-cols-[1fr_2fr] md:gap-12">
+        <h2 className="font-display text-h2 font-medium text-foreground">Cùng một công thức,<br />cùng một chuẩn.</h2>
+        <div className="border-t border-border">
+          {roles.map((role, index) => (
+            <LandingReveal key={role.name} delay={index * 60}>
+              <article tabIndex={0} className={`landing-motion-roleRow grid grid-cols-[1fr_auto] items-center gap-x-6 gap-y-2 border-b border-border px-2 py-6 md:grid-cols-[1fr_2fr_auto]`}>
+                <h3 className="font-display text-card-title font-medium">{role.name}</h3>
+                <p className="col-start-1 row-start-2 text-sm text-muted-foreground md:col-auto md:row-auto">{role.description}</p>
+                <ArrowRight aria-hidden="true" className={`landing-motion-roleArrow col-start-2 row-span-2 row-start-1 h-4 w-4 md:col-auto md:row-auto`} strokeWidth={1.5} />
+              </article>
+            </LandingReveal>
+          ))}
+        </div>
       </div>
     </section>
   );

@@ -151,3 +151,73 @@
 .reduced-motion-story {
   display: none;
 }
+.landing-motion-versionTabs {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  isolation: isolate;
+  min-width: 116px;
+  padding: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-secondary);
+}
+.landing-motion-versionIndicator {
+  position: absolute;
+  z-index: -1;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / 2);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--color-card));
+  transition: transform 320ms cubic-bezier(.2,.7,.2,1);
+}
+.landing-motion-versionSecond .landing-motion-versionIndicator { transform: translateX(100%); }
+.landing-motion-versionTab { padding: 6px 8px; text-align: center; color: var(--color-muted-foreground); }
+.landing-motion-versionSelected { color: var(--color-destructive); font-weight: 600; }
+.landing-motion-delta { margin-left: 8px; display: inline-block; border-radius: var(--radius-sm); padding: 2px 6px; color: var(--color-destructive); background: var(--color-primary-soft); font-size: 11px; font-weight: 600; animation: landingMotionDeltaIn 300ms cubic-bezier(.2,.7,.2,1) both; }
+@keyframes landingMotionDeltaIn { from { opacity: 0; transform: scale(.9); } to { opacity: 1; transform: scale(1); } }
+.landing-motion-formulaImage { transition: transform 500ms cubic-bezier(.2,.7,.2,1), opacity 500ms cubic-bezier(.2,.7,.2,1); }
+.landing-motion-formulaImageFrame { overflow: hidden; }
+.landing-motion-formulaCard { transition: box-shadow 200ms ease; }
+.landing-motion-roleRow:focus-visible p { color: inherit; }
+.landing-motion-formulaCard:focus-visible { outline: 3px solid var(--color-ring); outline-offset: 4px; }
+.landing-motion-formulaCard:focus-visible .landing-motion-activeImage { transform: scale(1.03); }
+.landing-motion-formulaRow { transition: color 200ms ease, background-color 200ms ease; }
+.landing-motion-formulaRow:hover { color: var(--color-destructive); background: var(--color-primary-soft); }
+.landing-motion-status { animation: landingMotionStatusIn 320ms cubic-bezier(.2,.7,.2,1) both; }
+@keyframes landingMotionStatusIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.landing-motion-roleRow { transition: background-color 200ms ease, color 200ms ease; }
+.landing-motion-roleRow:focus-visible { outline: 3px solid var(--color-ring); outline-offset: 3px; color: var(--color-destructive); background: var(--color-primary-soft); }
+.landing-motion-roleArrow { transition: transform 300ms cubic-bezier(.2,.7,.2,1); }
+.landing-motion-roleRow:focus-visible .landing-motion-roleArrow { transform: translateX(4px); }
+.landing-motion-button { transition: transform 150ms ease, filter 150ms ease; }
+.landing-motion-button:active { transform: scale(.98); }
+.landing-motion-button:focus-visible { filter: brightness(.93); }
+.landing-page header a[href="/login"] { transition: transform 150ms ease, filter 150ms ease; }
+.landing-page header a[href="/login"]:active { transform: scale(.98); }
+.landing-page header a[href="/login"]:focus-visible { filter: brightness(.93); }
+.landing-page footer nav a:focus-visible { color: var(--color-destructive); text-decoration: underline; outline: 2px solid var(--color-ring); outline-offset: 3px; }
+.landing-motion-rail { position: absolute; background: var(--color-primary); transform-origin: top; transform: scaleY(1); transition: transform 700ms cubic-bezier(.2,.7,.2,1); }
+.landing-motion-railPending .landing-motion-rail { transform: scaleY(0); }
+@media (min-width: 768px) { .landing-motion-rail { transform-origin: left; transform: scaleX(1); } .landing-motion-railPending .landing-motion-rail { transform: scaleX(0); } }
+@media (hover: hover) and (pointer: fine) {
+  .landing-motion-formulaCard:hover { box-shadow: var(--shadow-lift); }
+  .landing-motion-formulaImageFrame:hover .landing-motion-activeImage { transform: scale(1.03); }
+  .landing-motion-roleRow:hover { color: var(--color-destructive); background: var(--color-primary-soft); }
+  .landing-motion-roleRow:hover p { color: inherit; }
+  .landing-motion-roleRow:hover .landing-motion-roleArrow { transform: translateX(4px); }
+  .landing-motion-button:hover { filter: brightness(.93); }
+  .landing-page header a[href="/login"]:hover { filter: brightness(.93); }
+  .landing-page footer nav a:hover { color: var(--color-destructive); text-decoration: underline; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-motion-versionIndicator, .landing-motion-formulaImage, .landing-motion-formulaCard, .landing-motion-formulaRow, .landing-motion-roleRow, .landing-motion-roleArrow, .landing-motion-button, .landing-motion-rail { transition: none; }
+  .landing-page header a[href="/login"] { transition: none; }
+  .landing-page header a[href="/login"]:active { transform: none; }
+  .landing-motion-delta, .landing-motion-status { animation: none; }
+  .landing-motion-formulaCard:focus-visible .landing-motion-activeImage, .landing-motion-formulaImageFrame:hover .landing-motion-activeImage, .landing-motion-roleRow:focus-visible .landing-motion-roleArrow, .landing-motion-roleRow:hover .landing-motion-roleArrow, .landing-motion-button:active { transform: none; }
+  .landing-motion-railPending .landing-motion-rail { transform: none; }
+}
+
