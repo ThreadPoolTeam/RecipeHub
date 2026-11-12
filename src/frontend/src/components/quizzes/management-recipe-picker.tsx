@@ -91,7 +91,7 @@ export function ManagementRecipePicker({ actor, value, onChange, disabled }: Man
             return (
               <li key={item.id}>
                 <label
-                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors focus-within:ring-2 focus-within:ring-ring ${active ? 'border-primary bg-primary-soft' : 'border-border bg-card hover:bg-accent'} ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
+                  className={`flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 transition-colors focus-within:ring-2 focus-within:ring-ring ${active ? 'border-primary bg-primary-soft' : 'border-border bg-card hover:bg-accent'} ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
                 >
                   <input
                     type="radio"
@@ -102,14 +102,10 @@ export function ManagementRecipePicker({ actor, value, onChange, disabled }: Man
                     onChange={() => onChange(item.versionId, item)}
                   />
                   <span className="min-w-0 flex-1">
-                    <span className="text-xs text-muted-foreground">{item.code}</span>
+                    <span className="block text-xs text-muted-foreground">{item.code} · {formatVersionLabel(item.versionNumber)}</span>
                     <span className={`block ${cardTitleClass} truncate text-base`}>{item.name}</span>
-                    <span className="mt-1 flex flex-wrap gap-2 text-pill">
-                      <span className="rounded-md bg-secondary px-2 py-1 text-muted-foreground">{formatVersionLabel(item.versionNumber)}</span>
-                      <span className="rounded-md bg-success-soft px-2 py-1 text-success">Đã phát hành</span>
-                    </span>
                   </span>
-                  {active && <Check className="mt-1 h-4 w-4 shrink-0 text-primary" strokeWidth={2} aria-hidden="true" />}
+                  {active && <Check className="h-4 w-4 shrink-0 text-primary" strokeWidth={2} aria-hidden="true" />}
                 </label>
               </li>
             );
@@ -118,7 +114,7 @@ export function ManagementRecipePicker({ actor, value, onChange, disabled }: Man
       )}
       <Message error={error} />
       {error && <Button type="button" onClick={() => setRetry((current) => current + 1)}>Thử lại tải công thức</Button>}
-      <Pagination page={page} total={total} pageSize={12} onPage={setPage} disabled={loading} />
+      {total > 12 && <Pagination page={page} total={total} pageSize={12} onPage={setPage} disabled={loading} />}
     </div>
   );
 }
