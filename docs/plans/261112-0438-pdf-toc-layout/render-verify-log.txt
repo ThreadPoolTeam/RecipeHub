@@ -1,0 +1,36 @@
+N=1 pages=4 tocpages=[2] expected=1 ok=True
+  toc p2: totalline_ok=True footer=['Trang 2 / 4']
+  rows idx=[1] right-col pages=[3]
+  expected pages=[3] match=True
+  lowest body text bottom=193 / page h=595; links=[3]
+  real overview pages {1: 3}
+N=5 pages=12 tocpages=[2] expected=1 ok=True
+  toc p2: totalline_ok=True footer=['Trang 2 / 12']
+  rows idx=[1, 2, 3, 4, 5] right-col pages=[3, 5, 7, 10, 11]
+  expected pages=[3, 5, 7, 10, 11] match=True
+  lowest body text bottom=473 / page h=595; links=[3, 5, 7, 10, 11]
+  real overview pages {1: 3, 2: 5, 3: 7, 4: 10, 5: 11}
+N=6 pages=15 tocpages=[2, 3] expected=2 ok=True
+  toc p2: totalline_ok=True footer=['Trang 2 / 15']
+  rows idx=[1, 2, 3, 4, 5] right-col pages=[4, 6, 8, 11, 12]
+  expected pages=[4, 6, 8, 11, 12] match=True
+  lowest body text bottom=473 / page h=595; links=[4, 6, 8, 11, 12]
+  toc p3: totalline_ok=True footer=['Trang 3 / 15']
+  rows idx=[6] right-col pages=[14]
+  expected pages=[14] match=True
+  lowest body text bottom=193 / page h=595; links=[14]
+  real overview pages {1: 4, 2: 6, 3: 8, 4: 11, 5: 12, 6: 14}
+N=12 pages=28 tocpages=[2, 3, 4] expected=3 ok=True
+  toc p2: totalline_ok=True footer=['Trang 2 / 28']
+  rows idx=[1, 2, 3, 4, 5] right-col pages=[5, 7, 9, 12, 13]
+  expected pages=[5, 7, 9, 12, 13] match=True
+  lowest body text bottom=473 / page h=595; links=[5, 7, 9, 12, 13]
+  toc p3: totalline_ok=True footer=['Trang 3 / 28']
+  rows idx=[6, 7, 8, 9, 10] right-col pages=[15, 17, 20, 21, 23]
+  expected pages=[15, 17, 20, 21, 23] match=True
+  lowest body text bottom=473 / page h=595; links=[15, 17, 20, 21, 23]
+  toc p4: totalline_ok=True footer=['Trang 4 / 28']
+  rows idx=[11, 12] right-col pages=[25, 28]
+  expected pages=[25, 28] match=True
+  lowest body text bottom=263 / page h=595; links=[25, 28]
+  real overview pages {1: 5, 2: 7, 3: 9, 4: 12, 5: 13, 6: 15, 7: 17, 8: 20, 9: 21, 10: 23, 11: 25, 12: 28}
