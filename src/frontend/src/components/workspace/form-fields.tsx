@@ -1,4 +1,5 @@
 import React from 'react';
+import { StyledSelect } from './styled-select';
 
 export function TextInput({ label, helper, error, required, className = '', id, ...props }: React.InputHTMLAttributes<HTMLInputElement> & {
   label?: string; helper?: string; error?: string; required?: boolean;
@@ -43,16 +44,28 @@ export interface SelectOption {
   value: string | number;
 }
 
-export function Select({ label, helper, error, required, options, children, className = '', id, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & {
+export function Select({ label, helper, error, required, options, children, className = '', id, value, defaultValue, onChange, disabled, name, title, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & {
   label?: string; helper?: string; error?: string; required?: boolean; options?: SelectOption[];
 }) {
   const inputId = id || (label ? `select_${label.toLowerCase().replace(/\s+/g, '_')}` : undefined);
+  const choices = options ?? React.Children.toArray(children).flatMap((child) => {
+    if (!React.isValidElement<React.OptionHTMLAttributes<HTMLOptionElement>>(child) || child.type !== 'option') return [];
+    const text = React.Children.toArray(child.props.children).join('');
+    return [{ value: String(child.props.value ?? text), label: text, disabled: child.props.disabled }];
+  });
+  const [uncontrolledValue, setUncontrolledValue] = React.useState(String(defaultValue ?? choices[0]?.value ?? ''));
+  const selectedValue = String(value ?? uncontrolledValue);
+  const displayedValue = !options && selectedValue === '' && !choices.some((choice) => String(choice.value) === '') ? String(choices[0]?.value ?? '') : selectedValue;
   return (
     <div className={`space-y-1.5 ${className}`}>
       {label && <label htmlFor={inputId} className="block text-xs font-medium text-foreground">{label} {required && <span className="text-destructive">*</span>}</label>}
-      <select id={inputId} className={`h-10 w-full rounded-md border bg-card px-3 text-sm text-foreground shadow-inset outline-none focus:ring-2 ${error ? 'border-destructive focus:ring-destructive' : 'border-input focus:border-ring focus:ring-ring'}`} {...props}>
-        {options ? options.map((opt) => <option key={String(opt.value)} value={opt.value}>{opt.label}</option>) : children}
-      </select>
+      <StyledSelect id={inputId} value={displayedValue} options={choices} disabled={disabled} required={required} error={!!error} name={name} title={title}
+        aria-label={props['aria-label']} aria-labelledby={props['aria-labelledby']} aria-describedby={props['aria-describedby']}
+        onChange={(next) => {
+          if (value === undefined) setUncontrolledValue(next);
+          const target = { value: next };
+          onChange?.({ target, currentTarget: target } as React.ChangeEvent<HTMLSelectElement>);
+        }} />
       {error ? <p className="text-xs text-destructive">{error}</p> : helper ? <p className="text-xs text-muted-foreground">{helper}</p> : null}
     </div>
   );
