@@ -160,7 +160,7 @@ function RecipeListContent() {
 
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow="Thư viện" title="Công thức đồ uống" description="Quản lý vòng đời công thức: Nháp, Chờ duyệt, Đã duyệt, Lưu trữ." actions={
+      <PageHeader eyebrow="Thư viện" title="Công thức đồ uống" description="Tìm công thức và xem các phiên bản đang có." actions={
         <div className="flex flex-wrap items-center gap-2">
           {selectedRecipeIds.length > 0 && (
             <Button

@@ -3,12 +3,11 @@
 import { pageTitleClass } from '@/components/workspace/page-header';
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft,
   Lock,
-  Download,
   Clock,
   Thermometer,
   Wrench,
@@ -23,35 +22,29 @@ import {
   Ingredient,
   MediaAsset,
 } from '@/lib/demo/types';
-import { Button, Alert } from '@/components/workspace/fields';
-import { useToast } from '@/components/workspace/toast';
+import { Alert } from '@/components/workspace/fields';
 import { StatusBadge, MediaSourceBadge } from '@/components/workspace/status-badge';
 import { RecipeBatchScaler } from '@/components/recipes/RecipeBatchScaler';
-import {
-  getPublishedDocumentByVersion,
-  downloadPdfDocumentFile,
-} from '@/lib/api/pdf-documents';
-import { PublishedDocumentLookupResponse } from '@/lib/api/pdf-document-types';
+import { stepIngredientText } from '@/lib/recipe-step-links';
 
 export default function ViewerRecipeDetailPage() {
   const params = useParams();
   const id = typeof params?.id === 'string' ? params.id : Array.isArray(params?.id) ? params.id[0] : '';
 
+  const wantedVersionId = useSearchParams().get('versionId');
+
   const { session, repo, dataVersion } = useDemo();
-  const { toast } = useToast();
 
   const [recipe, setRecipe] = useState<RecipeVersion | null>(null);
   const [scaledIngredients, setScaledIngredients] = useState<RecipeIngredient[] | null>(null);
   const [ingredientsMap, setIngredientsMap] = useState<Record<string, Ingredient>>({});
   const [mediaMap, setMediaMap] = useState<Record<string, MediaAsset>>({});
   const [mediaUrls, setMediaUrls] = useState<Record<string, string>>({});
-  const [publishedDoc, setPublishedDoc] = useState<PublishedDocumentLookupResponse | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [mediaWarning, setMediaWarning] = useState<string | null>(null);
-  const [isDownloading, setIsDownloading] = useState(false);
   useEffect(() => {
     let isMounted = true;
     const createdBlobUrls: string[] = [];
@@ -61,12 +54,22 @@ export default function ViewerRecipeDetailPage() {
     setErrorMsg(null);
     setMediaWarning(null);
 
+    // Người xem chỉ được thấy bản chính thức, không bao giờ thấy bản nháp.
+    const loadPublishedVersion = async () => {
+      const versions = await repo.getRecipeVersions(session, id);
+      const published = versions
+        .filter((version) => version.status === 'Published')
+        .sort((a, b) => (b.versionNumber || 0) - (a.versionNumber || 0));
+      const target = published.find((version) => (version.versionId || version.id) === wantedVersionId) ?? published[0];
+      if (!target) throw new Error('Công thức này chưa có bản chính thức.');
+      return repo.getRecipeVersion(session, id, target.versionId || target.id);
+    };
+
     Promise.all([
-      repo.getRecipeVersion(session, id),
+      loadPublishedVersion(),
       repo.getIngredients(),
-      getPublishedDocumentByVersion(id, session.userId).catch(() => null),
     ])
-      .then(async ([rec, ings, pubDoc]) => {
+      .then(async ([rec, ings]) => {
         if (!isMounted) return;
 
         setRecipe(rec);
@@ -76,7 +79,6 @@ export default function ViewerRecipeDetailPage() {
           ingMap[ing.id] = ing;
         });
         setIngredientsMap(ingMap);
-        setPublishedDoc(pubDoc);
 
         const mediaIds = new Set<string>();
         if (rec.primaryMediaAssetId) mediaIds.add(rec.primaryMediaAssetId);
@@ -136,42 +138,8 @@ export default function ViewerRecipeDetailPage() {
         URL.revokeObjectURL(url);
       });
     };
-  }, [id, session, repo, dataVersion]);
+  }, [id, wantedVersionId, session, repo, dataVersion]);
 
-  const handleDownloadPdf = async () => {
-    const versionId = recipe?.versionId || id;
-    setIsDownloading(true);
-    try {
-      let doc = publishedDoc;
-      if (!doc) {
-        doc = await getPublishedDocumentByVersion(versionId, session?.userId || null);
-        if (doc) {
-          setPublishedDoc(doc);
-        }
-      }
-
-      if (!doc) {
-        toast({ type: 'info', title: 'Chưa có PDF chính thức', description: 'Công thức này chưa có bản PDF chính thức được xuất bản.' });
-        return;
-      }
-
-      const { blob, fileName } = await downloadPdfDocumentFile(doc.id, 'attachment', session?.userId || null);
-      const downloadName = fileName || doc.fileName || `SOP_${recipe?.code || 'recipe'}.pdf`;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = downloadName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast({ type: 'success', title: 'Đã tải PDF chính thức' });
-    } catch {
-      toast({ type: 'error', title: 'Không thể tải PDF', description: 'Vui lòng thử lại.' });
-    } finally {
-      setIsDownloading(false);
-    }
-  };
 
   if (loading) {
     return <div className="py-24 text-center text-sm text-muted-foreground" role="status">Đang tải tài liệu hướng dẫn kỹ thuật SOP...</div>;
@@ -211,7 +179,7 @@ export default function ViewerRecipeDetailPage() {
       </div>
       {mediaWarning && <Alert variant="warning">{mediaWarning}</Alert>}
 
-      <header className="flex flex-col justify-between gap-6 border-b border-border pb-8 lg:flex-row lg:items-end">
+      <header className="border-b border-border pb-8">
         <div className="space-y-3">
           <h1 className={pageTitleClass}>{recipe.name}</h1>
           {recipe.description && <p className="max-w-2xl text-sm text-muted-foreground">{recipe.description}</p>}
@@ -220,14 +188,6 @@ export default function ViewerRecipeDetailPage() {
             <span>{recipe.versionLabel}</span>
             <StatusBadge status={recipe.status} />
           </div>
-        </div>
-        <div className="shrink-0 space-y-2">
-          <Button variant={publishedDoc ? 'gold' : 'secondary'} size="lg" onClick={handleDownloadPdf} isLoading={isDownloading} className="w-full lg:w-auto">
-            <Download className="mr-2 h-4 w-4" strokeWidth={1.5} /> Tải bản PDF chính thức
-          </Button>
-          <p className="max-w-xs text-xs text-muted-foreground">
-            {publishedDoc ? `Đã ban hành chính thức (${new Date(publishedDoc.completedAt).toLocaleDateString('vi-VN')})` : 'Bấm để kiểm tra và tải bản PDF chính thức từ máy chủ.'}
-          </p>
         </div>
       </header>
 
@@ -270,7 +230,7 @@ export default function ViewerRecipeDetailPage() {
                       <td className="px-4 py-4">{ingInfo?.code && <div className="text-xs text-muted-foreground">{ingInfo.code}</div>}{ingInfo ? ingInfo.name : 'Chưa xác định'}</td>
                       <td className="px-4 py-4 text-right tabular-nums">{item.quantity}</td>
                       <td className="px-4 py-4">{item.unit}</td>
-                      <td className="px-4 py-4 text-muted-foreground">{item.notes || item.stageNote || 'Chưa cập nhật'}</td>
+                      <td className="px-4 py-4 text-muted-foreground">{item.notes || 'Chưa cập nhật'}</td>
                     </tr>;
                   })}
                 </tbody>
@@ -282,6 +242,7 @@ export default function ViewerRecipeDetailPage() {
             <h2 id="steps-heading" className="font-display text-h3 font-medium">Quy trình thao tác chuẩn <span className="text-sm text-muted-foreground">({recipe.steps.length} bước)</span></h2>
             <div className="space-y-4">
               {recipe.steps.map((step) => {
+                const stepIngredients = stepIngredientText(scaledIngredients ?? recipe.ingredients, ingredientsMap, step.stepNumber);
                 const coverMedia = step.coverMediaAssetId ? mediaMap[step.coverMediaAssetId] : null;
                 const coverUrl = step.coverMediaAssetId ? mediaUrls[step.coverMediaAssetId] : null;
                 return (
@@ -297,8 +258,8 @@ export default function ViewerRecipeDetailPage() {
                     <div className="grid gap-5 pt-4 lg:grid-cols-3">
                       <div className="space-y-4 lg:col-span-2">
                         <div><h4 className="mb-1 text-xs text-muted-foreground font-medium font-display">Hướng dẫn thao tác</h4><p className="whitespace-pre-line text-sm">{step.instruction}</p></div>
+                        {stepIngredients && <p className="text-sm"><span className="font-medium">Nguyên liệu:</span> {stepIngredients}</p>}
                         {step.completionCriteria && <div className="rounded-lg bg-success-soft p-3 text-sm"><h4 className="mb-1 flex items-center gap-1 text-xs text-success font-medium font-display"><CheckCircle2 className="h-4 w-4" strokeWidth={1.5} />Tiêu chuẩn hoàn thành</h4>{step.completionCriteria}</div>}
-                        {step.notes && <div className="rounded-lg bg-muted p-3 text-sm"><h4 className="mb-1 text-xs text-muted-foreground font-medium font-display">Lưu ý quan trọng</h4>{step.notes}</div>}
                       </div>
                       <div>
                         {coverUrl ? <div className="space-y-2">

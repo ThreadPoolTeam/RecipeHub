@@ -30,11 +30,12 @@ export default function ViewerPage() {
     repo
       .getRecipes(session, {
         query: searchQuery.trim(),
+        status: 'Published',
         pageSize: 100,
       })
       .then((result) => {
         if (!isMounted) return;
-        setRecipes(result.items);
+        setRecipes(result.items.filter((item) => item.status === 'Published'));
       })
       .catch((err) => {
         if (!isMounted) return;
