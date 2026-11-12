@@ -69,7 +69,7 @@ Lưới spacing 4px: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64. Radius sm 4, md 6, lg
 ## 5. Components
 
 - Button: primary, destructive, outline, secondary, ghost, link; cao 36/32/44px, radius 6px, focus ring 2px offset 2px; disabled opacity 50%. Admin primary dùng primary.
-- Badge: radius 6px, padding 10×4px, dot 6px, nhãn 11/16; không viền. Vai trò Admin dùng ink/ink-foreground, R&D dùng success-medium/success, Viewer dùng info-soft/info; badge trạng thái giữ nền nhạt.
+- Badge: radius 6px, padding 10×4px, dot 6px, nhãn 11/16; không viền. Vai trò Admin dùng ink/ink-foreground, R&D dùng success-medium/success, Viewer dùng info-soft/info; badge vai trò bo tròn full, không chấm, nền gradient dọc nhẹ cùng tông token kèm highlight trong 1px; badge trạng thái giữ nền nhạt.
 - Input: cao 40px, radius 6px, viền input, shadow inset, focus ring; lỗi có helper. Search radius full.
 - Card: radius 8px, viền border, shadow soft; recipe tile ảnh 4:3, shadow lift.
 - Thumbnail nguyên liệu: dùng ảnh thật nếu có `imageAssetId`, nếu không dùng ô biểu tượng theo nhóm; không dùng ảnh mẫu.
