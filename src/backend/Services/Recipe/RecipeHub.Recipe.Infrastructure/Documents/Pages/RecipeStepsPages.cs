@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Text.RegularExpressions;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
 using RecipeHub.Recipe.Application.Interfaces;
@@ -36,7 +37,7 @@ public static class RecipeStepsPages
                         {
                             var item = row.RelativeItem().PaddingHorizontal(4);
                             if (j < group.Count)
-                                ComposeStep(item, group[j], steps.Count > 4);
+                                ComposeStep(item, group[j], recipe, steps.Count > 4);
                         }
                     });
                 }
@@ -44,7 +45,7 @@ public static class RecipeStepsPages
         });
     }
 
-    private static void ComposeStep(IContainer c, FrozenStepModel step, bool compact)
+    private static void ComposeStep(IContainer c, FrozenStepModel step, FrozenRecipeItemModel recipe, bool compact)
     {
         c.Border(0.5f).BorderColor(PdfTheme.Border).Column(card =>
         {
@@ -54,7 +55,7 @@ public static class RecipeStepsPages
                 var first = images[0];
                 card.Item().ShowOnce().AspectRatio(1.6f).Layers(layers =>
                 {
-                    layers.PrimaryLayer().Svg(ImageSvg(first.ImageData!));
+                    layers.PrimaryLayer().Background(PdfTheme.Border).AlignCenter().AlignMiddle().Image(first.ImageData!).FitArea();
                     layers.Layer().AlignTop().AlignLeft().Padding(8).Width(30).Height(30).Layers(badge =>
                     {
                         badge.PrimaryLayer().Svg("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'><circle cx='15' cy='15' r='15' fill='#FAF8F5'/></svg>");
@@ -73,6 +74,12 @@ public static class RecipeStepsPages
                         row.AutoItem().Text(PdfTheme.Duration(step.DurationSeconds)).FontSize(9).FontColor(PdfTheme.Muted);
                 });
                 body.Item().PaddingTop(compact ? 3 : 6).Text(step.Instruction).FontSize(compact ? 9 : 10).FontColor(PdfTheme.Ink);
+                var ingredients = recipe.Ingredients.OrderBy(x => x.SortOrder)
+                    .Where(x => Regex.Matches(x.StageName ?? "", @"Bước (\d+)")
+                        .Any(match => int.TryParse(match.Groups[1].Value, out var order) && order == step.StepOrder))
+                    .Select(x => $"{PdfTheme.IngredientQuantity(x)} {x.IngredientName}").ToList();
+                if (ingredients.Count > 0)
+                    body.Item().PaddingTop(compact ? 3 : 6).Text($"Nguyên liệu: {string.Join(", ", ingredients)}").FontSize(9).FontColor(PdfTheme.Ink);
                 if (!string.IsNullOrWhiteSpace(step.Temperature))
                     Chip(body.Item().PaddingTop(compact ? 3 : 6), step.Temperature);
                 if (!string.IsNullOrWhiteSpace(step.Equipment))
@@ -80,25 +87,15 @@ public static class RecipeStepsPages
                 if (!string.IsNullOrWhiteSpace(step.CompletionCriteria))
                     body.Item().PaddingTop(compact ? 4 : 8).BorderLeft(2).BorderColor("#50785A").PaddingLeft(7)
                         .Text($"✓  {step.CompletionCriteria}").FontSize(9).FontColor(PdfTheme.Ink);
-                if (!string.IsNullOrWhiteSpace(step.SafetyNote))
-                    body.Item().PaddingTop(compact ? 4 : 8).BorderLeft(2).BorderColor("#A75C4C").PaddingLeft(7)
-                        .Text($"An toàn: {step.SafetyNote}").FontSize(9).FontColor(PdfTheme.Ink);
             });
             foreach (var media in step.Media)
             {
                 if (images.Count > 0 && ReferenceEquals(media, images[0])) continue;
                 if (media.ImageData is { Length: > 0 })
-                    card.Item().PaddingTop(8).AspectRatio(1.6f).Svg(ImageSvg(media.ImageData));
+                    card.Item().PaddingTop(8).AspectRatio(1.6f).Background(PdfTheme.Border).AlignCenter().AlignMiddle().Image(media.ImageData).FitArea();
                 Caption(card, media);
             }
         });
-    }
-
-    private static string ImageSvg(byte[] image)
-    {
-        var type = image.Length > 2 && image[0] == 0xFF && image[1] == 0xD8 ? "jpeg"
-            : image.Length > 11 && image[0] == 0x52 && image[1] == 0x49 ? "webp" : "png";
-        return $"<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' viewBox='0 0 160 100'><defs><clipPath id='crop'><rect width='160' height='100'/></clipPath></defs><g clip-path='url(#crop)'><image width='160' height='100' preserveAspectRatio='xMidYMid slice' xlink:href='data:image/{type};base64,{Convert.ToBase64String(image)}'/></g></svg>";
     }
 
     private static void Chip(IContainer container, string value) =>

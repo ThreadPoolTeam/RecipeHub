@@ -22,4 +22,15 @@ internal static class PdfTheme
     }
 
     public static string RecipeTitle(FrozenRecipeItemModel recipe) => string.IsNullOrWhiteSpace(recipe.TitleOverride) ? recipe.RecipeName : recipe.TitleOverride;
+
+    public static string IngredientQuantity(FrozenIngredientModel ingredient)
+    {
+        var unit = ingredient.UnitName.ToLowerInvariant() switch
+        {
+            "milligram" => "mg", "gram" => "g", "kilogram" => "kg",
+            "milliliter" => "ml", "centiliter" => "cl", "deciliter" => "dl", "liter" => "l",
+            _ => ingredient.UnitName
+        };
+        return $"{ingredient.Quantity.ToString("G29", System.Globalization.CultureInfo.GetCultureInfo("vi-VN"))} {unit}";
+    }
 }
