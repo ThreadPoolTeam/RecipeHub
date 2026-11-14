@@ -14,34 +14,34 @@ public static class RecipeOverviewPage
     {
         var ingredients = recipe.Ingredients.OrderBy(x => x.SortOrder).ToList();
         var steps = recipe.Steps.OrderBy(x => x.StepOrder).ToList();
-        var notes = steps.Select(x => x.SafetyNote?.Trim()).Where(x => !string.IsNullOrWhiteSpace(x))
-            .Distinct(StringComparer.Ordinal).ToList();
-        // Keep first-page entries bounded; remaining entries flow across full-width continuation pages.
+        const int singleColumnLineBudget = 14;
+        const int singleColumnIngredientLimit = 11;
+        var singleColumn = ingredients.Count <= singleColumnIngredientLimit
+            && ingredients.Sum(x => Math.Max(1, (x.IngredientName.Length + 34) / 35)
+                + (string.IsNullOrWhiteSpace(x.Warning) ? 0 : Math.Max(1, (x.Warning.Length + 54) / 55))) <= singleColumnLineBudget;
         var firstCount = 0;
         var budget = 0;
-        foreach (var ingredient in ingredients.Take(6))
+        if (singleColumn) firstCount = ingredients.Count;
+        else foreach (var ingredient in ingredients.Take(6))
         {
-            var size = ingredient.IngredientName.Length + (ingredient.Note?.Length ?? 0) + (ingredient.Warning?.Length ?? 0);
+            var size = ingredient.IngredientName.Length + (ingredient.Warning?.Length ?? 0);
             if (size > 120 || budget + size > 350) break;
             budget += size;
             firstCount++;
         }
-        var inlineSummary = firstCount == ingredients.Count && steps.Count <= 8 && budget <= 300
-            && ingredients.Select(x => x.StageName).Distinct().Count() <= 2
-            && notes.Sum(x => x!.Length) <= 120;
 
         container.Column(column =>
         {
             column.Item().Height(460).Row(row =>
             {
-                row.RelativeItem(38).Element(c => Sidebar(c, recipe, steps));
+                row.RelativeItem(38).Element(c => Sidebar(c, recipe, steps, !singleColumn));
                 row.RelativeItem(62).PaddingLeft(20).Column(body =>
                 {
-                    body.Item().Element(IngredientHeader);
+                    body.Item().Element(c => IngredientHeader(c, ingredients.Count));
                     if (firstCount > 0)
-                        body.Item().Element(c => Ingredients(c, ingredients.Take(firstCount)));
-                    if (inlineSummary)
-                        body.Item().Element(c => Summary(c, steps, notes));
+                        body.Item().Element(c => Ingredients(c, ingredients.Take(firstCount), singleColumn));
+                    if (singleColumn)
+                        body.Item().ExtendVertical().AlignBottom().Element(c => Metrics(c, recipe, steps));
                 });
             });
             if (firstCount < ingredients.Count)
@@ -52,59 +52,24 @@ public static class RecipeOverviewPage
                     decoration.Before().PaddingBottom(12).Column(header =>
                     {
                         header.Item().Text(PdfTheme.RecipeTitle(recipe)).FontFamily(PdfTheme.DisplayFont).FontSize(20).FontColor(PdfTheme.Ink);
-                        header.Item().PaddingTop(4).Element(IngredientHeader);
+                        header.Item().PaddingTop(4).Element(c => IngredientHeader(c, ingredients.Count));
                     });
-                    decoration.Content().Element(c => Ingredients(c, ingredients.Skip(firstCount)));
+                    decoration.Content().Element(c => Ingredients(c, ingredients.Skip(firstCount), false));
                 });
             }
-            if (!inlineSummary)
-                column.Item().Element(c => Summary(c, steps, notes));
         });
     }
 
-    private static void Summary(IContainer container, System.Collections.Generic.List<FrozenStepModel> steps,
-        System.Collections.Generic.List<string?> notes)
-    {
-        container.Column(column =>
-        {
-            if (steps.Count > 0)
-                column.Item().EnsureSpace(70).PaddingTop(16).Column(progress =>
-                {
-                    progress.Item().Text("QUY TRÌNH TRÊN MỘT TRANG").FontSize(8).SemiBold().LetterSpacing(0.1f).FontColor(PdfTheme.Accent);
-                    progress.Item().PaddingTop(8).Table(table =>
-                    {
-                        table.ColumnsDefinition(columns => { for (var i = 0; i < 4; i++) columns.RelativeColumn(); });
-                        foreach (var step in steps)
-                            table.Cell().PaddingRight(8).PaddingBottom(8).BorderTop(0.5f).BorderColor(PdfTheme.Accent)
-                                .PaddingTop(4).Column(item =>
-                                {
-                                    item.Item().Text($"Bước {step.StepOrder:D2}").FontSize(9).SemiBold().FontColor(PdfTheme.Ink);
-                                    if (step.DurationSeconds.HasValue)
-                                        item.Item().Text(PdfTheme.Duration(step.DurationSeconds)).FontSize(8).FontColor(PdfTheme.Muted);
-                                });
-                    });
-                });
-            if (notes.Count > 0)
-                column.Item().EnsureSpace(42).PaddingTop(12).BorderLeft(2).BorderColor(PdfTheme.Accent).PaddingLeft(10).Column(safety =>
-                {
-                    safety.Item().Text("LƯU Ý AN TOÀN").FontSize(8).SemiBold().FontColor(PdfTheme.Ink);
-                    foreach (var note in notes) safety.Item().PaddingTop(4).Text(note!).FontSize(9).FontColor(PdfTheme.Ink);
-                });
-        });
-    }
 
-    private static void Sidebar(IContainer container, FrozenRecipeItemModel recipe, System.Collections.Generic.List<FrozenStepModel> steps)
+    private static void Sidebar(IContainer container, FrozenRecipeItemModel recipe, System.Collections.Generic.List<FrozenStepModel> steps, bool showMetrics)
     {
         var durations = steps.Where(x => x.DurationSeconds.HasValue).Select(x => (long)x.DurationSeconds!.Value).ToList();
         container.Background(PdfTheme.Ink).Layers(layers =>
         {
             if (recipe.CoverImageData is { Length: > 0 })
             {
-                var image = recipe.CoverImageData;
-                var type = image.Length > 2 && image[0] == 0xff && image[1] == 0xd8 ? "jpeg"
-                    : image.Length > 11 && image[0] == 0x52 && image[1] == 0x49 ? "webp" : "png";
-                var svg = $"<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' viewBox='0 0 300 460'><defs><clipPath id='crop'><rect width='300' height='460'/></clipPath><linearGradient id='shade' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#19120F' stop-opacity='.25'/><stop offset='1' stop-color='#19120F' stop-opacity='.9'/></linearGradient></defs><g clip-path='url(#crop)'><image width='300' height='460' preserveAspectRatio='xMidYMid slice' xlink:href='data:image/{type};base64,{Convert.ToBase64String(image)}'/><rect width='300' height='460' fill='url(#shade)'/></g></svg>";
-                layers.Layer().Svg(svg).FitArea();
+                layers.Layer().AlignCenter().AlignTop().Image(recipe.CoverImageData).FitArea();
+                layers.Layer().Svg("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 460'><defs><linearGradient id='shade' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#19120F' stop-opacity='.25'/><stop offset='1' stop-color='#19120F' stop-opacity='.9'/></linearGradient></defs><rect width='300' height='460' fill='url(#shade)'/></svg>").FitArea();
             }
             else
             {
@@ -123,52 +88,61 @@ public static class RecipeOverviewPage
                         bottom.Item().PaddingTop(6).Text(recipe.Description).FontSize(9).FontColor(Colors.White);
                     bottom.Item().PaddingTop(8).LineHorizontal(1).LineColor(PdfTheme.Accent);
                     bottom.Item().PaddingTop(8).Text($"{recipe.RecipeCode} · Phiên bản {recipe.VersionNumber}").FontSize(8).FontColor(Colors.White);
-                    if (recipe.Yield != null)
-                        bottom.Item().PaddingTop(8).Text($"Sản lượng: {recipe.Yield.Quantity:G29} {recipe.Yield.UnitName}").FontSize(10).FontColor(Colors.White);
-                    if (!string.IsNullOrWhiteSpace(recipe.Yield?.Note))
+                    if (showMetrics && recipe.Yield != null)
+                        bottom.Item().PaddingTop(8).Text($"Thành phẩm: {recipe.Yield.Quantity:G29} {recipe.Yield.UnitName}").FontSize(10).FontColor(Colors.White);
+                    if (showMetrics && !string.IsNullOrWhiteSpace(recipe.Yield?.Note))
                         bottom.Item().PaddingTop(3).Text(recipe.Yield.Note).FontSize(8).FontColor(Colors.White);
-                    bottom.Item().PaddingTop(6).Text($"{steps.Count} bước").FontSize(10).FontColor(Colors.White);
-                    if (durations.Count > 0)
-                        bottom.Item().PaddingTop(3).Text($"Thời gian các bước có ghi: {PdfTheme.Duration((int)Math.Clamp(durations.Sum(), 0, int.MaxValue))}")
+                    if (showMetrics) bottom.Item().PaddingTop(6).Text($"{steps.Count} bước").FontSize(10).FontColor(Colors.White);
+                    if (showMetrics && durations.Count > 0)
+                        bottom.Item().PaddingTop(3).Text($"Thời gian dự tính hoàn thành: {PdfTheme.Duration((int)Math.Clamp(durations.Sum(), 0, int.MaxValue))}")
                             .FontSize(9).FontColor(Colors.White);
                 });
             });
         });
     }
 
-    private static void IngredientHeader(IContainer container) => container.Column(title =>
+    private static void Metrics(IContainer container, FrozenRecipeItemModel recipe, System.Collections.Generic.List<FrozenStepModel> steps)
     {
-        title.Item().Text("THÀNH PHẦN · ĐỊNH LƯỢNG").FontSize(8).SemiBold().LetterSpacing(0.1f).FontColor(PdfTheme.Accent);
-        title.Item().PaddingTop(4).Text("Nguyên liệu").FontFamily(PdfTheme.DisplayFont).FontSize(26).FontColor(PdfTheme.Ink);
+        var durations = steps.Where(x => x.DurationSeconds.HasValue).Select(x => (long)x.DurationSeconds!.Value).ToList();
+        container.BorderTop(0.5f).BorderColor(PdfTheme.Border).PaddingTop(12).Row(row =>
+        {
+            void Metric(string value, string label) => row.RelativeItem().Column(item =>
+            {
+                item.Item().Text(value).FontFamily(PdfTheme.DisplayFont).FontSize(22).FontColor(PdfTheme.Ink);
+                item.Item().PaddingTop(3).Text(label).FontSize(8).FontColor(PdfTheme.Muted);
+            });
+            if (recipe.Yield != null) Metric($"{recipe.Yield.Quantity:G29} {recipe.Yield.UnitName}", "Thành phẩm");
+            if (steps.Count > 0) Metric(steps.Count.ToString(), "Bước");
+            if (durations.Count > 0) Metric(PdfTheme.Duration((int)Math.Clamp(durations.Sum(), 0, int.MaxValue)), "Thời gian dự tính hoàn thành");
+        });
+    }
+
+    private static void IngredientHeader(IContainer container, int count) => container.Column(title =>
+    {
+        title.Item().Row(row =>
+        {
+            row.RelativeItem().Text("NGUYÊN LIỆU").FontSize(8).SemiBold().LetterSpacing(0.14f).FontColor(PdfTheme.Accent);
+            row.AutoItem().Text($"{count} nguyên liệu").FontSize(8).FontColor(PdfTheme.Muted);
+        });
         title.Item().PaddingTop(8).LineHorizontal(0.5f).LineColor(PdfTheme.Border);
     });
 
-    private static void Ingredients(IContainer container, System.Collections.Generic.IEnumerable<FrozenIngredientModel> ingredients)
+    private static void Ingredients(IContainer container, System.Collections.Generic.IEnumerable<FrozenIngredientModel> ingredients, bool singleColumn)
     {
         container.Table(table =>
         {
-            table.ColumnsDefinition(columns => { columns.RelativeColumn(); columns.RelativeColumn(); });
-            foreach (var group in ingredients.GroupBy(x => string.IsNullOrWhiteSpace(x.StageName) ? null : x.StageName.Trim()))
-            {
-                if (group.Key != null)
-                    table.Cell().ColumnSpan(2).PaddingTop(8).Text(group.Key).FontSize(9).SemiBold().FontColor(PdfTheme.Muted);
-                var items = group.ToList();
-                foreach (var ingredient in items)
-                    table.Cell().PaddingRight(12).PaddingVertical(6).BorderBottom(0.5f).BorderColor(PdfTheme.Border).PaddingBottom(6).Column(card =>
+            table.ColumnsDefinition(columns => { columns.RelativeColumn(); if (!singleColumn) columns.RelativeColumn(); });
+            foreach (var ingredient in ingredients)
+                table.Cell().PaddingRight(singleColumn ? 0 : 12).PaddingVertical(6).BorderBottom(0.5f).BorderColor(PdfTheme.Border).PaddingBottom(6).Column(card =>
+                {
+                    card.Item().Row(row =>
                     {
-                        card.Item().Text(text =>
-                        {
-                            text.Span(ingredient.Quantity.ToString("G29", CultureInfo.GetCultureInfo("vi-VN"))).FontSize(16).FontColor(PdfTheme.Accent);
-                            text.Span($" {ingredient.UnitName}").FontSize(9).FontColor(PdfTheme.Muted);
-                        });
-                        card.Item().PaddingTop(3).Text(ingredient.IngredientName).FontSize(10).FontColor(PdfTheme.Ink);
-                        if (!string.IsNullOrWhiteSpace(ingredient.Note))
-                            card.Item().PaddingTop(3).Text(ingredient.Note).FontSize(8).FontColor(PdfTheme.Muted);
-                        if (!string.IsNullOrWhiteSpace(ingredient.Warning))
-                            card.Item().PaddingTop(3).Text($"Lưu ý: {ingredient.Warning}").FontSize(8).FontColor(PdfTheme.Accent);
+                        row.RelativeItem().Text(ingredient.IngredientName).FontSize(11).FontColor(PdfTheme.Ink);
+                        row.AutoItem().PaddingLeft(8).Text(PdfTheme.IngredientQuantity(ingredient)).FontSize(11).SemiBold().FontColor(PdfTheme.Ink);
                     });
-                if (items.Count % 2 != 0) table.Cell();
-            }
+                    if (!string.IsNullOrWhiteSpace(ingredient.Warning))
+                        card.Item().PaddingTop(3).Text($"Lưu ý: {ingredient.Warning}").FontSize(8).FontColor(PdfTheme.Accent);
+                });
         });
     }
 }

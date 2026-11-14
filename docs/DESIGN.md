@@ -69,7 +69,7 @@ Lưới spacing 4px: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64. Radius sm 4, md 6, lg
 ## 5. Components
 
 - Button: primary, destructive, outline, secondary, ghost, link; cao 36/32/44px, radius 6px, focus ring 2px offset 2px; disabled opacity 50%. Admin primary dùng primary.
-- Badge: radius 6px, padding 10×4px, dot 6px, nhãn 11/16; không viền. Vai trò Admin dùng ink/ink-foreground, R&D dùng success-medium/success, Viewer dùng info-soft/info; badge trạng thái giữ nền nhạt.
+- Badge: radius 6px, padding 10×4px, dot 6px, nhãn 11/16; không viền. Vai trò Admin dùng ink/ink-foreground, R&D dùng success-medium/success, Viewer dùng info-soft/info; badge vai trò bo tròn full, không chấm, nền gradient dọc nhẹ cùng tông token kèm highlight trong 1px; badge trạng thái giữ nền nhạt.
 - Input: cao 40px, radius 6px, viền input, shadow inset, focus ring; lỗi có helper. Search radius full.
 - Card: radius 8px, viền border, shadow soft; recipe tile ảnh 4:3, shadow lift.
 - Thumbnail nguyên liệu: dùng ảnh thật nếu có `imageAssetId`, nếu không dùng ô biểu tượng theo nhóm; không dùng ảnh mẫu.
@@ -97,10 +97,10 @@ Chỉ `#story` (`ScrollFrameStory`) và overlay liên quan dùng `--cinematic-bg
 
 ### Quy chuẩn ấn phẩm
 - A4 ngang, lề nội dung 36 pt; bìa riêng. Mục lục cho bộ từ hai món, số trang thực và liên kết nội bộ.
-- Nền `#FAF8F5`, mực `#231F20`, chữ phụ `#6E6768`, đường kẻ `#E5DFDB`; nhấn tiết chế `#C4355B` theo thương hiệu. An toàn dùng nền `#F9EAE7`, tiêu chí hoàn thành `#E5F3E8`.
+- Nền `#FAF8F5`, mực `#231F20`, chữ phụ `#6E6768`, đường kẻ `#E5DFDB`; nhấn tiết chế `#C4355B` theo thương hiệu.
 - Font nhúng OFL: Noto Serif cho tiêu đề, Be Vietnam Pro cho nội dung; hỗ trợ tiếng Việt, không phụ thuộc font hệ thống.
-- Bìa ảnh tràn trang, chữ neo dưới và không có footer; thiếu ảnh dùng nền tối cùng họa tiết vector, không chèn ảnh mẫu. Mục lục có mảng tối toàn chiều cao, danh sách và liên kết trang thật.
-- Tổng quan dùng ảnh lớn hoặc monogram; nguyên liệu tràn dùng toàn bề ngang trang tiếp. Quy trình dùng lưới thẻ đồng chiều rộng, tối đa bốn cột; ảnh bước 16:10 khi có, giữ chú thích người dùng và nhãn AI riêng. Trang kiểm tra dùng checklist chỉ khi có tiêu chí hoàn thành, ảnh lớn và ghi chú sản lượng cạnh số liệu. Không dựng dữ liệu thiếu.
+- Bìa nền tối ấm nâu cà phê vẽ vector (đốm sáng bokeh hổ phách, lớp phủ tối dần), không dùng ảnh món, chữ neo dưới và không có footer, không hộp mục lục hay tổng quan; mục lục của bộ nhiều món nằm ở trang 2, mảng tối toàn chiều cao, danh sách và liên kết trang thật.
+- Tổng quan dùng thẻ công thức bên trái. Cột phải có nhãn nhỏ “Nguyên liệu” và danh sách tên + số lượng (đơn vị viết tắt); ít nguyên liệu thì một cột kèm dải số liệu (sản lượng, số bước, thời gian) ở đáy; nhiều nguyên liệu thì hai cột, số liệu ở thẻ trái; không in giai đoạn hay ghi chú nguyên liệu. Quy trình dùng lưới thẻ đồng chiều rộng, tối đa bốn cột; ảnh bước 16:10 khi có, giữ chú thích người dùng và nhãn AI riêng; thẻ bước có dòng “Nguyên liệu: ...” gồm nguyên liệu gắn với bước; không in lưu ý an toàn; không có quy trình tóm tắt hay lưu ý gộp. Không dựng dữ liệu thiếu.
 - Nội dung dài tự ngắt trang; mục lục và bảng nguyên liệu lặp tiêu đề. Footer nội dung có tên ấn phẩm và số trang thực. Bản nháp có watermark `BẢN NHÁP - DRAFT` trên mọi trang; bản chính thức không có.
 
 

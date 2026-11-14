@@ -43,7 +43,7 @@ export function QuizFilterBar({ search, onSearchChange, onSearchClear, stateFilt
                 type="button"
                 aria-pressed={isActive}
                 onClick={() => onStateChange(option.value)}
-                className={`shrink-0 px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${index > 0 ? 'border-l border-border' : ''} ${isActive ? 'bg-primary text-primary-foreground' : 'bg-card text-foreground hover:bg-accent'}`}
+                className={`shrink-0 px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${index > 0 ? 'border-l border-border' : ''} ${isActive ? 'bg-primary text-primary-foreground hover:brightness-90' : 'bg-card text-foreground hover:bg-accent'}`}
               >
                 {option.label}
                 <span className={`ml-1.5 text-xs font-normal ${isActive ? '' : 'text-muted-foreground'}`}>{counts[option.value]}</span>

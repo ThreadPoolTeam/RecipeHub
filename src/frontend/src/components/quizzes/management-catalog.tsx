@@ -73,9 +73,9 @@ export function ManagementCatalog() {
 
   return (
     <ManagementFrame
-      eyebrow="Đào tạo"
-      title="Bộ đề kiểm tra"
-      description="Soạn bộ đề theo công thức, ban hành cho cửa hàng và theo dõi kết quả làm bài."
+      eyebrow="Tài liệu & Đào tạo"
+      title="Bộ Quiz"
+      description="Xem các bộ đề theo công thức và tạo bộ đề mới."
       actions={
         <Link href={`${base}/new`}>
           <Button variant="primary" size="sm">

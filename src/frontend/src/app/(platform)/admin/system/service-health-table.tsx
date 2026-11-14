@@ -35,7 +35,7 @@ export function ServiceHealthTable({ services, loading }: { services: ServiceHea
           { header: 'CSDL Độc lập', render: (item) => <span className="rounded-md bg-secondary px-2 py-1 text-xs text-foreground">{item.dbName}</span> },
           { header: 'Trạng thái API', render: (item) => item.status === 'Ready' ? <span className="inline-flex items-center gap-1.5 rounded-md bg-success-soft px-2.5 py-1 text-xs font-medium text-success"><CheckCircle2 className="w-3.5 h-3.5" /> Hoạt động tốt</span> : <span className="inline-flex items-center gap-1.5 rounded-md bg-destructive-soft px-2.5 py-1 text-xs font-medium text-destructive"><AlertTriangle className="w-3.5 h-3.5" /> Sự cố kết nối</span> },
           { header: 'Kết nối PostgreSQL', render: (item) => item.database === 'Connected' ? <span className="text-xs font-medium text-success">Đã kết nối</span> : <span className="text-xs font-medium text-destructive">Mất kết nối</span> },
-          { header: 'Độ trễ', render: (item) => <span className="text-xs font-semibold tabular-nums text-foreground">{item.latencyMs} ms</span> },
+          { header: 'Độ trễ', render: (item) => item.status === 'Unreachable' ? <span className="text-xs text-muted-foreground">Không đo được</span> : <span className="text-xs font-semibold tabular-nums text-foreground">{item.latencyMs} ms</span> },
           { header: 'Lần kiểm tra cuối', className: 'text-right', render: (item) => <span className="text-xs tabular-nums text-muted-foreground">{item.checkedAt}</span> },
         ]}
       />

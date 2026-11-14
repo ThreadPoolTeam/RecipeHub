@@ -17,6 +17,7 @@ import { EditRecipeAiDialog } from '@/components/recipes/edit-recipe-ai-dialog';
 import { EditRecipeMediaDialog } from '@/components/recipes/edit-recipe-media-dialog';
 import { useToast } from '@/components/workspace/toast';
 import { UnitItem } from '@/lib/api/backend-repository';
+import { remapStepLinks, setStepLink } from '@/lib/recipe-step-links';
 import {
   PersistentAiDraft,
   getStoredAiDrafts,
@@ -214,6 +215,7 @@ export default function EditRecipePage() {
   };
 
   const handleRemoveStep = (index: number) => {
+    setIngredients((current) => remapStepLinks(current, (order) => order === index + 1 ? null : order > index + 1 ? order - 1 : order));
     setSteps(steps.filter((_, i) => i !== index).map((s, idx) => ({ ...s, stepNumber: idx + 1 })));
   };
 
@@ -230,6 +232,7 @@ export default function EditRecipePage() {
     const temp = updated[index];
     updated[index] = updated[targetIdx];
     updated[targetIdx] = temp;
+    setIngredients((current) => remapStepLinks(current, (order) => order === index + 1 ? targetIdx + 1 : order === targetIdx + 1 ? index + 1 : order));
     setSteps(updated.map((s, idx) => ({ ...s, stepNumber: idx + 1 })));
   };
   // Prompt suggestion builder based on current recipe data
@@ -656,7 +659,7 @@ export default function EditRecipePage() {
             <EditRecipeIngredients ingredients={ingredients} availableIngredients={availableIngredients} onAdd={handleAddIngredient} onRemove={handleRemoveIngredient} onUpdate={handleUpdateIngredient} />
           </div>
           <div id="edit-panel-sop" hidden={activePanel !== 'sop'}>
-            <EditRecipeSop steps={steps} coverPreviews={coverPreviews} onAdd={handleAddStep} onRemove={handleRemoveStep} onUpdate={handleUpdateStep} onMove={handleMoveStep} onPick={handleOpenMediaPicker} onAi={handleOpenAiImage} />
+            <EditRecipeSop steps={steps} ingredients={ingredients} availableIngredients={availableIngredients} onIngredientChange={(step, index, selected) => setIngredients((current) => current.map((item, i) => i === index ? { ...item, stageNote: setStepLink(item.stageNote, step, selected) } : item))} coverPreviews={coverPreviews} onAdd={handleAddStep} onRemove={handleRemoveStep} onUpdate={handleUpdateStep} onMove={handleMoveStep} onPick={handleOpenMediaPicker} onAi={handleOpenAiImage} />
           </div>
         </main>
         <EditRecipeImageRail imageUrl={primaryMediaAssetId ? coverPreviews[primaryMediaAssetId] : undefined} hasImage={!!primaryMediaAssetId} onPick={handleOpenHeroMediaPicker} onAi={handleOpenHeroAiModal} onRemove={() => setPrimaryMediaAssetId(null)} version={recipe.versionLabel} ingredientCount={ingredients.length} stepCount={steps.length} />

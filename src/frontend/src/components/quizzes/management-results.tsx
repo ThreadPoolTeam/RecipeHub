@@ -119,8 +119,9 @@ export function ManagementResults() {
 
   return (
     <ManagementFrame
+      eyebrow="Tài liệu & Đào tạo"
       title="Kết quả làm bài"
-      description="Theo dõi điểm số và tiến bộ của nhân viên theo từng bộ đề."
+      description="Xem điểm và lọc bài làm theo bộ đề hoặc nhân viên."
       actions={<Link href={base} className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-control focus-visible:ring-2 focus-visible:ring-ring">Về bộ đề</Link>}
     >
       <div className="space-y-4">

@@ -2,6 +2,7 @@ import React from 'react';
 import { UploadCloud } from 'lucide-react';
 import type { MediaAsset, MediaSource, MediaState } from '@/lib/demo/types';
 import { Button } from './fields';
+import { StyledSelect } from './styled-select';
 
 type Props = {
   mediaList: MediaAsset[];
@@ -28,20 +29,16 @@ export function MediaControls({ mediaList, filterSource, setFilterSource, filter
           ] as const).map(([value, label]) => (
             <button key={value} type="button" aria-pressed={filterSource === value}
               onClick={() => setFilterSource(value)}
-              className={`rounded-full border px-4 py-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${filterSource === value ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-foreground hover:bg-accent'}`}>
+              className={`rounded-full border px-4 py-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${filterSource === value ? 'border-primary bg-primary text-primary-foreground hover:brightness-90' : 'border-border bg-card text-foreground hover:bg-accent'}`}>
               {label} {value === 'all' ? mediaList.length : mediaList.filter((item) => item.source === value).length}
             </button>
           ))}
         </div>
-        <label className="flex items-center gap-2 text-xs text-muted-foreground">
-          Trạng thái:
-          <select value={filterState} onChange={(event) => setFilterState(event.target.value as 'all' | MediaState)}
-            className="rounded-md border border-input bg-card px-3 py-2 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <option value="all">Tất cả trạng thái</option>
-            <option value="Active">Đang hoạt động</option>
-            <option value="DeleteFailed">Lỗi xóa</option>
-          </select>
-        </label>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span id="media-state-label">Trạng thái:</span>
+          <StyledSelect aria-labelledby="media-state-label" value={filterState} onChange={(value) => setFilterState(value as 'all' | MediaState)}
+            options={[{ value: 'all', label: 'Tất cả trạng thái' }, { value: 'Active', label: 'Đang hoạt động' }, { value: 'DeleteFailed', label: 'Lỗi xóa' }]} />
+        </div>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-dashed border-border bg-secondary p-5"
         onDragOver={(event) => event.preventDefault()}
@@ -59,14 +56,11 @@ export function MediaControls({ mediaList, filterSource, setFilterSource, filter
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 text-xs text-muted-foreground">
-            Nguồn:
-            <select value={uploadSource} onChange={(event) => setUploadSource(event.target.value as MediaSource)}
-              className="rounded-md border border-input bg-card px-2 py-2 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-              <option value="Real">Ảnh chụp SOP thực tế</option>
-              <option value="AiIllustration">Concept AI (Minh họa)</option>
-            </select>
-          </label>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span id="media-source-label">Nguồn:</span>
+            <StyledSelect aria-labelledby="media-source-label" value={uploadSource} onChange={(value) => setUploadSource(value as MediaSource)}
+              options={[{ value: 'Real', label: 'Ảnh chụp SOP thực tế' }, { value: 'AiIllustration', label: 'Concept AI (Minh họa)' }]} />
+          </div>
           <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/jpeg,image/png,image/webp,image/svg+xml" className="hidden" />
           <Button variant="primary" size="sm" isLoading={isUploading} onClick={() => fileInputRef.current?.click()}>Chọn tệp từ máy</Button>
         </div>

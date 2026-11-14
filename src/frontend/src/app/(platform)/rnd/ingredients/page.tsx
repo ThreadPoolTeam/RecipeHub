@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { FlaskConical, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { Ingredient } from '@/lib/demo/types';
 import { Button, Alert } from '@/components/workspace/fields';
 import { IngredientCategoryPanel, IngredientCategoryEditing } from '@/components/workspace/ingredient-category-panel';
-import { CatalogPageHeader, CatalogTabs } from '@/components/workspace/catalog-ui';
+import { CatalogTabs } from '@/components/workspace/catalog-ui';
+import { PageHeader } from '@/components/workspace/page-header';
 import { useToast } from '@/components/workspace/toast';
 import { CatalogItem } from '@/lib/api/backend-repository';
 import { useMediaPreviews } from '@/components/workspace/use-media-previews';
@@ -17,7 +18,7 @@ import { IngredientFilterBar } from './ingredient-filter-bar';
 type IngredientTab = 'ingredients' | 'categories';
 
 export default function RndIngredientsPage() {
-  const { session, repo, dataVersion, touch } = useDemo();
+  const { repo, dataVersion } = useDemo();
   const { toast } = useToast();
   const { previews } = useMediaPreviews();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -26,7 +27,6 @@ export default function RndIngredientsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<IngredientTab>('ingredients');
   const [categoryEditing, setCategoryEditing] = useState<IngredientCategoryEditing>(null);
-  const [togglingId, setTogglingId] = useState<string | null>(null);
   const ingredientGroups = useMemo(() => categories.filter((item) => item.state === 'active').map((item) => item.name), [categories]);
   const [searchQuery, setSearchQuery] = useState('');
   const [groupFilter, setGroupFilter] = useState('all');
@@ -90,28 +90,12 @@ export default function RndIngredientsPage() {
     return filteredIngredients.slice(start, start + pageSize);
   }, [filteredIngredients, currentPage, pageSize]);
 
-  const handleToggleActive = async (ingredient: Ingredient) => {
-    if (!session) return;
-    try {
-      setTogglingId(ingredient.id);
-      const updatedState = !ingredient.isActive;
-      await repo.updateIngredient(session, ingredient.id, { isActive: updatedState });
-      touch();
-      toast({ type: 'success', title: updatedState ? 'Đã kích hoạt nguyên liệu' : 'Đã tạm ngưng nguyên liệu', description: ingredient.name });
-      await fetchIngredients();
-    } catch (err: unknown) {
-      const e = err as Error;
-      toast({ type: 'error', title: 'Không thể đổi trạng thái', description: e.message || 'Vui lòng thử lại.' });
-    } finally {
-      setTogglingId(null);
-    }
-  };
   return (
     <div className="space-y-6">
-      <CatalogPageHeader
-        icon={FlaskConical}
-        title={<>Nguyên liệu</>}
-        description="Quản lý nguyên liệu, nhóm và đơn vị mặc định dùng trong công thức."
+      <PageHeader
+        eyebrow="Nguyên liệu & Tư liệu"
+        title="Kho nguyên liệu"
+        description="Xem danh sách nguyên liệu và các nhóm dùng trong công thức."
         actions={
           activeTab === 'ingredients' ? (
             <Link href="/rnd/ingredients/new">
@@ -173,7 +157,7 @@ export default function RndIngredientsPage() {
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {pagedItems.map((item) => (
-              <IngredientCard key={item.id} item={item} imageUrl={item.imageAssetId ? previews[item.imageAssetId] : undefined} toggling={togglingId === item.id} onToggle={() => handleToggleActive(item)} />
+              <IngredientCard key={item.id} item={item} imageUrl={item.imageAssetId ? previews[item.imageAssetId] : undefined} />
             ))}
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">

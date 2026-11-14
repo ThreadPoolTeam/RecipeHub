@@ -25,6 +25,7 @@ Hệ thống RecipeHub phục vụ 3 nhóm vai trò rõ ràng, không đè lấn
 - Admin không có workspace công thức, nguyên liệu, đơn vị, media, PDF hay quiz; mọi route này thuộc `/rnd`. Không cấp admin quyền vào prefix `/rnd`.
 
 ### 2.2. Phân Hệ R&D (`/rnd`)
+- Menu đặt Tổng quan và Công thức ở cấp đầu; Nguyên liệu & Tư liệu gồm nguyên liệu, đơn vị đo, hình ảnh; Tài liệu & Đào tạo gồm PDF, quiz, kết quả.
 - `/rnd`: Dashboard nghiên cứu tổng quan.
 - `/rnd/recipes`: Danh sách công thức R&D (tìm kiếm, lọc theo nhóm).
 - `/rnd/recipes/new`: Soạn thảo công thức mới, tỷ lệ thành phần.

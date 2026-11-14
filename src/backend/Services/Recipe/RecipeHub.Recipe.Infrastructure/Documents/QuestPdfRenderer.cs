@@ -50,14 +50,28 @@ public sealed class QuestPdfRenderer : IPdfRenderer
             }
 
             AddPage(container => CoverPage.Compose(container, model), cover: true);
-            if (isCollection) AddPage(container => TableOfContentsPage.Compose(container, model));
+            if (isCollection) document.Page(page =>
+            {
+                page.Size(PageSizes.A4.Landscape());
+                page.Margin(36);
+                page.PageColor(PdfTheme.Paper);
+                page.DefaultTextStyle(style => style.FontFamily(PdfTheme.BodyFont).FontSize(10).FontColor(PdfTheme.Ink));
+                page.Content().Element(container => TableOfContentsPage.Compose(container, model));
+                page.Footer().Element(TableOfContentsPage.Footer);
+                if (isDraft) page.Foreground().Element(PdfCommon.Watermark);
+            });
             for (var i = 0; i < model.Recipes.Count; i++)
             {
                 var recipe = model.Recipes[i];
                 AddPage(container => RecipeOverviewPage.Compose(container, recipe), $"recipe_{i + 1}");
                 if (recipe.Steps.Count > 0) AddPage(container => RecipeStepsPages.Compose(container, recipe));
-                if (recipe.Steps.Any(step => !string.IsNullOrWhiteSpace(step.CompletionCriteria))) AddPage(container => RecipeFinishPage.Compose(container, recipe));
             }
+        }).WithSettings(new DocumentSettings
+        {
+            // Mặc định QuestPDF nhúng ảnh ở 288 dpi, một bộ 6 công thức dễ vượt 10 MB và bị kho PDF từ chối.
+            ImageRasterDpi = 150,
+            ImageCompressionQuality = ImageCompressionQuality.High,
+            CompressDocument = true,
         });
     }
 }

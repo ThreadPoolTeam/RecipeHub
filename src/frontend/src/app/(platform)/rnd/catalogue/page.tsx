@@ -5,7 +5,7 @@ import { Plus, Ruler } from 'lucide-react';
 import { Button, Alert, SearchInput } from '@/components/workspace/fields';
 import { DataTable } from '@/components/workspace/data-table';
 import { UnitConversionModal } from '@/components/shared/UnitConversionModal';
-import { pageTitleClass, panelTitleClass } from '@/components/workspace/page-header';
+import { PageHeader, panelTitleClass } from '@/components/workspace/page-header';
 import type { UnitItem } from '@/lib/api/backend-repository';
 import { CatalogueCategoryGrid } from './catalogue-category-grid';
 import { CatalogueCategoryDetail } from './catalogue-category-detail';
@@ -41,20 +41,18 @@ export default function RndCataloguePage() {
   const baseCodePreview = data.unitIsBase ? unitCodePreview : selectedCategoryBase?.code ?? 'BASE';
 
   return <div className="space-y-6">
-    <header className="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Danh mục</p>
-        <h1 className={pageTitleClass}>Đại lượng &amp; đơn vị đo</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Định nghĩa đại lượng, đơn vị cơ sở và hệ số quy đổi dùng cho toàn bộ công thức.</p>
-      </div>
-      <Button variant="gold" size="sm" onClick={() => openEditor({ kind: 'unit-category', item: null })}><Plus className="mr-1 h-4 w-4" /> Thêm đại lượng</Button>
-    </header>
+    <PageHeader
+      eyebrow="Nguyên liệu & Tư liệu"
+      title="Đại lượng & đơn vị đo"
+      description="Xem đơn vị cơ sở và hệ số quy đổi theo từng đại lượng."
+      actions={<Button variant="gold" size="sm" onClick={() => openEditor({ kind: 'unit-category', item: null })}><Plus className="mr-1 h-4 w-4" /> Thêm đại lượng</Button>}
+    />
     {loadError && <Alert type="error" message={loadError} onClose={() => setLoadError(null)} />}
     <div className="flex flex-wrap items-center gap-3">
       <div className="w-full sm:w-80"><SearchInput placeholder="Tìm theo mã hoặc tên đại lượng, đơn vị..." value={searchQuery} onChange={event => setSearchQuery(event.target.value)} onClear={() => setSearchQuery('')} /></div>
       <div className="flex flex-wrap gap-2" aria-label="Lọc trạng thái đại lượng">
         {([['all', 'Tất cả'], ['active', 'Đang dùng'], ['inactive', 'Ngừng dùng']] as const).map(([value, label]) => (
-          <button key={value} type="button" aria-pressed={statusFilter === value} onClick={() => setStatusFilter(value)} className={`rounded-full border px-3 py-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${statusFilter === value ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-foreground hover:bg-accent'}`}>
+          <button key={value} type="button" aria-pressed={statusFilter === value} onClick={() => setStatusFilter(value)} className={`rounded-full border px-3 py-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${statusFilter === value ? 'border-primary bg-primary text-primary-foreground hover:brightness-90' : 'border-border bg-card text-foreground hover:bg-accent'}`}>
             {label} <span className="ml-1 tabular-nums">{value === 'all' ? unitCategories.length : unitCategories.filter(item => value === 'active' ? item.state === 'active' : item.state !== 'active').length}</span>
           </button>
         ))}

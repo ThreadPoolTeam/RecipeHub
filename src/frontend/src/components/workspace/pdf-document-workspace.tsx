@@ -27,6 +27,7 @@ import { Button, Alert } from './fields';
 import { useToast } from './toast';
 import { PdfDocumentPreview } from './pdf-document-preview';
 import { PdfRecipeSelector } from './pdf-recipe-selector';
+import { usePublishedRecipeCatalog } from './use-published-recipe-catalog';
 
 export interface GroupedRecipe {
   recipeId: string;
@@ -90,12 +91,12 @@ export function PdfDocumentWorkspace({
   const [isExportingOfficial, setIsExportingOfficial] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
 
-  // Recipe Catalog State
-  const [catalogRecipes, setCatalogRecipes] = useState<GroupedRecipe[]>([]);
-  const [loadingCatalog, setLoadingCatalog] = useState(true);
-  const [catalogSearch, setCatalogSearch] = useState('');
-  const [catalogPage, setCatalogPage] = useState(1);
-  const catalogPageSize = 8;
+  // Recipe Catalog State (tìm kiếm ở server, tải thêm khi cuộn)
+  const catalog = usePublishedRecipeCatalog(initialSelectedItems);
+  const { recipes: catalogRecipes, setRecipes: setCatalogRecipes } = catalog;
+  useEffect(() => {
+    if (catalog.error) setGeneralError(catalog.error);
+  }, [catalog.error]);
 
   // Load Capabilities
   useEffect(() => {
@@ -122,68 +123,6 @@ export function PdfDocumentWorkspace({
       isMounted = false;
     };
   }, [session]);
-
-  // Load All Released / Published Recipes
-  useEffect(() => {
-    if (!session) return;
-    let isMounted = true;
-    setLoadingCatalog(true);
-
-    repo
-      .getRecipes(session)
-      .then(async (recipes) => {
-        const groups: GroupedRecipe[] = [];
-        const recipeList = recipes.items || [];
-        for (const r of recipeList) {
-          try {
-            const versions = await repo.getRecipeVersions(session, r.id);
-            const published = versions
-              .filter((v) => v.status === 'Published')
-              .sort((a, b) => (b.versionNumber || 0) - (a.versionNumber || 0));
-
-            if (published.length > 0) {
-              const initMatch = initialSelectedItems.find(
-                (init) =>
-                  init.recipeId === r.id ||
-                  published.some((v) => (v.versionId || v.id) === init.recipeVersionId)
-              );
-              const defaultVersionId = initMatch
-                ? published.find((v) => (v.versionId || v.id) === initMatch.recipeVersionId)
-                    ?.versionId ||
-                  published[0].versionId ||
-                  published[0].id
-                : published[0].versionId || published[0].id;
-
-              groups.push({
-                recipeId: r.id,
-                recipeCode: r.code,
-                recipeName: r.name,
-                creatorEmail: r.creatorEmail,
-                versions: published,
-                selectedVersionId: defaultVersionId,
-              });
-            }
-          } catch {
-            // fallback
-          }
-        }
-        if (isMounted) {
-          setCatalogRecipes(groups);
-        }
-      })
-      .catch((err) => {
-        if (isMounted) {
-          setGeneralError(err instanceof Error ? err.message : 'Không thể nạp danh mục công thức');
-        }
-      })
-      .finally(() => {
-        if (isMounted) setLoadingCatalog(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [session, repo]);
 
   // Handle Initial Items
   useEffect(() => {
@@ -285,27 +224,6 @@ export function PdfDocumentWorkspace({
     setSnapshotHash(null);
     setSnapshotDocumentType(null);
   }, []);
-
-  // Filter Catalog
-  const filteredCatalog = useMemo(() => {
-    let list = catalogRecipes;
-    if (catalogSearch.trim()) {
-      const q = catalogSearch.trim().toLowerCase();
-      list = list.filter(
-        (r) =>
-          r.recipeName.toLowerCase().includes(q) ||
-          r.recipeCode.toLowerCase().includes(q) ||
-          (r.creatorEmail && r.creatorEmail.toLowerCase().includes(q))
-      );
-    }
-    return list;
-  }, [catalogRecipes, catalogSearch]);
-
-  const catalogTotalPages = Math.ceil(filteredCatalog.length / catalogPageSize) || 1;
-  const paginatedCatalog = useMemo(() => {
-    const start = (catalogPage - 1) * catalogPageSize;
-    return filteredCatalog.slice(start, start + catalogPageSize);
-  }, [filteredCatalog, catalogPage, catalogPageSize]);
 
   // Toggle Recipe Selection (One version per recipe)
   const handleToggleSelectRecipe = (group: GroupedRecipe) => {
@@ -597,14 +515,14 @@ export function PdfDocumentWorkspace({
         <div className="min-w-0 rounded-lg border border-border bg-card p-5 shadow-soft space-y-4">
           <PdfRecipeSelector
             selectedItems={selectedItems}
-            loadingCatalog={loadingCatalog}
-            paginatedCatalog={paginatedCatalog}
-            filteredCount={filteredCatalog.length}
-            catalogSearch={catalogSearch}
-            catalogPage={catalogPage}
-            catalogTotalPages={catalogTotalPages}
-            setCatalogSearch={setCatalogSearch}
-            setCatalogPage={setCatalogPage}
+            loadingCatalog={catalog.loading}
+            loadingMore={catalog.loadingMore}
+            hasMore={catalog.hasMore}
+            catalogRecipes={catalogRecipes}
+            totalCount={catalog.total}
+            catalogSearch={catalog.query}
+            setCatalogSearch={catalog.setQuery}
+            onLoadMore={catalog.loadMore}
             onClear={handleClearAllSelections}
             onToggle={handleToggleSelectRecipe}
             onVersionChange={handleVersionChange}

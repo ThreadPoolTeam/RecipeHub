@@ -15,6 +15,7 @@ import { NewRecipeBasicInfo } from '@/components/recipes/new-recipe-basic-info';
 import { NewRecipeIngredients } from '@/components/recipes/new-recipe-ingredients';
 import { NewRecipeSop } from '@/components/recipes/new-recipe-sop';
 import { NewRecipeStepper } from '@/components/recipes/new-recipe-stepper';
+import { remapStepLinks, setStepLink } from '@/lib/recipe-step-links';
 export default function NewRecipePage() {
   const router = useRouter();
   const { session, repo, touch } = useDemo();
@@ -127,6 +128,7 @@ export default function NewRecipePage() {
       ...s,
       stepNumber: idx + 1,
     }));
+    setRecipeIngredients((current) => remapStepLinks(current, (order) => order === index + 1 ? null : order > index + 1 ? order - 1 : order));
     setSteps(updated);
   };
 
@@ -143,6 +145,7 @@ export default function NewRecipePage() {
     const temp = updated[index];
     updated[index] = updated[targetIdx];
     updated[targetIdx] = temp;
+    setRecipeIngredients((current) => remapStepLinks(current, (order) => order === index + 1 ? targetIdx + 1 : order === targetIdx + 1 ? index + 1 : order));
 
     // re-index step numbers
     setSteps(updated.map((s, idx) => ({ ...s, stepNumber: idx + 1 })));
@@ -268,8 +271,9 @@ export default function NewRecipePage() {
               handleUpdateIngredient={handleUpdateIngredient} />
           </div>
           <div id="recipe-step-2" data-recipe-step="2" hidden={activeStep !== 2}>
-            <NewRecipeSop steps={steps} handleAddStep={handleAddStep} handleRemoveStep={handleRemoveStep}
-              handleUpdateStep={handleUpdateStep} handleMoveStep={handleMoveStep} />
+            <NewRecipeSop steps={steps} ingredients={recipeIngredients} availableIngredients={availableIngredients}
+              onIngredientChange={(step, index, selected) => setRecipeIngredients((current) => current.map((item, i) => i === index ? { ...item, stageNote: setStepLink(item.stageNote, step, selected) } : item))}
+              handleAddStep={handleAddStep} handleRemoveStep={handleRemoveStep} handleUpdateStep={handleUpdateStep} handleMoveStep={handleMoveStep} />
           </div>
         </div>
       </div>

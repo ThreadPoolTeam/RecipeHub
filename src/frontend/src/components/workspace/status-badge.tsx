@@ -68,21 +68,18 @@ export function RoleBadge({ role }: { role: Role }) {
 
   if (role === 'rnd') {
     roleText = 'Chuyên viên R&D';
-    roleColor = 'bg-success-medium text-success';
+    roleColor = 'bg-[linear-gradient(180deg,var(--color-success-soft),var(--color-success-medium))] text-success';
   } else if (role === 'viewer') {
     roleText = 'Nhân viên pha chế';
-    roleColor = 'bg-info-soft text-info';
+    roleColor = 'bg-[linear-gradient(180deg,var(--color-info-soft),color-mix(in_srgb,var(--color-info-soft)_80%,var(--color-info)))] text-info';
   } else if (role === 'admin') {
     roleText = 'Quản trị hệ thống';
-    roleColor = 'bg-ink text-ink-foreground';
+    roleColor = 'bg-[linear-gradient(180deg,color-mix(in_srgb,var(--color-ink)_82%,white),var(--color-ink))] text-ink-foreground';
   }
   return (
-    <div className="inline-flex items-center gap-1.5">
-      <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-pill font-medium ${roleColor}`}>
-        <span className="h-1.5 w-1.5 rounded-full bg-current" />
-        {roleText}
-      </span>
-    </div>
+    <span className={`inline-flex items-center rounded-full px-3 py-1 text-pill font-medium shadow-[inset_0_1px_0_rgb(255_255_255/0.45)] ${roleColor}`}>
+      {roleText}
+    </span>
   );
 }
 

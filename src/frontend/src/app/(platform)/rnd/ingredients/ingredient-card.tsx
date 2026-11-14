@@ -1,15 +1,12 @@
 import Link from 'next/link';
 import { IngredientThumb } from '@/components/workspace/ingredient-thumb';
-import { StateToggle } from '@/components/workspace/catalog-ui';
 import { cardActionClass, interactiveCardClass, stretchedLinkClass } from '@/components/workspace/interactive-card';
 import { cardTitleClass } from '@/components/workspace/page-header';
 import type { Ingredient } from '@/lib/demo/types';
 
-export function IngredientCard({ item, imageUrl, toggling, onToggle }: {
+export function IngredientCard({ item, imageUrl }: {
   item: Ingredient;
   imageUrl?: string;
-  toggling: boolean;
-  onToggle: () => void;
 }) {
   return (
     <article className={`${interactiveCardClass} flex flex-col gap-4 p-4`}>
@@ -24,7 +21,10 @@ export function IngredientCard({ item, imageUrl, toggling, onToggle }: {
         </div>
       </div>
       <div className={`${cardActionClass} flex flex-wrap items-center gap-2 text-xs`}>
-        <StateToggle active={item.isActive} disabled={toggling} onToggle={onToggle} subject={`nguyên liệu "${item.name}"`} />
+        <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-pill font-medium ${item.isActive ? 'bg-success-soft text-success' : 'bg-secondary text-muted-foreground'}`}>
+          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+          {item.isActive ? 'Đang dùng' : 'Tạm khóa'}
+        </span>
         {item.warning && <span className="rounded-md bg-destructive-soft px-2 py-1 text-destructive">{item.warning}</span>}
       </div>
     </article>

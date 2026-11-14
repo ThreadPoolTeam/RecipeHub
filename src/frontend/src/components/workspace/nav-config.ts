@@ -7,16 +7,22 @@ export type NavItem = {
   options?: { exact?: boolean; exclude?: string[] };
 };
 
-export const navConfig: Record<string, NavItem[]> = {
+export type NavGroup = { label: string; children: NavItem[] };
+
+export const navConfig: Record<string, (NavItem | NavGroup)[]> = {
   rnd: [
     { href: '/rnd', label: 'Tổng quan R&D', icon: LayoutDashboard, options: { exact: true } },
     { href: '/rnd/recipes', label: 'Công thức đồ uống', icon: BookOpen },
-    { href: '/rnd/ingredients', label: 'Kho nguyên liệu', icon: FlaskConical },
-    { href: '/rnd/catalogue', label: 'Đại lượng & Đơn vị đo', icon: Package },
-    { href: '/rnd/media', label: 'Tư liệu hình ảnh', icon: Image },
-    { href: '/rnd/documents', label: 'Tài liệu PDF', icon: FileText },
-    { href: '/rnd/quizzes', label: 'Bộ Quiz', icon: GraduationCap, options: { exclude: ['/rnd/quizzes/results'] } },
-    { href: '/rnd/quizzes/results', label: 'Kết quả làm bài', icon: Award },
+    { label: 'Nguyên liệu & Tư liệu', children: [
+      { href: '/rnd/ingredients', label: 'Kho nguyên liệu', icon: FlaskConical },
+      { href: '/rnd/catalogue', label: 'Đại lượng & Đơn vị đo', icon: Package },
+      { href: '/rnd/media', label: 'Tư liệu hình ảnh', icon: Image },
+    ] },
+    { label: 'Tài liệu & Đào tạo', children: [
+      { href: '/rnd/documents', label: 'Tài liệu PDF', icon: FileText },
+      { href: '/rnd/quizzes', label: 'Bộ Quiz', icon: GraduationCap, options: { exclude: ['/rnd/quizzes/results'] } },
+      { href: '/rnd/quizzes/results', label: 'Kết quả làm bài', icon: Award },
+    ] },
   ],
   viewer: [
     { href: '/viewer', label: 'Tra cứu SOP đồ uống', icon: BookOpen, options: { exclude: ['/viewer/quizzes'] } },
@@ -32,7 +38,7 @@ export const navConfig: Record<string, NavItem[]> = {
 };
 
 export type NavProps = {
-  items: NavItem[];
+  items: (NavItem | NavGroup)[];
   isLinkActive: (path: string, options?: NavItem['options']) => boolean;
   onNavClick: (href: string, event: React.MouseEvent) => void;
 };

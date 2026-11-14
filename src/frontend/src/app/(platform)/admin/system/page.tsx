@@ -121,10 +121,11 @@ export default function AdminSystemMonitoringPage() {
   usePolling(runSystemProbe);
 
   const healthyCount = services.filter((s) => s.status === 'Ready').length;
+  const measured = services.filter((s) => s.status !== 'Unreachable');
   const avgLatency =
-    services.length > 0
-      ? Math.round(services.reduce((acc, item) => acc + item.latencyMs, 0) / services.length)
-      : 0;
+    measured.length > 0
+      ? Math.round(measured.reduce((acc, item) => acc + item.latencyMs, 0) / measured.length)
+      : null;
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
@@ -147,7 +148,7 @@ export default function AdminSystemMonitoringPage() {
             </div>
             <p className="mt-1 text-sm text-muted-foreground">{service.roleLabel}</p>
             <div className="mt-5 grid grid-cols-2 gap-4">
-              <div><p className="text-xs text-muted-foreground">Độ trễ</p><p className="mt-1 font-display text-xl tabular-nums text-foreground">{service.latencyMs} ms</p></div>
+              <div><p className="text-xs text-muted-foreground">Độ trễ</p><p className={`mt-1 tabular-nums ${service.status === 'Unreachable' ? 'text-sm text-muted-foreground' : 'font-display text-xl text-foreground'}`}>{service.status === 'Unreachable' ? 'Không đo được' : `${service.latencyMs} ms`}</p></div>
               <div><p className="text-xs text-muted-foreground">Cơ sở dữ liệu</p><p className="mt-1 text-sm text-foreground">{service.database === 'Connected' ? 'Đã kết nối' : 'Mất kết nối'}</p></div>
             </div>
             <p className="mt-4 text-xs text-muted-foreground">Lần kiểm tra cuối: {service.checkedAt}</p>
@@ -158,7 +159,7 @@ export default function AdminSystemMonitoringPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border border-border bg-card p-4 shadow-soft"><p className="text-xs text-muted-foreground">Dịch vụ sẵn sàng</p><p className="mt-2 font-display text-xl tabular-nums">{loading ? '...' : `${healthyCount} / ${SERVICE_TARGETS.length}`}</p></div>
-        <div className="rounded-lg border border-border bg-card p-4 shadow-soft"><p className="text-xs text-muted-foreground">Độ trễ trung bình</p><p className="mt-2 font-display text-xl tabular-nums">{loading ? '...' : `${avgLatency} ms`}</p></div>
+        <div className="rounded-lg border border-border bg-card p-4 shadow-soft"><p className="text-xs text-muted-foreground">Độ trễ trung bình</p><p className="mt-2 font-display text-xl tabular-nums">{loading ? '...' : avgLatency === null ? 'Không đo được' : `${avgLatency} ms`}</p></div>
         <a href="http://localhost:3001" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 shadow-soft hover:bg-accent"><BarChart3 className="h-5 w-5" strokeWidth={1.5} /><span className="flex-1 text-sm font-semibold">Grafana Dashboard</span><ExternalLink className="h-4 w-4" strokeWidth={1.5} /></a>
         <a href="http://localhost:5050" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-lg border border-border bg-card p-4 shadow-soft hover:bg-accent"><Database className="h-5 w-5" strokeWidth={1.5} /><span className="flex-1 text-sm font-semibold">pgAdmin 4</span><ExternalLink className="h-4 w-4" strokeWidth={1.5} /></a>
       </div>

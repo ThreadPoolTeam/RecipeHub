@@ -1,20 +1,21 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ArrowDown, ArrowUp, Coffee, Trash2 } from 'lucide-react';
-import { Button, SearchInput } from './fields';
+import { SearchInput } from './fields';
+import { StyledSelect } from './styled-select';
 import type { GroupedRecipe, SelectedRecipeItem } from './pdf-document-workspace';
 
 interface PdfRecipeSelectorProps {
   selectedItems: SelectedRecipeItem[];
   loadingCatalog: boolean;
-  paginatedCatalog: GroupedRecipe[];
-  filteredCount: number;
+  loadingMore: boolean;
+  hasMore: boolean;
+  catalogRecipes: GroupedRecipe[];
+  totalCount: number;
   catalogSearch: string;
-  catalogPage: number;
-  catalogTotalPages: number;
-  setCatalogSearch: React.Dispatch<React.SetStateAction<string>>;
-  setCatalogPage: React.Dispatch<React.SetStateAction<number>>;
+  setCatalogSearch: (value: string) => void;
+  onLoadMore: () => void;
   onClear: () => void;
   onToggle: (group: GroupedRecipe) => void;
   onVersionChange: (recipeId: string, versionId: string) => void;
@@ -22,7 +23,24 @@ interface PdfRecipeSelectorProps {
   onRemove: (versionId: string) => void;
 }
 
-export function PdfRecipeSelector({ selectedItems, loadingCatalog, paginatedCatalog, filteredCount, catalogSearch, catalogPage, catalogTotalPages, setCatalogSearch, setCatalogPage, onClear, onToggle, onVersionChange, onMove, onRemove }: PdfRecipeSelectorProps) {
+export function PdfRecipeSelector({ selectedItems, loadingCatalog, loadingMore, hasMore, catalogRecipes, totalCount, catalogSearch, setCatalogSearch, onLoadMore, onClear, onToggle, onVersionChange, onMove, onRemove }: PdfRecipeSelectorProps) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useRef(onLoadMore);
+  loadMoreRef.current = onLoadMore;
+
+  // Cuộn gần cuối danh sách thì tải thêm 10 món.
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    const root = listRef.current;
+    if (!sentinel || !root || !hasMore || loadingCatalog) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) loadMoreRef.current();
+    }, { root, rootMargin: '0px 0px 120px 0px' });
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loadingCatalog, catalogRecipes.length]);
+
   return (
     <>
       <div className="flex items-center justify-between gap-2 border-b border-border pb-3">
@@ -33,13 +51,13 @@ export function PdfRecipeSelector({ selectedItems, loadingCatalog, paginatedCata
         </div>
         {selectedItems.length > 0 && <button type="button" onClick={onClear} className="text-xs text-muted-foreground hover:text-destructive">Bỏ chọn tất cả</button>}
       </div>
-      <SearchInput value={catalogSearch} onChange={(e) => { setCatalogSearch(e.target.value); setCatalogPage(1); }} placeholder="Tìm theo tên hoặc mã công thức..." onClear={() => { setCatalogSearch(''); setCatalogPage(1); }} />
-      <div className="max-h-[360px] space-y-2 overflow-y-auto">
+      <SearchInput value={catalogSearch} onChange={(e) => setCatalogSearch(e.target.value)} placeholder="Tìm theo tên hoặc mã công thức..." onClear={() => setCatalogSearch('')} />
+      <div ref={listRef} className="max-h-[360px] space-y-2 overflow-y-auto">
         {loadingCatalog ? (
           <div className="p-8 text-center text-muted-foreground"><div className="mx-auto mb-2 h-5 w-5 rounded-full border-2 border-primary border-t-transparent motion-safe:animate-spin" /><p className="text-xs">Đang tải công thức...</p></div>
-        ) : paginatedCatalog.length === 0 ? (
+        ) : catalogRecipes.length === 0 ? (
           <div className="p-8 text-center text-xs text-muted-foreground">Không có công thức đã phát hành phù hợp.</div>
-        ) : paginatedCatalog.map((group) => {
+        ) : catalogRecipes.map((group) => {
           const isSelected = selectedItems.some((item) => item.recipeId === group.recipeId);
           const selectedItem = selectedItems.find((item) => item.recipeId === group.recipeId);
           const currentVersionId = selectedItem?.recipeVersionId || group.selectedVersionId;
@@ -51,21 +69,16 @@ export function PdfRecipeSelector({ selectedItems, loadingCatalog, paginatedCata
               </label>
               <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
                 {group.versions.length > 1 ? (
-                  <select value={currentVersionId} onChange={(e) => onVersionChange(group.recipeId, e.target.value)} className="cursor-pointer rounded-md border border-input bg-card px-2 py-1 text-xs font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" title="Chọn phiên bản công thức">
-                    {group.versions.map((version) => <option key={version.versionId || version.id} value={version.versionId || version.id}>{version.versionLabel || `v${version.versionNumber || 1}.0`}</option>)}
-                  </select>
+                  <StyledSelect value={currentVersionId} onChange={(value) => onVersionChange(group.recipeId, value)} aria-label={`Chọn phiên bản ${group.recipeName}`}
+                    options={group.versions.map((version) => ({ value: version.versionId || version.id, label: version.versionLabel || `v${version.versionNumber || 1}.0` }))} />
                 ) : <span className="rounded-md bg-secondary px-2 py-0.5 text-xs text-muted-foreground">{group.versions[0]?.versionLabel || 'v1.0'}</span>}
               </div>
             </div>
           );
         })}
+        {hasMore && <div ref={sentinelRef} className="py-2 text-center text-xs text-muted-foreground">{loadingMore ? 'Đang tải thêm...' : 'Cuộn để xem thêm'}</div>}
       </div>
-      {catalogTotalPages > 1 && (
-        <div className="flex items-center justify-between pt-1 text-xs text-muted-foreground">
-          <span>{catalogPage} / {catalogTotalPages} ({filteredCount} món)</span>
-          <div className="flex gap-1"><Button variant="ghost" size="sm" disabled={catalogPage <= 1} onClick={() => setCatalogPage((page) => page - 1)}>Trước</Button><Button variant="ghost" size="sm" disabled={catalogPage >= catalogTotalPages} onClick={() => setCatalogPage((page) => page + 1)}>Sau</Button></div>
-        </div>
-      )}
+      {!loadingCatalog && catalogRecipes.length > 0 && <p className="text-xs text-muted-foreground">Hiển thị {catalogRecipes.length}{totalCount > catalogRecipes.length ? ` / ${totalCount}` : ''} công thức đã phát hành.</p>}
       {selectedItems.length > 1 && (
         <div className="space-y-2 border-t border-border pt-3">
           <div className="text-xs font-semibold text-foreground">Thứ tự trong tài liệu ({selectedItems.length} món):</div>

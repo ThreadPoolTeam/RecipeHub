@@ -37,12 +37,26 @@
   .workspace-page-anim {
     animation: workspace-page-enter 180ms ease-out;
   }
+  .workspace-nav-panel {
+    animation: workspace-page-enter 150ms ease-out;
+  }
 }
 
 @keyframes workspace-page-enter {
   from {
     opacity: 0;
     transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes workspace-select-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--select-enter-offset));
   }
   to {
     opacity: 1;

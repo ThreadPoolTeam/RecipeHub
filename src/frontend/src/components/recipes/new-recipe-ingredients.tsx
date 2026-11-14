@@ -17,7 +17,7 @@ export function NewRecipeIngredients({ availableIngredients, recipeIngredients, 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-lg text-foreground font-medium font-display"><span className="mr-3 text-primary">02</span>Thành phần &amp; định lượng ({recipeIngredients.length})</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Chọn nguyên liệu từ kho chuẩn, nhập định lượng (&gt; 0) và phân tách giai đoạn nếu cần.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Chọn nguyên liệu từ kho chuẩn, nhập định lượng (&gt; 0) và ghi chú nếu cần.</p>
         </div>
         <Button type="button" variant="secondary" size="sm" onClick={handleAddIngredient} disabled={availableIngredients.length === 0}>+ Thêm Nguyên Liệu</Button>
       </div>
@@ -41,8 +41,8 @@ export function NewRecipeIngredients({ availableIngredients, recipeIngredients, 
                 onChange={(e) => handleUpdateIngredient(idx, { quantity: Number(e.target.value) || 0 })} /></div>
               <div className="md:col-span-2"><TextInput label="Đơn Vị" value={item.unit}
                 onChange={(e) => handleUpdateIngredient(idx, { unit: e.target.value })} /></div>
-              <div className="md:col-span-3"><TextInput label="Giai đoạn / Ghi chú" placeholder="VD: Cốt trà nền / Topping sau cùng" value={item.stageNote || ''}
-                onChange={(e) => handleUpdateIngredient(idx, { stageNote: e.target.value })} /></div>
+              <div className="md:col-span-3"><TextInput id={`ingredient-note-${idx}`} label="Ghi chú" placeholder="VD: dầm trong shaker, để trang trí" value={item.notes || ''}
+                onChange={(e) => handleUpdateIngredient(idx, { notes: e.target.value })} /></div>
               <div className="md:col-span-1"><button type="button" onClick={() => handleRemoveIngredient(idx)} title="Xóa nguyên liệu" aria-label={`Xóa nguyên liệu ${idx + 1}`}
                 className="flex h-10 w-full items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-destructive-soft hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <Trash2 className="h-4 w-4" strokeWidth={1.5} /></button></div>

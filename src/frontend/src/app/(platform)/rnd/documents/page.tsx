@@ -1,6 +1,6 @@
 'use client';
 
-import { pageTitleClass } from '@/components/workspace/page-header';
+import { PageHeader } from '@/components/workspace/page-header';
 
 import React, { Suspense } from 'react';
 import Link from 'next/link';
@@ -13,19 +13,12 @@ function RndDocumentsPageContent() {
 
   return (
     <div className="mx-auto space-y-6">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div>
-          <p className="mb-2 text-xs font-medium text-muted-foreground">PDF</p>
-          <h1 className={pageTitleClass}>Kho tài liệu PDF</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Xem lại, tải xuống các bộ công thức đã xuất hoặc tạo ấn phẩm mới.
-          </p>
-        </div>
-
-        <Link href="/rnd/documents/new">
-          <Button variant="primary">Tạo ấn phẩm</Button>
-        </Link>
-      </div>
+      <PageHeader
+        eyebrow="Tài liệu & Đào tạo"
+        title="Tài liệu PDF"
+        description="Xem, tải các ấn phẩm đã xuất hoặc tạo ấn phẩm mới."
+        actions={<Link href="/rnd/documents/new"><Button variant="primary">Tạo ấn phẩm</Button></Link>}
+      />
 
       <PdfDocumentHistory actorId={session?.userId || null} />
     </div>
