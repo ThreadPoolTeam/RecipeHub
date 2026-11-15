@@ -99,6 +99,18 @@ Xem lag:
 docker exec recipehub-kafka /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group recipehub-audit
 ```
 
+### Swagger khi chạy Docker
+
+Mặc định 5 service chỉ nghe trong mạng Docker (vào qua Gateway `:5000`). Khi cần mở Swagger UI (chỉ trên 127.0.0.1):
+```bash
+docker compose --env-file .env -f infra/compose.yaml -f infra/compose.swagger.yaml up -d
+```
+Sau đó mở `http://localhost:5001/swagger` … `http://localhost:5005/swagger`.
+
+### Kiểm thử Playwright có ảnh minh chứng
+
+Xem `tests/e2e/README.md`. Ảnh từng bước lưu ở `docs/report/evidence/<RUN_ID>/` kèm `index.md`.
+
 ### Khởi chạy trực tiếp Local (Dev mode)
 1. Chuẩn bị PostgreSQL/Redis, áp dụng SQL theo trạng thái database và cấu hình connection strings/gRPC/AI/storage cho dịch vụ cần dùng. **Build không khởi động API:**
    ```bash
