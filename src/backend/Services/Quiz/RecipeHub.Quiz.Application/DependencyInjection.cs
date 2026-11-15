@@ -10,6 +10,8 @@ public static class DependencyInjection
     {
         services.AddScoped<IQuizService, QuizService>();
         services.AddScoped<IQuizAttemptService, QuizAttemptService>();
+        services.AddScoped<QuizAiQuizWriter>();
+        services.AddScoped<IQuizAiGenerationService, QuizAiGenerationService>();
         return services;
     }
 }

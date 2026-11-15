@@ -34,6 +34,10 @@ public class MockQuizRecipeClient : IQuizRecipeClient
         }
         return Task.FromResult(dict);
     }
+
+    public Task<QuizRecipeContent> GetRecipeContentAsync(
+        Guid versionId, string bearerToken, CancellationToken cancellationToken = default)
+        => Task.FromResult(new QuizRecipeContent(versionId, RecipeTitle, "", "", [], []));
 }
 
 public class QuizServiceTests

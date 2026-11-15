@@ -7,6 +7,7 @@ package recipehub.contracts.v1;
 // Service nội bộ: Quiz gọi Recipe để xác thực và lấy thông tin phiên bản công thức phục vụ tạo/publish/làm đề thi
 service QuizRecipeQuery {
   rpc GetQuizRecipeVersions (GetQuizRecipeVersionsRequest) returns (GetQuizRecipeVersionsResponse);
+  rpc GetQuizRecipeContent (GetQuizRecipeContentRequest) returns (GetQuizRecipeContentResponse);
 }
 
 message GetQuizRecipeVersionsRequest {
@@ -25,4 +26,40 @@ message GetQuizRecipeVersionsResponse {
   bool is_success = 1;
   string error_message = 2;
   repeated QuizRecipeVersionItemDto items = 3;
+}
+
+message GetQuizRecipeContentRequest {
+  string recipe_version_id = 1;
+}
+
+// Optional text fields use empty strings when absent; category_name is empty
+// because Recipe does not currently have a category.
+message QuizRecipeIngredientDto {
+  string name = 1;
+  double quantity = 2;
+  string unit_name = 3;
+  string stage_name = 4;
+  string note = 5;
+}
+
+message QuizRecipeStepDto {
+  int32 sort_order = 1;
+  string title = 2;
+  string description = 3;
+  optional int32 duration_seconds = 4;
+  optional double temperature_celsius = 5;
+  string equipment = 6;
+  string completion_criteria = 7;
+  string safety_note = 8;
+}
+
+message GetQuizRecipeContentResponse {
+  bool is_success = 1;
+  string error_message = 2;
+  string recipe_version_id = 3;
+  string title = 4;
+  string description = 5;
+  string category_name = 6;
+  repeated QuizRecipeIngredientDto ingredients = 7;
+  repeated QuizRecipeStepDto steps = 8;
 }
