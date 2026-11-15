@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RecipeHub - Web User Flow Diagram Launcher</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #F8FAF9;
+      color: #1A1917;
+      margin: 0;
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .card {
+      background: #FFFFFF;
+      border: 1px solid #E8E2D9;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      max-width: 800px;
+      width: 100%;
+      padding: 32px;
+      box-sizing: border-box;
+    }
+    h1 {
+      font-size: 22px;
+      margin-top: 0;
+      color: #1A1917;
+    }
+    p {
+      color: #706E68;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      margin: 24px 0;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: #B47820;
+      color: #FFFFFF;
+      border: none;
+    }
+    .btn-primary:hover {
+      background: #966115;
+    }
+    .btn-secondary {
+      background: #ECE6DA;
+      color: #1A1917;
+      border: 1px solid #D8CFC0;
+    }
+    .btn-secondary:hover {
+      background: #DFD7C8;
+    }
+    .file-path {
+      background: #F5F0E8;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-family: Consolas, monospace;
+      font-size: 13px;
+      color: #7A4D0B;
+      word-break: break-all;
+    }
+    .instructions {
+      margin-top: 24px;
+      border-top: 1px solid #E8E2D9;
+      padding-top: 20px;
+    }
+    .instructions h3 {
+      font-size: 15px;
+      margin-bottom: 8px;
+    }
+    .instructions ol {
+      padding-left: 20px;
+      font-size: 13px;
+      color: #55524E;
+      line-height: 1.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>☕ RecipeHub — Sơ Đồ User Flow Web (Next.js 16)</h1>
+    <p>Sơ đồ đặc tả trọn vẹn luồng người dùng trên nền tảng Web cho 3 vai trò: <b>R&D Specialist</b> (Vòng đời công thức, Immutability v(N+1), Media AI, SOP PDF, Quizzes), <b>Viewer / Barista</b> (Tra cứu SOP chuẩn, Thi sát hạch), và <b>System Admin</b> (Quản trị tài khoản, Giám sát sức khỏe Microservices & 5 DB PostgreSQL, Audit Logs).</p>
+    
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="openDiagram()">🚀 Mở Trực Tiếp Trên Draw.io Web</button>
+      <button class="btn btn-secondary" onclick="copyXml()">📋 Sao Chép Mã XML Draw.io</button>
+    </div>
+
+    <div class="instructions">
+      <h3>📁 Hoặc mở file offline có sẵn trên máy:</h3>
+      <div class="file-path" id="filePath">d:\03_Dev\01_Projects\01_MyProject\PRN232\Assignment\Project\RecipeHub\docs\diagrams\web-user-flow.drawio</div>
+      <ol>
+        <li>Vào <a href="https://app.diagrams.net/" target="_blank">app.diagrams.net</a> trên trình duyệt.</li>
+        <li>Kéo và thả file <code>web-user-flow.drawio</code> trực tiếp vào giữa màn hình trình duyệt.</li>
+        <li>(Hoặc chọn menu <b>File</b> &gt; <b>Open from</b> &gt; <b>Device</b> và chọn file trên).</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    const DRAWIO_URL = "https://app.diagrams.net/?pv=0&grid=0#R7V1pd6JIF%2F41nJP5MH1YROWjGE3ydjqTyTLd8ymnhEI5YbEBs%2FSvf2ujoKBcEhG1xzlz0oKABfd5bt26G4oxDN8uEjCffYtdGCi6Clwwz%2FwXOIyDOEkV41zRdbDIYvSPYowUdYCOwf8bwySOM2FX%2FkX4NoQBvpbv0vNVfDL%2BO97seI0ePwcJjLLPXSLzswA%2BTYLYeaZnvoBgAel3l8pIU2xb6XfR%2Fod8y1JvLtD23Wh4dTu6fLTxhUe60lcVq4M%2FDzvoEHLsQLG7Q3wq2xrg6z%2Fej%2B7QP%2BPrv77jr%2B6UoaH0Bzfo803%2Bc%2BqNcBL5ue8j%2FENnN6MfD1%2F%2Bd48%2Bat0%2F6IDT7D1gA87gG3oM9iwLA7RDQx%2FTLImfqYzQniiO0JG25wdBZRcI%2FGmENgPo4Su8wCTzHRAM2O7Qd138I%2FbrzM%2Fg%2FRw4%2BBdfER7QviReRC7Ez1PFF4%2Bj7N7%2Fhb%2FX%2BTYbosa28x9XdEMbaJbWQ%2FvZ00c%2FDN%2BWSleroqsq3QsYhzBL3tE2u0qHIeKdbuYAefXdbMYuqqps5wz60xn7KcOk%2BwDD9pRfeRW%2B0H4GsY3QF4AIPiHWzGrY%2B0FwoQ3LyLPVIblUF4T4udO%2FHHJXHD6PaN%2BlMuwqg3GO2QEB0fDykfx7dvtoX18N2X3o6uAR%2FUa%2B8f2vu6%2F3t4PhCF%2Fl0a6jLH31QzxwjLQ48X8hgYKAST%2FNQJKLv6tWsIbE7fU94Dk1YKJvnIlrwgKy35l8tC%2FmEhCxX9H0OqhUT%2BvpQGSCEwcBmKf%2BhFxEbQ9xvTridN2UIA6NuwXIRUh%2FPxEx1TBn5ypnnOWo0vJdvYViDDj0AqwkJgnfnuLth2SBn4KTn3I%2Bx2iCkxqA0ID8ebpMnZRkVgEP1GHfU2Xg6XZ6nf6kBh59CVTKUMo1n4NEDpNNYSEQ92PwsER4dE2ZQqqjo9saONC9uX40rcHjIQF4r%2BrMmFYZ9NDWhZ%2FrGNtHm9ks3%2B4jyKzES%2BVb8cvHu2sCOKqUygeiHZPqhSoAK2Yk7cMg88h%2FMpBZHWBM%2Bqs01BKYqTKYpTPgxq9sDLvGHFctK0DX2S%2Fo4qkf1SDHjCn0t28Q7EUzQbvMONYI9HIkavjYRqDHhrUOf5v%2FVhoCfPPlA85GIfADPv%2FegjR9jRP3j9rPSs5tFPrQ87py6CPc6153A%2BjzyflgoN%2FR1kNfNhu3B318X0%2FODEpWICtxSkzEgeaUoW%2FjzW3Q%2Br%2FvD9jkREKOVh%2FIJwEDEzEoiGiM66CcxeFkkX5cF0PPcgwZICGYGOomuvjwANlVRUCaEkDqEkD229XFTzBJJBYigVxckrjVw9N%2BCujkj7%2B3O0RVZ1XF%2BSElfPnwcIsu0lHRw1cfI%2Fyo8VoDabZWjQGIbE5dCkCvg%2F5rCoC7xpzZNwXMcY23TguarYEuiQP45PrpHGROfTm8EitfuclphBh4CUB%2F79D1tpy4TXvghhjFbGa%2Bi1z%2B%2BR8fviLRmedbTv5XLpKvn2FZDQPgh%2BnnZv2Tgi3A3stX3O8ihtcZu1ZrWJ8tJjWEfy3rzqkPMOz4Sqt%2Fjje%2Fx8lzSkTbjHE7D0DmxUl4IOurJYv4Y4Cc1RUhJzMyuxLItWdkOnEYxtFTCjM0L0%2FTpYv7%2BhSu1h2Ow3wRZi7wDRGjYIiWZus8RMxPPtDLV5WhFIMziRFyNlDh6hn3zBsYpsTxia0GhxorClk14o969Edz4yue5PoBLnte6HMxdUVKyY7v2w0OdQaD%2BWbPET06W%2BX%2BHIIBNx%2B7jQd4%2F9dt3SG8lTrQPNOzZOpgY3fLKnXA4hlYayJhXZOtc01tWz9oWkVBSIx%2BHprYj9E%2FXYDE%2FZjddRcvMkRQ9YKeuo2tJTXh8FyFRJBAz39bffqL4IOkpl%2BJWz3CrRzImn9ao67Da8dYi1epDdUeXpHhMvFdF9adhsPcR2hTucvCEllCJwcMlzlVyNZ8jcbd1KwqjUw966hG3ZHXsP9QMB0z7gkiBiS69%2FIEg1dZ7TsW21pGt8uRri5yRGb09SQcacXoYzE%2BMZhTjsG5U5g%2FyzjJZvE0jkAwKvbaosA%2FZq2XoBCACQxs4DxPyQXzK7jQAwuCP%2FbpWn7cHEwhFyYetCDKNF4kDixphVJgE32awqz0nfAotgVBAtHiyX8Rh7NjibIbKMdKfn%2BJClKry7R4FEcpUeJpLfn%2Bm5TnyqDN%2FuRZSKwmzWok5BhFSu7BIwG9il1yT3zk3742L%2BmNZ1FVqeXK8HMbRwS5ym2AbISQSpGkB26OlCoa5OQv4hRHi5akuHBrqHBBOuOn7lcZFBI8CPW%2B7Hr5VQdJAt5L585jP8rS9WcWo7rFZyhFhLoanOmZq1BWQxwd0PLHQEDJn0RzsI2XZ8zWgsKNg1vXHdOEn1N5mtlXDXcXuK%2FmzU7iLIvDNnShJHx2jPqQ3IYsPDKcLVpfxVRhdDxwkaChhhj%2BlI8RJ2jwlVjG778S4gKriVIa3DlWscod0UMxFPotdhfYyft76YNtaS%2FFQQ0tpQd8jBghw1%2B1wqLu%2F9MaaxPElLBQw0nFw358WCGjTKK6Mvl6iR3mVocUw1xc0eqri8urohZrmBuy%2FUdy%2FWoE%2FPaS1ueQZMk7Xnqj43PP7irHo59U729Hw6vB9dU9PkOoF9PHaIgNV9l43sQzZSj2oNsDYBWKN6%2BysYDRIfsPocrG0Nn22jIbI%2FfJt5DTFrlPeKFdA%2BA52jmJCfVUCVoaCUMR4O828PSQh11NEnr6uaBZS%2BVoFE8TthxFxxVnbgI8vFzGn2k2QdvBKMQBV04Oq2do%2B85yZ%2Fqqp5qifp0Le04%2FwkxIoPMU%2BGm97uwckFyYlOWzz1ZiqDlujNGA%2FDncIINnO5Zcc8uVpupDnD59jmlAWXC7mKDHgr1xZPOGRnONcB%2FUWJabB4HZV4u6zSOihlFJt%2B8cUpRW4EYEX%2BsWbcyzVlarVjUsp8B8miR1bozJsHbLkG%2BE%2BTh77240%2FPPt7Y0yISO7BxG5O8KJiH4R7ZUiPXzq70QRs1IipW9IEbONEnmBIi7MZOu%2B4YxUn%2Fh53g%2BpX17BFYk9j67AwTbJOWdsU8EioZJi2ui2qjUDzfPpBwypdUXpUqrkxpmlZLINhFzPAamuHColn73t0DmZHYDXMC%2FaF%2FU0Ke2CcdZBTkro9nFCTbaop4uvRP5DUkxaRU45SbbbBvfzZRz972RzfgpsPV0EW%2F%2FgCg4x2KDrZ08utYorYLNLcs%2BENM5NNZtE4xPtuBvlPsb3smMdj35tBc3U87vB%2BEE205zso48TqN8XCXSYSwhEGN8FGfygruYNFaxwCaEQ1Oy7P3EhLjYQ8Mfe9jYM9oBaysDEWco308V7wfBAaCCiDhzqNB5%2F4IJ2pZDFyfmOE6L5%2FR7axKEeGu41teJXMjYsa2t35kBQ%2F1ixet6jBq8UFhwatUYzVYithCnSwGzCoWVTc77iMDH6XvjWFpMOr4nHj8QGxHkMfy5gusFk06SK3z6bfyOot41uLa95WQfvFoviEbzn1D1Yg%2Fctne7xhdyiyqOHl74%2FuJIz8WYz69l7uhIgLlTSP%2B7%2BcrTrlSyrbDFA%2BS7oPRUUjoo5qrMPk8d1PAf2ZHxYkqRWbUtWNXikbclaVfybOE33H1Dw4qSegsj7ZhLFL0C%2FqAEzKv6ibXgxJqNQX85uFN3W%2FlgDxoY9PTd5ZXPtXlNazy3upMsCwVl8cqHuYomgyUyl%2FftQHVBfXf%2B9ECASEI2L3X0sLBcKhoxoQDewgEZDAkE8XWzbrGVDqtikvjhaYcqVPKakk0BUMt%2F6Nv8SaxeEcH08PblEdxGnk3bq3T%2BDZI0xv87iNZhiJMJdFLZpislJg0aRQNeHpPBgxzkezMwMMa55NACwCN0KFxRbuPPpEDsNTlTZCVWsg6RKiBAK6vbZjDln0F6xQcM3erzEVzu4aoI0bDy7pcvS2bTYjSdVHpsT7TPWqEabk5s%2BsWUn0e3OhmxpdzEzhRHOXq7mf%2FjUBSuAB9NhFxlS4%2BvHHxibziyig6wz8QKGfrRlHG8tiToE0HCeEmNLV%2BweURbpAuBBwYDkOuMv4yh4b58jpmfIOdKfmM7eu%2BQ2EiKUcqS%2Fd464sVMPRVPrizuHsBqdi0EN6t%2B9PV8XQthoFkFjWIStGF6kB5LDmb2QEjITXRpk%2BlD9ugEqrNtOE0sjSbfVV4sc5sSCALtJamEdWqu8yJRNTQXRS5xqI93wK28Ub%2BLZFE830RTkGVBvkHYgk8QQpTufSfLZW%2BlhnVxqjTihtY65nl95Msv%2B%2BPVz4f%2F6Bevz0s20cM1Ss16lqShCiF1TaDyyMS7x4ex4dhLc7ELysewOuZ9g7BC2lXrzsRn6NCc1Qhqz0mhSSpruQZCG5BZKOtGKr%2FFQn3mY81nI7%2F1ZrLQxwmJGsZKtw%2BL9DXJqnMB0EbRg%2B%2BVN%2FPDKp9xGo%2FJWJo2VkDiyBGjFtEGWwXCeXbkn31tTBLO6hzwrFTWHOF%2B%2BJs2tq6BXlsjtrTOCWGdZ741SKz7bEgt76YxSrRJqtLh9FR%2F3KlZRbktFy5%2FKEUu2XNxyEu6Sqp8jlS%2B9hV11ejxsCZfFJ5Vxtc7kSGVMb2FJDQPLvGlV8gffr0YmfClCqsUhx42QuaS%2FWSmjsmmMHGarvNawU2QJHilq8A0s0SqiF4YdI3pjWtU4QlfRo1A%2FBTp%2BZ8VDbuMF%2FKeMy6ro5KaHUDR1pNLFBTDSfmj%2FsNdb5Eoi3IH8f8u2aHVoLEPPivbTxwOeOUglJd703cslT6PK8htJPLn0YviTxdIkqIR6n6MDFRnkC305Zk0d5ZgZ4jZ5tIOeenOplNrtDQelb3B3vrN%2FrkbfR3dsgLpqD%2B6u7h%2FwUX8%2F5pfr%2Fou%2FFnvq0SE03FYPeOYSf7bllr%2FZqq1ed6JroK8cRlu9Xp48t7atXotFny%2F%2Bq7yt3n05rp%2BRLu0094fjCycul6Oxn44NlbuJ5XBvPx%2BoaIuk1vM36K0XYbLe%2Bx5CQAbsyykD%2BqbpFVVz%2BwkBFYrqN%2Bu3hymSQpBIXqUsw9GKXkkNFvzkT7utxntFz2hLqb0OsJLOVLhf8noF88BipkdNmGrJgux9gvvNLyWTygfai%2F0kbxVk7xGkL3Odzwiz%2BOsHt8w3rdOltQZiJdt%2FbcewqEQsknZQzv6xLFZQV61%2BODGrIWaZG7ypc%2F%2FMmrtefSISUpdpQqlDbbNzApOGyhquohIAzUhqGe2YULYw2ZC3apO008wvraiXT7SH2MRgPTuabGPwWXb01r93%2BQAsNZINt2lr5EmR499Q4iifaFrKHZW%2B7Jku16Ipt9m06lzC5qHnPDdO8mLd0xzSiHXGKXFYkwihSQae6y3OriknQhk91uQeb0Mcll7JLLNysmWrBppFexzyvFlDZA62RGnTg4oFxzryR9xWm5ee36mIYUdT0CGTK5HUMdBmwqtyr%2Buup7zlvXWOGTj1y5be9i63L1%2B%2B8FTsdogmTlh5GwRLK3ULESMl1Fk9ZLXuoEpInrgtPpq8f8K5M2uffgfdxurTjrpqjzcZ%2Bax9ka9wZQvOuiZDaSvtkr3F50UPfi0MVvVebg%2BHfURXi7vYWWrv4Uq3LD6pfFcm9R6NfFleL3dvtBYF3y91V2X0Cu6eY5QsfbmdG%2BZvni73SuMxZ%2FKmt4e73C6gYWu20cVf5VsWi2Pf%2F3v%2FMPqGPg3Ov13hkysBa%2FKDDcer%2Bx7wHBm0rA4wJit7Em8er9agbhkT5TDi1Zq6ecA6d5zu3r5Gsl3%2FHrhK5yC2bKU95xoJUzNIt1O5KL4SbpHChL3zDT8QAnGctruHRabmmZ4l40SnZ5rd4pv9LDK52tkqHt2rc2DPXk7MAAaCqkpd1jDroXDkPM9i4aD6ghO%2F8zXdgicFPcZsmLulicSvG5VaueYrTBs7QYVy5kPyeR4zY6ouTxll9uuUwZRJ3%2BuEuaAxIy0s8JNx6wO7FpRSV6Ae0cLcMsEV5JlYX98EZdAwMxjumjPSsAFvSWnRXiz5IWM8ybh8CiUMK5rwn1jUDIt6%2FfUs2pt3hbMoiKeS9iw8Lf4c0%2BeZzzvPFZjRxhIabeOyWx7Rge46jZAkrrwI%2Fty8YqjP%2FLUgrrDnRJhmCKMZ2v7nHbI%2FieOM7WXHXSCRzL4h0uCj%2Fw8%3D";
+
+    function openDiagram() {
+      window.open(DRAWIO_URL, "_blank");
+    }
+
+    async function copyXml() {
+      try {
+        const response = await fetch("web-user-flow.drawio");
+        const text = await response.text();
+        await navigator.clipboard.writeText(text);
+        alert("Đã sao chép toàn bộ mã XML vào clipboard!");
+      } catch (err) {
+        alert("Không thể tự động đọc file XML. Bạn hãy mở file web-user-flow.drawio trong thư mục docs/diagrams.");
+      }
+    }
+  </script>
+</body>
+</html>
