@@ -6,6 +6,7 @@ COPY BuildingBlocks/ ./BuildingBlocks/
 COPY Contracts/ ./Contracts/
 COPY Services/Content/ ./Services/Content/
 COPY Services/Audit/ ./Services/Audit/
+COPY Services/Quiz/ ./Services/Quiz/
 COPY Workers/ ./Workers/
 
 RUN dotnet restore Workers/RecipeHub.BackgroundWorker/RecipeHub.BackgroundWorker.csproj

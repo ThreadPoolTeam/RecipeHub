@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 import { formatVersionLabel, quizManagement, resolveRecipeVersion, type RecipeChoice } from '@/lib/api/quiz-management';
-import { errorText, Message, Pagination } from './management-shared';
+import { errorText, Message } from './management-shared';
 import { Button, SearchInput } from '@/components/workspace/fields';
 import { cardTitleClass } from '@/components/workspace/page-header';
 
@@ -33,7 +33,7 @@ export function ManagementRecipePicker({ actor, value, onChange, disabled }: Man
       quizManagement
         .recipes(actor, search.trim(), page, controller.signal)
         .then((data) => {
-          setChoices(data.items);
+          setChoices((current) => (page === 1 ? data.items : [...current, ...data.items.filter((item) => !current.some((old) => old.id === item.id))]));
           setTotal(data.totalCount);
         })
         .catch((err: unknown) => {
@@ -48,6 +48,19 @@ export function ManagementRecipePicker({ actor, value, onChange, disabled }: Man
       controller.abort();
     };
   }, [actor, search, page, disabled, retry]);
+
+  const sentinelRef = useRef<HTMLLIElement | null>(null);
+  const hasMore = choices.length < total;
+
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || !hasMore || loading || error) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) setPage((current) => current + 1);
+    }, { rootMargin: '80px' });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMore, loading, error, choices.length]);
 
   const selected = choices.find((item) => item.versionId === value);
 
@@ -69,8 +82,8 @@ export function ManagementRecipePicker({ actor, value, onChange, disabled }: Man
       <SearchInput
         placeholder="Tìm công thức đã ban hành theo tên hoặc mã..."
         value={search}
-        onChange={(event) => { setSearch(event.target.value); setPage(1); }}
-        onClear={() => { setSearch(''); setPage(1); }}
+        onChange={(event) => { setSearch(event.target.value); setPage(1); setChoices([]); setTotal(0); }}
+        onClear={() => { setSearch(''); setPage(1); setChoices([]); setTotal(0); }}
         aria-label="Tìm công thức đã ban hành"
       />
       {selectedLabel && (
@@ -78,7 +91,7 @@ export function ManagementRecipePicker({ actor, value, onChange, disabled }: Man
           Đang chọn: <strong className="text-foreground">{selectedLabel}</strong>
         </p>
       )}
-      {loading ? (
+      {loading && choices.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border bg-secondary p-6 text-center text-sm text-muted-foreground" role="status">Đang tải công thức...</p>
       ) : choices.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border bg-secondary p-6 text-center text-sm text-muted-foreground">
@@ -110,11 +123,13 @@ export function ManagementRecipePicker({ actor, value, onChange, disabled }: Man
               </li>
             );
           })}
+          {hasMore && (
+            <li ref={sentinelRef} className="py-2 text-center text-xs text-muted-foreground" role="status">Đang tải thêm công thức...</li>
+          )}
         </ul>
       )}
       <Message error={error} />
       {error && <Button type="button" onClick={() => setRetry((current) => current + 1)}>Thử lại tải công thức</Button>}
-      {total > 12 && <Pagination page={page} total={total} pageSize={12} onPage={setPage} disabled={loading} />}
     </div>
   );
 }

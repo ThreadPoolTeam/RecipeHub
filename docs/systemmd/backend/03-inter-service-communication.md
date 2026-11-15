@@ -26,6 +26,7 @@ Dùng cho các trường hợp cần dữ liệu ngay lập tức, kiểm tra t�
   - Truy vấn ngữ cảnh & kiểm tra quyền: Forward Bearer token của caller qua header metadata `authorization: Bearer <token>` khi gọi `RecipeAiContextQuery` và `QuizRecipeQuery.GetQuizRecipeVersions` để kiểm tra recipe published/active cho Viewer.
 - **Audit Service**:
   - Xác thực phiên: Mọi request vào `/api/v1/audit/*` đều được xác thực bằng cách gọi gRPC `IdentitySession.Validate` tới Identity Service (5011) với deadline 5s. Khi Identity không sẵn sàng: fail-closed ném `AuditDependencyException` map thành HTTP 503, không trả 401 giả. Yêu cầu quyền hạn vai trò `admin`.
+- **Quiz Service**: `QuizRecipeQuery.GetQuizRecipeContent` tới Recipe Service (5012) khi R&D tạo đề bằng AI; forward Bearer token của caller và chỉ chấp nhận role `rnd`.
 
 ### 1.4. Media Metadata Lookup Cho Xuất PDF (`ContentPdfMediaQuery`)
 - **Recipe Service -> Content Service**:
@@ -52,7 +53,8 @@ Cấu hình và đường lùi: [README — Kafka](../../../README.md#kafka); [S
 
 ## 2B. Redis Streams — Hàng Đợi Việc
 
-- Content API relay outbox sang Redis; BackgroundWorker chạy consumer gen ảnh, cleanup file tạm và heartbeat. Content outbox có contract job riêng; sự kiện dùng chung bọc `EventEnvelope<T>`.
+- Content API relay outbox sang Redis; BackgroundWorker chạy consumer gen ảnh, cleanup file tạm, tác vụ AI soạn đề quiz và heartbeat. Content outbox có contract job riêng; sự kiện dùng chung bọc `EventEnvelope<T>`.
+- Quiz publish job vào `quiz.ai-generation.v1`; BackgroundWorker gọi Gemini rồi ghi đề; trạng thái job chỉ ở Redis, không có bảng DB. Payload stream không chứa Bearer token.
 - Consumer groups dùng `XREADGROUP`, xác nhận thành công bằng `XACK`; phục hồi message chưa hoàn thành bằng `XPENDING` / `XCLAIM`. Khi tạo group dùng `MKSTREAM`.
 - PDF render/upload trong request Recipe API, recovery chạy cùng Recipe API; không dùng Redis job hoặc audit receipt riêng cho PDF.
 

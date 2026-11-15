@@ -622,7 +622,7 @@ public class QuizService : IQuizService
         };
     }
 
-    private static void ValidateQuestions(List<QuestionManagementDto> questions)
+    internal static void ValidateQuestions(List<QuestionManagementDto> questions)
     {
         if (questions.Count > 100)
             throw new ArgumentException("A quiz version cannot exceed 100 questions.");
@@ -668,7 +668,7 @@ public class QuizService : IQuizService
         }
     }
 
-    private static QuizManagementDetailDto MapToDetailDto(Domain.Entities.Quiz quiz, QuizVersion version)
+    internal static QuizManagementDetailDto MapToDetailDto(Domain.Entities.Quiz quiz, QuizVersion version)
     {
         return new QuizManagementDetailDto
         {

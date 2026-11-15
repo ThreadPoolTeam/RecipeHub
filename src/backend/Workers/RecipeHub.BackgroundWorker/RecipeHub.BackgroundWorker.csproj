@@ -18,5 +18,8 @@
     <ProjectReference Include="..\..\Services\Content\RecipeHub.Content.Application\RecipeHub.Content.Application.csproj" />
     <ProjectReference Include="..\..\Services\Content\RecipeHub.Content.Domain\RecipeHub.Content.Domain.csproj" />
     <ProjectReference Include="..\..\Services\Audit\RecipeHub.Audit.Infrastructure\RecipeHub.Audit.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Services\Quiz\RecipeHub.Quiz.Application\RecipeHub.Quiz.Application.csproj" />
+    <ProjectReference Include="..\..\Services\Quiz\RecipeHub.Quiz.Infrastructure\RecipeHub.Quiz.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Services\Quiz\RecipeHub.Quiz.Domain\RecipeHub.Quiz.Domain.csproj" />
   </ItemGroup>
 </Project>

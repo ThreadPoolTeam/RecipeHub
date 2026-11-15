@@ -79,4 +79,38 @@ public class QuizRecipeClient : IQuizRecipeClient
             throw new RecipeHub.Quiz.Application.Exceptions.QuizDependencyException($"Failed to communicate with Recipe service via gRPC: {ex.Status.Detail ?? ex.Message}", ex);
         }
     }
+
+    public async Task<QuizRecipeContent> GetRecipeContentAsync(
+        Guid versionId, string bearerToken, CancellationToken cancellationToken = default)
+    {
+        var metadata = new Metadata();
+        if (!string.IsNullOrWhiteSpace(bearerToken))
+        {
+            var headerValue = bearerToken.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+                ? bearerToken : $"Bearer {bearerToken}";
+            metadata.Add("authorization", headerValue);
+        }
+
+        try
+        {
+            var response = await _client.GetQuizRecipeContentAsync(
+                new GetQuizRecipeContentRequest { RecipeVersionId = versionId.ToString() },
+                headers: metadata, deadline: DateTime.UtcNow.AddSeconds(5), cancellationToken: cancellationToken);
+            if (!response.IsSuccess)
+                throw new RecipeHub.Quiz.Application.Exceptions.QuizDependencyException($"Recipe service returned error: {response.ErrorMessage}");
+
+            return new QuizRecipeContent(
+                Guid.Parse(response.RecipeVersionId), response.Title, response.Description, response.CategoryName,
+                response.Ingredients.Select(i => new QuizRecipeIngredient(
+                    i.Name, i.Quantity, i.UnitName, i.StageName, i.Note)).ToList(),
+                response.Steps.Select(s => new QuizRecipeStep(
+                    s.SortOrder, s.Title, s.Description, s.HasDurationSeconds ? s.DurationSeconds : null,
+                    s.HasTemperatureCelsius ? s.TemperatureCelsius : null,
+                    s.Equipment, s.CompletionCriteria, s.SafetyNote)).ToList());
+        }
+        catch (RpcException ex)
+        {
+            throw new RecipeHub.Quiz.Application.Exceptions.QuizDependencyException($"Failed to communicate with Recipe service via gRPC: {ex.Status.Detail ?? ex.Message}", ex);
+        }
+    }
 }
