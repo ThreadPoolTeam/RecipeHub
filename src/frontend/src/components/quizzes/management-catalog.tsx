@@ -2,10 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Plus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Plus, Sparkles } from 'lucide-react';
 import { quizManagement, type ManagementResult, type QuizSummary } from '@/lib/api/quiz-management';
 import { Button } from '@/components/workspace/fields';
 import { ManagementFrame, Message, Pagination, errorText, useManagementContext } from './management-shared';
+import { ManagementAiGenerateDialog } from './management-ai-generate-dialog';
+import { ManagementAiJobsBanner } from './management-ai-jobs-banner';
+import { useQuizAiJobFeedback } from './management-ai-feedback';
+import { useQuizAiJobs } from './use-quiz-ai-jobs';
 import { QuizCard } from './quiz-card';
 import { QuizFilterBar, type QuizStateFilter } from './quiz-filter-bar';
 import { QuizStats } from './quiz-stats';
@@ -13,6 +18,7 @@ import { QUIZ_PAGE_SIZE, loadAllQuizzes, loadRecipeLabels, summarizeAttempts } f
 
 export function ManagementCatalog() {
   const { session, base } = useManagementContext();
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const [stateFilter, setStateFilter] = useState<QuizStateFilter>('all');
   const [page, setPage] = useState(1);
@@ -23,6 +29,11 @@ export function ManagementCatalog() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [retry, setRetry] = useState(0);
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
+
+  const reloadQuizzes = useCallback(() => setRetry(value => value + 1), []);
+  const onJobFinished = useQuizAiJobFeedback(base, reloadQuizzes);
+  const ai = useQuizAiJobs(session?.userId, onJobFinished);
 
   const load = useCallback(async (signal: AbortSignal) => {
     if (!session) return;
@@ -77,13 +88,32 @@ export function ManagementCatalog() {
       title="Bộ Quiz"
       description="Xem các bộ đề theo công thức và tạo bộ đề mới."
       actions={
-        <Link href={`${base}/new`}>
-          <Button variant="primary" size="sm">
-            <Plus className="w-4 h-4 mr-1" strokeWidth={1.5} /> Tạo bộ đề
+        <>
+          <Button variant="primary" size="sm" onClick={() => setAiDialogOpen(true)}>
+            <Sparkles className="w-4 h-4 mr-1" strokeWidth={1.5} /> Tạo đề bằng AI
           </Button>
-        </Link>
+          <Link href={`${base}/new`}>
+            <Button size="sm">
+              <Plus className="w-4 h-4 mr-1" strokeWidth={1.5} /> Tạo bộ đề
+            </Button>
+          </Link>
+        </>
       }
     >
+      <ManagementAiJobsBanner
+        jobs={ai.jobs}
+        onCancel={ai.cancel}
+        quizHref={(job) => (job.quizId ? `${base}/${job.quizId}?version=${job.versionNumber ?? 1}` : null)}
+        onRetry={(job) => {
+          if (job.kind === 'generate') setAiDialogOpen(true);
+          else if (job.quizId) router.push(`${base}/${job.quizId}?version=${job.versionNumber ?? 1}`);
+        }}
+      />
+      <ManagementAiGenerateDialog
+        open={aiDialogOpen}
+        onClose={() => setAiDialogOpen(false)}
+        onAccepted={() => ai.reload()}
+      />
       <QuizStats published={counts.published} attempts={attemptTotal} passRate={summary.passRate} average={summary.average} />
       <QuizFilterBar
         search={search}

@@ -13,6 +13,22 @@ export interface RecipeVersionInfo { code: string; name: string; versionNumber: 
 export interface RecipeVersionChoice { id: string; versionNumber: number; status: string; name: string }
 export interface ManagementResult { attemptId: string; quizId: string; quizCode: string; quizTitle: string; versionNumber: number; userRef: string; state: string; score: number | null; isPassed: boolean | null; passingScore: number; startedAt: string; submittedAt: string | null }
 export interface ManagementResultDetail extends Omit<ManagementResult, 'score' | 'isPassed'> { score: number; isPassed: boolean; answers: { questionId: number; content: string; explanation: string | null; selectedOptionId: number | null; correctOptionId: number | null; isCorrect: boolean; options: { id: number; sortOrder: number; content: string; isCorrect: boolean }[] }[] }
+export type QuizAiJobKind = 'generate' | 'more';
+export type QuizAiJobStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
+export interface QuizAiJob {
+  jobId: string;
+  kind: QuizAiJobKind;
+  status: QuizAiJobStatus;
+  recipeTitle: string;
+  questionCount: number;
+  quizId?: string | null;
+  versionNumber?: number | null;
+  questionsAdded?: number | null;
+  errorMessage?: string | null;
+  createdAt: string;
+  finishedAt?: string | null;
+}
+export interface QuizAiJobAccepted { jobId: string; status: QuizAiJobStatus }
 const root = 'api/v1/quiz/management';
 async function call<T>(actor: string, path: string, method = 'GET', body?: unknown, signal?: AbortSignal): Promise<T> {
   return await requestJson(path, actor, { method, ...(body === undefined ? {} : { body: JSON.stringify(body) }), signal }) as T;
@@ -36,6 +52,11 @@ export const quizManagement = {
   allRecipes: (actor: string, page: number, signal?: AbortSignal) => call<{ items: RecipeChoice[]; totalCount: number }>(actor, `api/v1/recipes?${query({ page, pageSize: 100 })}`, 'GET', undefined, signal),
   results: (actor: string, filters: { quizId?: string; userRef?: string; version?: number; page?: number; pageSize?: number }, signal?: AbortSignal) => call<QuizPage<ManagementResult>>(actor, `${root}/results?${query(filters)}`, 'GET', undefined, signal),
   result: (actor: string, id: string, signal?: AbortSignal) => call<ManagementResultDetail>(actor, `${root}/results/${id}`, 'GET', undefined, signal),
+  aiGenerate: (actor: string, body: { recipeVersionId: string; questionCount: number }) => call<QuizAiJobAccepted>(actor, `${root}/quizzes/ai-generate`, 'POST', body),
+  aiGenerateMore: (actor: string, id: string, version: number, body: { questionCount: number }) => call<QuizAiJobAccepted>(actor, `${root}/quizzes/${id}/ai-generate-more?version=${version}`, 'POST', body),
+  aiJobs: (actor: string, signal?: AbortSignal) => call<QuizAiJob[]>(actor, `${root}/quizzes/ai-jobs`, 'GET', undefined, signal),
+  aiJob: (actor: string, jobId: string, signal?: AbortSignal) => call<QuizAiJob>(actor, `${root}/quizzes/ai-jobs/${jobId}`, 'GET', undefined, signal),
+  aiCancel: (actor: string, jobId: string) => call<QuizAiJob>(actor, `${root}/quizzes/ai-jobs/${jobId}/cancel`, 'POST'),
 };
 const versionInfoCache = new Map<string, RecipeVersionInfo>();
 export function formatVersionLabel(versionNumber: number) { return `v${versionNumber}.0`; }
