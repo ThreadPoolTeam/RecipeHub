@@ -210,6 +210,7 @@ services:
       - ConnectionStrings__Redis=redis:6379
       - ConnectionStrings__ContentDb=Host=postgres;Port=5432;Database=${CONTENT_DB_NAME:-recipehub_content};Username=${CONTENT_DB_USER:-content_user};Password=${CONTENT_DB_PASSWORD:-content_pw}
       - ConnectionStrings__AuditDb=Host=postgres;Port=5432;Database=${AUDIT_DB_NAME:-recipehub_audit};Username=${AUDIT_DB_USER:-audit_user};Password=${AUDIT_DB_PASSWORD:-audit_pw}
+      - ConnectionStrings__QuizDatabase=Host=postgres;Port=5432;Database=${QUIZ_DB_NAME:-recipehub_quiz};Username=${QUIZ_DB_USER:-quiz_user};Password=${QUIZ_DB_PASSWORD:-quiz_pw}
       - Grpc__RecipeServiceUrl=http://recipe-service:5012
       - TemporaryStorage__BasePath=/app/temp-drafts
       - GEMINI_API_KEYS=${GEMINI_API_KEYS:-}
