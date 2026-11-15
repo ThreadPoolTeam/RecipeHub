@@ -47,7 +47,7 @@ export const quizManagement = {
   clone: (actor: string, id: string, sourceVersion: number) => call<QuizDetail>(actor, `${root}/quizzes/${id}/clone`, 'POST', { sourceVersion }),
   deleteQuiz: (actor: string, id: string) => call<null>(actor, `${root}/quizzes/${id}`, 'DELETE'),
   deleteVersion: (actor: string, id: string, version: number) => call<null>(actor, `${root}/quizzes/${id}/questions?version=${version}`, 'DELETE'),
-  recipes: (actor: string, search: string, page: number, signal?: AbortSignal) => call<{ items: RecipeChoice[]; totalCount: number }>(actor, `api/v1/recipes?${query({ query: search, state: 'active', versionStatus: 'published', page, pageSize: 12 })}`, 'GET', undefined, signal),
+  recipes: (actor: string, search: string, page: number, signal?: AbortSignal) => call<{ items: RecipeChoice[]; totalCount: number }>(actor, `api/v1/recipes?${query({ query: search, state: 'active', versionStatus: 'published', page, pageSize: 10 })}`, 'GET', undefined, signal),
   recipeVersions: (actor: string, id: string, signal?: AbortSignal) => call<RecipeVersionChoice[]>(actor, `api/v1/recipes/${id}/versions`, 'GET', undefined, signal),
   allRecipes: (actor: string, page: number, signal?: AbortSignal) => call<{ items: RecipeChoice[]; totalCount: number }>(actor, `api/v1/recipes?${query({ page, pageSize: 100 })}`, 'GET', undefined, signal),
   results: (actor: string, filters: { quizId?: string; userRef?: string; version?: number; page?: number; pageSize?: number }, signal?: AbortSignal) => call<QuizPage<ManagementResult>>(actor, `${root}/results?${query(filters)}`, 'GET', undefined, signal),
