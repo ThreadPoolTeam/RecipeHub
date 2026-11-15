@@ -14,7 +14,7 @@
 - **Project Name:** RecipeHub
 - **Domain:** Coffee & Beverage R&D Formula Management System (Hệ thống quản lý công thức R&D chuỗi đồ uống)
 - **Target Course:** PRN232 / PRM Semester 8 (FPT University)
-- **Architecture:** .NET 8 Microservices Clean Architecture, YARP Reverse Proxy Gateway, PostgreSQL (database-per-service), Redis Streams, gRPC, Next.js 16 App Router, Docker Compose.
+- **Architecture:** .NET 8 Microservices Clean Architecture, YARP Reverse Proxy Gateway, PostgreSQL (database-per-service), Kafka (audit), Redis Streams (AI jobs), gRPC, Next.js 16 App Router, Docker Compose.
 
 ---
 
@@ -61,7 +61,7 @@ RecipeHub/
    - `Api` references `Infrastructure`, `Application`, and `BuildingBlocks`.
 2. **Inter-Service Communication:**
    - Synchronous RPC: Use **gRPC** via contracts defined in `src/backend/Contracts/RecipeHub.GrpcContracts`.
-   - Asynchronous Messaging: Use **Redis Streams** via `EventEnvelope<T>` in `BuildingBlocks` with explicit consumer groups (`XREADGROUP` + `XACK`).
+   - Asynchronous Messaging: Use **Kafka** for audit events and **Redis Streams** for AI image job queues, via `EventEnvelope<T>` in `BuildingBlocks`; Redis uses explicit consumer groups (`XREADGROUP` + `XACK`).
    - External Gateway: Use **YARP** routes prefixed with `/api/v1/{service-name}/*`.
 3. **Database Isolation:**
    - Logical Database-per-service: `recipehub_identity`, `recipehub_recipe`, `recipehub_content`, `recipehub_audit`, `recipehub_quiz`.

@@ -1,6 +1,6 @@
 # Backend 03: Giao Tiếp Liên Dịch Vụ (Inter-Service Communication)
 
-Hệ thống kết hợp hai hình thức giao tiếp tùy thuộc vào tính chất nghiệp vụ: Đồng bộ (gRPC) và Bất đồng bộ (Redis Streams).
+Hệ thống kết hợp ba hình thức: gRPC cho truy vấn đồng bộ, Kafka cho audit, Redis Streams cho hàng đợi việc ảnh AI và heartbeat.
 
 ---
 
@@ -36,31 +36,30 @@ Dùng cho các trường hợp cần dữ liệu ngay lập tức, kiểm tra t�
 
 ---
 
-## 2. Giao Tiếp Bất Đồng Bộ: Redis Streams
+## 2A. Kafka — Sổ Sự Kiện Audit
 
-Dùng cho việc thông báo sự kiện (Domain Events / Integration Events) khi trạng thái thay đổi, kích hoạt tác vụ chạy nền (Background Tasks, AI generation, Audit logging).
-
-### 2.1. Cấu Trúc Phong Bì Sự Kiện (`EventEnvelope<T>`)
-Được cung cấp bởi `RecipeHub.BuildingBlocks`. Sự kiện dùng chung tuân theo [`EventEnvelope<T>`](../../../src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Events/EventEnvelope.cs): `EventId`, `EventType`, `OccurredAtUtc`, `CorrelationId`, `Source`, `SchemaVersion`, `Payload`. Không tự thêm envelope khác cho cùng contract; Content outbox có contract job riêng.
-
-### 2.2. Cơ Chế Tiêu Thụ (Consumer Groups)
-- Dùng Redis Consumer Groups (`XREADGROUP`) đảm bảo:
-  - Từng tin nhắn chỉ được xử lý bởi một worker trong cùng group.
-  - Phục hồi tin nhắn chưa hoàn thành khi worker gặp sự cố (`XPENDING` / `XCLAIM`).
-  - Xác nhận xử lý thành công bằng `XACK`.
-- Background Worker đặt tại `src/backend/Workers/RecipeHub.BackgroundWorker/`.
-- Khi tạo consumer group, sử dụng `MKSTREAM` để tự động tạo stream nếu chưa tồn tại.
-
-### 2.3. Pipeline Nhật Ký Kiểm Toán (Audit Activity Pipeline)
-- **Stream:** `audit.activities.v1`
-- **Consumer Group:** `recipehub-audit` (thuộc `RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer`).
+- Topic: `recipehub.audit.activities.v1`; khóa: `TargetId.ToString("N")`.
+- Nhóm `recipehub-audit`, `AuditKafkaConsumer` chạy trong BackgroundWorker; DLQ: `recipehub.audit.activities.v1.dlq`.
+- Dùng chung [`EventEnvelope<T>`](../../../src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Events/EventEnvelope.cs). Publisher best-effort, không ném lỗi về caller, không rollback nghiệp vụ đã commit.
+- Tắt auto-commit/auto-offset-store; commit offset sau khi ghi DB thành công hoặc nhận diện trùng `EventId`. Message hỏng hoặc hết lượt thử chuyển DLQ; chỉ commit khi DLQ gửi thành công. DLQ lỗi thì giữ offset để xử lý lại.
+- Audit ghi append-only vào `audit_log`; runtime `audit_user` chỉ có `SELECT` và `INSERT`.
 - **Các nhà xuất bản (Producers):**
-  - **Identity Service**: `user.created`, `user.updated`, `user.role_changed`, `user.locked`, `user.unlocked`, `user.password_reset`.
+  - **Identity Service**: `user.created`, `user.updated`, `user.profile_updated`, `user.role_changed`, `user.locked`, `user.unlocked`, `user.password_reset`.
   - **Recipe Service**: `recipe.created`, `recipe.version_created`, `recipe.updated`, `recipe.published`, `recipe.archived`, `recipe.activated`.
   - **Quiz Service**: `quiz.created`, `quiz.updated`, `quiz.published`, `quiz.archived`, `quiz.deleted`, `quiz.version_deleted`, `quiz.version_cloned`, `quiz.attempt_submitted`.
-- **Nguyên tắc độ tin cậy:** Producer publish best-effort; lỗi Redis không rollback business transaction đã commit. Consumer xác thực schema drift, ghi append-only vào `audit_log` với quyền tối thiểu (`audit_user` chỉ có `SELECT` & `INSERT`).
 
-### 2.4. Phân Công Tác Vụ Nền
+Cấu hình và đường lùi: [README — Kafka](../../../README.md#kafka); [ServiceOptions](../../../src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Configuration/ServiceOptions.cs).
 
-- Content API relay outbox sang Redis; BackgroundWorker chạy consumer gen ảnh, cleanup file tạm và Audit consumer bên cạnh heartbeat.
+## 2B. Redis Streams — Hàng Đợi Việc
+
+- Content API relay outbox sang Redis; BackgroundWorker chạy consumer gen ảnh, cleanup file tạm và heartbeat. Content outbox có contract job riêng; sự kiện dùng chung bọc `EventEnvelope<T>`.
+- Consumer groups dùng `XREADGROUP`, xác nhận thành công bằng `XACK`; phục hồi message chưa hoàn thành bằng `XPENDING` / `XCLAIM`. Khi tạo group dùng `MKSTREAM`.
 - PDF render/upload trong request Recipe API, recovery chạy cùng Recipe API; không dùng Redis job hoặc audit receipt riêng cho PDF.
+
+### Chọn Kênh Khi Thêm Luồng Mới
+
+| Nhu cầu | Kênh |
+|---|---|
+| Truy vấn cần kết quả ngay | gRPC |
+| Nhật ký sự kiện nghiệp vụ | Kafka |
+| Hàng đợi việc nền (ảnh AI), heartbeat | Redis Streams |

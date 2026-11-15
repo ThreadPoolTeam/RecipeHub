@@ -1,5 +1,25 @@
 namespace RecipeHub.BuildingBlocks.Configuration;
 
+public enum AuditTransport { Redis, Dual, Kafka }
+
+public sealed class MessagingOptions
+{
+    public const string SectionName = "Messaging";
+    public AuditTransport AuditTransport { get; set; } = AuditTransport.Redis;
+}
+
+public sealed class KafkaOptions
+{
+    public const string SectionName = "Kafka";
+    public string BootstrapServers { get; set; } = string.Empty;
+    public string ClientId { get; set; } = AppDomain.CurrentDomain.FriendlyName;
+    public string AuditTopic { get; set; } = "recipehub.audit.activities.v1";
+    public string AuditDlqTopic { get; set; } = "recipehub.audit.activities.v1.dlq";
+    public string AuditConsumerGroup { get; set; } = "recipehub-audit";
+    public int MaxDeliveryAttempts { get; set; } = 3;
+    public int ProduceTimeoutMs { get; set; } = 3000;
+}
+
 public sealed class DatabaseOptions
 {
     public const string SectionName = "Database";

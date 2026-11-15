@@ -21,7 +21,7 @@ docs/systemmd/
 └── backend/
     ├── 01-clean-architecture-layers.md  # 4 tầng chuẩn (Domain, Application, Infrastructure, Api)
     ├── 02-services-and-boundaries.md    # Ranh giới 5 service: Identity, Recipe, Quiz, Content, Audit
-    ├── 03-inter-service-communication.md # Đồng bộ gRPC + Bất đồng bộ Redis Streams EventEnvelope
+    ├── 03-inter-service-communication.md # gRPC + Kafka (audit) + Redis Streams (hàng đợi việc), EventEnvelope
     ├── 04-database-first-persistence.md # Quy chuẩn DB-First, schema versioning, EF Core mapping
     └── 05-gateway-and-api-conventions.md # YARP routing, REST conventions, Swagger, Error handler
 ```
@@ -37,7 +37,7 @@ docs/systemmd/
 2. **Backend:**
    - Clean Architecture 4 layer độc lập. Domain không phụ thuộc gì.
    - DB First tuyệt đối: Schema PostgreSQL là nguồn sự thật (SSOT). Cấm EF Code First / dotnet ef migrations / MigrateAsync.
-   - Giao tiếp liên service: gRPC cho truy vấn đồng bộ; Redis Streams cho sự kiện bất đồng bộ.
+   - Giao tiếp liên service: gRPC cho truy vấn đồng bộ; Kafka cho sự kiện nhật ký (audit); Redis Streams cho hàng đợi việc ảnh AI.
    - YARP API Gateway là điểm vào duy nhất: `/api/v1/{service}/*`.
    - Mọi backend API bắt buộc có Swagger UI sẵn sàng cho Development.
 

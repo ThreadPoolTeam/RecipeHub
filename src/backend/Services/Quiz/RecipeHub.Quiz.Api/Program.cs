@@ -62,7 +62,7 @@ if (!string.IsNullOrWhiteSpace(redisConn))
 {
     builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(_ => StackExchange.Redis.ConnectionMultiplexer.Connect(redisConn));
 }
-builder.Services.AddAuditActivityPublisher();
+builder.Services.AddAuditActivityPublisher(builder.Configuration);
 
 var app = builder.Build();
 

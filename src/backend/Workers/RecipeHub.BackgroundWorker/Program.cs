@@ -6,7 +6,7 @@ var builder = Host.CreateApplicationBuilder(args);
 
 builder.Services.AddContentWorkerInfrastructure(builder.Configuration);
 builder.Services.AddAuditInfrastructure(builder.Configuration);
-builder.Services.AddAuditConsumer();
+builder.Services.AddAuditConsumer(builder.Configuration);
 
 
 builder.Services.AddHostedService<StreamConsumerWorker>();

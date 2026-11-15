@@ -35,7 +35,7 @@ Mọi service backend trong `src/backend/Services/<ServiceName>/` đều tuân t
 
 Đặt tại `src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/`.
 - Cung cấp:
-  - `EventEnvelope<T>`: Cấu trúc phong bì chuẩn cho mọi sự kiện truyền qua Redis Streams.
+  - `EventEnvelope<T>`: Cấu trúc phong bì chuẩn cho mọi sự kiện truyền qua Kafka hoặc Redis Streams.
   - Base options & cấu hình chung.
   - Các tiện ích serialization, paging metadata, shared value types.
 - Tất cả microservices dùng chung thư viện này để bảo đảm tính tương thích giao thức.
