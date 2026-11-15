@@ -112,7 +112,8 @@ echo "  Verifying BackgroundWorker log entry (up to 15s)..."
 ACK_LOG_FOUND=0
 for i in {1..15}; do
   WORKER_LOGS=$(docker logs "$WORKER_CONTAINER" 2>&1 || true)
-  if echo "$WORKER_LOGS" | grep -q "\[ACK\]"; then
+  # Here-string thay cho pipe: với pipefail, grep -q thoát sớm làm echo nhận SIGPIPE khi log dài.
+  if grep -q "\[ACK\]" <<< "$WORKER_LOGS"; then
     ACK_LOG_FOUND=1
     break
   fi
@@ -121,7 +122,7 @@ for i in {1..15}; do
 done
 
 if [ "$ACK_LOG_FOUND" -eq 1 ]; then
-  echo "$WORKER_LOGS" | grep "\[ACK\]" | tail -n 2
+  grep "\[ACK\]" <<< "$WORKER_LOGS" | tail -n 2
   echo "  [OK] Worker processing & ACK log entry confirmed."
 else
   echo "[FATAL] No ACK log entry found in $WORKER_CONTAINER logs!" >&2
@@ -130,6 +131,8 @@ fi
 
 # 5. Verify Kafka broker, topics and consumer group
 echo "[5/7] Testing Kafka Broker, Topics & Audit Consumer Group..."
+# Git Bash on Windows rewrites /opt/... container paths; disable that conversion (no-op on Linux).
+export MSYS_NO_PATHCONV=1
 if ! KAFKA_HEALTH=$(docker inspect --format '{{.State.Health.Status}}' recipehub-kafka); then
   echo "[FATAL] Cannot inspect Kafka container 'recipehub-kafka'." >&2
   exit 1
