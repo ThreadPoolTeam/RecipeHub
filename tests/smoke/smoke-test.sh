@@ -39,12 +39,12 @@ if ! docker ps --format '{{.Names}}' | grep -q "$WORKER_CONTAINER"; then
 fi
 
 # 1. Test Gateway Health
-echo "[1/6] Checking YARP Gateway Health..."
+echo "[1/7] Checking YARP Gateway Health..."
 curl -s -f "$GATEWAY_URL/health/live" > /dev/null
 echo "  [OK] Gateway Liveness Probe passed."
 
 # 2. Authenticate R&D demo user & test proxied service info endpoints
-echo "[2/6] Authenticating $SMOKE_USER via Gateway & Testing Proxied Service Info (/api/v1/{service}/info)..."
+echo "[2/7] Authenticating $SMOKE_USER via Gateway & Testing Proxied Service Info (/api/v1/{service}/info)..."
 LOGIN_RES=$(curl -s -f -X POST "$GATEWAY_URL/api/v1/identity/auth/login" \
   -H "Content-Type: application/json" \
   -d "{\"username\":\"$SMOKE_USER\",\"password\":\"$SMOKE_PASSWORD\"}")
@@ -69,14 +69,14 @@ for svc in identity:RecipeHub.Identity.Api recipes:RecipeHub.Recipe.Api content:
 done
 
 # 3. Test gRPC Communication (Content -> Recipe)
-echo "[3/6] Testing gRPC Channel (Content.Api -> Recipe.Api via ServiceProbe.Ping)..."
+echo "[3/7] Testing gRPC Channel (Content.Api -> Recipe.Api via ServiceProbe.Ping)..."
 GRPC_RES=$(curl -s -f -H "$AUTH_HEADER" "$GATEWAY_URL/api/v1/content/probe-recipe")
 echo "  gRPC Response: $GRPC_RES"
 echo "$GRPC_RES" | grep -q "Healthy"
 echo "  [OK] gRPC Probe Ping confirmed."
 
 # 4. Trigger Redis Heartbeat Event & Verify Worker Consumer & ACK
-echo "[4/6] Testing Redis Streams Producer -> Consumer -> ACK Cycle..."
+echo "[4/7] Testing Redis Streams Producer -> Consumer -> ACK Cycle..."
 
 EVENT_ID=$(cat /proc/sys/kernel/random/uuid 2>/dev/null || date +%s%N)
 # Worker đọc field "payload" chứa EventEnvelope<PlatformHeartbeatEvent> (System.Text.Json, PascalCase)
@@ -128,15 +128,47 @@ else
   exit 1
 fi
 
-# 5. Test Observability & DB Tools (Grafana & pgAdmin)
-echo "[5/6] Testing Observability & DB Management Containers (Grafana & pgAdmin 4)..."
+# 5. Verify Kafka broker, topics and consumer group
+echo "[5/7] Testing Kafka Broker, Topics & Audit Consumer Group..."
+if ! KAFKA_HEALTH=$(docker inspect --format '{{.State.Health.Status}}' recipehub-kafka); then
+  echo "[FATAL] Cannot inspect Kafka container 'recipehub-kafka'." >&2
+  exit 1
+fi
+if [ "$KAFKA_HEALTH" != "healthy" ]; then
+  echo "[FATAL] Kafka container is not healthy (status: $KAFKA_HEALTH)." >&2
+  exit 1
+fi
+echo "  [OK] Kafka container is healthy."
+if ! KAFKA_TOPICS=$(docker exec recipehub-kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list); then
+  echo "[FATAL] Failed to list Kafka topics." >&2
+  exit 1
+fi
+for topic in recipehub.audit.activities.v1 recipehub.audit.activities.v1.dlq; do
+  if ! grep -Fxq "$topic" <<< "$KAFKA_TOPICS"; then
+    echo "[FATAL] Kafka topic '$topic' is missing." >&2
+    exit 1
+  fi
+  echo "  [OK] Kafka topic '$topic' exists."
+done
+if ! KAFKA_GROUPS=$(docker exec recipehub-kafka /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --list); then
+  echo "[FATAL] Failed to list Kafka consumer groups." >&2
+  exit 1
+fi
+if ! grep -Fxq 'recipehub-audit' <<< "$KAFKA_GROUPS"; then
+  echo "[FATAL] Kafka consumer group 'recipehub-audit' is missing." >&2
+  exit 1
+fi
+echo "  [OK] Kafka consumer group 'recipehub-audit' exists."
+
+# 6. Test Observability & DB Tools (Grafana & pgAdmin)
+echo "[6/7] Testing Observability & DB Management Containers (Grafana & pgAdmin 4)..."
 curl -s -f "$GRAFANA_URL/api/health" | grep -q "ok"
 echo "  [OK] Grafana Health Endpoint responded ($GRAFANA_URL/api/health)."
 curl -s -I "$PGADMIN_URL/misc/ping" | grep -q "200"
 echo "  [OK] pgAdmin 4 Ping Endpoint responded ($PGADMIN_URL/misc/ping)."
 
-# 6. Test Frontend Health
-echo "[6/6] Testing Next.js Frontend Liveness Probe..."
+# 7. Test Frontend Health
+echo "[7/7] Testing Next.js Frontend Liveness Probe..."
 curl -s -f "$FRONTEND_URL/api/health" | grep -q "recipehub-web"
 echo "  [OK] Frontend Health Endpoint responded."
 
