@@ -8,6 +8,15 @@ import { Button } from '@/components/workspace/fields';
 import { ConfirmDialog } from './management-shared';
 
 const ACTIVE = new Set(['queued', 'running']);
+const DISMISS_KEY = 'quiz-ai-dismissed-jobs';
+
+function loadDismissed(): Set<string> {
+  try { return new Set(JSON.parse(window.localStorage.getItem(DISMISS_KEY) ?? '[]') as string[]); } catch { return new Set(); }
+}
+
+function saveDismissed(ids: Set<string>) {
+  try { window.localStorage.setItem(DISMISS_KEY, JSON.stringify([...ids].slice(-50))); } catch { /* bỏ qua khi không lưu được */ }
+}
 
 function jobLabel(job: QuizAiJob) {
   return job.kind === 'more' ? 'AI đang viết thêm câu hỏi' : 'AI đang soạn đề';
@@ -30,7 +39,16 @@ export function ManagementAiJobsBanner({
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState('');
   const active = jobs.filter(job => ACTIVE.has(job.status));
-  const failed = jobs.filter(job => job.status === 'failed');
+  const [dismissed, setDismissed] = useState<Set<string>>(() => (typeof window === 'undefined' ? new Set() : loadDismissed()));
+  const failed = jobs.filter(job => job.status === 'failed' && !dismissed.has(job.jobId));
+
+  function dismiss(job: QuizAiJob) {
+    setDismissed(current => {
+      const next = new Set(current).add(job.jobId);
+      saveDismissed(next);
+      return next;
+    });
+  }
 
   if (!active.length && !failed.length) return null;
 
@@ -77,7 +95,9 @@ export function ManagementAiJobsBanner({
             <AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4" strokeWidth={1.5} />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold">Tác vụ bị gián đoạn, bạn có thể tạo lại</p>
-              <p className="mt-1 text-sm">{job.errorMessage?.trim() || 'Không rõ nguyên nhân, vui lòng thử lại.'}</p>
+              {job.errorMessage?.trim() !== 'Tác vụ bị gián đoạn, bạn có thể tạo lại' && (
+                <p className="mt-1 text-sm">{job.errorMessage?.trim() || 'Không rõ nguyên nhân, vui lòng thử lại.'}</p>
+              )}
               <p className="mt-1 text-xs">{job.recipeTitle} · {job.questionCount} câu</p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -86,7 +106,8 @@ export function ManagementAiJobsBanner({
                   Mở đề
                 </Link>
               )}
-              {onRetry && <Button variant="primary" onClick={() => onRetry(job)}>Tạo lại</Button>}
+              {onRetry && <Button variant="primary" onClick={() => { dismiss(job); onRetry(job); }}>Tạo lại</Button>}
+              <Button type="button" onClick={() => dismiss(job)}>Đóng</Button>
             </div>
           </div>
         );
