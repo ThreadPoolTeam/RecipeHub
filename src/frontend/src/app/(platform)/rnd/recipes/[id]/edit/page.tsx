@@ -81,6 +81,9 @@ export default function EditRecipePage() {
   const selectedDraft = useRef<string | null>(null);
   const acceptedPreviews = useRef(new Set<string>());
   const forkNoticeShown = useRef(false);
+  // Effect nạp dữ liệu chạy lại khi phiên đăng nhập được làm mới; chỉ đổ dữ liệu vào form lần đầu
+  // cho mỗi công thức để không ghi đè nội dung người dùng đang sửa dở.
+  const formLoadedFor = useRef<string | null>(null);
   useEffect(() => () => {
     draftLoad.current?.abort();
     clearDraftPreviews();
@@ -104,7 +107,8 @@ export default function EditRecipePage() {
   useEffect(() => {
     if (!session || !id) return;
     let isMounted = true;
-    setLoading(true);
+    const firstLoad = formLoadedFor.current !== id;
+    if (firstLoad) setLoading(true);
 
     const loadEditableVersion = async () => {
       const latest = await repo.getRecipeVersion(session, id);
@@ -134,18 +138,21 @@ export default function EditRecipePage() {
     ])
       .then(([rec, ings, mediaList, units]) => {
         if (!isMounted) return;
-        setRecipe(rec);
-
-        setCode(rec.code);
-        setName(rec.name);
-        setDescription(rec.description || '');
-        setTargetYield(rec.targetYield === null ? '' : String(rec.targetYield));
-        setYieldUnit(rec.yieldUnit ?? '');
         setAvailableUnits(units.filter((unit) => unit.state === 'active'));
-        setIngredients(rec.ingredients || []);
-        setSteps(rec.steps || []);
-        setPrimaryMediaAssetId(rec.primaryMediaAssetId ?? null);
         setAvailableIngredients(ings);
+
+        if (formLoadedFor.current !== id) {
+          formLoadedFor.current = id;
+          setRecipe(rec);
+          setCode(rec.code);
+          setName(rec.name);
+          setDescription(rec.description || '');
+          setTargetYield(rec.targetYield === null ? '' : String(rec.targetYield));
+          setYieldUnit(rec.yieldUnit ?? '');
+          setIngredients(rec.ingredients || []);
+          setSteps(rec.steps || []);
+          setPrimaryMediaAssetId(rec.primaryMediaAssetId ?? null);
+        }
 
         const previews: Record<string, string> = {};
         mediaList.forEach((m) => {
