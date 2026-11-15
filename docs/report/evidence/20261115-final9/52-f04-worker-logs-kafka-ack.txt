@@ -1,0 +1,16 @@
+$ docker logs recipehub-worker --tail 250
+
+[KAFKA-ACK] topic=recipehub.audit.activities.v1 partition=2 offset=57 eventId=3acdeb8d3b25412aa90659a7d37149f3 action=recipe.created
+      [KAFKA-ACK] topic=recipehub.audit.activities.v1 partition=2 offset=58 eventId=18e9d49f101f4c6ba7e50140b84b0696 action=recipe.updated
+      [KAFKA-ACK] topic=recipehub.audit.activities.v1 partition=2 offset=59 eventId=af4b5301cb2a445b86ba9f6956901e8c action=recipe.updated
+      [KAFKA-ACK] topic=recipehub.audit.activities.v1 partition=2 offset=60 eventId=61c1a8b6e72c400aa9feeacd426964e9 action=recipe.published
+      [KAFKA-ACK] topic=recipehub.audit.activities.v1 partition=0 offset=66 eventId=f7243cd8291c436fb5f856f9e8538e61 action=recipe.version_created
+      [KAFKA-ACK] topic=recipehub.audit.activities.v1 partition=0 offset=67 eventId=e18a4613afda4fc48972203344d6a71e action=recipe.updated
+      [KAFKA-ACK] topic=recipehub.audit.activities.v1 partition=1 offset=44 eventId=2b9103dee69e4650bb10715cd3ee664e action=quiz.created
+      [KAFKA-ACK] topic=recipehub.audit.activities.v1 partition=1 offset=45 eventId=7517ea30cb0b4b7eaeec241addd6fd65 action=quiz.updated
+      [KAFKA-ACK] topic=recipehub.audit.activities.v1 partition=1 offset=46 eventId=0cb77fc3a3a34662ad4f6f5c2c677fa0 action=quiz.published
+      [KAFKA-ACK] topic=recipehub.audit.activities.v1 partition=2 offset=61 eventId=50590cccf7cd4cc4acb9b58869e57cb1 action=quiz.attempt_submitted
+      [KAFKA-ACK] topic=recipehub.audit.activities.v1 partition=2 offset=62 eventId=af396b7de6324c4a9e0dc8216883704d action=quiz.attempt_submitted
+      [KAFKA-ACK] topic=recipehub.audit.activities.v1 partition=2 offset=63 eventId=16164086b1264d25ac806158075c78a3 action=user.created
+      [KAFKA-ACK] topic=recipehub.audit.activities.v1 partition=2 offset=64 eventId=aa38070fcbae463e9070950b328caf7f action=user.locked
+      [KAFKA-ACK] topic=recipehub.audit.activities.v1 partition=2 offset=65 eventId=7df49fce8af34d0588ebafa7a5c63ccc action=user.unlocked

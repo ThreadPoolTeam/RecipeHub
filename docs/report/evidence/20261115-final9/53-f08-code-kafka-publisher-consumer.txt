@@ -1,0 +1,51 @@
+$ git grep -n -A16 -e "public async Task PublishEnvelopeAsync" -- src/backend/BuildingBlocks && git grep -n -A13 -e "public static async Task ProcessAndCommitAsync" -- src/backend/Services/Audit
+
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/KafkaAuditActivityPublisher.cs:53:    public async Task PublishEnvelopeAsync(EventEnvelope<AuditActivityEvent> envelope, CancellationToken cancellationToken)
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/KafkaAuditActivityPublisher.cs-54-    {
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/KafkaAuditActivityPublisher.cs-55-        try
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/KafkaAuditActivityPublisher.cs-56-        {
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/KafkaAuditActivityPublisher.cs-57-            var producer = _producer.Value;
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/KafkaAuditActivityPublisher.cs-58-            if (producer == null) return;
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/KafkaAuditActivityPublisher.cs-59-            var result = await producer.ProduceAsync(_options.AuditTopic, CreateMessage(envelope), cancellationToken);
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/KafkaAuditActivityPublisher.cs-60-            _logger.LogDebug("Kafka audit published {EventId} [{Action}] partition={Partition} offset={Offset}",
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/KafkaAuditActivityPublisher.cs-61-                envelope.EventId, envelope.Payload.Action, result.Partition, result.Offset);
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/KafkaAuditActivityPublisher.cs-62-        }
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/KafkaAuditActivityPublisher.cs-63-        catch (Exception ex)
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/KafkaAuditActivityPublisher.cs-64-        {
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/KafkaAuditActivityPublisher.cs-65-            _logger.LogWarning(ex, "Kafka audit publish failed {EventId} [{Action}]",
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/KafkaAuditActivityPublisher.cs-66-                envelope.EventId, envelope.Payload.Action);
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/KafkaAuditActivityPublisher.cs-67-        }
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/KafkaAuditActivityPublisher.cs-68-    }
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/KafkaAuditActivityPublisher.cs-69-
+--
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/RedisAuditActivityPublisher.cs:28:    public async Task PublishEnvelopeAsync(EventEnvelope<AuditActivityEvent> envelope, CancellationToken cancellationToken)
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/RedisAuditActivityPublisher.cs-29-    {
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/RedisAuditActivityPublisher.cs-30-        try
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/RedisAuditActivityPublisher.cs-31-        {
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/RedisAuditActivityPublisher.cs-32-            if (_redis == null || !_redis.IsConnected)
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/RedisAuditActivityPublisher.cs-33-            {
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/RedisAuditActivityPublisher.cs-34-                _logger.LogWarning("Redis unavailable; skipping audit event {EventId}.", envelope.EventId);
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/RedisAuditActivityPublisher.cs-35-                return;
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/RedisAuditActivityPublisher.cs-36-            }
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/RedisAuditActivityPublisher.cs-37-            var db = _redis.GetDatabase();
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/RedisAuditActivityPublisher.cs-38-            var json = envelope.ToJson();
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/RedisAuditActivityPublisher.cs-39-            var entries = new NameValueEntry[]
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/RedisAuditActivityPublisher.cs-40-            {
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/RedisAuditActivityPublisher.cs-41-                new("payload", json)
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/RedisAuditActivityPublisher.cs-42-            };
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/RedisAuditActivityPublisher.cs-43-
+src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Audit/RedisAuditActivityPublisher.cs-44-            await db.StreamAddAsync(AuditActivityEvent.StreamName, entries).WaitAsync(cancellationToken);
+src/backend/Services/Audit/RecipeHub.Audit.Infrastructure/Messaging/AuditKafkaConsumer.cs:94:    public static async Task ProcessAndCommitAsync(ConsumeResult<string, string> record,
+src/backend/Services/Audit/RecipeHub.Audit.Infrastructure/Messaging/AuditKafkaConsumer.cs-95-        Func<CancellationToken, Task> process, Action<ConsumeResult<string, string>> commit,
+src/backend/Services/Audit/RecipeHub.Audit.Infrastructure/Messaging/AuditKafkaConsumer.cs-96-        ILogger logger, CancellationToken cancellationToken)
+src/backend/Services/Audit/RecipeHub.Audit.Infrastructure/Messaging/AuditKafkaConsumer.cs-97-    {
+src/backend/Services/Audit/RecipeHub.Audit.Infrastructure/Messaging/AuditKafkaConsumer.cs-98-        await process(cancellationToken);
+src/backend/Services/Audit/RecipeHub.Audit.Infrastructure/Messaging/AuditKafkaConsumer.cs-99-        cancellationToken.ThrowIfCancellationRequested();
+src/backend/Services/Audit/RecipeHub.Audit.Infrastructure/Messaging/AuditKafkaConsumer.cs-100-        commit(record);
+src/backend/Services/Audit/RecipeHub.Audit.Infrastructure/Messaging/AuditKafkaConsumer.cs-101-        EventEnvelope<AuditActivityEvent>? envelope = null;
+src/backend/Services/Audit/RecipeHub.Audit.Infrastructure/Messaging/AuditKafkaConsumer.cs-102-        try { envelope = EventEnvelope<AuditActivityEvent>.FromJson(record.Message.Value); }
+src/backend/Services/Audit/RecipeHub.Audit.Infrastructure/Messaging/AuditKafkaConsumer.cs-103-        catch (System.Text.Json.JsonException) { }
+src/backend/Services/Audit/RecipeHub.Audit.Infrastructure/Messaging/AuditKafkaConsumer.cs-104-        catch (ArgumentNullException) { }
+src/backend/Services/Audit/RecipeHub.Audit.Infrastructure/Messaging/AuditKafkaConsumer.cs-105-        logger.LogInformation("[KAFKA-ACK] topic={Topic} partition={Partition} offset={Offset} eventId={EventId} action={Action}",
+src/backend/Services/Audit/RecipeHub.Audit.Infrastructure/Messaging/AuditKafkaConsumer.cs-106-            record.Topic, record.Partition.Value, record.Offset.Value, envelope?.EventId, envelope?.Payload?.Action);
+src/backend/Services/Audit/RecipeHub.Audit.Infrastructure/Messaging/AuditKafkaConsumer.cs-107-    }

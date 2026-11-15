@@ -1,0 +1,5 @@
+$ dotnet test tests/RecipeHub.UnitTests --nologo
+
+Test run for D:\PRN232\ASM\RecipeHub\tests\RecipeHub.UnitTests\bin\Debug\net8.0\RecipeHub.UnitTests.dll (.NETCoreApp,Version=v8.0)
+  Skipped RecipeHub.UnitTests.PdfStorageDatabaseIntegrationTests.DisposablePostgres_FencedFinalizeReady_PassesThroughTriggers_AndEnforcesImmutability [1 ms]
+Passed!  - Failed:     0, Passed:   139, Skipped:     1, Total:   140, Duration: 3 s - RecipeHub.UnitTests.dll (net8.0)

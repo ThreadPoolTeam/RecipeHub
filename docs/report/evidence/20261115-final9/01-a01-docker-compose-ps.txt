@@ -1,0 +1,23 @@
+$ docker compose -f "D:\PRN232\ASM\RecipeHub\infra\compose.yaml" ps
+
+NAME                          IMAGE                                                                     COMMAND                  SERVICE             CREATED          STATUS                        PORTS
+recipehub-audit               sha256:b1d80c3cfc9f726b447a4652071e7ca5c300035c5b47895adf69e57ecee6fccd   "dotnet RecipeHub.Au…"   audit-service       51 minutes ago   Up 51 minutes (healthy)       127.0.0.1:5004->5004/tcp
+recipehub-blackbox-exporter   prom/blackbox-exporter:v0.26.0                                            "/bin/blackbox_expor…"   blackbox-exporter   2 hours ago      Up 2 hours                    9115/tcp
+recipehub-cadvisor            ghcr.io/google/cadvisor:0.60.6                                            "/usr/bin/entrypoint…"   cadvisor            2 hours ago      Up 2 hours (healthy)          8080/tcp
+recipehub-content             sha256:bad7ee68165d97f3ffd9d4586084415df10867831f666a6ff7768cc9fde4dd87   "dotnet RecipeHub.Co…"   content-service     51 minutes ago   Up 51 minutes (healthy)       127.0.0.1:5003->5003/tcp
+recipehub-frontend            recipehub-pw-20261115-frontend                                            "docker-entrypoint.s…"   frontend            37 seconds ago   Up 27 seconds (healthy)       0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
+recipehub-gateway             sha256:5233c679a3a349e7979eb0db70cf1e21e0b675894dc9b4a5fc0ac6aa4aa39174   "dotnet RecipeHub.Ga…"   gateway             2 hours ago      Up 2 hours (healthy)          0.0.0.0:5000->5000/tcp, [::]:5000->5000/tcp
+recipehub-grafana             grafana/grafana:11.2.0                                                    "/run.sh"                grafana             2 hours ago      Up 2 hours                    127.0.0.1:3001->3000/tcp
+recipehub-identity            sha256:95d794c751896235e99bf919b9ca1b21a3f9222c97c7c557774af9c3d5b0a8ee   "dotnet RecipeHub.Id…"   identity-service    51 minutes ago   Up 51 minutes (healthy)       127.0.0.1:5001->5001/tcp
+recipehub-kafka               apache/kafka:3.9.0                                                        "/__cacert_entrypoin…"   kafka               2 hours ago      Up About a minute (healthy)   127.0.0.1:9094->9094/tcp
+recipehub-kafka-exporter      danielqsj/kafka-exporter:v1.8.0                                           "/bin/kafka_exporter…"   kafka-exporter      2 hours ago      Up 2 hours                    9308/tcp
+recipehub-kafka-ui            ghcr.io/kafbat/kafka-ui:v1.1.0                                            "/bin/sh -c 'java --…"   kafka-ui            2 hours ago      Up 2 hours                    127.0.0.1:8085->8080/tcp
+recipehub-pgadmin             dpage/pgadmin4:8                                                          "/entrypoint.sh"         pgadmin             2 hours ago      Up 2 hours                    127.0.0.1:5050->80/tcp
+recipehub-postgres            postgres:16-alpine                                                        "docker-entrypoint.s…"   postgres            2 hours ago      Up 2 hours (healthy)          127.0.0.1:5433->5432/tcp
+recipehub-postgres-exporter   quay.io/prometheuscommunity/postgres-exporter:v0.17.1                     "/bin/postgres_expor…"   postgres-exporter   2 hours ago      Up 2 hours                    9187/tcp
+recipehub-prometheus          prom/prometheus:v3.5.0                                                    "/bin/prometheus --c…"   prometheus          2 hours ago      Up 2 hours                    127.0.0.1:9090->9090/tcp
+recipehub-quiz                sha256:a023a3acddcc13ea21f45f7dbd6f333f5079e8adbdb26b63fe36b555441081e8   "dotnet RecipeHub.Qu…"   quiz-service        51 minutes ago   Up 51 minutes (healthy)       127.0.0.1:5005->5005/tcp
+recipehub-recipe              sha256:c3b187561006b179b4db380570db810a265b4fc693bc0b4853ed53fcc0e73f4b   "dotnet RecipeHub.Re…"   recipe-service      51 minutes ago   Up 51 minutes (healthy)       127.0.0.1:5002->5002/tcp
+recipehub-redis               redis:7-alpine                                                            "docker-entrypoint.s…"   redis               2 hours ago      Up 2 hours (healthy)          127.0.0.1:6380->6379/tcp
+recipehub-redis-exporter      oliver006/redis_exporter:v1.69.0                                          "/redis_exporter"        redis-exporter      2 hours ago      Up 2 hours                    9121/tcp
+recipehub-worker              recipehub-pw-20261115-worker                                              "dotnet RecipeHub.Ba…"   worker              2 hours ago      Up 2 minutes

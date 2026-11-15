@@ -1,0 +1,4 @@
+$ dotnet test tests/RecipeHub.Quiz.Tests --nologo
+
+Test run for D:\PRN232\ASM\RecipeHub\tests\RecipeHub.Quiz.Tests\bin\Debug\net8.0\RecipeHub.Quiz.Tests.dll (.NETCoreApp,Version=v8.0)
+Passed!  - Failed:     0, Passed:    12, Skipped:     0, Total:    12, Duration: 4 s - RecipeHub.Quiz.Tests.dll (net8.0)

@@ -1,7 +1,7 @@
 ---
 title: "Thêm Kafka cho luồng sự kiện, giữ Redis Streams cho hàng đợi việc"
 description: "Chuyển nhật ký hoạt động (audit) sang Kafka, Redis Streams tiếp tục chạy hàng đợi sinh ảnh AI; kèm kiểm thử Playwright có ảnh minh chứng từng bước."
-status: pending
+status: done
 priority: P1
 branch: feat/kafka-messaging
 tags: [feature, backend, infra, messaging, testing, docs]
@@ -55,12 +55,12 @@ Thiết kế đầy đủ: [design-contract.md](design-contract.md).
 
 | # | Phase | Kết quả kiểm chứng được | Trạng thái |
 |---|---|---|---|
-| 1 | [Hạ tầng Kafka trong Docker Compose](phase-01-infra-compose.md) | `docker compose ps` thấy kafka healthy, topic đã tạo, Kafka UI mở được | Pending |
-| 2 | [Nơi gửi: publisher Kafka trong BuildingBlocks](phase-02-producer.md) | Build xanh; test đơn vị xanh; bật `Dual` thấy message trong topic | Pending |
-| 3 | [Nơi nhận: consumer Kafka trong Worker + dead-letter](phase-03-consumer.md) | Thao tác trên web → dòng mới ở `/admin/logs` đi qua Kafka; lag = 0 | Pending |
-| 4 | [Chuyển hẳn, giám sát, tài liệu, sơ đồ](phase-04-cutover-docs.md) | Cờ = `Kafka`; Grafana có số Kafka; `docs/systemmd` + AGENTS + C1 khớp code | Pending |
-| 5 | [Kiểm thử tự động: unit + smoke](phase-05-tests.md) | `dotnet test` xanh; `smoke-test.sh` có bước Kafka và qua | Pending |
-| 6 | [Playwright + ảnh minh chứng từng bước](phase-06-playwright-evidence.md) | Bộ ảnh đánh số trong `docs/report/evidence/`, báo cáo HTML | Pending |
+| 1 | [Hạ tầng Kafka trong Docker Compose](phase-01-infra-compose.md) | `docker compose ps` thấy kafka healthy, topic đã tạo, Kafka UI mở được | Done |
+| 2 | [Nơi gửi: publisher Kafka trong BuildingBlocks](phase-02-producer.md) | Build xanh; test đơn vị xanh; bật `Dual` thấy message trong topic | Done |
+| 3 | [Nơi nhận: consumer Kafka trong Worker + dead-letter](phase-03-consumer.md) | Thao tác trên web → dòng mới ở `/admin/logs` đi qua Kafka; lag = 0 | Done |
+| 4 | [Chuyển hẳn, giám sát, tài liệu, sơ đồ](phase-04-cutover-docs.md) | Cờ = `Kafka`; Grafana có số Kafka; `docs/systemmd` + AGENTS + C1 khớp code | Done |
+| 5 | [Kiểm thử tự động: unit + smoke](phase-05-tests.md) | `dotnet test` xanh; `smoke-test.sh` có bước Kafka và qua | Done |
+| 6 | [Playwright + ảnh minh chứng từng bước](phase-06-playwright-evidence.md) | Bộ ảnh đánh số trong `docs/report/evidence/`, báo cáo HTML | Done |
 
 Thứ tự bắt buộc 1 → 2 → 3 → 4. Phase 5 viết song song với 2–3. Phase 6 chỉ chạy sau khi phase 4 xong.
 
@@ -79,14 +79,14 @@ Mỗi phase một hoặc vài commit nhỏ (`feat:`, `chore:`, `docs:`, `test:`)
 
 ## Điều kiện nghiệm thu
 
-- [ ] `docker compose -f infra/compose.yaml up -d --build` lên đủ, kafka `healthy`.
-- [ ] Tạo công thức → phát hành trên web: `/admin/logs` có dòng `recipe.published`; Kafka UI thấy message tương ứng trong topic; consumer group lag = 0.
-- [ ] Redis vẫn chạy việc sinh ảnh AI như cũ (`XINFO GROUPS content.image-drafts.v1`).
-- [ ] Tắt Kafka rồi thao tác: nghiệp vụ vẫn thành công, log cảnh báo, không lỗi 500.
-- [ ] Message hỏng đi vào topic dead-letter, consumer không kẹt.
-- [ ] `dotnet build src/backend/RecipeHub.sln` và `dotnet test` xanh; `npm run build` xanh.
-- [ ] `docs/systemmd/`, `AGENTS.md`, `.env.example`, `README.md`, sơ đồ C1 đã cập nhật khớp code.
-- [ ] Bộ ảnh minh chứng Playwright đủ theo danh sách ở phase 6.
+- [x] `docker compose -f infra/compose.yaml up -d --build` lên đủ, kafka `healthy`.
+- [x] Tạo công thức → phát hành trên web: `/admin/logs` có dòng `recipe.published`; Kafka UI thấy message tương ứng trong topic; consumer group lag = 0.
+- [x] Redis vẫn chạy việc sinh ảnh AI như cũ (`XINFO GROUPS content.image-drafts.v1`).
+- [x] Tắt Kafka rồi thao tác: nghiệp vụ vẫn thành công, log cảnh báo, không lỗi 500.
+- [x] Message hỏng đi vào topic dead-letter, consumer không kẹt.
+- [x] `dotnet build src/backend/RecipeHub.sln` và `dotnet test` xanh; `npm run build` xanh (frontend build trong image Docker; không đổi code web).
+- [x] `docs/systemmd/`, `AGENTS.md`, `.env.example`, `README.md`, sơ đồ C1 đã cập nhật khớp code.
+- [x] Bộ ảnh minh chứng Playwright đủ theo danh sách ở phase 6.
 
 ## Đối chiếu DB First
 
