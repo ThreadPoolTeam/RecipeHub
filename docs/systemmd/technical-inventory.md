@@ -108,14 +108,15 @@ Nguồn: [`Program.cs` của Gateway](../../src/backend/Gateway/RecipeHub.Gatewa
 
 Nguồn chuẩn: [5 protobuf contracts](../../src/backend/Contracts/RecipeHub.GrpcContracts/Protos/), [Inter-service communication](backend/03-inter-service-communication.md).
 
-| Stream mặc định trong source | Consumer group | Nơi xử lý |
+| Kênh / topic hoặc stream mặc định | Consumer group | Nơi xử lý |
 |---|---|---|
-| `platform.heartbeat.v1` | `recipehub-workers` | `StreamConsumerWorker` |
-| `content.image-drafts.v1` | `content-draft-workers` | `ContentDraftProcessingWorker`; relay đọc `Redis:DraftsStream` |
-| `audit.activities.v1` | `recipehub-audit` | `AuditStreamConsumer` |
-| `quiz.ai-generation.v1` | `quiz-ai-workers` | `QuizAiGenerationWorker`; trạng thái job chỉ ở Redis, không có bảng DB |
+| Redis: `platform.heartbeat.v1` | `recipehub-workers` | `StreamConsumerWorker` |
+| Redis: `content.image-drafts.v1` | `content-draft-workers` | `ContentDraftProcessingWorker`; relay đọc `Redis:DraftsStream` |
+| Redis: `quiz.ai-generation.v1` | `quiz-ai-workers` | `QuizAiGenerationWorker`; trạng thái job chỉ ở Redis, không có bảng DB |
+| Kafka: `recipehub.audit.activities.v1` | `recipehub-audit` | `AuditKafkaConsumer`; DLQ `recipehub.audit.activities.v1.dlq` |
+| Redis (đường lùi): `audit.activities.v1` | `recipehub-audit` | `AuditStreamConsumer` |
 
-Hosted service types thấy trong đăng ký: Worker chạy heartbeat consumer, Content processing, Content cleanup, Quiz AI generation và Audit consumer; Content API đăng ký outbox relay; Recipe API đăng ký PDF recovery. **7 loại tác vụ nền**, không suy ra 7 process/container. Có consumer group/ACK không tự chứng minh exactly-once, lease an toàn hoặc không còn orphan.
+Hosted service types thấy trong đăng ký: Worker chạy heartbeat consumer, Content processing, Content cleanup, Quiz AI generation và Audit consumer; Content API đăng ký outbox relay; Recipe API đăng ký PDF recovery. Consumer audit được chọn theo `Messaging:AuditTransport` (Redis/Dual/Kafka); **7 loại tác vụ nền**, không suy ra 7 process/container. Có consumer group/ACK không tự chứng minh exactly-once, lease an toàn hoặc không còn orphan.
 
 Nguồn: [Worker Program](../../src/backend/Workers/RecipeHub.BackgroundWorker/Program.cs), [Content DI](../../src/backend/Services/Content/RecipeHub.Content.Infrastructure/DependencyInjection.cs), [Recipe DI](../../src/backend/Services/Recipe/RecipeHub.Recipe.Infrastructure/DependencyInjection.cs), [Audit DI](../../src/backend/Services/Audit/RecipeHub.Audit.Infrastructure/DependencyInjection.cs).
 
@@ -143,6 +144,7 @@ File ảnh/PDF không lưu binary trong các bảng hồ sơ: Content dùng file
 | YARP | `2.2.0` | [Gateway project](../../src/backend/Gateway/RecipeHub.Gateway/RecipeHub.Gateway.csproj) |
 | gRPC / Protobuf | gRPC `2.66.0`, Protobuf `3.28.2` | [Contracts project](../../src/backend/Contracts/RecipeHub.GrpcContracts/RecipeHub.GrpcContracts.csproj) |
 | Redis client | StackExchange.Redis `2.8.16` | [BuildingBlocks project](../../src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/RecipeHub.BuildingBlocks.csproj) |
+| Kafka client | Confluent.Kafka `2.16.0` | [BuildingBlocks project](../../src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/RecipeHub.BuildingBlocks.csproj) |
 | Swagger | Swashbuckle.AspNetCore `6.6.2` | API `.csproj` |
 | Server PDF | QuestPDF `2024.12.1` | [Recipe Infrastructure project](../../src/backend/Services/Recipe/RecipeHub.Recipe.Infrastructure/RecipeHub.Recipe.Infrastructure.csproj) |
 | Next / React | `^16.4.3` / `^19.3.0` | [Web package.json](../../src/frontend/package.json) |
@@ -150,14 +152,15 @@ File ảnh/PDF không lưu binary trong các bảng hồ sơ: Content dùng file
 | Web PDF tools | pdf-lib `^1.17.1`, fontkit `^1.1.1` | Web package.json |
 | Node | CI major `20` | CI; không phải version Node local |
 | Mobile | Flutter SDK; Dart constraint `^3.13.2`; app `1.0.0+1` | [pubspec.yaml](../../src/mobile/pubspec.yaml) |
-| Database / broker image | `postgres:16-alpine`, `redis:7-alpine` | [Compose](../../infra/compose.yaml) |
+| Database / broker image | `postgres:16-alpine`, `redis:7-alpine`, `apache/kafka:3.9.0` | [Compose](../../infra/compose.yaml) |
+| Kafka UI / exporter | `ghcr.io/kafbat/kafka-ui:v1.1.0`, `danielqsj/kafka-exporter:v1.8.0` | [Compose](../../infra/compose.yaml) |
 | Tests | xUnit `2.6.2`, Test SDK `17.8.0` | [Test projects](../../tests/) |
 
 Mobile là prototype có scaffold đa nền tảng, không mặc định có cùng auth/feature parity với Web. Trạng thái kết nối thật: [Mobile README](../../src/mobile/README.md). Design tokens/Web layout: [DESIGN](../DESIGN.md), [frontend standards](frontend/04-design-system-and-components.md); không nhân bản token tại báo cáo này.
 
 ## 7. Topology Compose và cấu hình
 
-**10 service trong Compose**; bảng phân biệt port publish ra host với listener nội bộ. Port có thể bị environment/config ghi đè khi chạy ngoài Compose.
+Các service nghiệp vụ/broker và thành phần Kafka trong Compose; bảng phân biệt port publish ra host với listener nội bộ. Port có thể bị environment/config ghi đè khi chạy ngoài Compose.
 
 | Service Compose | Host publish | Listener/đích trong container | Vai trò |
 |---|---|---|---|
@@ -172,8 +175,14 @@ Mobile là prototype có scaffold đa nền tảng, không mặc định có cù
 | `postgres` | `127.0.0.1:5433` | `5432` | PostgreSQL |
 | `redis` | `127.0.0.1:6380` | `6379` | Redis |
 
+| `kafka` | `127.0.0.1:9094` | `9092` (client nội bộ), `9093` (controller) | Broker audit |
+| `kafka-init` | Không publish | Kết nối `kafka:9092` | Tạo topic rồi thoát |
+| `kafka-ui` | `127.0.0.1:8085` | `8080` | Kafbat UI |
+| `kafka-exporter` | Không publish | `9308` | Metrics topic/consumer group cho Prometheus |
+
 ### Persist, startup và health
 
+- Kafka lưu tại volume `kafka-data`; healthcheck dùng `kafka-broker-api-versions.sh --bootstrap-server localhost:9092`. Producer/Worker đợi broker healthy và kafka-init hoàn thành.
 - Named volumes: **`pgdata`**, **`temp-drafts`**. `temp-drafts` mount tại `/app/temp-drafts` trên Content API và Worker; hai bên phải nhìn cùng file.
 - PostgreSQL mount init script và thư mục schema Audit/Quiz read-only. Bootstrap Compose không tự áp đủ schema Identity/Recipe/Content; chọn đúng SQL trong runbook service trước khi chạy chức năng.
 - `depends_on` chủ yếu đợi `service_healthy`; frontend đợi Gateway, Gateway đợi năm API. Đây là điều kiện startup, không phải cơ chế phục hồi toàn bộ lỗi runtime.
@@ -190,6 +199,8 @@ Chỉ liệt kê key/section, không ghi giá trị credentials/token/connection
 |---|---|---|
 | Database | `ConnectionStrings:Database`, `ConnectionStrings:ContentDb`, `ConnectionStrings:AuditDb`, `ConnectionStrings:QuizDatabase`; `<SERVICE>_DB_*` | API/Worker appsettings, Compose và [env template](../../.env.example) |
 | Redis | `ConnectionStrings:Redis`, `Redis:DraftsStream` | Outbox, consumers; tên stream mặc định tại source |
+| Kafka | `Kafka:BootstrapServers`, `Kafka:ClientId`, `Kafka:AuditTopic`, `Kafka:AuditDlqTopic`, `Kafka:AuditConsumerGroup`, `Kafka:MaxDeliveryAttempts`, `Kafka:ProduceTimeoutMs` | [KafkaOptions](../../src/backend/BuildingBlocks/RecipeHub.BuildingBlocks/Configuration/ServiceOptions.cs) |
+| Messaging | `Messaging:AuditTransport`, `AUDIT_TRANSPORT` | Redis/Dual/Kafka; Compose mặc định Kafka, options khi thiếu key mặc định Redis |
 | JWT/session | `Jwt:SigningKey`, `Jwt:Issuer`, `Jwt:Audience` | Identity; downstream gọi Identity gRPC để xác thực session |
 | gRPC | `Grpc:IdentityServiceUrl`, `Grpc:RecipeServiceUrl`, `Grpc:ContentServiceUrl` | URL nội bộ, phải dùng listener HTTP/2 phù hợp |
 | Web proxy | `GATEWAY_INTERNAL_URL` | Next server; không phải URL browser cần biết |

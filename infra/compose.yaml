@@ -64,6 +64,48 @@ services:
       timeout: 5s
       retries: 5
 
+  kafka:
+    image: apache/kafka:3.9.0
+    container_name: recipehub-kafka
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${KAFKA_EXTERNAL_PORT:-9094}:9094"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: INTERNAL://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_HEAP_OPTS: -Xms256m -Xmx512m
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "/opt/kafka/bin/kafka-broker-api-versions.sh", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 20s
+
+  kafka-init:
+    image: apache/kafka:3.9.0
+    container_name: recipehub-kafka-init
+    restart: "no"
+    entrypoint: ["/bin/bash", "/kafka/create-topics.sh"]
+    volumes:
+      - ./kafka/create-topics.sh:/kafka/create-topics.sh:ro
+    depends_on:
+      kafka:
+        condition: service_healthy
+
   identity-service:
     build:
       context: ../src/backend
@@ -76,11 +118,18 @@ services:
       - ConnectionStrings__Redis=redis:6379
       - Identity__SeedDemoUsers=true
       - Jwt__SigningKey=${JWT_SIGNING_KEY:-dev-only-signing-key-0123456789abcdef}
+      - Kafka__BootstrapServers=kafka:9092
+      - Kafka__ClientId=identity-service
+      - Messaging__AuditTransport=${AUDIT_TRANSPORT:-Kafka}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/5001 && printf 'GET /health/live HTTP/1.0\r\n\r\n' >&3 && head -n1 <&3 | grep -q 200"]
       interval: 5s
@@ -102,11 +151,18 @@ services:
       - Cloudinary__CloudName=${CLOUDINARY_CLOUD_NAME:-}
       - Cloudinary__ApiKey=${CLOUDINARY_API_KEY:-}
       - Cloudinary__ApiSecret=${CLOUDINARY_API_SECRET:-}
+      - Kafka__BootstrapServers=kafka:9092
+      - Kafka__ClientId=recipe-service
+      - Messaging__AuditTransport=${AUDIT_TRANSPORT:-Kafka}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/5002 && printf 'GET /health/live HTTP/1.0\r\n\r\n' >&3 && head -n1 <&3 | grep -q 200"]
       interval: 5s
@@ -184,11 +240,18 @@ services:
       - ConnectionStrings__Redis=redis:6379
       - Grpc__IdentityServiceUrl=http://identity-service:5011
       - Grpc__RecipeServiceUrl=http://recipe-service:5012
+      - Kafka__BootstrapServers=kafka:9092
+      - Kafka__ClientId=quiz-service
+      - Messaging__AuditTransport=${AUDIT_TRANSPORT:-Kafka}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
       identity-service:
         condition: service_healthy
       recipe-service:
@@ -218,6 +281,9 @@ services:
       - Cloudflare__AccountId=${CLOUDFLARE_ACCOUNT_ID:-}
       - Cloudflare__ApiToken=${CLOUDFLARE_API_TOKEN:-}
       - Cloudflare__Model=${CLOUDFLARE_MODEL:-@cf/black-forest-labs/flux-1-schnell}
+      - Kafka__BootstrapServers=kafka:9092
+      - Kafka__ClientId=worker
+      - Messaging__AuditTransport=${AUDIT_TRANSPORT:-Kafka}
     volumes:
       - temp-drafts:/app/temp-drafts
     depends_on:
@@ -225,6 +291,10 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
       recipe-service:
         condition: service_healthy
 
@@ -358,6 +428,29 @@ services:
       redis:
         condition: service_healthy
 
+  kafka-ui:
+    image: ghcr.io/kafbat/kafka-ui:v1.1.0
+    container_name: recipehub-kafka-ui
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${KAFKA_UI_PORT:-8085}:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: recipehub
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:v1.8.0
+    container_name: recipehub-kafka-exporter
+    restart: unless-stopped
+    command:
+      - --kafka.server=kafka:9092
+    depends_on:
+      kafka:
+        condition: service_healthy
+
   blackbox-exporter:
     image: prom/blackbox-exporter:v0.26.0
     container_name: recipehub-blackbox-exporter
@@ -397,6 +490,7 @@ services:
 
 volumes:
   pgdata:
+  kafka-data:
   temp-drafts:
   pgadmin-data:
   grafana-data:

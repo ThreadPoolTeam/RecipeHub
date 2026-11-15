@@ -1,0 +1,28 @@
+$ "C:\Program Files\Git\bin\bash.exe" tests/smoke/smoke-test.sh
+
+[1/7] Checking YARP Gateway Health...
+  [OK] Gateway Liveness Probe passed.
+[2/7] Authenticating rd@recipehub.demo via Gateway & Testing Proxied Service Info (/api/v1/{service}/info)...
+  [OK] Access token acquired via Identity Service.
+  [OK] /api/v1/identity/info verified (RecipeHub.Identity.Api, Database: Connected).
+  [OK] /api/v1/recipes/info verified (RecipeHub.Recipe.Api, Database: Connected).
+  [OK] /api/v1/content/info verified (RecipeHub.Content.Api, Database: Connected).
+  [OK] /api/v1/audit/info verified (RecipeHub.Audit.Api, Database: Connected).
+  [OK] /api/v1/quiz/info verified (RecipeHub.Quiz.Api, Database: Connected).
+[3/7] Testing gRPC Channel (Content.Api -> Recipe.Api via ServiceProbe.Ping)...
+  [OK] gRPC Probe Ping confirmed.
+[4/7] Testing Redis Streams Producer -> Consumer -> ACK Cycle...
+  [OK] Heartbeat 1794726769230-0 published to Redis Stream 'platform.heartbeat.v1'.
+  [OK] Verified XPENDING = 0. Message acknowledged by Worker.
+  [OK] Worker processing & ACK log entry confirmed.
+[5/7] Testing Kafka Broker, Topics & Audit Consumer Group...
+  [OK] Kafka container is healthy.
+  [OK] Kafka topic 'recipehub.audit.activities.v1' exists.
+  [OK] Kafka topic 'recipehub.audit.activities.v1.dlq' exists.
+  [OK] Kafka consumer group 'recipehub-audit' exists.
+[6/7] Testing Observability & DB Management Containers (Grafana & pgAdmin 4)...
+  [OK] Grafana Health Endpoint responded (http://localhost:3001/api/health).
+  [OK] pgAdmin 4 Ping Endpoint responded (http://localhost:5050/misc/ping).
+[7/7] Testing Next.js Frontend Liveness Probe...
+  [OK] Frontend Health Endpoint responded.
+    All Foundation Architecture Checks Passed! [SUCCESS]

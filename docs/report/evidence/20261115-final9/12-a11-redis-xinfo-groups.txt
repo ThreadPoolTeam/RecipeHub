@@ -1,0 +1,14 @@
+$ docker exec recipehub-redis redis-cli XINFO GROUPS content.image-drafts.v1
+
+name
+content-draft-workers
+consumers
+17
+pending
+0
+last-delivered-id
+0-0
+entries-read
+
+lag
+0

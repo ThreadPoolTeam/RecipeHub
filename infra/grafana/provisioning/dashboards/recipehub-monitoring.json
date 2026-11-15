@@ -2680,6 +2680,148 @@
           "renameByName": {"service": "Dịch vụ", "method": "HTTP method", "endpoint": "Route template", "code": "Mã HTTP", "Value": "Request trong cửa sổ"}
         }
       }]
+    },
+    {
+      "id": 46,
+      "type": "row",
+      "title": "Kafka",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 166,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 47,
+      "type": "timeseries",
+      "title": "Message vào topic/phút",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 167,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "refId": "A",
+          "expr": "sum(rate(kafka_topic_partition_current_offset{topic=\"recipehub.audit.activities.v1\"}[5m]))*60",
+          "range": true
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 48,
+      "type": "timeseries",
+      "title": "Consumer lag",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 167,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "refId": "A",
+          "expr": "sum(kafka_consumergroup_lag{consumergroup=\"recipehub-audit\"})",
+          "range": true
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 49,
+      "type": "timeseries",
+      "title": "Message trong DLQ",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "recipehub-prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 167,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "recipehub-prometheus"
+          },
+          "refId": "A",
+          "expr": "sum(kafka_topic_partition_current_offset{topic=\"recipehub.audit.activities.v1.dlq\"})",
+          "range": true
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
     }
   ],
   "refresh": "15s",

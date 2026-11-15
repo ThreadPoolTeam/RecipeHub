@@ -1,10 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Npgsql;
-using RecipeHub.Audit.Domain.Entities;
-using RecipeHub.Audit.Infrastructure.Data;
 using RecipeHub.BuildingBlocks.Events;
 using StackExchange.Redis;
 using Microsoft.Extensions.Configuration;
@@ -172,85 +168,18 @@ public class AuditStreamConsumer : BackgroundService
     private async Task ProcessEntryAsync(IDatabase db, StreamEntry entry, CancellationToken ct)
     {
         var payloadValue = entry.Values.FirstOrDefault(v => v.Name == "payload").Value;
-        if (payloadValue.IsNullOrEmpty)
-        {
-            _logger.LogWarning("Skipping entry {EntryId} with empty payload. ACKing poison entry.", entry.Id);
-            await db.StreamAcknowledgeAsync(AuditActivityEvent.StreamName, AuditActivityEvent.ConsumerGroup, entry.Id);
-            return;
-        }
-
-        EventEnvelope<AuditActivityEvent>? envelope;
-        try
-        {
-            envelope = EventEnvelope<AuditActivityEvent>.FromJson(payloadValue.ToString());
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning("Failed to deserialize audit payload for {EntryId}: {Message}. ACKing poison entry.", entry.Id, ex.Message);
-            await db.StreamAcknowledgeAsync(AuditActivityEvent.StreamName, AuditActivityEvent.ConsumerGroup, entry.Id);
-            return;
-        }
-
-        if (envelope == null || envelope.Payload == null)
-        {
-            _logger.LogWarning("Null audit envelope payload for entry {EntryId}. ACKing poison entry.", entry.Id);
-            await db.StreamAcknowledgeAsync(AuditActivityEvent.StreamName, AuditActivityEvent.ConsumerGroup, entry.Id);
-            return;
-        }
-
-        if (!Guid.TryParse(envelope.EventId, out var eventId))
-        {
-            _logger.LogWarning("Invalid non-Guid EventId in envelope: {EventId}. ACKing poison entry.", envelope.EventId);
-            await db.StreamAcknowledgeAsync(AuditActivityEvent.StreamName, AuditActivityEvent.ConsumerGroup, entry.Id);
-            return;
-        }
-
-        var auditLog = new AuditLog
-        {
-            Id = eventId,
-            ActorId = envelope.Payload.ActorId,
-            ActorName = envelope.Payload.ActorName,
-            ActorRole = envelope.Payload.ActorRole,
-            Source = envelope.Source,
-            Action = envelope.Payload.Action,
-            TargetType = envelope.Payload.TargetType,
-            TargetId = envelope.Payload.TargetId,
-            Summary = envelope.Payload.Summary,
-            OccurredAt = envelope.OccurredAtUtc
-        };
-
         try
         {
             using var scope = _scopeFactory.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<AuditDbContext>();
-
-            context.AuditLogs.Add(auditLog);
-            await context.SaveChangesAsync(ct);
-
-            // Acknowledge upon successful commit
+            var writer = scope.ServiceProvider.GetRequiredService<AuditLogWriter>();
+            var result = await writer.WriteAsync(payloadValue.IsNullOrEmpty ? null : payloadValue.ToString(), ct);
             await db.StreamAcknowledgeAsync(AuditActivityEvent.StreamName, AuditActivityEvent.ConsumerGroup, entry.Id);
-            _logger.LogInformation("Persisted and ACKed audit log {EventId} [{Action}]", eventId, auditLog.Action);
-        }
-        catch (DbUpdateException dbEx) when (IsUniqueConstraintViolation(dbEx))
-        {
-            // Duplicate event delivery: acknowledge to prevent re-processing
-            await db.StreamAcknowledgeAsync(AuditActivityEvent.StreamName, AuditActivityEvent.ConsumerGroup, entry.Id);
-            _logger.LogInformation("Duplicate audit event {EventId} recognized and ACKed.", eventId);
+            _logger.LogInformation("Audit entry {EntryId} processed and ACKed: {Result}", entry.Id, result);
         }
         catch (Exception ex)
         {
-            // Do NOT ACK: preserve entry in stream for later retry
-            _logger.LogWarning("Failed to persist audit log {EventId}: {Message}", eventId, ex.Message);
+            // Leave the entry pending on infrastructure errors, preserving Redis retry behavior.
+            _logger.LogWarning(ex, "Failed to persist audit entry {EntryId}; leaving pending.", entry.Id);
         }
-    }
-
-    private static bool IsUniqueConstraintViolation(DbUpdateException ex)
-    {
-        if (ex.InnerException is PostgresException pgEx)
-        {
-            return pgEx.SqlState == PostgresErrorCodes.UniqueViolation;
-        }
-
-        return false;
     }
 }

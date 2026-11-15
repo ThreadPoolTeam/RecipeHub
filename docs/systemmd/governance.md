@@ -53,7 +53,7 @@
 - [ ] Có đảm bảo **KHÔNG** dùng EF migrations, không `MigrateAsync` / `EnsureCreated` trong runtime?
 - [ ] Route tuân thủ `/api/v1/{service}/*`; chỉ sửa YARP Gateway (`RecipeHub.Gateway/appsettings.json`) nếu route mới chưa được prefix hiện hữu bao phủ?
 - [ ] Đã tích hợp Swagger UI và kiểm tra hiển thị đúng schema chưa? (Nhắc lại: CẤM comment XML trong controller).
-- [ ] Giao tiếp liên dịch vụ: Dùng gRPC cho truy vấn đồng bộ, dùng Redis Streams `EventEnvelope<T>` cho sự kiện bất đồng bộ?
+- [ ] Giao tiếp liên dịch vụ: Dùng gRPC cho truy vấn đồng bộ, sự kiện nghiệp vụ (audit) dùng Kafka; hàng đợi việc dùng Redis Streams; đều bọc `EventEnvelope<T>` (Content outbox có contract job riêng)?
 - [ ] Đã chạy kiểm tra `dotnet build src/backend/RecipeHub.sln` thành công không lỗi?
 
 ---

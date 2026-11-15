@@ -2,7 +2,7 @@
 
 Dự án môn học PRN232 / PRM Semester 8: Hệ thống microservices quản lý công thức đồ uống, SOP, media/ảnh AI, PDF, quiz và nhật ký kiểm toán.
 
-Backend .NET 8, YARP, PostgreSQL database-per-service, Redis Streams và gRPC. Frontend Next.js 16 / React 19. Chuẩn kiến trúc và quyền: [System Design](docs/systemmd/README.md).
+Backend .NET 8, YARP, PostgreSQL database-per-service, Kafka (audit), Redis Streams (việc ảnh AI) và gRPC. Frontend Next.js 16 / React 19. Chuẩn kiến trúc và quyền: [System Design](docs/systemmd/README.md).
 
 Development: `admin@recipehub.demo`, `rd@recipehub.demo`, `viewer@recipehub.demo` dùng `Demo@1234` khi bật seed. Tài khoản legacy phụ thuộc dữ liệu DB hiện có; Viewer chỉ xem công thức `published`, chưa archive. Production phải cấu hình `Jwt__SigningKey` ít nhất 32 bytes và áp dụng SQL phù hợp với trạng thái DB trước khi khởi động; không bật seed demo.
 
@@ -28,7 +28,7 @@ RecipeHub/
 │   │   │   ├── Audit/    (Domain, Application, Infrastructure, Api)
 │   │   │   └── Quiz/     (Domain, Application, Infrastructure, Api)
 │   │   └── Workers/
-│   │       └── RecipeHub.BackgroundWorker/       # Redis Streams consumer with MKSTREAM & ACK
+│   │       └── RecipeHub.BackgroundWorker/       # Kafka audit + Redis Streams jobs/heartbeat
 │   └── frontend/
 │       └── src/                                  # Next.js 16 App Router (Standalone output)
 ├── infra/
@@ -87,6 +87,29 @@ Hook project `.omp/hooks/pre/codegraph-sync.ts` được nạp khi mở phiên O
    tests/smoke/test_recipe_api.sh
    tests/smoke/test_recipe_api.sh --full
    ```
+
+### Kafka
+
+Compose khởi chạy Kafka và tạo topic qua `infra/kafka/create-topics.sh`. Kafka UI: http://localhost:8085; broker local: `localhost:9094`. Topic: `recipehub.audit.activities.v1`, DLQ: `recipehub.audit.activities.v1.dlq`; consumer group: `recipehub-audit`.
+
+`AUDIT_TRANSPORT=Kafka` là mặc định Compose; `Dual` gửi cả hai kênh. Đường lùi: đặt `AUDIT_TRANSPORT=Redis` trong `.env`, chạy lại `docker compose --env-file .env -f infra/compose.yaml up -d`. Giữ nguyên stream audit Redis cũ.
+
+Xem lag:
+```bash
+docker exec recipehub-kafka /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group recipehub-audit
+```
+
+### Swagger khi chạy Docker
+
+Mặc định 5 service chỉ nghe trong mạng Docker (vào qua Gateway `:5000`). Khi cần mở Swagger UI (chỉ trên 127.0.0.1):
+```bash
+docker compose --env-file .env -f infra/compose.yaml -f infra/compose.swagger.yaml up -d
+```
+Sau đó mở `http://localhost:5001/swagger` … `http://localhost:5005/swagger`.
+
+### Kiểm thử Playwright có ảnh minh chứng
+
+Xem `tests/e2e/README.md`. Ảnh từng bước lưu ở `docs/report/evidence/<RUN_ID>/` kèm `index.md`.
 
 ### Khởi chạy trực tiếp Local (Dev mode)
 1. Chuẩn bị PostgreSQL/Redis, áp dụng SQL theo trạng thái database và cấu hình connection strings/gRPC/AI/storage cho dịch vụ cần dùng. **Build không khởi động API:**
