@@ -1,0 +1,30 @@
+NAME                          IMAGE                                                   STATUS                        PORTS
+recipehub-audit               recipehub-audit-service                                 Up 46 seconds (healthy)       5004/tcp
+recipehub-blackbox-exporter   prom/blackbox-exporter:v0.26.0                          Up About a minute             9115/tcp
+recipehub-cadvisor            ghcr.io/google/cadvisor:0.60.6                          Up About a minute (healthy)   8080/tcp
+recipehub-content             recipehub-content-service                               Up 46 seconds (healthy)       5003/tcp
+recipehub-frontend            recipehub-frontend                                      Up 34 seconds (healthy)       0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
+recipehub-gateway             recipehub-gateway                                       Up 40 seconds (healthy)       0.0.0.0:5000->5000/tcp, [::]:5000->5000/tcp
+recipehub-grafana             grafana/grafana:11.2.0                                  Up 57 seconds                 127.0.0.1:3001->3000/tcp
+recipehub-identity            recipehub-identity-service                              Up 52 seconds (healthy)       5001/tcp, 5011/tcp
+recipehub-kafka               apache/kafka:3.9.0                                      Up About a minute (healthy)   9092/tcp, 127.0.0.1:9094->9094/tcp
+recipehub-kafka-exporter      danielqsj/kafka-exporter:v1.8.0                         Up 59 seconds                 9308/tcp
+recipehub-kafka-ui            ghcr.io/kafbat/kafka-ui:v1.1.0                          Up 59 seconds                 127.0.0.1:8085->8080/tcp
+recipehub-pgadmin             dpage/pgadmin4:8                                        Up 56 seconds                 443/tcp, 127.0.0.1:5050->80/tcp
+recipehub-postgres            postgres:16-alpine                                      Up About a minute (healthy)   127.0.0.1:5433->5432/tcp
+recipehub-postgres-exporter   quay.io/prometheuscommunity/postgres-exporter:v0.17.1   Up 57 seconds                 9187/tcp
+recipehub-prometheus          prom/prometheus:v3.5.0                                  Up About a minute             127.0.0.1:9090->9090/tcp
+recipehub-quiz                recipehub-quiz-service                                  Up 46 seconds (healthy)       5005/tcp
+recipehub-recipe              recipehub-recipe-service                                Up 52 seconds (healthy)       5002/tcp
+recipehub-redis               redis:7-alpine                                          Up About a minute (healthy)   127.0.0.1:6380->6379/tcp
+recipehub-redis-exporter      oliver006/redis_exporter:v1.69.0                        Up About a minute             9121/tcp
+recipehub-worker              recipehub-worker                                        Up 46 seconds                 
+REPOSITORY                                      TAG                      SIZE
+recipehub-audit-service                         latest                   501MB
+recipehub-recipe-service                        latest                   635MB
+recipehub-quiz-service                          latest                   501MB
+recipehub-content-service                       latest                   501MB
+recipehub-identity-service                      latest                   502MB
+recipehub-worker                                latest                   456MB
+recipehub-gateway                               latest                   487MB
+recipehub-frontend                              latest                   377MB

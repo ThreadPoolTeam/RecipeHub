@@ -1,0 +1,21 @@
+
+recipehub-audit 172.19.0.16/16
+recipehub-blackbox-exporter 172.19.0.3/16
+recipehub-cadvisor 172.19.0.4/16
+recipehub-content 172.19.0.18/16
+recipehub-frontend 172.19.0.21/16
+recipehub-gateway 172.19.0.20/16
+recipehub-grafana 172.19.0.12/16
+recipehub-identity 172.19.0.11/16
+recipehub-kafka 172.19.0.2/16
+recipehub-kafka-exporter 172.19.0.9/16
+recipehub-kafka-ui 172.19.0.10/16
+recipehub-pgadmin 172.19.0.14/16
+recipehub-postgres 172.19.0.5/16
+recipehub-postgres-exporter 172.19.0.13/16
+recipehub-prometheus 172.19.0.6/16
+recipehub-quiz 172.19.0.19/16
+recipehub-recipe 172.19.0.15/16
+recipehub-redis 172.19.0.7/16
+recipehub-redis-exporter 172.19.0.8/16
+recipehub-worker 172.19.0.17/16

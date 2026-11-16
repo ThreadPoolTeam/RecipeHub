@@ -1,0 +1,106 @@
+$ psql -c "\l"   # 5 database riêng cho 5 service
+                                                                        List of databases
+        Name        |       Owner       | Encoding | Locale Provider |  Collate   |   Ctype    | ICU Locale | ICU Rules |            Access privileges            
+--------------------+-------------------+----------+-----------------+------------+------------+------------+-----------+-----------------------------------------
+ postgres           | recipehub_admin   | UTF8     | libc            | en_US.utf8 | en_US.utf8 |            |           | 
+ recipehub_audit    | audit_migrator    | UTF8     | libc            | en_US.utf8 | en_US.utf8 |            |           | =Tc/audit_migrator                     +
+                    |                   |          |                 |            |            |            |           | audit_migrator=CTc/audit_migrator      +
+                    |                   |          |                 |            |            |            |           | audit_user=c/audit_migrator            +
+                    |                   |          |                 |            |            |            |           | grafana_reader=c/audit_migrator
+ recipehub_content  | content_migrator  | UTF8     | libc            | en_US.utf8 | en_US.utf8 |            |           | =Tc/content_migrator                   +
+                    |                   |          |                 |            |            |            |           | content_migrator=CTc/content_migrator  +
+                    |                   |          |                 |            |            |            |           | content_user=c/content_migrator        +
+                    |                   |          |                 |            |            |            |           | grafana_reader=c/content_migrator
+ recipehub_default  | recipehub_admin   | UTF8     | libc            | en_US.utf8 | en_US.utf8 |            |           | 
+ recipehub_identity | identity_migrator | UTF8     | libc            | en_US.utf8 | en_US.utf8 |            |           | =Tc/identity_migrator                  +
+                    |                   |          |                 |            |            |            |           | identity_migrator=CTc/identity_migrator+
+                    |                   |          |                 |            |            |            |           | identity_user=c/identity_migrator      +
+                    |                   |          |                 |            |            |            |           | grafana_reader=c/identity_migrator
+ recipehub_quiz     | quiz_migrator     | UTF8     | libc            | en_US.utf8 | en_US.utf8 |            |           | =Tc/quiz_migrator                      +
+                    |                   |          |                 |            |            |            |           | quiz_migrator=CTc/quiz_migrator        +
+                    |                   |          |                 |            |            |            |           | quiz_user=c/quiz_migrator              +
+                    |                   |          |                 |            |            |            |           | grafana_reader=c/quiz_migrator
+ recipehub_recipe   | recipe_migrator   | UTF8     | libc            | en_US.utf8 | en_US.utf8 |            |           | =Tc/recipe_migrator                    +
+                    |                   |          |                 |            |            |            |           | recipe_migrator=CTc/recipe_migrator    +
+                    |                   |          |                 |            |            |            |           | recipe_user=c/recipe_migrator          +
+                    |                   |          |                 |            |            |            |           | grafana_reader=c/recipe_migrator
+ template0          | recipehub_admin   | UTF8     | libc            | en_US.utf8 | en_US.utf8 |            |           | =c/recipehub_admin                     +
+                    |                   |          |                 |            |            |            |           | recipehub_admin=CTc/recipehub_admin
+ template1          | recipehub_admin   | UTF8     | libc            | en_US.utf8 | en_US.utf8 |            |           | =c/recipehub_admin                     +
+                    |                   |          |                 |            |            |            |           | recipehub_admin=CTc/recipehub_admin
+(9 rows)
+
+$ psql -c "\du"   # role: *_migrator (DDL) tách *_user (runtime DML)
+                                 List of roles
+     Role name     |                         Attributes                         
+-------------------+------------------------------------------------------------
+ audit_migrator    | 
+ audit_user        | 
+ content_migrator  | 
+ content_user      | 
+ grafana_reader    | 
+ identity_migrator | 
+ identity_user     | 
+ quiz_migrator     | 
+ quiz_user         | 
+ recipe_migrator   | 
+ recipe_user       | 
+ recipehub_admin   | Superuser, Create role, Create DB, Replication, Bypass RLS
+
+
+===== recipehub_identity: bảng + số dòng thực tế (count(*))
+           table           | rows 
+---------------------------+------
+ identity_db.auth_sessions |    1
+ identity_db.roles         |    3
+ identity_db.users         |    3
+(3 rows)
+
+
+===== recipehub_recipe: bảng + số dòng thực tế (count(*))
+             table              | rows 
+--------------------------------+------
+ recipe_db.ingredient           |    0
+ recipe_db.ingredient_category  |    6
+ recipe_db.pdf_document         |    0
+ recipe_db.pdf_document_item    |    0
+ recipe_db.pdf_document_storage |    0
+ recipe_db.recipe               |    0
+ recipe_db.recipe_ingredient    |    0
+ recipe_db.recipe_step          |    0
+ recipe_db.recipe_step_media    |    0
+ recipe_db.recipe_version       |    0
+ recipe_db.recipe_yield         |    0
+ recipe_db.unit                 |    8
+ recipe_db.unit_category        |    3
+(13 rows)
+
+
+===== recipehub_content: bảng + số dòng thực tế (count(*))
+             table              | rows 
+--------------------------------+------
+ content_db.ai_image_draft      |    0
+ content_db.ai_image_draft_file |    0
+ content_db.media_asset         |    0
+ content_db.outbox_message      |    0
+(4 rows)
+
+
+===== recipehub_audit: bảng + số dòng thực tế (count(*))
+       table        | rows 
+--------------------+------
+ audit_db.audit_log |    0
+(1 row)
+
+
+===== recipehub_quiz: bảng + số dòng thực tế (count(*))
+         table         | rows 
+-----------------------+------
+ quiz_db.quiz          |    0
+ quiz_db.quiz_answer   |    0
+ quiz_db.quiz_attempt  |    0
+ quiz_db.quiz_option   |    0
+ quiz_db.quiz_question |    0
+ quiz_db.quiz_version  |    0
+(6 rows)
+
