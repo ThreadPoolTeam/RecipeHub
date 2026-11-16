@@ -13,6 +13,7 @@ import { useAiDraftPolling } from '@/lib/ai-draft-polling';
 import { createAiDraft, describeAiDraftError, type CreateAiDraftInput } from '@/lib/api/recipe-ai-draft';
 import { useDemo } from '@/lib/demo/provider';
 
+const MAX_OMIT = 5;
 const EMPTY_INPUT: CreateAiDraftInput = { recipeName: '', description: null };
 
 export default function AiRecipeDraftPage() {
@@ -21,6 +22,7 @@ export default function AiRecipeDraftPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [lastInput, setLastInput] = useState<CreateAiDraftInput>(EMPTY_INPUT);
+  const [activeOmit, setActiveOmit] = useState<string[]>([]);
   const polling = useAiDraftPolling(session, jobId);
   const isCurrentJob = jobId !== null && polling.jobId === jobId;
 
@@ -41,10 +43,11 @@ export default function AiRecipeDraftPage() {
 
   const resetToForm = () => {
     setJobId(null);
+    setActiveOmit([]);
     setSubmitError(null);
   };
 
-  const handleSubmit = async (input: CreateAiDraftInput) => {
+  const handleSubmit = async (input: CreateAiDraftInput, omitIngredients: string[] = []) => {
     if (!session) {
       setSubmitError('Phiên đăng nhập không còn hiệu lực. Vui lòng đăng nhập lại.');
       return;
@@ -53,7 +56,8 @@ export default function AiRecipeDraftPage() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const createdJobId = await createAiDraft(session, input);
+      const createdJobId = await createAiDraft(session, { ...input, omitIngredients });
+      setActiveOmit(omitIngredients);
       setJobId(createdJobId);
     } catch (error: unknown) {
       setSubmitError(describeAiDraftError(error));
@@ -84,7 +88,9 @@ export default function AiRecipeDraftPage() {
           error={submitError}
           initialRecipeName={lastInput.recipeName}
           initialDescription={lastInput.description ?? ''}
-          onSubmit={handleSubmit}
+          onSubmit={(input) => {
+            void handleSubmit(input);
+          }}
           onDraftChange={setLastInput}
         />
       )}
@@ -108,7 +114,11 @@ export default function AiRecipeDraftPage() {
           retryError={submitError}
           onEditRequest={resetToForm}
           onRetry={() => {
-            void handleSubmit(lastInput);
+            void handleSubmit(lastInput, activeOmit);
+          }}
+          onOmit={(ingredientName) => {
+            const next = [...activeOmit.filter((name) => name !== ingredientName), ingredientName];
+            void handleSubmit(lastInput, next.slice(-MAX_OMIT));
           }}
         />
       )}

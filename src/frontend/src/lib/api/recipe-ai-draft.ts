@@ -47,11 +47,13 @@ export interface AiRecipeDraft {
   steps: AiDraftStep[];
   qualityChecks: string[];
   servingInstructions: string;
+  omittedIngredients: string[];
 }
 
 export interface AiDraftCannotGenerate {
   errorCode: string;
   missingRequirements: string[];
+  missingIngredients: string[];
 }
 
 export interface AiDraftJob {
@@ -65,6 +67,7 @@ export interface AiDraftJob {
 export interface CreateAiDraftInput {
   recipeName: string;
   description: string | null;
+  omitIngredients?: string[];
 }
 
 type JsonRecord = Record<string, unknown>;
@@ -159,6 +162,10 @@ function textArray(value: unknown, label: string): string[] {
   return array(value, label).map((entry, index) => text(entry, `${label}[${index}]`));
 }
 
+function optionalTextArray(value: unknown, label: string): string[] {
+  return value === null || value === undefined ? [] : textArray(value, label);
+}
+
 function mapYield(value: unknown): AiDraftYield {
   const item = record(value, 'ai draft.draft.yield');
   return {
@@ -220,6 +227,7 @@ function mapDraft(value: unknown): AiRecipeDraft {
     ),
     qualityChecks: textArray(item.qualityChecks, 'ai draft.draft.qualityChecks'),
     servingInstructions: text(item.servingInstructions, 'ai draft.draft.servingInstructions'),
+    omittedIngredients: optionalTextArray(item.omittedIngredients, 'ai draft.draft.omittedIngredients'),
   };
 }
 
@@ -230,6 +238,10 @@ function mapCannotGenerate(value: unknown): AiDraftCannotGenerate {
     missingRequirements: textArray(
       item.missingRequirements,
       'ai draft.cannotGenerate.missingRequirements'
+    ),
+    missingIngredients: optionalTextArray(
+      item.missingIngredients,
+      'ai draft.cannotGenerate.missingIngredients'
     ),
   };
 }
@@ -282,7 +294,11 @@ export async function createAiDraft(actor: SessionInfo, input: CreateAiDraftInpu
   const response = record(
     await requestJson('api/v1/recipe/ai-drafts', actor.userId, {
       method: 'POST',
-      body: JSON.stringify({ recipeName: input.recipeName, description: input.description }),
+      body: JSON.stringify({
+        recipeName: input.recipeName,
+        description: input.description,
+        ...(input.omitIngredients?.length ? { omitIngredients: input.omitIngredients } : {}),
+      }),
     }),
     'ai draft'
   );

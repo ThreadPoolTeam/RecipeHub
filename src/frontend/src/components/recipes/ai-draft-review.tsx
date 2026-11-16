@@ -119,6 +119,14 @@ export function AiDraftReview({ draft, onRestart }: AiDraftReviewProps) {
         message={DEFAULT_BATCH_NOTE}
       />
 
+      {draft.omittedIngredients.length > 0 && (
+        <Alert
+          type="warning"
+          title={`Bản này không có: ${draft.omittedIngredients.join(', ')}`}
+          message="AI tạo bản nháp theo yêu cầu bỏ nguyên liệu trên. Hương vị có thể khác món gốc."
+        />
+      )}
+
       <section className="space-y-4 rounded-lg border border-border bg-card p-6 shadow-soft">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
