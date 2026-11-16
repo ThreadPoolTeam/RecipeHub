@@ -140,7 +140,7 @@ if [ -f "/schema/quiz-db/seed/20261114_demo_quizzes.sql" ]; then
 fi
 
 # Grant least-privilege runtime DML to quiz_user; read-only to Grafana
-PGPASSWORD="${QUIZ_MIGRATOR_PASSWORD:-quiz_migrator_pw}" psql -v ON_ERROR_STOP=1 --username "${QUIZ_MIGRATOR_USER:-quiz_migrator}" --dbname "${QUIZ_DB_NAME:-recipehub_quiz}" <<-EOSQL
+PGPASSWORD="${QUIZ_MIGRATOR_PASSWORD:?QUIZ_MIGRATOR_PASSWORD is required}" psql -v ON_ERROR_STOP=1 --username "${QUIZ_MIGRATOR_USER:-quiz_migrator}" --dbname "${QUIZ_DB_NAME:-recipehub_quiz}" <<-EOSQL
     GRANT USAGE ON SCHEMA quiz_db TO ${QUIZ_DB_USER:-quiz_user}, ${GRAFANA_DB_USER};
     GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA quiz_db TO ${QUIZ_DB_USER:-quiz_user};
     GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA quiz_db TO ${QUIZ_DB_USER:-quiz_user};
