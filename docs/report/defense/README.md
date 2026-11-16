@@ -15,6 +15,7 @@ Viết cho người **chưa biết gì** vẫn đọc hiểu được và trình
 | 07 | [Hạ tầng Docker/Redis/Kafka/gRPC](07-ha-tang-docker-redis-kafka-grpc.md) | Chi tiết từng cơ chế messaging, gRPC, kèm lệnh chứng minh |
 | 08 | [Bằng chứng](08-bang-chung.md) | Ảnh và log chạy thật, chỉ cho GV xem gì |
 | 09 | [Kịch bản demo & hỏi đáp](09-kich-ban-demo-va-hoi-dap.md) | Trình bày theo trình tự nào; ngân hàng câu hỏi |
+| 10 | [**Bộ test copy-paste**](10-bo-test-copy-paste.md) | Dữ liệu mẫu nhập web + 12 khối lệnh test kèm kết quả mong đợi |
 
 ## Chạy nhanh
 
