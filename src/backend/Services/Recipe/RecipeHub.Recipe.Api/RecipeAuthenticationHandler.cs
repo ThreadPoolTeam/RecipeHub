@@ -12,7 +12,8 @@ public sealed class RecipeAuthenticationHandler(IOptionsMonitor<AuthenticationSc
 {
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        if (!Request.Path.StartsWithSegments("/api/v1/recipes")) return AuthenticateResult.NoResult();
+        if (!Request.Path.StartsWithSegments("/api/v1/recipes")
+            && !Request.Path.StartsWithSegments("/api/v1/recipe/ai-drafts")) return AuthenticateResult.NoResult();
         var header = Request.Headers.Authorization.ToString();
         if (!header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)) return AuthenticateResult.NoResult();
         try

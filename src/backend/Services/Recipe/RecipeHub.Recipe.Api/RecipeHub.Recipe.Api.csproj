@@ -6,6 +6,10 @@
     <ProjectReference Include="..\..\..\BuildingBlocks\RecipeHub.BuildingBlocks\RecipeHub.BuildingBlocks.csproj" />
     <ProjectReference Include="..\..\..\Contracts\RecipeHub.GrpcContracts\RecipeHub.GrpcContracts.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Prompts\description-suggestion.md" LogicalName="RecipeHub.Recipe.Api.Prompts.description-suggestion.md" />
+  </ItemGroup>
+
 
   <ItemGroup>
     <PackageReference Include="Grpc.AspNetCore" Version="2.66.0" />

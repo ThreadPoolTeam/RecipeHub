@@ -23,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<IIngredientRepository, IngredientRepository>();
         services.AddScoped<IUnitRepository, UnitRepository>();
         services.AddScoped<IIngredientCategoryRepository, IngredientCategoryRepository>();
+        services.AddScoped<IAiDraftRepository, AiDraftRepository>();
 
         // PDF Services and Repositories
         services.AddScoped<IPdfDocumentRepository, PdfDocumentRepository>();

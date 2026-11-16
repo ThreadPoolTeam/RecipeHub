@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\backend\Workers\RecipeHub.BackgroundWorker\RecipeHub.BackgroundWorker.csproj" />
     <ProjectReference Include="..\..\src\backend\Services\Audit\RecipeHub.Audit.Infrastructure\RecipeHub.Audit.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\backend\Services\Identity\RecipeHub.Identity.Application\RecipeHub.Identity.Application.csproj" />
     <ProjectReference Include="..\..\src\backend\Services\Identity\RecipeHub.Identity.Infrastructure\RecipeHub.Identity.Infrastructure.csproj" />

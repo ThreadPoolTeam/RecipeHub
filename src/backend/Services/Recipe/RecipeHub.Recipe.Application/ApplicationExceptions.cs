@@ -6,6 +6,7 @@ public sealed class NotFoundException(string message) : Exception(message);
 
 public sealed class ConflictException(string message) : Exception(message);
 public sealed class ForbiddenException(string message) : Exception(message);
+public sealed class AiDraftUnavailableException() : Exception("Dịch vụ tạo bản nháp tạm thời không khả dụng.");
 
 public enum PdfStorageFailure
 {
