@@ -253,7 +253,7 @@ public class QuizAttemptServiceTests
         }
     }
     [Fact]
-    public async Task GetManagementResults_FiltersCorrectlyForAdminAndRnD()
+    public async Task GetManagementResults_RndSeesAllOwners_AdminForbidden()
     {
         using var context = CreateDbContext();
         var (quiz, version) = await SeedPublishedQuizAsync(context);
@@ -268,24 +268,22 @@ public class QuizAttemptServiceTests
             var viewerId = Guid.NewGuid();
             await service.StartAttemptAsync(quiz.PublicId, 1, viewerId, "token");
 
-            // Query as Admin -> should see the attempt
-            var (adminItems, adminTotal) = await service.GetManagementResultsAsync(
-                null, quiz.PublicId, 1, Guid.NewGuid(), "admin", 1, 10);
-            Assert.True(adminTotal >= 1);
-            Assert.Contains(adminItems, a => a.QuizId == quiz.PublicId);
+            // Admin is not authorized for quiz results
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+                service.GetManagementResultsAsync(null, quiz.PublicId, 1, Guid.NewGuid(), "admin", 1, 10));
 
-            // Query as the R&D owner -> should see the attempt
+            // Query as the rnd owner -> should see the attempt
             var (ownerItems, ownerTotal) = await service.GetManagementResultsAsync(
                 null, quiz.PublicId, 1, quiz.CreatedByUserRef, "rnd", 1, 10);
             Assert.True(ownerTotal >= 1);
             Assert.Contains(ownerItems, a => a.QuizId == quiz.PublicId);
 
-            // Query as a different R&D user -> should see 0 attempts
+            // Query as a different rnd user -> no owner scoping, sees the same attempt
             var otherRnDId = Guid.NewGuid();
             var (otherItems, otherTotal) = await service.GetManagementResultsAsync(
                 null, quiz.PublicId, 1, otherRnDId, "rnd", 1, 10);
-            Assert.Equal(0, otherTotal);
-            Assert.Empty(otherItems);
+            Assert.Equal(ownerTotal, otherTotal);
+            Assert.Contains(otherItems, a => a.QuizId == quiz.PublicId);
         }
         finally
         {
@@ -320,36 +318,40 @@ public class QuizAttemptServiceTests
             var aA2 = await service.StartAttemptAsync(quizA2.PublicId, 1, Guid.NewGuid(), "token");
             var aB2 = await service.StartAttemptAsync(quizB2.PublicId, 1, Guid.NewGuid(), "token");
 
-            // 1. Owner A queries Page 1 with PageSize 1 without quizId filter
-            var (page1Items, totalA) = await service.GetManagementResultsAsync(
+            // 1. Any rnd user (no owner scoping) sees attempts of all owners: page 1, size 1
+            var (page1Items, total1) = await service.GetManagementResultsAsync(
                 userRef: null, quizId: null, versionNumber: null, actorUserId: ownerA, actorRole: "rnd", page: 1, pageSize: 1);
 
-            Assert.Equal(2, totalA);
+            Assert.True(total1 >= 4);
             Assert.Single(page1Items);
-            Assert.True(page1Items[0].QuizId == quizA1.PublicId || page1Items[0].QuizId == quizA2.PublicId);
 
-            // 2. Owner A queries Page 2 with PageSize 1
-            var (page2Items, totalA2) = await service.GetManagementResultsAsync(
+            // 2. Page 2 size 1 -> different attempt, same total
+            var (page2Items, total2) = await service.GetManagementResultsAsync(
                 userRef: null, quizId: null, versionNumber: null, actorUserId: ownerA, actorRole: "rnd", page: 2, pageSize: 1);
 
-            Assert.Equal(2, totalA2);
+            Assert.Equal(total1, total2);
             Assert.Single(page2Items);
-            Assert.True(page2Items[0].QuizId == quizA1.PublicId || page2Items[0].QuizId == quizA2.PublicId);
             Assert.NotEqual(page1Items[0].AttemptId, page2Items[0].AttemptId);
 
-            // 3. Owner A queries Page 3 with PageSize 1 -> should be empty
+            // 3. Page beyond total -> empty
             var (page3Items, _) = await service.GetManagementResultsAsync(
-                userRef: null, quizId: null, versionNumber: null, actorUserId: ownerA, actorRole: "rnd", page: 3, pageSize: 1);
+                userRef: null, quizId: null, versionNumber: null, actorUserId: ownerA, actorRole: "rnd", page: total1 + 1, pageSize: 1);
 
             Assert.Empty(page3Items);
 
-            // 4. Admin queries without filter -> should see at least 4 attempts spanning both owners
-            var (adminItems, adminTotal) = await service.GetManagementResultsAsync(
-                userRef: null, quizId: null, versionNumber: null, actorUserId: Guid.NewGuid(), actorRole: "admin", page: 1, pageSize: 100);
+            // 4. A rnd user who owns none of the quizzes sees attempts of both owners
+            var (allItems, allTotal) = await service.GetManagementResultsAsync(
+                userRef: null, quizId: null, versionNumber: null, actorUserId: Guid.NewGuid(), actorRole: "rnd", page: 1, pageSize: 1000);
 
-            Assert.True(adminTotal >= 4);
-            Assert.Contains(adminItems, a => a.QuizId == quizA1.PublicId);
-            Assert.Contains(adminItems, a => a.QuizId == quizB1.PublicId);
+            Assert.True(allTotal >= 4);
+            foreach (var qId in allQuizzes)
+                Assert.Contains(allItems, a => a.QuizId == qId);
+            Assert.Contains(allItems, a => a.AttemptId == aA1.AttemptId);
+            Assert.Contains(allItems, a => a.AttemptId == aB2.AttemptId);
+
+            // 5. Admin is not authorized
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+                service.GetManagementResultsAsync(null, null, null, Guid.NewGuid(), "admin", 1, 100));
         }
         finally
         {

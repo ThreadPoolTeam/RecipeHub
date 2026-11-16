@@ -7,9 +7,9 @@ import { UnitItem } from '@/lib/api/backend-repository';
 import { Alert, Button, Select, TextInput } from '@/components/workspace/fields';
 import { Dialog } from '@/components/workspace/dialog';
 
-export function UnitConversionModal() {
+export function UnitConversionModal({ inline = false }: { inline?: boolean }) {
   const { repo, touch } = useDemo();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(inline);
   const [units, setUnits] = useState<UnitItem[]>([]);
   const [source, setSource] = useState('');
   const [target, setTarget] = useState('');
@@ -62,28 +62,40 @@ export function UnitConversionModal() {
     return () => { window.clearTimeout(timer); controller.abort(); };
   }, [open, catalogLoading, value, source, target, repo]);
 
-  return <>
-    <Button size="sm" onClick={() => { touch(); setOpen(true); }}><ArrowRightLeft className="w-4 h-4 mr-1.5" />Quy đổi đơn vị</Button>
-    <Dialog isOpen={open} onClose={() => setOpen(false)} title="Quy đổi đơn vị"
-      description="Hỗ trợ mg/g/kg và ml/cl/dl/l cùng nhóm. Các đơn vị khác chỉ đổi sang chính nó.">
+  const content = (
       <div className="space-y-4">
-        <TextInput label="Giá trị cần đổi" type="number" min="0" step="any" value={value} onChange={e => { setValue(e.target.value); touch(); }} />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Select label="Đơn vị gốc" value={source} disabled={catalogLoading} options={units.map(unit => ({ value: unit.code, label: `${unit.code} — ${unit.name}` }))}
+        <TextInput id={inline ? 'quick-conversion-value' : 'conversion-value'} label="Giá trị cần đổi" type="number" min="0" step="any" value={value} onChange={e => { setValue(e.target.value); touch(); }} />
+        <div className={inline ? 'space-y-4' : 'grid grid-cols-1 sm:grid-cols-2 gap-3'}>
+          <Select id={inline ? 'quick-conversion-source' : 'conversion-source'} label="Đơn vị gốc" value={source} disabled={catalogLoading} options={units.map(unit => ({ value: unit.code, label: `${unit.code} · ${unit.name}` }))}
             onChange={e => {
               setSource(e.target.value);
               const next = units.find(unit => unit.code === e.target.value);
               if (!units.some(unit => unit.code === target && unit.categoryId === next?.categoryId)) setTarget(next?.code ?? '');
             }} />
-          <Select label="Đơn vị đích" value={target} disabled={catalogLoading} options={targets.map(unit => ({ value: unit.code, label: `${unit.code} — ${unit.name}` }))}
+          <Select id={inline ? 'quick-conversion-target' : 'conversion-target'} label="Đơn vị đích" value={target} disabled={catalogLoading} options={targets.map(unit => ({ value: unit.code, label: `${unit.code} · ${unit.name}` }))}
             onChange={e => setTarget(e.target.value)} />
         </div>
         {error && <Alert variant="error">{error}</Alert>}
-        <div role="status" aria-live="polite" className="rounded-xl border border-[#E8E2D9] bg-[#FAF9F5] p-4 text-sm text-[#1A1917]">
+        <div role="status" aria-live="polite" className="rounded-lg border border-success/30 bg-success-soft p-4 text-sm text-success tabular-nums">
           {catalogLoading ? 'Đang tải đơn vị...' : loading ? 'Đang quy đổi...' : result !== null ?
             <><span>{value} {source} = </span><strong>{result.toLocaleString('vi-VN', { maximumSignificantDigits: 15 })} {target}</strong></> : 'Nhập giá trị và chọn đơn vị để quy đổi.'}
         </div>
       </div>
+  );
+
+  if (inline) return (
+    <aside className="rounded-lg border border-border bg-card p-6 shadow-soft">
+      <h2 className="font-display text-lg font-medium text-foreground">Quy đổi nhanh</h2>
+      <p className="mb-4 mt-1 text-xs text-muted-foreground">Kiểm tra hệ số trước khi dùng trong công thức.</p>
+      {content}
+    </aside>
+  );
+
+  return <>
+    <Button size="sm" onClick={() => { touch(); setOpen(true); }}><ArrowRightLeft className="w-4 h-4 mr-1.5" strokeWidth={1.5} />Quy đổi đơn vị</Button>
+    <Dialog isOpen={open} onClose={() => setOpen(false)} title="Quy đổi đơn vị"
+      description="Hỗ trợ mg/g/kg và ml/cl/dl/l cùng nhóm. Các đơn vị khác chỉ đổi sang chính nó.">
+      {content}
     </Dialog>
   </>;
 }

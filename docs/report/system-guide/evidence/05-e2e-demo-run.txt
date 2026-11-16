@@ -1,0 +1,178 @@
+
+==== 1. Docker: các container của stack ====
+NAMES                         STATUS
+recipehub-audit               Up 3 minutes (healthy)
+recipehub-blackbox-exporter   Up 3 minutes
+recipehub-cadvisor            Up 3 minutes (healthy)
+recipehub-content             Up 3 minutes (healthy)
+recipehub-frontend            Up 3 minutes (healthy)
+recipehub-gateway             Up 3 minutes (healthy)
+recipehub-grafana             Up 3 minutes
+recipehub-identity            Up 3 minutes (healthy)
+recipehub-kafka-exporter      Up 3 minutes
+recipehub-kafka-ui            Up 3 minutes
+recipehub-kafka               Up 3 minutes (healthy)
+recipehub-pgadmin             Up 3 minutes
+recipehub-postgres-exporter   Up 3 minutes
+recipehub-postgres            Up 3 minutes (healthy)
+recipehub-prometheus          Up 3 minutes
+recipehub-quiz                Up 3 minutes (healthy)
+recipehub-recipe              Up 3 minutes (healthy)
+recipehub-redis-exporter      Up 3 minutes
+recipehub-redis               Up 3 minutes (healthy)
+recipehub-worker              Up 3 minutes
+
+==== 2. Kafka: ghi nhận offset hiện tại của topic audit (trước khi thao tác) ====
+recipehub.audit.activities.v1:0:0
+recipehub.audit.activities.v1:1:2
+recipehub.audit.activities.v1:2:4
+
+==== 3. Identity + JWT: đăng nhập qua Gateway (YARP -> identity-service:5001) ====
+  [OK] rd@recipehub.demo  -> JWT eyJhbGciOiJIUzI1NiIsInR5c...
+  [OK] admin@recipehub.demo -> JWT eyJhbGciOiJIUzI1NiIsInR5c...
+  Payload JWT (phần giữa, base64url decode):
+   {"sub": "e23b4fb8-ef33-407b-8cfc-ee07cd5c0559", "jti": "41d943ad-880b-4009-8217-5505a8e210d2", "role": "rnd", "nbf": 1794777248, "exp": 1794779048, "iss": "RecipeHub.Identity", "aud": "RecipeHub"}
+{"id":"e23b4fb8-ef33-407b-8cfc-ee07cd5c0559","email":"rd@recipehub.demo","fullName":"Chuyên viên R&D","role":"rnd","isActive":true,"createdAt":"2026-11-15T21:10:30.45652Z"}
+  [OK] Gọi /recipes KHÔNG có token -> HTTP 401 (bị chặn)
+
+==== 4. Recipe service: tạo nguyên liệu + công thức nháp (ghi vào recipehub_recipe) ====
+  [OK] Nguyên liệu: ING-CF-041407, ING-SD-041407
+  [OK] Công thức REC-CFSD-041407
+  Phiên bản nháp: [{"id":"2ac6b3f1-a390-4ae4-8aab-02a1c94294f5","versionNumber":1,"status":"draft","name":"Cà phê sữa đá 041407","createdByUserRef":"e23b4fb8-ef33-407b-8cfc-ee07cd5c0559","createdAt":"2026-11-15T21:14:08.871895Z","updatedAt":"2026-11-15T21:14:08.871895Z","publishedAt":null,"publishedByUserRef":n
+
+==== 5. PostgreSQL: dữ liệu vừa ghi nằm trong recipehub_recipe ====
+      code       | version_number |         name         | status | published_at 
+-----------------+----------------+----------------------+--------+--------------
+ REC-CFSD-041407 |              1 | Cà phê sữa đá 041407 | draft  | 
+(1 row)
+
+ quantity  |  ingredient   
+-----------+---------------
+ 25.000000 | ING-CF-041407
+ 30.000000 | ING-SD-041407
+(2 rows)
+
+
+==== 6. Kafka: sự kiện audit mới trên topic recipehub.audit.activities.v1 ====
+recipehub.audit.activities.v1:0:0
+recipehub.audit.activities.v1:1:3
+recipehub.audit.activities.v1:2:4
+  -- Message audit trên topic (partition | offset | key | value JSON EventEnvelope):
+Partition:1	Offset:0	964f56a6c85c40748309c006a0fc45d1	{"EventId":"7980f30f34294a8e9fc315e1b42655f4","EventType":"Audit.ActivityRecorded.v1","OccurredAtUtc":"2026-11-15T21:12:51.9901065Z","CorrelationId":"8b9091d9a8954389b17e1c4f52263459","Source":"recipe","SchemaVersion":"1.0","Payload":{"ActorId":"e23b4fb8-ef33-407b-8cfc-ee07cd5c0559","ActorName":"Chuy\u00EAn vi\u00EAn R\u0026D","ActorRole":"rnd","Action":"recipe.created","TargetType":"recipe_version","TargetId":"964f56a6-c85c-4074-8309-c006a0fc45d1","Summary":"T\u1EA1o c\u00F4ng th\u1EE9c m\u1EDBi \u0027C\u00E0 ph\u00EA s\u1EEFa \u0111\u00E1
+Partition:1	Offset:1	964f56a6c85c40748309c006a0fc45d1	{"EventId":"cca735c524f54383b9c93f506d0151df","EventType":"Audit.ActivityRecorded.v1","OccurredAtUtc":"2026-11-15T21:12:52.8986477Z","CorrelationId":"4c0b5ed8c9d04edfb176d5e644e9a104","Source":"recipe","SchemaVersion":"1.0","Payload":{"ActorId":"e23b4fb8-ef33-407b-8cfc-ee07cd5c0559","ActorName":"Chuy\u00EAn vi\u00EAn R\u0026D","ActorRole":"rnd","Action":"recipe.published","TargetType":"recipe_version","TargetId":"964f56a6-c85c-4074-8309-c006a0fc45d1","Summary":"Ph\u00E1t h\u00E0nh c\u00F4ng th\u1EE9c \u0027C\u00E0 ph\u00EA s\u1EEFa \u0111\u
+Partition:1	Offset:2	2ac6b3f1a3904ae48aab02a1c94294f5	{"EventId":"4d4cc5a78fd64e84b13ec2f8103e6931","EventType":"Audit.ActivityRecorded.v1","OccurredAtUtc":"2026-11-15T21:14:08.8877923Z","CorrelationId":"5c960453470f427bb3a709ef4a638b1d","Source":"recipe","SchemaVersion":"1.0","Payload":{"ActorId":"e23b4fb8-ef33-407b-8cfc-ee07cd5c0559","ActorName":"Chuy\u00EAn vi\u00EAn R\u0026D","ActorRole":"rnd","Action":"recipe.created","TargetType":"recipe_version","TargetId":"2ac6b3f1-a390-4ae4-8aab-02a1c94294f5","Summary":"T\u1EA1o c\u00F4ng th\u1EE9c m\u1EDBi \u0027C\u00E0 ph\u00EA s\u1EEFa \u0111\u00E1
+Partition:2	Offset:0	fe67646a71dd4c9db02e59fd88459c9d	{"EventId":"12e3e0b072684f85999ce4ed836191a5","EventType":"Audit.ActivityRecorded.v1","OccurredAtUtc":"2026-11-15T21:13:15.2396951Z","CorrelationId":"8fb326d3cf0e472e9896cba543d75142","Source":"recipe","SchemaVersion":"1.0","Payload":{"ActorId":"e23b4fb8-ef33-407b-8cfc-ee07cd5c0559","ActorName":"Chuy\u00EAn vi\u00EAn R\u0026D","ActorRole":"rnd","Action":"recipe.created","TargetType":"recipe_version","TargetId":"fe67646a-71dd-4c9d-b02e-59fd88459c9d","Summary":"T\u1EA1o c\u00F4ng th\u1EE9c m\u1EDBi \u0027C\u00E0 ph\u00EA s\u1EEFa \u0111\u00E1
+  -- Consumer group recipehub-audit (LAG = 0 nghĩa là audit-service đã tiêu thụ hết):
+
+GROUP           TOPIC                         PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG             CONSUMER-ID                                 HOST            CLIENT-ID
+recipehub-audit recipehub.audit.activities.v1 1          3               3               0               worker-fd34cf0d-5f67-46ef-88e5-2463f41151e4 /172.19.0.17    worker
+recipehub-audit recipehub.audit.activities.v1 0          -               0               -               worker-fd34cf0d-5f67-46ef-88e5-2463f41151e4 /172.19.0.17    worker
+recipehub-audit recipehub.audit.activities.v1 2          4               4               0               worker-fd34cf0d-5f67-46ef-88e5-2463f41151e4 /172.19.0.17    worker
+  -- Log consumer (KAFKA-ACK):
+      [KAFKA-ACK] topic=recipehub.audit.activities.v1 partition=2 offset=1 eventId=0867c5c3f1e54f2fabfa1d8bb6e936c1 action=recipe.published
+      [KAFKA-ACK] topic=recipehub.audit.activities.v1 partition=2 offset=2 eventId=82914713043d4ac9bd23d8f3e9081218 action=recipe.created
+      [KAFKA-ACK] topic=recipehub.audit.activities.v1 partition=2 offset=3 eventId=4b6b3f341aeb460ba704f36975e4cae9 action=recipe.published
+      [KAFKA-ACK] topic=recipehub.audit.activities.v1 partition=1 offset=2 eventId=4d4cc5a78fd64e84b13ec2f8103e6931 action=recipe.created
+  -- Bản ghi đã vào recipehub_audit:
+          occurred_at          | source |   actor_name    | actor_role |      action      |  target_type   |                           summary                            
+-------------------------------+--------+-----------------+------------+------------------+----------------+--------------------------------------------------------------
+ 2026-11-15 21:14:08.887792+00 | recipe | Chuyên viên R&D | rnd        | recipe.created   | recipe_version | Tạo công thức mới 'Cà phê sữa đá 041407' (REC-CFSD-041407) p
+ 2026-11-15 21:13:47.30422+00  | recipe | Chuyên viên R&D | rnd        | recipe.published | recipe_version | Phát hành công thức 'Cà phê sữa đá 041345' (REC-CFSD-041345)
+ 2026-11-15 21:13:47.201443+00 | recipe | Chuyên viên R&D | rnd        | recipe.created   | recipe_version | Tạo công thức mới 'Cà phê sữa đá 041345' (REC-CFSD-041345) p
+ 2026-11-15 21:13:15.32995+00  | recipe | Chuyên viên R&D | rnd        | recipe.published | recipe_version | Phát hành công thức 'Cà phê sữa đá 041313' (REC-CFSD-041313)
+ 2026-11-15 21:13:15.239695+00 | recipe | Chuyên viên R&D | rnd        | recipe.created   | recipe_version | Tạo công thức mới 'Cà phê sữa đá 041313' (REC-CFSD-041313) p
+ 2026-11-15 21:12:52.898647+00 | recipe | Chuyên viên R&D | rnd        | recipe.published | recipe_version | Phát hành công thức 'Cà phê sữa đá 041249' (REC-CFSD-041249)
+ 2026-11-15 21:12:51.990106+00 | recipe | Chuyên viên R&D | rnd        | recipe.created   | recipe_version | Tạo công thức mới 'Cà phê sữa đá 041249' (REC-CFSD-041249) p
+(7 rows)
+
+  -- Đọc lại qua API Audit (admin):
+{"items":[{"id":"4d4cc5a7-8fd6-4e84-b13e-c2f8103e6931","actorId":"e23b4fb8-ef33-407b-8cfc-ee07cd5c0559","actorName":"Chuyên viên R&D","actorRole":"rnd","source":"recipe","action":"recipe.created","targetType":"recipe_version","targetId":"2ac6b3f1-a390-4ae4-8aab-02a1c94294f5","summary":"Tạo công thức mới 'Cà phê sữa đá 041407' (REC-CFSD-041407) phiên bản v1.","occurredAt":"2026-11-15T21:14:08.887792Z"},{"id":"4b6b3f34-1aeb-460b-a704-f36975e4cae9","actorId":"e23b4fb8-ef33-407b-8cfc-ee07cd5c0559","actorName":"Chuyên viên R&D","actorRole":"rnd","source":"recipe","action":"recip
+
+==== 7. gRPC: Content.Api gọi Recipe.Api (HTTP/2 cổng 5012) bằng ServiceProbe.Ping ====
+{"success":true,"targetService":"RecipeHub.Recipe.Api","correlationId":"f7294930b7004d5c8053b81a7e6747a1","status":"Healthy","timestampUtc":"2026-11-15T21:14:16.6882815Z"}
+
+==== 8. Redis Streams: các stream và consumer group ====
+  -- XINFO GROUPS content.image-drafts.v1
+name	content-draft-workers
+consumers	1
+pending	0
+last-delivered-id	0-0
+entries-read	
+lag	0
+  -- XINFO GROUPS quiz.ai-generation.v1
+name	quiz-ai-workers
+consumers	1
+pending	0
+last-delivered-id	0-0
+entries-read	
+lag	0
+  -- XINFO GROUPS platform.heartbeat.v1
+name	recipehub-workers
+consumers	1
+pending	0
+last-delivered-id	1794777067564-0
+entries-read	1
+lag	0
+
+==== 9. AI ảnh: Content -> outbox(DB) -> Redis Stream -> Worker -> Gemini -> Cloudflare FLUX (+ gRPC lấy ngữ cảnh công thức) ====
+  Tạo draft: {"draftId":"b74f284f-927e-4218-bbfe-f843879b8512","recipeVersionId":"2ac6b3f1-a390-4ae4-8aab-02a1c94294f5","recipeStepId":null,"targetKind":"final_product","state":"queued","userBrief":"Ly cà phê sữa đá trên bàn gỗ","createdAt":"2026-11-15T21:14:16.9471805+00:00","generatedAt":null,"expiresAt":null,"decidedAt":null,"statusUrl":"/api/v1/content/image-drafts/b74f284f-927e-4218-bbfe-f843879
+  [1] state=queued
+  [2] state=processing
+  [3] state=processing
+  [4] state=processing
+  [5] state=processing
+  [6] state=processing
+  [7] state=generated
+  -- XRANGE content.image-drafts.v1 (message mới nhất):
+1794777258191-0
+eventId
+1ffc9b1d-4e3d-4571-a5f3-fed20811c1ef
+eventType
+Content.ImageDraftQueued
+payload
+{"DraftId": "b74f284f-927e-4218-bbfe-f843879b8512", "UserBrief": "Ly cà phê sữa đá trên bàn gỗ", "TargetKind": "final_product", "RecipeStepId": null, "TimestampUtc": "2026-11-15T21:14:16.9472653+00:00", "RecipeVersionId": "2ac6b3f1-a390-4ae4-8aab-02a1c94294f5", "CreatedByUserRef": "e23b4fb8-ef33-407b-8cfc-ee07cd5c0559"}
+  -- XPENDING (0 = worker đã ACK):
+0
+
+
+
+  -- Log worker:
+      Consumer group recipehub-workers created on platform.heartbeat.v1 (MKSTREAM=true)
+      Stream content.image-drafts.v1 and consumer group content-draft-workers initialized.
+      ContentDraftProcessingWorker active and listening on content.image-drafts.v1...
+      BackgroundWorker is READY and listening for events on platform.heartbeat.v1...
+      [PROCESSED] EventId: 19397532-c1c7-4a56-9be3-ffa02da5d964, Type: PlatformHeartbeatEvent, Source: smoke-test, Payload: PlatformHeartbeatEvent { ServiceName = smoke-test, Status = Healthy, Message = Smoke heartbeat }
+      [ACK] Acknowledged message 1794777067564-0 in group recipehub-workers
+      Processing 1 image draft job(s) concurrently from content.image-drafts.v1...
+      Processing image draft job b74f284f-927e-4218-bbfe-f843879b8512 from Redis message 1794777258191-0
+      Calling AI prompt translator for draft b74f284f-927e-4218-bbfe-f843879b8512
+      Gemini key index 0 encountered 429 Too Many Requests. Rotating to next key.
+      Calling image generator for draft b74f284f-927e-4218-bbfe-f843879b8512
+      Draft b74f284f-927e-4218-bbfe-f843879b8512 successfully generated and saved to b74f284f927e4218bbfef843879b8512.png
+              public_id               |   state   | attempt_count | error_code |                                 prompt                                  
+--------------------------------------+-----------+---------------+------------+-------------------------------------------------------------------------
+ b74f284f-927e-4218-bbfe-f843879b8512 | generated |             1 |            | A classic Vietnamese iced coffee, "Cà phê sữa đá," presented in a tall,
+(1 row)
+
+        event_type        |          created_at           |         processed_at          | retry_count 
+--------------------------+-------------------------------+-------------------------------+-------------
+ Content.ImageDraftQueued | 2026-11-15 21:14:16.949758+00 | 2026-11-15 21:14:18.192764+00 |           0
+(1 row)
+
+
+==== 10. Publish phiên bản (draft -> published, bất biến) => phát thêm sự kiện audit recipe.published qua Kafka ====
+  [OK] Publish phiên bản -> HTTP 200
+      code       | version_number |  status   |         published_at          
+-----------------+----------------+-----------+-------------------------------
+ REC-CFSD-041407 |              1 | published | 2026-11-15 21:14:35.702948+00
+(1 row)
+
+          occurred_at          | source |      action      |                                summary                                 
+-------------------------------+--------+------------------+------------------------------------------------------------------------
+ 2026-11-15 21:14:35.704062+00 | recipe | recipe.published | Phát hành công thức 'Cà phê sữa đá 041407' (REC-CFSD-041407) phiên bản
+ 2026-11-15 21:14:08.887792+00 | recipe | recipe.created   | Tạo công thức mới 'Cà phê sữa đá 041407' (REC-CFSD-041407) phiên bản v
+ 2026-11-15 21:13:47.30422+00  | recipe | recipe.published | Phát hành công thức 'Cà phê sữa đá 041345' (REC-CFSD-041345) phiên bản
+(3 rows)
+
+
+==== HOÀN TẤT - recipe=REC-CFSD-041407 ====

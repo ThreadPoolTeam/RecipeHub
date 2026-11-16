@@ -143,6 +143,7 @@ export class DemoRepository {
     const updated: Ingredient = {
       ...ing,
       ...data,
+      imageAssetId: data.imageAssetId === undefined ? ing.imageAssetId : data.imageAssetId,
       code: data.code ? data.code.trim().toUpperCase() : ing.code,
       name: data.name ? data.name.trim() : ing.name,
       updatedAt: new Date().toISOString(),
@@ -454,23 +455,27 @@ export class DemoRepository {
 
     const referencedRecipes: MediaReferenceInfo['recipes'] = [];
     for (const r of recipes) {
-      let isRef = false;
-      let loc = '';
-      for (const step of r.steps) {
-        if (step.coverMediaAssetId === mediaId || (step.mediaAssetIds || []).includes(mediaId)) {
-          isRef = true;
-          loc = `Bước ${step.stepNumber}: ${step.title}`;
-          break;
-        }
-      }
-      if (isRef) {
+      if (r.primaryMediaAssetId === mediaId) {
         referencedRecipes.push({
+          recipeId: r.recipeId,
           versionId: r.id,
           recipeCode: r.code,
           recipeName: r.name,
           versionLabel: r.versionLabel,
-          location: loc,
+          location: 'Ảnh đại diện',
         });
+      }
+      for (const step of r.steps) {
+        if (step.coverMediaAssetId === mediaId || (step.mediaAssetIds || []).includes(mediaId)) {
+          referencedRecipes.push({
+            recipeId: r.recipeId,
+            versionId: r.id,
+            recipeCode: r.code,
+            recipeName: r.name,
+            versionLabel: r.versionLabel,
+            location: `Bước ${step.stepNumber}: ${step.title}`,
+          });
+        }
       }
     }
 

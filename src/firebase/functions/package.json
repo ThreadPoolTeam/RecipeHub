@@ -1,0 +1,38 @@
+{
+  "name": "recipehub-functions",
+  "private": true,
+  "description": "Cloud Functions cho RecipeHub: qu\u00c3\u00a1\u00c2\u00ba\u00c2\u00a3n l\u00c3\u0192\u00c2\u00bd user, g\u00c3\u00a1\u00c2\u00bb\u00c2\u00adi FCM, th\u00c3\u00a1\u00c2\u00bb\u00e2\u20ac\u02dcng k\u00c3\u0192\u00c2\u00aa s\u00c3\u00a1\u00c2\u00bb\u00c2\u00b1 c\u00c3\u00a1\u00c2\u00bb\u00e2\u20ac\u02dc",
+  "engines": {
+    "node": "22"
+  },
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint \"src/**/*.ts\"",
+    "test:unit": "mocha -r ts-node/register \"test/**/*.test.ts\" --timeout 30000 --exit",
+    "test": "firebase emulators:exec --project demo-recipehub --only auth,firestore \"npm run test:unit\"",
+    "serve": "npm run build && firebase emulators:start --only functions,auth,firestore",
+    "coverage": "firebase emulators:exec --project demo-recipehub --only auth,firestore \"c8 --reporter=text-summary --include=src/** mocha -r ts-node/register \\\"test/**/*.test.ts\\\" --timeout 30000 --exit\""
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.2",
+    "firebase-functions": "^6.3.0"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
+    "@types/chai": "^4.3.20",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.10.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "c8": "^10.1.3",
+    "chai": "^4.5.0",
+    "eslint": "^8.57.1",
+    "firebase": "^11.1.0",
+    "firebase-functions-test": "^3.4.0",
+    "firebase-tools": "13.29.1",
+    "mocha": "^10.8.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
+}

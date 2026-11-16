@@ -1,3 +1,4 @@
+using Prometheus;
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Diagnostics;
@@ -8,8 +9,13 @@ using RecipeHub.Audit.Application;
 using RecipeHub.Audit.Infrastructure;
 using RecipeHub.Audit.Infrastructure.Data;
 using RecipeHub.GrpcContracts.Identity;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(5004, o => o.Protocols = HttpProtocols.Http1);
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -63,6 +69,13 @@ builder.Services.AddAuthorization(options =>
 });
 
 var app = builder.Build();
+
+app.UseRouting();
+app.UseWhen(
+    context => !context.Request.Path.StartsWithSegments("/metrics")
+        && !context.Request.Path.StartsWithSegments("/health"),
+    branch => branch.UseHttpMetrics());
+app.MapMetrics().WithMetadata(new HttpMethodMetadata([HttpMethods.Get])).AllowAnonymous().ExcludeFromDescription();
 
 app.UseExceptionHandler(errorApp =>
 {
@@ -133,11 +146,17 @@ app.MapGet("/health/ready", async (AuditDbContext dbContext, CancellationToken c
     }
 });
 
-app.MapGet("/api/v1/audit/info", () => Results.Ok(new
+app.MapGet("/api/v1/audit/info", async (AuditDbContext dbContext, CancellationToken ct) =>
 {
-    service = "RecipeHub.Audit.Api",
-    version = "1.0.0",
-    status = "Active"
-}));
+    var canConnect = await dbContext.Database.CanConnectAsync(ct);
+    return Results.Ok(new
+    {
+        service = "RecipeHub.Audit.Api",
+        version = "1.0.0",
+        status = canConnect ? "Ready" : "Degraded",
+        database = canConnect ? "Connected" : "Unreachable",
+        timestampUtc = DateTime.UtcNow
+    });
+});
 
 app.Run();

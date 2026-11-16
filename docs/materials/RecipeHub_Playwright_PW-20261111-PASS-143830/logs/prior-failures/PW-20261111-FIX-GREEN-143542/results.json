@@ -1,0 +1,201 @@
+{
+  "runId": "PW-20261111-FIX-GREEN-143542",
+  "base": "http://127.0.0.1:33000",
+  "cases": [
+    {
+      "id": "AUTH-002",
+      "module": "Authentication",
+      "role": "public",
+      "description": "Login has labelled required controls",
+      "requirements": [
+        "FR-FE-21"
+      ],
+      "expected": "Email/password are required and password starts masked",
+      "type": "Normal",
+      "priority": "P0",
+      "round": 1,
+      "runId": "PW-20261111-FIX-GREEN-143542",
+      "status": "Failed",
+      "actual": "Email labelled",
+      "error": "AssertionError [ERR_ASSERTION]: Email labelled\n    at check (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:39:50)\n    at Object.fn (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:88:394)\n    at async execute (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:76:9)\n    at async main (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:131:33)",
+      "startedAt": "2026-11-11T14:35:48.671Z",
+      "finishedAt": "2026-11-11T14:35:49.392Z",
+      "durationMs": 721,
+      "evidence": "runs/PW-20261111-FIX-GREEN-143542/round-1/AUTH-002",
+      "pageErrors": 0
+    },
+    {
+      "id": "AUTH-003",
+      "module": "Authentication",
+      "role": "public",
+      "description": "Empty credentials blocked by browser",
+      "requirements": [
+        "FR-AUTH-01"
+      ],
+      "expected": "No login request and required field invalid",
+      "type": "Boundary",
+      "priority": "P0",
+      "round": 1,
+      "runId": "PW-20261111-FIX-GREEN-143542",
+      "status": "Passed",
+      "actual": "All browser assertions completed.",
+      "startedAt": "2026-11-11T14:35:49.612Z",
+      "finishedAt": "2026-11-11T14:35:50.939Z",
+      "durationMs": 1327,
+      "evidence": "runs/PW-20261111-FIX-GREEN-143542/round-1/AUTH-003",
+      "pageErrors": 0
+    },
+    {
+      "id": "RECIPE-404",
+      "module": "Recipes",
+      "role": "rnd",
+      "description": "Unknown recipe detail shows not found",
+      "requirements": [
+        "FR-REC-01"
+      ],
+      "expected": "Missing resource displays a not-found message",
+      "type": "Abnormal",
+      "priority": "P0",
+      "round": 1,
+      "runId": "PW-20261111-FIX-GREEN-143542",
+      "status": "Passed",
+      "actual": "All browser assertions completed.",
+      "startedAt": "2026-11-11T14:35:51.154Z",
+      "finishedAt": "2026-11-11T14:35:52.777Z",
+      "durationMs": 1623,
+      "evidence": "runs/PW-20261111-FIX-GREEN-143542/round-1/RECIPE-404",
+      "pageErrors": 0
+    },
+    {
+      "id": "AUTH-002",
+      "module": "Authentication",
+      "role": "public",
+      "description": "Login has labelled required controls",
+      "requirements": [
+        "FR-FE-21"
+      ],
+      "expected": "Email/password are required and password starts masked",
+      "type": "Normal",
+      "priority": "P0",
+      "round": 2,
+      "runId": "PW-20261111-FIX-GREEN-143542",
+      "status": "Failed",
+      "actual": "Email labelled",
+      "error": "AssertionError [ERR_ASSERTION]: Email labelled\n    at check (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:39:50)\n    at Object.fn (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:88:394)\n    at async execute (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:76:9)\n    at async main (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:131:33)",
+      "startedAt": "2026-11-11T14:35:55.044Z",
+      "finishedAt": "2026-11-11T14:35:55.773Z",
+      "durationMs": 729,
+      "evidence": "runs/PW-20261111-FIX-GREEN-143542/round-2/AUTH-002",
+      "pageErrors": 0
+    },
+    {
+      "id": "AUTH-003",
+      "module": "Authentication",
+      "role": "public",
+      "description": "Empty credentials blocked by browser",
+      "requirements": [
+        "FR-AUTH-01"
+      ],
+      "expected": "No login request and required field invalid",
+      "type": "Boundary",
+      "priority": "P0",
+      "round": 2,
+      "runId": "PW-20261111-FIX-GREEN-143542",
+      "status": "Passed",
+      "actual": "All browser assertions completed.",
+      "startedAt": "2026-11-11T14:35:55.961Z",
+      "finishedAt": "2026-11-11T14:35:57.037Z",
+      "durationMs": 1076,
+      "evidence": "runs/PW-20261111-FIX-GREEN-143542/round-2/AUTH-003",
+      "pageErrors": 0
+    },
+    {
+      "id": "RECIPE-404",
+      "module": "Recipes",
+      "role": "rnd",
+      "description": "Unknown recipe detail shows not found",
+      "requirements": [
+        "FR-REC-01"
+      ],
+      "expected": "Missing resource displays a not-found message",
+      "type": "Abnormal",
+      "priority": "P0",
+      "round": 2,
+      "runId": "PW-20261111-FIX-GREEN-143542",
+      "status": "Passed",
+      "actual": "All browser assertions completed.",
+      "startedAt": "2026-11-11T14:35:57.244Z",
+      "finishedAt": "2026-11-11T14:35:58.966Z",
+      "durationMs": 1722,
+      "evidence": "runs/PW-20261111-FIX-GREEN-143542/round-2/RECIPE-404",
+      "pageErrors": 0
+    },
+    {
+      "id": "AUTH-002",
+      "module": "Authentication",
+      "role": "public",
+      "description": "Login has labelled required controls",
+      "requirements": [
+        "FR-FE-21"
+      ],
+      "expected": "Email/password are required and password starts masked",
+      "type": "Normal",
+      "priority": "P0",
+      "round": 3,
+      "runId": "PW-20261111-FIX-GREEN-143542",
+      "status": "Failed",
+      "actual": "Email labelled",
+      "error": "AssertionError [ERR_ASSERTION]: Email labelled\n    at check (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:39:50)\n    at Object.fn (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:88:394)\n    at async execute (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:76:9)\n    at async main (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:131:33)",
+      "startedAt": "2026-11-11T14:36:01.055Z",
+      "finishedAt": "2026-11-11T14:36:01.718Z",
+      "durationMs": 663,
+      "evidence": "runs/PW-20261111-FIX-GREEN-143542/round-3/AUTH-002",
+      "pageErrors": 0
+    },
+    {
+      "id": "AUTH-003",
+      "module": "Authentication",
+      "role": "public",
+      "description": "Empty credentials blocked by browser",
+      "requirements": [
+        "FR-AUTH-01"
+      ],
+      "expected": "No login request and required field invalid",
+      "type": "Boundary",
+      "priority": "P0",
+      "round": 3,
+      "runId": "PW-20261111-FIX-GREEN-143542",
+      "status": "Passed",
+      "actual": "All browser assertions completed.",
+      "startedAt": "2026-11-11T14:36:01.924Z",
+      "finishedAt": "2026-11-11T14:36:03.053Z",
+      "durationMs": 1129,
+      "evidence": "runs/PW-20261111-FIX-GREEN-143542/round-3/AUTH-003",
+      "pageErrors": 0
+    },
+    {
+      "id": "RECIPE-404",
+      "module": "Recipes",
+      "role": "rnd",
+      "description": "Unknown recipe detail shows not found",
+      "requirements": [
+        "FR-REC-01"
+      ],
+      "expected": "Missing resource displays a not-found message",
+      "type": "Abnormal",
+      "priority": "P0",
+      "round": 3,
+      "runId": "PW-20261111-FIX-GREEN-143542",
+      "status": "Passed",
+      "actual": "All browser assertions completed.",
+      "startedAt": "2026-11-11T14:36:03.251Z",
+      "finishedAt": "2026-11-11T14:36:04.253Z",
+      "durationMs": 1002,
+      "evidence": "runs/PW-20261111-FIX-GREEN-143542/round-3/RECIPE-404",
+      "pageErrors": 0
+    }
+  ],
+  "remaining": [],
+  "startedAt": "2026-11-11T14:35:43.994Z",
+  "finishedAt": "2026-11-11T14:36:04.254Z"
+}

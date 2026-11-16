@@ -1,7 +1,8 @@
 ---
 title: "RecipeHub Warm Editorial — toàn bộ UI, landing trước"
 description: "Chuẩn hóa DESIGN.md, giữ cinematic story, đổi navbar và triển khai theme kem–cam đất cho mọi trang."
-status: in-progress
+status: superseded
+supersededBy: 261109-1951-web-ui-figma-refactor
 priority: P2
 branch: dev
 tags: [frontend, refactor, docs]

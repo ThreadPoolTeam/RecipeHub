@@ -1,0 +1,7 @@
+$ git ls-files "src/backend/Contracts/RecipeHub.GrpcContracts/**/*.proto"
+
+src/backend/Contracts/RecipeHub.GrpcContracts/Protos/content_pdf_media.proto
+src/backend/Contracts/RecipeHub.GrpcContracts/Protos/identity_session.proto
+src/backend/Contracts/RecipeHub.GrpcContracts/Protos/probe.proto
+src/backend/Contracts/RecipeHub.GrpcContracts/Protos/quiz_recipe_query.proto
+src/backend/Contracts/RecipeHub.GrpcContracts/Protos/recipe_ai_context.proto

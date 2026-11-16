@@ -1,0 +1,66 @@
+diff --git a/src/frontend/src/app/(platform)/rnd/recipes/[id]/page.tsx b/src/frontend/src/app/(platform)/rnd/recipes/[id]/page.tsx
+index 8a41726..18b84ed 100644
+--- a/src/frontend/src/app/(platform)/rnd/recipes/[id]/page.tsx
++++ b/src/frontend/src/app/(platform)/rnd/recipes/[id]/page.tsx
+@@ -28,6 +28,7 @@ import { Dialog } from '@/components/workspace/dialog';
+ import { VersionHistoryDrawer } from '@/components/workspace/version-history-drawer';
+ import { useToast } from '@/components/workspace/toast';
+ import { getStoredAiDrafts } from '@/lib/ai-draft-storage';
++import { ApiError } from '@/lib/api/client';
+ 
+ export default function RecipeDetailPage() {
+   const params = useParams();
+@@ -99,8 +100,13 @@ export default function RecipeDetailPage() {
+       })
+       .catch((err: unknown) => {
+         if (!isMounted) return;
+-        const e = err as Error;
+-        setErrorMsg(e.message || 'Kh├┤ng thß╗â tß║úi chi tiß║┐t c├┤ng thß╗⌐c.');
++        setErrorMsg(
++          err instanceof ApiError && err.status === 404
++            ? 'Kh├┤ng t├¼m thß║Ñy c├┤ng thß╗⌐c.'
++            : err instanceof ApiError && err.status === 403
++              ? 'Bß║ín kh├┤ng c├│ quyß╗ün xem c├┤ng thß╗⌐c n├áy.'
++              : 'Kh├┤ng thß╗â tß║úi chi tiß║┐t c├┤ng thß╗⌐c. Vui l├▓ng thß╗¡ lß║íi.'
++        );
+       })
+       .finally(() => {
+         if (isMounted) setLoading(false);
+diff --git a/src/frontend/src/components/workspace/form-fields.tsx b/src/frontend/src/components/workspace/form-fields.tsx
+index 4588e8f..3399dc2 100644
+--- a/src/frontend/src/components/workspace/form-fields.tsx
++++ b/src/frontend/src/components/workspace/form-fields.tsx
+@@ -6,8 +6,8 @@ export function TextInput({ label, helper, error, required, className = '', id,
+   const inputId = id || (label ? `input_${label.toLowerCase().replace(/\s+/g, '_')}` : undefined);
+   return (
+     <div className={`space-y-1.5 ${className}`}>
+-      {label && <label htmlFor={inputId} className="block text-xs font-medium text-foreground">{label} {required && <span className="text-destructive">*</span>}</label>}
+-      <input id={inputId} className={`h-10 w-full rounded-md border bg-card px-3 text-sm text-foreground placeholder:text-muted-foreground shadow-inset outline-none focus:ring-2 ${error ? 'border-destructive focus:ring-destructive' : 'border-input focus:border-ring focus:ring-ring'}`} {...props} />
++      {label && <label htmlFor={inputId} className="block text-xs font-medium text-foreground">{label} {required && <span aria-hidden="true" className="text-destructive">*</span>}</label>}
++      <input id={inputId} required={required} className={`h-10 w-full rounded-md border bg-card px-3 text-sm text-foreground placeholder:text-muted-foreground shadow-inset outline-none focus:ring-2 ${error ? 'border-destructive focus:ring-destructive' : 'border-input focus:border-ring focus:ring-ring'}`} {...props} />
+       {error ? <p className="text-xs text-destructive">{error}</p> : helper ? <p className="text-xs text-muted-foreground">{helper}</p> : null}
+     </div>
+   );
+@@ -19,8 +19,8 @@ export function TextArea({ label, helper, error, required, className = '', id, .
+   const inputId = id || (label ? `textarea_${label.toLowerCase().replace(/\s+/g, '_')}` : undefined);
+   return (
+     <div className={`space-y-1.5 ${className}`}>
+-      {label && <label htmlFor={inputId} className="block text-xs font-medium text-foreground">{label} {required && <span className="text-destructive">*</span>}</label>}
+-      <textarea id={inputId} className={`w-full rounded-md border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-inset outline-none focus:ring-2 ${error ? 'border-destructive focus:ring-destructive' : 'border-input focus:border-ring focus:ring-ring'}`} {...props} />
++      {label && <label htmlFor={inputId} className="block text-xs font-medium text-foreground">{label} {required && <span aria-hidden="true" className="text-destructive">*</span>}</label>}
++      <textarea id={inputId} required={required} className={`w-full rounded-md border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground shadow-inset outline-none focus:ring-2 ${error ? 'border-destructive focus:ring-destructive' : 'border-input focus:border-ring focus:ring-ring'}`} {...props} />
+       {error ? <p className="text-xs text-destructive">{error}</p> : helper ? <p className="text-xs text-muted-foreground">{helper}</p> : null}
+     </div>
+   );
+@@ -49,8 +49,8 @@ export function Select({ label, helper, error, required, options, children, clas
+   const inputId = id || (label ? `select_${label.toLowerCase().replace(/\s+/g, '_')}` : undefined);
+   return (
+     <div className={`space-y-1.5 ${className}`}>
+-      {label && <label htmlFor={inputId} className="block text-xs font-medium text-foreground">{label} {required && <span className="text-destructive">*</span>}</label>}
+-      <select id={inputId} className={`h-10 w-full rounded-md border bg-card px-3 text-sm text-foreground shadow-inset outline-none focus:ring-2 ${error ? 'border-destructive focus:ring-destructive' : 'border-input focus:border-ring focus:ring-ring'}`} {...props}>
++      {label && <label htmlFor={inputId} className="block text-xs font-medium text-foreground">{label} {required && <span aria-hidden="true" className="text-destructive">*</span>}</label>}
++      <select id={inputId} required={required} className={`h-10 w-full rounded-md border bg-card px-3 text-sm text-foreground shadow-inset outline-none focus:ring-2 ${error ? 'border-destructive focus:ring-destructive' : 'border-input focus:border-ring focus:ring-ring'}`} {...props}>
+         {options ? options.map((opt) => <option key={String(opt.value)} value={opt.value}>{opt.label}</option>) : children}
+       </select>
+       {error ? <p className="text-xs text-destructive">{error}</p> : helper ? <p className="text-xs text-muted-foreground">{helper}</p> : null}
+

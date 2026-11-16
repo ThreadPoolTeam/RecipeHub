@@ -15,8 +15,9 @@ src/backend/Services/
 
 Ngoài ra còn có:
 - `src/backend/Gateway/RecipeHub.Gateway/`: YARP Reverse Proxy Gateway gom đầu mối API.
-- `src/backend/Workers/RecipeHub.BackgroundWorker/`: Consumer chạy nền xử lý Redis Streams.
+- `src/backend/Workers/RecipeHub.BackgroundWorker/`: Consumer chạy nền đọc Kafka (audit) và Redis Streams (ảnh AI, heartbeat).
 - `src/backend/Contracts/RecipeHub.GrpcContracts/`: Hợp đồng Protobuf dùng chung cho gRPC.
+- Monitoring hạ tầng: Prometheus thu metrics từ Gateway/API và các exporter Docker/PostgreSQL/Redis/HTTP và kafka-exporter; Grafana hiển thị. Đây không phải microservice nghiệp vụ hay database nghiệp vụ mới. Exporter PostgreSQL dùng role đọc `grafana_reader` với `pg_monitor`; không dùng tài khoản runtime service để triển khai DDL.
 
 ---
 
@@ -31,7 +32,7 @@ Ngoài ra còn có:
      - Quiz: `recipehub_quiz`
 2. **Không Khóa Ngoại Xuyên Database (No Cross-Database Foreign Keys):**
    - Chỉ lưu ID logic (VD: `recipe_id`, `created_by_user_id`) dưới dạng `UUID` hoặc `VARCHAR`.
-   - Tính toàn vẹn dữ liệu xuyên dịch vụ được bảo đảm thông qua gRPC kiểm tra tồn tại hoặc sự kiện bất đồng bộ qua Redis Streams.
+   - Tính toàn vẹn dữ liệu xuyên dịch vụ được bảo đảm thông qua gRPC kiểm tra tồn tại hoặc sự kiện bất đồng bộ qua Kafka.
 3. **Tài Khoản Kết Nối Riêng:**
    - Từng service dùng user database và connection string độc lập trong `.env`.
 

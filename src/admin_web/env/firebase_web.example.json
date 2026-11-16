@@ -1,0 +1,8 @@
+{
+  "FB_API_KEY": "<from Firebase Console>",
+  "FB_APP_ID": "<from Firebase Console>",
+  "FB_SENDER_ID": "<from Firebase Console>",
+  "FB_PROJECT_ID": "recipehub-mobile",
+  "FB_AUTH_DOMAIN": "recipehub-mobile.firebaseapp.com",
+  "FB_STORAGE_BUCKET": "recipehub-mobile.firebasestorage.app"
+}

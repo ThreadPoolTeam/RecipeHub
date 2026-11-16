@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text.Json;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using RecipeHub.Recipe.Api;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using RecipeHub.Recipe.Application;
@@ -237,8 +241,10 @@ public class PdfDocumentServiceTests
         Assert.Contains("PdfSourceChanged", ex.Message);
     }
 
-    [Fact]
-    public async Task PreviewAndExport_ThrowsInvalidOperation_WhenRecipeVersionIsNotPublished()
+    [Theory]
+    [InlineData("draft")]
+    [InlineData("published")]
+    public async Task PreviewAndExport_ReturnValidationError_WhenRecipeVersionIsNotPublished(string documentType)
     {
         var recipeGuid = Guid.NewGuid();
         var versionGuid = Guid.NewGuid();
@@ -265,21 +271,32 @@ public class PdfDocumentServiceTests
         var previewRequest = new PreviewPdfRequest
         {
             Title = "Tài liệu",
-            DocumentType = "published",
+            DocumentType = documentType,
             Items = new List<PdfDocumentRequestItem>
             {
                 new() { RecipeId = recipeGuid, RecipeVersionId = versionGuid }
             }
         };
 
-        var previewEx = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        var previewEx = await Assert.ThrowsAsync<RecipeHub.Recipe.Application.ValidationException>(() =>
             service.GeneratePreviewAsync(previewRequest, "token", CancellationToken.None));
         Assert.Contains("chưa được duyệt phát hành", previewEx.Message);
+
+        using var provider = new ServiceCollection().AddLogging().AddProblemDetails().BuildServiceProvider();
+        var context = new DefaultHttpContext { RequestServices = provider };
+        context.Request.Headers.Accept = "application/problem+json";
+        context.Response.Body = new MemoryStream();
+        var handler = new ApplicationExceptionHandler(provider.GetRequiredService<IProblemDetailsService>());
+        Assert.True(await handler.TryHandleAsync(context, previewEx, CancellationToken.None));
+        Assert.Equal(StatusCodes.Status400BadRequest, context.Response.StatusCode);
+        context.Response.Body.Position = 0;
+        using var problem = await JsonDocument.ParseAsync(context.Response.Body);
+        Assert.Contains("chưa được duyệt phát hành", problem.RootElement.GetProperty("detail").GetString());
 
         var exportRequest = new ExportPdfRequest
         {
             Title = "Tài liệu",
-            DocumentType = "published",
+            DocumentType = documentType,
             Items = new List<PdfDocumentRequestItem>
             {
                 new() { RecipeId = recipeGuid, RecipeVersionId = versionGuid }
@@ -287,7 +304,7 @@ public class PdfDocumentServiceTests
             ExpectedSnapshotHash = "dummy_hash"
         };
 
-        var exportEx = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        var exportEx = await Assert.ThrowsAsync<RecipeHub.Recipe.Application.ValidationException>(() =>
             service.ExportDocumentAsync(exportRequest, Guid.NewGuid(), "token", CancellationToken.None));
         Assert.Contains("chưa được duyệt phát hành", exportEx.Message);
     }

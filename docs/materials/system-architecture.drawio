@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="RecipeHub System Architecture" version="24.0.0">
+  <diagram id="recipehub-system-architecture" name="System Architecture">
+    <mxGraphModel adaptiveColors="auto">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    
+    <mxCell id="tier_client" value="CLIENT TIER (Giao diện người dùng)" style="swimlane;startSize=32;fillColor=#eff6ff;strokeColor=#3b82f6;strokeWidth=1.5;html=1;fontStyle=1;fontSize=12;fontColor=#1e3a8a;collapsible=0;" vertex="1" parent="1">
+      <mxGeometry x="50" y="80" width="270" height="480" as="geometry" />
+    </mxCell>
+    <mxCell id="c_web" value="&lt;b&gt;Web Frontend (Next.js 16)&lt;/b&gt;&lt;br&gt;App Router · React 19 · Tailwind&lt;br&gt;&lt;small&gt;Phân quyền 3 Role (Admin, R&amp;D, Viewer)&lt;/small&gt;&lt;br&gt;&lt;i style='color:#2563eb;'&gt;Port 3000 (Node container / Vercel)&lt;/i&gt;" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontSize=11;align=center;shadow=1;" vertex="1" parent="tier_client">
+      <mxGeometry x="20" y="60" width="230" height="150" as="geometry" />
+    </mxCell>
+    <mxCell id="c_mobile" value="&lt;b&gt;Mobile App (Flutter)&lt;/b&gt;&lt;br&gt;&lt;small&gt;Package: com.recipehub.mobile&lt;/small&gt;&lt;br&gt;NomadKit UI · MVVM · Firebase&lt;br&gt;&lt;small&gt;Tra cứu SOP công thức &amp; Thi Quiz&lt;/small&gt;&lt;br&gt;&lt;i style='color:#2563eb;'&gt;Target: Android / iOS (Barista &amp; Store)&lt;/i&gt;" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontSize=11;align=center;shadow=1;" vertex="1" parent="tier_client">
+      <mxGeometry x="20" y="260" width="230" height="170" as="geometry" />
+    </mxCell>
+  
+
+    <mxCell id="tier_backend" value="BACKEND SERVICES (.NET 8 Clean Architecture Microservices)" style="swimlane;startSize=32;fillColor=#f0fdf4;strokeColor=#16a34a;strokeWidth=1.5;html=1;fontStyle=1;fontSize=12;fontColor=#14532d;collapsible=0;" vertex="1" parent="1">
+      <mxGeometry x="380" y="80" width="760" height="480" as="geometry" />
+    </mxCell>
+    <mxCell id="b_gateway" value="&lt;b style='font-size:12px;'&gt;YARP API Gateway (RecipeHub.Gateway)&lt;/b&gt;&lt;br&gt;Reverse Proxy điều phối định tuyến &lt;b&gt;/api/v1/{service}/*&lt;/b&gt; · JWT Auth Token Relay · Health &amp; CORS&lt;br&gt;&lt;i style='color:#15803d;'&gt;Container: recipehub-gateway (Port 5000:5000)&lt;/i&gt;" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#16a34a;strokeWidth=1.5;fontSize=11;align=center;shadow=1;" vertex="1" parent="tier_backend">
+      <mxGeometry x="30" y="55" width="700" height="65" as="geometry" />
+    </mxCell>
+
+    <mxCell id="s_identity" value="&lt;b&gt;Identity Service&lt;/b&gt;&lt;br&gt;User, Auth, JWT Sessions&lt;br&gt;&lt;small&gt;REST 5001 · gRPC 5011&lt;/small&gt;&lt;br&gt;&lt;i style='color:#15803d;'&gt;identity_session.proto&lt;/i&gt;" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#16a34a;strokeWidth=1.2;fontSize=10;align=center;shadow=1;" vertex="1" parent="tier_backend">
+      <mxGeometry x="30" y="150" width="210" height="85" as="geometry" />
+    </mxCell>
+    <mxCell id="s_recipe" value="&lt;b&gt;Recipe Service&lt;/b&gt;&lt;br&gt;Recipe, SOP Steps, PDF Docs&lt;br&gt;&lt;small&gt;REST 5002 · gRPC 5012&lt;/small&gt;&lt;br&gt;&lt;i style='color:#15803d;'&gt;recipe_ai_context.proto&lt;/i&gt;" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#16a34a;strokeWidth=1.2;fontSize=10;align=center;shadow=1;" vertex="1" parent="tier_backend">
+      <mxGeometry x="275" y="150" width="210" height="85" as="geometry" />
+    </mxCell>
+    <mxCell id="s_content" value="&lt;b&gt;Content Service&lt;/b&gt;&lt;br&gt;Image Drafts &amp; Media Assets&lt;br&gt;&lt;small&gt;REST 5003 · Cloudflare FLUX&lt;/small&gt;&lt;br&gt;&lt;i style='color:#15803d;'&gt;content_pdf_media.proto&lt;/i&gt;" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#16a34a;strokeWidth=1.2;fontSize=10;align=center;shadow=1;" vertex="1" parent="tier_backend">
+      <mxGeometry x="520" y="150" width="210" height="85" as="geometry" />
+    </mxCell>
+
+    <mxCell id="s_audit" value="&lt;b&gt;Audit Service&lt;/b&gt;&lt;br&gt;Audit Activities &amp; History Logs&lt;br&gt;&lt;small&gt;REST 5004 · Activity Consumer&lt;/small&gt;&lt;br&gt;&lt;i style='color:#15803d;'&gt;audit.activities.v1&lt;/i&gt;" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#16a34a;strokeWidth=1.2;fontSize=10;align=center;shadow=1;" vertex="1" parent="tier_backend">
+      <mxGeometry x="30" y="260" width="210" height="85" as="geometry" />
+    </mxCell>
+    <mxCell id="s_quiz" value="&lt;b&gt;Quiz Service&lt;/b&gt;&lt;br&gt;Quiz SOP, Questions &amp; Attempts&lt;br&gt;&lt;small&gt;REST 5005 · Grading Logic&lt;/small&gt;&lt;br&gt;&lt;i style='color:#15803d;'&gt;quiz_recipe_query.proto&lt;/i&gt;" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#16a34a;strokeWidth=1.2;fontSize=10;align=center;shadow=1;" vertex="1" parent="tier_backend">
+      <mxGeometry x="275" y="260" width="210" height="85" as="geometry" />
+    </mxCell>
+    <mxCell id="s_worker" value="&lt;b&gt;Background Worker&lt;/b&gt;&lt;br&gt;Redis Streams Consumer&lt;br&gt;&lt;small&gt;AI Draft Generator &amp; Cleanup&lt;/small&gt;&lt;br&gt;&lt;i style='color:#15803d;'&gt;XREADGROUP + XACK&lt;/i&gt;" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#16a34a;strokeWidth=1.2;fontSize=10;align=center;shadow=1;" vertex="1" parent="tier_backend">
+      <mxGeometry x="520" y="260" width="210" height="85" as="geometry" />
+    </mxCell>
+
+    <mxCell id="bus_info" value="&lt;b&gt;Giao tiếp liên Service:&lt;/b&gt; Sync qua &lt;b style='color:#1d4ed8;'&gt;gRPC (Protobuf)&lt;/b&gt; cho Session/Context · Async qua &lt;b style='color:#b45309;'&gt;Redis Streams&lt;/b&gt; (Events &amp; Drafts)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#86efac;fontSize=10;fontColor=#166534;align=center;" vertex="1" parent="tier_backend">
+      <mxGeometry x="30" y="375" width="700" height="35" as="geometry" />
+    </mxCell>
+  
+
+    <mxCell id="tier_data" value="DATA STORAGE (Database-per-service)" style="swimlane;startSize=32;fillColor=#fff7ed;strokeColor=#ea580c;strokeWidth=1.5;html=1;fontStyle=1;fontSize=12;fontColor=#9a3412;collapsible=0;" vertex="1" parent="1">
+      <mxGeometry x="1200" y="80" width="350" height="480" as="geometry" />
+    </mxCell>
+    <mxCell id="d_postgres" value="&lt;b&gt;PostgreSQL 16 (DB-First)&lt;/b&gt;&lt;br&gt;&lt;div style='text-align:left;font-size:10px;padding:4px 10px;'&gt;• &lt;b&gt;recipehub_identity&lt;/b&gt; (identity_user)&lt;br&gt;• &lt;b&gt;recipehub_recipe&lt;/b&gt; (recipe_user)&lt;br&gt;• &lt;b&gt;recipehub_content&lt;/b&gt; (content_user)&lt;br&gt;• &lt;b&gt;recipehub_audit&lt;/b&gt; (audit_user)&lt;br&gt;• &lt;b&gt;recipehub_quiz&lt;/b&gt; (quiz_user)&lt;/div&gt;&lt;small style='color:#c2410c;'&gt;Port 5433:5432 · Volume: pgdata&lt;/small&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#ffffff;strokeColor=#ea580c;strokeWidth=1.5;fontSize=11;align=center;shadow=1;" vertex="1" parent="tier_data">
+      <mxGeometry x="25" y="55" width="300" height="190" as="geometry" />
+    </mxCell>
+    <mxCell id="d_redis" value="&lt;b&gt;Redis 7 Alpine&lt;/b&gt;&lt;br&gt;In-Memory Stream Event Broker&lt;br&gt;&lt;small&gt;Streams: content.image-drafts.v1, audit.activities.v1&lt;/small&gt;&lt;br&gt;&lt;small style='color:#c2410c;'&gt;Port 6380:6379 · Consumer Groups&lt;/small&gt;" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#ea580c;strokeWidth=1.5;fontSize=10;align=center;shadow=1;" vertex="1" parent="tier_data">
+      <mxGeometry x="25" y="265" width="300" height="85" as="geometry" />
+    </mxCell>
+    <mxCell id="d_volume" value="&lt;b&gt;Shared Docker Volume (temp-drafts)&lt;/b&gt;&lt;br&gt;Lưu trữ tạm ảnh AI Candidate (TTL 30 phút)&lt;br&gt;&lt;small style='color:#c2410c;'&gt;Mount giữa Content Service &amp; Background Worker&lt;/small&gt;" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#ea580c;strokeWidth=1.5;fontSize=10;align=center;shadow=1;" vertex="1" parent="tier_data">
+      <mxGeometry x="25" y="370" width="300" height="75" as="geometry" />
+    </mxCell>
+  
+
+    <mxCell id="tier_external" value="HỆ THỐNG NGOÀI (EXTERNAL SERVICES)" style="swimlane;startSize=26;fillColor=#faf5ff;strokeColor=#9333ea;strokeWidth=1.5;html=1;fontStyle=1;fontSize=11;fontColor=#581c87;collapsible=0;" vertex="1" parent="1">
+      <mxGeometry x="380" y="585" width="760" height="105" as="geometry" />
+    </mxCell>
+    <mxCell id="ext_cloudflare" value="&lt;b&gt;Cloudflare Workers AI&lt;/b&gt;&lt;br&gt;Model: FLUX.1 Schnell&lt;br&gt;&lt;small&gt;Sinh ảnh đồ uống AI (REST API)&lt;/small&gt;" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9333ea;strokeWidth=1.2;fontSize=10;align=center;shadow=1;" vertex="1" parent="tier_external">
+      <mxGeometry x="30" y="38" width="210" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="ext_cloudinary" value="&lt;b&gt;Cloudinary Cloud Storage&lt;/b&gt;&lt;br&gt;HTTPS Authenticated CDN&lt;br&gt;&lt;small&gt;Lưu trữ vĩnh viễn Media &amp; PDF SOP&lt;/small&gt;" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9333ea;strokeWidth=1.2;fontSize=10;align=center;shadow=1;" vertex="1" parent="tier_external">
+      <mxGeometry x="275" y="38" width="210" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="ext_gemini" value="&lt;b&gt;Google Gemini AI&lt;/b&gt;&lt;br&gt;Text &amp; Prompt Engineering&lt;br&gt;&lt;small&gt;Biên tập &amp; chuẩn hóa SOP đồ uống&lt;/small&gt;" style="rounded=1;arcSize=14;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9333ea;strokeWidth=1.2;fontSize=10;align=center;shadow=1;" vertex="1" parent="tier_external">
+      <mxGeometry x="520" y="38" width="210" height="55" as="geometry" />
+    </mxCell>
+  
+
+    <mxCell id="box_deployment" value="&lt;b style='color:#0f172a;font-size:11px;'&gt;NƠI TRIỂN KHAI (DEPLOYMENT ARCHITECTURE):&lt;/b&gt;&lt;span style='font-size:11px;color:#334155;'&gt; Toàn bộ hệ thống đóng gói &lt;b&gt;Docker Compose&lt;/b&gt; trên VPS Linux (Production) hoặc Dev Workstation. Client Web triển khai container / Vercel; Mobile phát hành qua APK / TestFlight. Mạng nội bộ &lt;b&gt;recipehub_default&lt;/b&gt; cô lập backend hoàn toàn sau YARP Gateway.&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#64748b;strokeWidth=1.5;align=left;shadow=1;spacing=8;" vertex="1" parent="1">
+      <mxGeometry x="50" y="710" width="1500" height="55" as="geometry" />
+    </mxCell>
+  
+
+    <mxCell id="box_decisions" value="&lt;b style='color:#701a75;font-size:11px;'&gt;QUYẾT ĐỊNH KIẾN TRÚC &amp;amp; ĐÁNH ĐỔI (ARCHITECTURAL DECISIONS &amp;amp; TRADE-OFFS):&lt;/b&gt;&lt;br&gt;&lt;div style='font-size:10.5px;color:#4a044e;line-height:1.4;padding-top:2px;'&gt;• &lt;b&gt;Quyết định 1 (Database-per-service &amp; DB-First):&lt;/b&gt; Chọn 5 database logic riêng biệt (Identity, Recipe, Content, Audit, Quiz) để đạt &lt;b&gt;[Cô lập ranh giới dữ liệu, độc lập quyền hạn, không nghẽn connection]&lt;/b&gt; — &lt;b&gt;Đánh đổi:&lt;/b&gt; Mất Foreign Key xuyên database; phải dùng gRPC để join dữ liệu và Redis Streams để đồng bộ bất đồng bộ.&lt;br&gt;• &lt;b&gt;Quyết định 2 (Hybrid gRPC Sync + Redis Streams Async):&lt;/b&gt; Chọn gRPC nhị phân cho luồng kiểm tra session/token và Redis Streams (Consumer Group XREADGROUP/XACK) cho tác vụ nặng (gen ảnh FLUX, ghi Audit log) để đạt &lt;b&gt;[Tốc độ phản hồi microsecond, non-blocking HTTP thread]&lt;/b&gt; — &lt;b&gt;Đánh đổi:&lt;/b&gt; Phải duy trì Background Worker và cơ chế retry idempotency khi xử lý tin nhắn.&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf4ff;strokeColor=#c084fc;strokeWidth=1.5;align=left;shadow=1;spacing=8;" vertex="1" parent="1">
+      <mxGeometry x="50" y="780" width="1500" height="95" as="geometry" />
+    </mxCell>
+  
+
+      <mxCell id="e_client_gw" value="HTTPS / REST (/api/v1/*)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563eb;strokeWidth=1.8;fontColor=#0f172a;fontSize=10;fontStyle=1;labelBackgroundColor=#ffffff;labelPlacement=auto;" edge="1" parent="1" source="c_web" target="b_gateway">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e_mobile_gw" value="HTTPS / REST (JWT Token)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2563eb;strokeWidth=1.8;fontColor=#0f172a;fontSize=10;fontStyle=1;labelBackgroundColor=#ffffff;labelPlacement=auto;" edge="1" parent="1" source="c_mobile" target="b_gateway">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e_gw_recipe" value="Proxy /recipes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#16a34a;strokeWidth=1.8;fontColor=#0f172a;fontSize=10;fontStyle=1;labelBackgroundColor=#ffffff;labelPlacement=auto;" edge="1" parent="1" source="b_gateway" target="s_recipe">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e_gw_content" value="Proxy /content" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#16a34a;strokeWidth=1.8;fontColor=#0f172a;fontSize=10;fontStyle=1;labelBackgroundColor=#ffffff;labelPlacement=auto;" edge="1" parent="1" source="b_gateway" target="s_content">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e_recipe_db" value="Npgsql SQL (recipe_db)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#ea580c;strokeWidth=1.8;fontColor=#0f172a;fontSize=10;fontStyle=1;labelBackgroundColor=#ffffff;labelPlacement=auto;" edge="1" parent="1" source="s_recipe" target="d_postgres">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e_identity_db" value="SQL (identity_db)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#ea580c;strokeWidth=1.8;fontColor=#0f172a;fontSize=10;fontStyle=1;labelBackgroundColor=#ffffff;labelPlacement=auto;" edge="1" parent="1" source="s_identity" target="d_postgres">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e_worker_redis" value="XREADGROUP (Async)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#ea580c;strokeWidth=1.8;fontColor=#0f172a;fontSize=10;fontStyle=1;dashed=1;dashPattern=6 4;labelBackgroundColor=#ffffff;labelPlacement=auto;" edge="1" parent="1" source="s_worker" target="d_redis">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e_worker_vol" value="Disk I/O (/app/temp-drafts)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#ea580c;strokeWidth=1.8;fontColor=#0f172a;fontSize=10;fontStyle=1;labelBackgroundColor=#ffffff;labelPlacement=auto;" edge="1" parent="1" source="s_worker" target="d_volume">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e_content_cf" value="FLUX.1 Schnell REST" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#9333ea;strokeWidth=1.8;fontColor=#0f172a;fontSize=10;fontStyle=1;labelBackgroundColor=#ffffff;labelPlacement=auto;" edge="1" parent="1" source="s_content" target="ext_cloudflare">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e_recipe_cld" value="HTTPS Upload (SDK)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#9333ea;strokeWidth=1.8;fontColor=#0f172a;fontSize=10;fontStyle=1;labelBackgroundColor=#ffffff;labelPlacement=auto;" edge="1" parent="1" source="s_recipe" target="ext_cloudinary">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="e_worker_cf" value="Worker Gen Ảnh" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#9333ea;strokeWidth=1.8;fontColor=#0f172a;fontSize=10;fontStyle=1;dashed=1;dashPattern=6 4;labelBackgroundColor=#ffffff;labelPlacement=auto;" edge="1" parent="1" source="s_worker" target="ext_cloudflare">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+  </root>
+</mxGraphModel>
+  </diagram>
+</mxfile>

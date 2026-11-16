@@ -1,0 +1,192 @@
+[
+  {
+    "file": "001-01-baseline.png",
+    "width": 931,
+    "checkpoint": "01-baseline",
+    "windowTitle": "RecipeHub Playwright PW-20261111-PASS-143830",
+    "checkpointSequence": 1,
+    "capturedAt": "2026-11-11T21:38:32.1206314+07:00",
+    "height": 614,
+    "capture": "Windows PrintWindow; original terminal pixels"
+  },
+  {
+    "file": "002-03-edge-full-suite-complete.png",
+    "width": 931,
+    "checkpoint": "03-edge-full-suite-complete",
+    "windowTitle": "RecipeHub Playwright PW-20261111-PASS-143830",
+    "checkpointSequence": 3,
+    "capturedAt": "2026-11-11T21:43:22.0842126+07:00",
+    "height": 614,
+    "capture": "Windows PrintWindow; original terminal pixels"
+  },
+  {
+    "file": "003-04-admin-extended-complete.png",
+    "width": 931,
+    "checkpoint": "04-admin-extended-complete",
+    "windowTitle": "RecipeHub Playwright PW-20261111-PASS-143830",
+    "checkpointSequence": 4,
+    "capturedAt": "2026-11-11T21:43:36.1443557+07:00",
+    "height": 614,
+    "capture": "Windows PrintWindow; original terminal pixels"
+  },
+  {
+    "file": "004-live-progress.png",
+    "width": 931,
+    "checkpoint": "04-admin-extended-complete",
+    "windowTitle": "RecipeHub Playwright PW-20261111-PASS-143830",
+    "checkpointSequence": 4,
+    "capturedAt": "2026-11-11T21:44:06.2073177+07:00",
+    "height": 614,
+    "capture": "Windows PrintWindow; original terminal pixels"
+  },
+  {
+    "file": "005-live-progress.png",
+    "width": 931,
+    "checkpoint": "04-admin-extended-complete",
+    "windowTitle": "RecipeHub Playwright PW-20261111-PASS-143830",
+    "checkpointSequence": 4,
+    "capturedAt": "2026-11-11T21:44:36.27286+07:00",
+    "height": 614,
+    "capture": "Windows PrintWindow; original terminal pixels"
+  },
+  {
+    "file": "006-live-progress.png",
+    "width": 931,
+    "checkpoint": "04-admin-extended-complete",
+    "windowTitle": "RecipeHub Playwright PW-20261111-PASS-143830",
+    "checkpointSequence": 4,
+    "capturedAt": "2026-11-11T21:45:06.3946379+07:00",
+    "height": 614,
+    "capture": "Windows PrintWindow; original terminal pixels"
+  },
+  {
+    "file": "007-05-chrome-compatibility-complete.png",
+    "width": 931,
+    "checkpoint": "05-chrome-compatibility-complete",
+    "windowTitle": "RecipeHub Playwright PW-20261111-PASS-143830",
+    "checkpointSequence": 5,
+    "capturedAt": "2026-11-11T21:45:20.4763448+07:00",
+    "height": 614,
+    "capture": "Windows PrintWindow; original terminal pixels"
+  },
+  {
+    "file": "008-live-progress.png",
+    "width": 931,
+    "checkpoint": "05-chrome-compatibility-complete",
+    "windowTitle": "RecipeHub Playwright PW-20261111-PASS-143830",
+    "checkpointSequence": 5,
+    "capturedAt": "2026-11-11T21:45:50.6117081+07:00",
+    "height": 614,
+    "capture": "Windows PrintWindow; original terminal pixels"
+  },
+  {
+    "file": "009-live-progress.png",
+    "width": 931,
+    "checkpoint": "05-chrome-compatibility-complete",
+    "windowTitle": "RecipeHub Playwright PW-20261111-PASS-143830",
+    "checkpointSequence": 5,
+    "capturedAt": "2026-11-11T21:46:20.7333258+07:00",
+    "height": 614,
+    "capture": "Windows PrintWindow; original terminal pixels"
+  },
+  {
+    "file": "010-live-progress.png",
+    "width": 931,
+    "checkpoint": "05-chrome-compatibility-complete",
+    "windowTitle": "RecipeHub Playwright PW-20261111-PASS-143830",
+    "checkpointSequence": 5,
+    "capturedAt": "2026-11-11T21:46:50.8843186+07:00",
+    "height": 614,
+    "capture": "Windows PrintWindow; original terminal pixels"
+  },
+  {
+    "file": "011-06-lifecycle-round-1-complete.png",
+    "width": 931,
+    "checkpoint": "06-lifecycle-round-1-complete",
+    "windowTitle": "RecipeHub Playwright PW-20261111-PASS-143830",
+    "checkpointSequence": 6,
+    "capturedAt": "2026-11-11T21:46:58.9280151+07:00",
+    "height": 614,
+    "capture": "Windows PrintWindow; original terminal pixels"
+  },
+  {
+    "file": "012-live-progress.png",
+    "width": 931,
+    "checkpoint": "06-lifecycle-round-1-complete",
+    "windowTitle": "RecipeHub Playwright PW-20261111-PASS-143830",
+    "checkpointSequence": 6,
+    "capturedAt": "2026-11-11T21:47:29.0685316+07:00",
+    "height": 614,
+    "capture": "Windows PrintWindow; original terminal pixels"
+  },
+  {
+    "file": "013-live-progress.png",
+    "width": 931,
+    "checkpoint": "06-lifecycle-round-1-complete",
+    "windowTitle": "RecipeHub Playwright PW-20261111-PASS-143830",
+    "checkpointSequence": 6,
+    "capturedAt": "2026-11-11T21:47:59.164018+07:00",
+    "height": 614,
+    "capture": "Windows PrintWindow; original terminal pixels"
+  },
+  {
+    "file": "014-live-progress.png",
+    "width": 931,
+    "checkpoint": "06-lifecycle-round-1-complete",
+    "windowTitle": "RecipeHub Playwright PW-20261111-PASS-143830",
+    "checkpointSequence": 6,
+    "capturedAt": "2026-11-11T21:48:29.6335986+07:00",
+    "height": 614,
+    "capture": "Windows PrintWindow; original terminal pixels"
+  },
+  {
+    "file": "015-06-lifecycle-round-2-complete.png",
+    "width": 931,
+    "checkpoint": "06-lifecycle-round-2-complete",
+    "windowTitle": "RecipeHub Playwright PW-20261111-PASS-143830",
+    "checkpointSequence": 7,
+    "capturedAt": "2026-11-11T21:48:46.6875787+07:00",
+    "height": 614,
+    "capture": "Windows PrintWindow; original terminal pixels"
+  },
+  {
+    "file": "016-live-progress.png",
+    "width": 931,
+    "checkpoint": "06-lifecycle-round-2-complete",
+    "windowTitle": "RecipeHub Playwright PW-20261111-PASS-143830",
+    "checkpointSequence": 7,
+    "capturedAt": "2026-11-11T21:49:16.786417+07:00",
+    "height": 614,
+    "capture": "Windows PrintWindow; original terminal pixels"
+  },
+  {
+    "file": "017-live-progress.png",
+    "width": 931,
+    "checkpoint": "06-lifecycle-round-2-complete",
+    "windowTitle": "RecipeHub Playwright PW-20261111-PASS-143830",
+    "checkpointSequence": 7,
+    "capturedAt": "2026-11-11T21:49:46.8951359+07:00",
+    "height": 614,
+    "capture": "Windows PrintWindow; original terminal pixels"
+  },
+  {
+    "file": "018-error.png",
+    "width": 931,
+    "checkpoint": "error",
+    "windowTitle": "RecipeHub Playwright PW-20261111-PASS-143830",
+    "checkpointSequence": 9,
+    "capturedAt": "2026-11-11T21:51:47.7541658+07:00",
+    "height": 614,
+    "capture": "Windows PrintWindow; original terminal pixels"
+  },
+  {
+    "capturedAt": "2026-11-11T21:52:34.1281775+07:00",
+    "file": "019-07-final-summary.png",
+    "width": 895,
+    "checkpointSequence": 10.0,
+    "height": 518,
+    "capture": "Windows PrintWindow; original terminal pixels",
+    "checkpoint": "07-final-summary",
+    "windowTitle": "RecipeHub Playwright PW-20261111-PASS-143830"
+  }
+]

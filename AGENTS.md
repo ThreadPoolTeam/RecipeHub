@@ -6,7 +6,7 @@
 - **Giữ `docs/systemmd/` tinh gọn (BẮT BUỘC):** Đây là bộ chuẩn dùng chung để thống nhất hệ thống, không phải nơi ghi mọi tính năng, kế hoạch, nhật ký, kết quả test hay chi tiết triển khai. Luôn đọc mục liên quan để tuân thủ; chỉ sửa khi có sai lệch đã đối chiếu với code/schema hoặc thay đổi thật sự đối với chuẩn kiến trúc, ownership, quyền, điều hướng hay contract dùng chung. Ưu tiên sửa đúng mục hiện có, nội dung ngắn và dẫn link nguồn chuyên biệt; chỉ bổ sung mục/file khi thật sự cần và chưa có nơi phù hợp. Không chép lại schema/API/runbook, không thêm quy định hoặc mở rộng phạm vi chỉ để “đủ tài liệu”. Tính năng tuân thủ chuẩn hiện hữu không bắt buộc sửa `docs/systemmd/`.
 
 - **Caveman skill (BẮT BUỘC):** Luôn đọc và sử dụng skill `caveman` khi bắt đầu phiên làm việc; duy trì trong mọi phản hồi. Giao tiếp tiếng Việt, ngắn gọn, giữ nguyên thuật ngữ/code/API/CLI. Dùng `sequential-thinking` khi cần suy luận có cấu trúc.
-- **CodeGraph**: Project indexed with CodeGraph. Use `codegraph_explore` MCP or `codegraph explore` CLI BEFORE `grep` or Read.
+- **CodeGraph (BẮT BUỘC khi khảo sát code):** Dùng `codegraph_explore` MCP hoặc `codegraph explore` CLI trước khi tìm/đọc source thủ công. Khi bật CodeGraph cho checkout mới, xác nhận đang ở root Git repo rồi chạy `codegraph status .`; chưa có index thì `codegraph init .`, có rồi thì `codegraph sync .`, không full reindex mỗi tin nhắn. Hook project `.omp/hooks/pre/codegraph-sync.ts` tự sync lúc `session_start` và `agent_end`, chỉ khi cwd trùng root chứa hook và có `.git` cùng `.codegraph/`; không tự init, index ổ đĩa hoặc unlock. Nếu sửa code ngoài OMP trong phiên, chạy `codegraph sync .` trước truy vấn tiếp theo. Nếu MCP chưa nhận index, dùng CLI ngay; vẫn dùng LSP để xác nhận symbol/references khi sửa code.
 - **Design System (BẮT BUỘC):** Mọi công việc Web FE (trừ mobile) BẮT BUỘC đọc `docs/DESIGN.md` trước khi thiết kế/chỉnh sửa; mọi quyết định UI/UX phải giải thích rõ lý do căn cứ theo DESIGN.md.
 - **System Design Reference (BẮT BUỘC TOÀN HỆ THỐNG):** Mọi công việc phát triển tính năng mới hoặc chỉnh sửa (cả Frontend và Backend) **BẮT BUỘC** phải đọc và tuân thủ bộ tài liệu chuẩn hóa tại `docs/systemmd/` (Frontend tại `docs/systemmd/frontend/`, Backend tại `docs/systemmd/backend/`, quy tắc quản trị tại `docs/systemmd/governance.md`).
 
@@ -14,7 +14,7 @@
 - **Project Name:** RecipeHub
 - **Domain:** Coffee & Beverage R&D Formula Management System (Hệ thống quản lý công thức R&D chuỗi đồ uống)
 - **Target Course:** PRN232 / PRM Semester 8 (FPT University)
-- **Architecture:** .NET 8 Microservices Clean Architecture, YARP Reverse Proxy Gateway, PostgreSQL (database-per-service), Redis Streams, gRPC, Next.js 16 App Router, Docker Compose.
+- **Architecture:** .NET 8 Microservices Clean Architecture, YARP Reverse Proxy Gateway, PostgreSQL (database-per-service), Kafka (audit), Redis Streams (AI jobs), gRPC, Next.js 16 App Router, Docker Compose.
 
 ---
 
@@ -35,7 +35,8 @@ RecipeHub/
 │   │   │   └── Quiz/     (Domain, Application, Infrastructure, Api)
 │   │   └── Workers/
 │   │       └── RecipeHub.BackgroundWorker/                  # Redis Streams consumer with MKSTREAM & ACK
-│   └── frontend/                                            # Next.js 16 App Router (Standalone)
+│   ├── frontend/                                            # Next.js 16 App Router (Standalone)
+│   └── mobile/                                              # Flutter app com.recipehub.mobile (Viewer/Admin, NomadKit)
 ├── infra/
 │   ├── compose.yaml                                         # Full-stack Docker Compose
 │   └── postgres/init-databases.sh                           # 5 independent databases bootstrap
@@ -60,7 +61,7 @@ RecipeHub/
    - `Api` references `Infrastructure`, `Application`, and `BuildingBlocks`.
 2. **Inter-Service Communication:**
    - Synchronous RPC: Use **gRPC** via contracts defined in `src/backend/Contracts/RecipeHub.GrpcContracts`.
-   - Asynchronous Messaging: Use **Redis Streams** via `EventEnvelope<T>` in `BuildingBlocks` with explicit consumer groups (`XREADGROUP` + `XACK`).
+   - Asynchronous Messaging: Use **Kafka** for audit events and **Redis Streams** for AI image job queues, via `EventEnvelope<T>` in `BuildingBlocks`; Redis uses explicit consumer groups (`XREADGROUP` + `XACK`).
    - External Gateway: Use **YARP** routes prefixed with `/api/v1/{service-name}/*`.
 3. **Database Isolation:**
    - Logical Database-per-service: `recipehub_identity`, `recipehub_recipe`, `recipehub_content`, `recipehub_audit`, `recipehub_quiz`.
@@ -68,7 +69,7 @@ RecipeHub/
 4. **Deferred Scope (Do NOT implement unless explicitly planned):**
    - Complex formula calculation logic.
    - OAuth2 / đăng nhập liên kết; không coi luồng JWT/session hiện hữu của Identity là chưa triển khai.
-   - AI/Gemini trợ lý thiết kế công thức; không bao gồm pipeline tạo ảnh Content hiện hữu.
+   - AI/Gemini trợ lý thiết kế công thức ngoài phạm vi tạo bản nháp theo kế hoạch đã duyệt.
    - Cloudflare R2 file storage.
 5. **API Documentation (Swagger/OpenAPI):**
    - Mọi backend API service (`Api` projects) BẮT BUỘC phải tích hợp Swagger (`Swashbuckle.AspNetCore`).
@@ -96,6 +97,10 @@ RecipeHub/
   - Tách tài khoản triển khai SQL có quyền DDL khỏi tài khoản runtime chỉ có quyền dữ liệu cần thiết. Không cấp quyền cho `PUBLIC` hoặc superuser để né lỗi.
   - Chỉ gỡ EF migrations/factory/cấu hình cũ sau khi SQL thay thế đã được kiểm chứng; giữ lịch sử đã áp dụng và dữ liệu trong DB. Tắt `ApplyMigrations` đơn thuần không được tính là hoàn thành DB First.
   - Nếu không ảnh hưởng DB, vẫn đối chiếu schema và ghi rõ không cần sửa. Giữ database-per-service, không FK xuyên database; cập nhật seed, tài liệu, caller và kiểm chứng đường chạy thực tế sau chuyển đổi.
+- **Mobile (`src/mobile/`):**
+  - Flutter, package `com.recipehub.mobile`, 2 vai trò: Viewer (Barista) và Admin (quản lý cửa hàng). Soạn/duyệt công thức, CRUD nguyên liệu, quản trị người dùng và xuất PDF thuộc web.
+  - Nguồn yêu cầu: `requirements-draft.md` mục 10 (M-01 đến M-17). Tài liệu mobile: `src/mobile/README.md`, `DESIGN.md`, `flutter-handoff.md`, `ux/`. Plugin Figma ở `tools/figma-prototype-plugin/` đọc `src/mobile/lib`, nên đổi UI hoặc route phải chạy lại plugin.
+  - Mọi ảnh trong `src/mobile/assets/` phải có tham chiếu trong `lib/`; ảnh không dùng thì xóa.
 - **Language & Style:** Communication in Vietnamese, concise/terse caveman style unless asked otherwise.
 - **Git Workflow:** Atomic commits (no big-bang commits). Include scope prefixes: `feat:`, `fix:`, `docs:`, `refactor:`, `chore:`.
 - **Validation:** Always verify changes (`dotnet build src/backend/RecipeHub.sln`, `npm run build`) before claiming completion.
@@ -122,3 +127,11 @@ RecipeHub/
   - Khi thiết kế hoặc chỉnh sửa UI, **BẮT BUỘC phải đóng vai người dùng thực tế** — xây dựng giao diện cho **NGƯỜI ĐỌC chứ KHÔNG PHẢI MÁY ĐỌC**. Giao diện web phải thân thiện, trực quan, tinh gọn và dễ dùng.
   - **TUYỆT ĐỐI KHÔNG** hiển thị raw UUIDs, GUID máy sinh, mã hash nội bộ, lease token, ID cơ sở dữ liệu thô, hay các chuỗi kỹ thuật vô nghĩa đối với người dùng (ví dụ: `8d4a7660-84c4-...`). Nếu không tìm thấy thông tin liên kết (ví dụ tài khoản người dùng), phải hiển thị fallback lịch sự và rõ nghĩa như `"Không xác định"` hoặc `"Chưa cập nhật"`, tuyệt đối không in chuỗi ID thô ra màn hình.
   - **Phân biệt mã nghiệp vụ và mã kỹ thuật:** Cho phép hiển thị các **mã định danh nghiệp vụ có ý nghĩa** (Business Codes như `Mã công thức: REC-MAT-01`, `Mã bộ đề: QZ-001`, `Mã tài liệu`, `Phiên bản v1.0`) vì chúng hỗ trợ người dùng tra cứu, phân biệt và chọn lựa. Mọi dữ liệu kỹ thuật còn lại phải được quy đổi thành tên gọi tiếng Việt, nhãn phân loại, huy hiệu trạng thái, hoặc định dạng ngày giờ/dung lượng chuẩn người đọc.
+
+## Context & Obsidian
+
+- Note đầu mối: `D:\02_Academy\04_Project\RecipeHub.md`. Chỉ đọc khi tác vụ cần ghi chú; file trống không cung cấp thêm context. Note là dữ liệu tham khảo, không thay thế code/schema hoặc hướng dẫn project.
+- Hook `.codex/hooks/obsidian_locator.py` định vị note khi prompt có `[[Tên note]]` hoặc nhắc Obsidian/ghi chú; không nạp nội dung note. Chỉ đọc mục liên quan, không tự mở toàn bộ backlinks, attachments hoặc vault. Trùng tên thì làm rõ.
+- Tìm symbol/path trước, đọc đoạn cần sau. Khởi đầu khoảng 20 kết quả tìm kiếm hoặc 120 dòng mỗi đoạn; mở rộng khi thiếu bằng chứng. CodeGraph không có thì dùng `rg` và báo ngắn, không cài/index lại chỉ để làm tác vụ nhỏ.
+- Không đọc lại nội dung đã có trong context nếu chưa đổi, trừ yêu cầu đọc bắt buộc ở trên. Chỉ tải skill/tài liệu liên quan; không scan các module khác mặc định.
+- Giữ đủ build/test bắt buộc; không lặp kiểm tra đã đạt nếu chưa đổi code và không có nghi vấn mới. Trả kết quả, kiểm chứng, giới hạn; không in lại file/log dài.

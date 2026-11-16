@@ -13,7 +13,8 @@ Frontend tương tác với Backend qua 2 lớp bảo vệ:
      - `quiz-viewer.ts`: Cho Viewer/Barista (lấy đề thi, nộp bài, xem lịch sử).
      - `backend-repository.ts`: Tra cứu công thức, nguyên liệu, media, người dùng.
      - `pdf-documents.ts`: Quản lý xem trước (`preview`), xuất bản (`export`), tra cứu lịch sử (`history`) và tải tệp PDF nhị phân (`requestBinary`).
-     - `audit.ts`: Tra cứu nhật ký kiểm toán hệ thống (`listAuditLogs`), lọc đa chiều và phân trang.
+     - `audit.ts`: Tra cứu nhật ký hoạt động hệ thống (`listAuditLogs`), lọc đa chiều và phân trang.
+- Màn hình tự cập nhật dùng polling khi cần: tạm dừng lúc tab ẩn, tải lại khi hiện, tránh request polling chồng nhau và giữ dữ liệu cũ nếu polling lỗi.
 
 ## 2. Quản Lý Phiên & Quyền (`DemoProvider`)
 
@@ -38,14 +39,11 @@ Frontend tương tác với Backend qua 2 lớp bảo vệ:
   - Khi người dùng điều chỉnh danh sách công thức, tiêu đề, loại tài liệu hoặc phạm vi xuất bản sau khi đã tạo preview, giao diện tự động đánh dấu bản xem trước là "lỗi thời" (stale), vô hiệu hóa thao tác xuất bản chính thức và nhắc nhở người dùng nhấn tạo lại preview để bảo đảm snapshot hash luôn khớp với nội dung thực tế.
 ## 3. Xử Lý Trạng Thái Tải (Loading States)
 - Không dùng spinner xoay tròn toàn màn hình đơn điệu nếu không cần thiết.
-- Khuyến khích dùng Skeleton Loader bo góc `rounded-xl` màu `#F5F0E8` với hiệu ứng xung nhịp (`animate-pulse`) nhẹ nhàng theo chuẩn Warm Editorial.
+- Skeleton mô phỏng nội dung thực: `rounded-lg bg-secondary`, `motion-safe:animate-pulse`.
 - Màn hình chờ chuyển route cấp cao dùng `loading.tsx` tại `(platform)/loading.tsx`.
 
 ## 4. Bắt Lỗi & Phản Hồi Người Dùng (Error Handling & Feedback)
-- **Error Banner:**
-  - Khi API trả về lỗi 400/404/500, hiển thị Banner cảnh báo màu đỏ kem: nền `#FEF2F2`, viền `#FECACA`, icon `AlertTriangle`, chữ đỏ đậm `#991B1B`.
-- **Form Validation:**
-  - Báo lỗi ngay dưới ô nhập liệu (Inline error text), chữ 12px màu đỏ `#DC2626`.
-- **Toast Notifications:**
-  - Dùng cho thông báo thành công (Lưu nháp thành công, Nộp bài thi hoàn tất). Nền trắng, viền `#E8E2D9`, icon xanh lục `#166534`.
+- **Error Banner:** lỗi tải dữ liệu hoặc trạng thái trang hiển thị nội tuyến kèm cách xử lý.
+- **Form Validation:** báo lỗi ngay dưới ô nhập liệu (inline error), chữ 12px `text-destructive`.
+- **Toast Notifications:** dùng cho kết quả thành công hoặc thất bại của thao tác người dùng; chi tiết ở DESIGN.md mục 5.
 - **Tuyệt đối cấm:** Để lộ JSON raw lỗi backend hoặc để ứng dụng văng màn hình trắng Unhandled Exception.

@@ -1,0 +1,198 @@
+{
+  "runId": "PW-20261111-FIX-GREEN2-143716",
+  "base": "http://127.0.0.1:33000",
+  "cases": [
+    {
+      "id": "AUTH-002",
+      "module": "Authentication",
+      "role": "public",
+      "description": "Login has labelled required controls",
+      "requirements": [
+        "FR-FE-21"
+      ],
+      "expected": "Email/password are required and password starts masked",
+      "type": "Normal",
+      "priority": "P0",
+      "round": 1,
+      "runId": "PW-20261111-FIX-GREEN2-143716",
+      "status": "Passed",
+      "actual": "All browser assertions completed.",
+      "startedAt": "2026-11-11T14:37:23.061Z",
+      "finishedAt": "2026-11-11T14:37:24.684Z",
+      "durationMs": 1624,
+      "evidence": "runs/PW-20261111-FIX-GREEN2-143716/round-1/AUTH-002",
+      "pageErrors": 0
+    },
+    {
+      "id": "AUTH-003",
+      "module": "Authentication",
+      "role": "public",
+      "description": "Empty credentials blocked by browser",
+      "requirements": [
+        "FR-AUTH-01"
+      ],
+      "expected": "No login request and required field invalid",
+      "type": "Boundary",
+      "priority": "P0",
+      "round": 1,
+      "runId": "PW-20261111-FIX-GREEN2-143716",
+      "status": "Passed",
+      "actual": "All browser assertions completed.",
+      "startedAt": "2026-11-11T14:37:24.858Z",
+      "finishedAt": "2026-11-11T14:37:26.117Z",
+      "durationMs": 1259,
+      "evidence": "runs/PW-20261111-FIX-GREEN2-143716/round-1/AUTH-003",
+      "pageErrors": 0
+    },
+    {
+      "id": "RECIPE-404",
+      "module": "Recipes",
+      "role": "rnd",
+      "description": "Unknown recipe detail shows not found",
+      "requirements": [
+        "FR-REC-01"
+      ],
+      "expected": "Missing resource displays a not-found message",
+      "type": "Abnormal",
+      "priority": "P0",
+      "round": 1,
+      "runId": "PW-20261111-FIX-GREEN2-143716",
+      "status": "Passed",
+      "actual": "All browser assertions completed.",
+      "startedAt": "2026-11-11T14:37:26.305Z",
+      "finishedAt": "2026-11-11T14:37:27.240Z",
+      "durationMs": 935,
+      "evidence": "runs/PW-20261111-FIX-GREEN2-143716/round-1/RECIPE-404",
+      "pageErrors": 0
+    },
+    {
+      "id": "AUTH-002",
+      "module": "Authentication",
+      "role": "public",
+      "description": "Login has labelled required controls",
+      "requirements": [
+        "FR-FE-21"
+      ],
+      "expected": "Email/password are required and password starts masked",
+      "type": "Normal",
+      "priority": "P0",
+      "round": 2,
+      "runId": "PW-20261111-FIX-GREEN2-143716",
+      "status": "Passed",
+      "actual": "All browser assertions completed.",
+      "startedAt": "2026-11-11T14:37:29.315Z",
+      "finishedAt": "2026-11-11T14:37:29.981Z",
+      "durationMs": 666,
+      "evidence": "runs/PW-20261111-FIX-GREEN2-143716/round-2/AUTH-002",
+      "pageErrors": 0
+    },
+    {
+      "id": "AUTH-003",
+      "module": "Authentication",
+      "role": "public",
+      "description": "Empty credentials blocked by browser",
+      "requirements": [
+        "FR-AUTH-01"
+      ],
+      "expected": "No login request and required field invalid",
+      "type": "Boundary",
+      "priority": "P0",
+      "round": 2,
+      "runId": "PW-20261111-FIX-GREEN2-143716",
+      "status": "Passed",
+      "actual": "All browser assertions completed.",
+      "startedAt": "2026-11-11T14:37:30.164Z",
+      "finishedAt": "2026-11-11T14:37:31.117Z",
+      "durationMs": 953,
+      "evidence": "runs/PW-20261111-FIX-GREEN2-143716/round-2/AUTH-003",
+      "pageErrors": 0
+    },
+    {
+      "id": "RECIPE-404",
+      "module": "Recipes",
+      "role": "rnd",
+      "description": "Unknown recipe detail shows not found",
+      "requirements": [
+        "FR-REC-01"
+      ],
+      "expected": "Missing resource displays a not-found message",
+      "type": "Abnormal",
+      "priority": "P0",
+      "round": 2,
+      "runId": "PW-20261111-FIX-GREEN2-143716",
+      "status": "Passed",
+      "actual": "All browser assertions completed.",
+      "startedAt": "2026-11-11T14:37:31.315Z",
+      "finishedAt": "2026-11-11T14:37:32.233Z",
+      "durationMs": 918,
+      "evidence": "runs/PW-20261111-FIX-GREEN2-143716/round-2/RECIPE-404",
+      "pageErrors": 0
+    },
+    {
+      "id": "AUTH-002",
+      "module": "Authentication",
+      "role": "public",
+      "description": "Login has labelled required controls",
+      "requirements": [
+        "FR-FE-21"
+      ],
+      "expected": "Email/password are required and password starts masked",
+      "type": "Normal",
+      "priority": "P0",
+      "round": 3,
+      "runId": "PW-20261111-FIX-GREEN2-143716",
+      "status": "Passed",
+      "actual": "All browser assertions completed.",
+      "startedAt": "2026-11-11T14:37:34.253Z",
+      "finishedAt": "2026-11-11T14:37:34.897Z",
+      "durationMs": 644,
+      "evidence": "runs/PW-20261111-FIX-GREEN2-143716/round-3/AUTH-002",
+      "pageErrors": 0
+    },
+    {
+      "id": "AUTH-003",
+      "module": "Authentication",
+      "role": "public",
+      "description": "Empty credentials blocked by browser",
+      "requirements": [
+        "FR-AUTH-01"
+      ],
+      "expected": "No login request and required field invalid",
+      "type": "Boundary",
+      "priority": "P0",
+      "round": 3,
+      "runId": "PW-20261111-FIX-GREEN2-143716",
+      "status": "Passed",
+      "actual": "All browser assertions completed.",
+      "startedAt": "2026-11-11T14:37:35.068Z",
+      "finishedAt": "2026-11-11T14:37:36.109Z",
+      "durationMs": 1041,
+      "evidence": "runs/PW-20261111-FIX-GREEN2-143716/round-3/AUTH-003",
+      "pageErrors": 0
+    },
+    {
+      "id": "RECIPE-404",
+      "module": "Recipes",
+      "role": "rnd",
+      "description": "Unknown recipe detail shows not found",
+      "requirements": [
+        "FR-REC-01"
+      ],
+      "expected": "Missing resource displays a not-found message",
+      "type": "Abnormal",
+      "priority": "P0",
+      "round": 3,
+      "runId": "PW-20261111-FIX-GREEN2-143716",
+      "status": "Passed",
+      "actual": "All browser assertions completed.",
+      "startedAt": "2026-11-11T14:37:36.328Z",
+      "finishedAt": "2026-11-11T14:37:37.270Z",
+      "durationMs": 942,
+      "evidence": "runs/PW-20261111-FIX-GREEN2-143716/round-3/RECIPE-404",
+      "pageErrors": 0
+    }
+  ],
+  "remaining": [],
+  "startedAt": "2026-11-11T14:37:17.448Z",
+  "finishedAt": "2026-11-11T14:37:37.271Z"
+}

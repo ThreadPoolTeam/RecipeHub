@@ -1,21 +1,32 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import { pageTitleClass } from '@/components/workspace/page-header';
+
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { LogIn } from 'lucide-react';
+import { Coffee, Eye, EyeOff } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { getDefaultDashboardForRole, isPathAllowedForUser } from '@/lib/demo/permissions';
 import { TextInput, Button, Alert } from '@/components/workspace/fields';
+import { useToast } from '@/components/workspace/toast';
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextParam = searchParams.get('next') || '';
 
   const { login } = useDemo();
+  const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (!sessionStorage.getItem('recipehub-password-changed')) return;
+    sessionStorage.removeItem('recipehub-password-changed');
+    toast({ type: 'success', title: 'Đổi mật khẩu thành công', description: 'Vui lòng đăng nhập lại.' });
+  }, [toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,14 +50,16 @@ function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-md bg-white border border-[#E8E2D9] rounded-xl p-8 shadow-xs space-y-6">
-      <div className="space-y-1 text-center">
-        <h2 className="text-xl font-bold text-[#1A1917] tracking-tight">
-          Đăng Nhập RecipeHub
-        </h2>
-        <p className="text-xs text-[#706E68]">
-          Nhập thông tin tài khoản để tiếp tục
-        </p>
+    <div className="w-full max-w-[448px] space-y-8 border-y border-border py-10 [color-scheme:light]">
+      <div className="flex items-center gap-2 font-display text-lg font-semibold">
+        <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
+          <Coffee aria-hidden="true" size={20} strokeWidth={1.5} />
+        </span>
+        RecipeHub
+      </div>
+      <div className="space-y-2">
+        <h1 className={pageTitleClass}>Chào mừng trở lại</h1>
+        <p className="text-sm text-muted-foreground">Không gian nghiên cứu cà phê &amp; đồ uống.</p>
       </div>
       {errorMsg && (
         <Alert variant="error" title="Đăng nhập thất bại">
@@ -56,22 +69,27 @@ function LoginForm() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <TextInput
-          label="Địa chỉ Email"
+          label="Email"
           type="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="your.email@recipehub.demo"
+          placeholder="ban@beveragelab.vn"
         />
 
-        <TextInput
-          label="Mật khẩu"
-          type="password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="••••••••"
-        />
+        <div className="relative">
+          <TextInput
+            label="Mật khẩu"
+            type={showPassword ? 'text' : 'password'}
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+          />
+          <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} aria-pressed={showPassword} className="absolute bottom-0 right-0 flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring">
+            {showPassword ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
+          </button>
+        </div>
 
         <div className="pt-2">
           <Button
@@ -81,10 +99,11 @@ function LoginForm() {
             className="w-full flex items-center justify-center gap-2"
             isLoading={isLoading}
           >
-            <LogIn className="w-4 h-4" /> Đăng Nhập Vào Hệ Thống
+            Đăng nhập
           </Button>
         </div>
       </form>
+      <p className="text-center text-xs text-muted-foreground">Gặp sự cố? Liên hệ quản trị viên hệ thống.</p>
     </div>
   );
 }
@@ -93,7 +112,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="text-center text-zinc-400 text-xs">Đang tải trang đăng nhập...</div>
+        <div className="text-center text-xs text-muted-foreground">Đang tải trang đăng nhập...</div>
       }
     >
       <LoginForm />

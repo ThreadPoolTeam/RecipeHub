@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Prompts\beverage-recipe-generation.md" LogicalName="RecipeHub.BackgroundWorker.Prompts.beverage-recipe-generation.md" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
   </ItemGroup>
@@ -18,5 +22,8 @@
     <ProjectReference Include="..\..\Services\Content\RecipeHub.Content.Application\RecipeHub.Content.Application.csproj" />
     <ProjectReference Include="..\..\Services\Content\RecipeHub.Content.Domain\RecipeHub.Content.Domain.csproj" />
     <ProjectReference Include="..\..\Services\Audit\RecipeHub.Audit.Infrastructure\RecipeHub.Audit.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Services\Quiz\RecipeHub.Quiz.Application\RecipeHub.Quiz.Application.csproj" />
+    <ProjectReference Include="..\..\Services\Quiz\RecipeHub.Quiz.Infrastructure\RecipeHub.Quiz.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Services\Quiz\RecipeHub.Quiz.Domain\RecipeHub.Quiz.Domain.csproj" />
   </ItemGroup>
 </Project>

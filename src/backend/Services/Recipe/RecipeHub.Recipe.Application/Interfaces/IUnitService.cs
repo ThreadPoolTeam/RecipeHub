@@ -14,6 +14,7 @@ public interface IUnitService
     Task<UnitResponse> GetByIdAsync(Guid publicId, CancellationToken cancellationToken);
     Task<UnitResponse> CreateAsync(UnitRequest request, Guid actorUserId, CancellationToken cancellationToken);
     Task<UnitResponse> UpdateAsync(Guid publicId, UnitRequest request, Guid actorUserId, CancellationToken cancellationToken);
+    Task<UnitResponse> UpdateConversionAsync(Guid publicId, UnitConversionRequest request, Guid actorUserId, CancellationToken cancellationToken);
     Task DeactivateAsync(Guid publicId, Guid actorUserId, CancellationToken cancellationToken);
     Task<UnitResponse> ActivateAsync(Guid publicId, Guid actorUserId, CancellationToken cancellationToken);
 }

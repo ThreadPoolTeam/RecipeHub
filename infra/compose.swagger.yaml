@@ -1,0 +1,19 @@
+# Tùy chọn khi demo: mở Swagger UI của 5 service ra máy (chỉ 127.0.0.1).
+# Mặc định các service chỉ nghe trong mạng Docker, mọi request đi qua Gateway :5000.
+# Dùng: docker compose -f infra/compose.yaml -f infra/compose.swagger.yaml up -d
+services:
+  identity-service:
+    ports:
+      - "127.0.0.1:5001:5001"
+  recipe-service:
+    ports:
+      - "127.0.0.1:5002:5002"
+  content-service:
+    ports:
+      - "127.0.0.1:5003:5003"
+  audit-service:
+    ports:
+      - "127.0.0.1:5004:5004"
+  quiz-service:
+    ports:
+      - "127.0.0.1:5005:5005"

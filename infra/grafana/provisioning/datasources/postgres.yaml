@@ -1,0 +1,78 @@
+apiVersion: 1
+
+datasources:
+  - name: RecipeHub Audit DB
+    uid: recipehub-audit-db
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    user: ${GRAFANA_DB_USER}
+    database: ${AUDIT_DB_NAME}
+    isDefault: true
+    editable: false
+    secureJsonData:
+      password: ${GRAFANA_DB_PASSWORD}
+    jsonData:
+      sslmode: "disable"
+      postgresVersion: 1600
+      timescaledb: false
+
+  - name: RecipeHub Identity DB
+    uid: recipehub-identity-db
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    user: ${GRAFANA_DB_USER}
+    database: ${IDENTITY_DB_NAME}
+    editable: false
+    secureJsonData:
+      password: ${GRAFANA_DB_PASSWORD}
+    jsonData:
+      sslmode: "disable"
+      postgresVersion: 1600
+      timescaledb: false
+
+  - name: RecipeHub Recipe DB
+    uid: recipehub-recipe-db
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    user: ${GRAFANA_DB_USER}
+    database: ${RECIPE_DB_NAME}
+    editable: false
+    secureJsonData:
+      password: ${GRAFANA_DB_PASSWORD}
+    jsonData:
+      sslmode: "disable"
+      postgresVersion: 1600
+      timescaledb: false
+
+  - name: RecipeHub Content DB
+    uid: recipehub-content-db
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    user: ${GRAFANA_DB_USER}
+    database: ${CONTENT_DB_NAME}
+    editable: false
+    secureJsonData:
+      password: ${GRAFANA_DB_PASSWORD}
+    jsonData:
+      sslmode: "disable"
+      postgresVersion: 1600
+      timescaledb: false
+
+  - name: RecipeHub Quiz DB
+    uid: recipehub-quiz-db
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    user: ${GRAFANA_DB_USER}
+    database: ${QUIZ_DB_NAME}
+    editable: false
+    secureJsonData:
+      password: ${GRAFANA_DB_PASSWORD}
+    jsonData:
+      sslmode: "disable"
+      postgresVersion: 1600
+      timescaledb: false

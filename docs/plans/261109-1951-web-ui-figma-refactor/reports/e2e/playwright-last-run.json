@@ -1,0 +1,70 @@
+{
+  "tag": "E2E-3323733",
+  "errors": [],
+  "http": [],
+  "expectedHttp": [
+    {
+      "name": "navigation",
+      "status": 403,
+      "url": "http://localhost:3000/api/backend/api/v1/identity/users?page=1&pageSize=100"
+    },
+    {
+      "name": "results",
+      "status": 403,
+      "url": "http://localhost:3000/api/backend/api/v1/identity/users?page=1&pageSize=100"
+    }
+  ],
+  "remaining": [
+    "E2E-3323733 đơn vị: tạm khóa",
+    "E2E-3323733-image.png: kiểm tra tham chiếu trước khi dọn",
+    "E2E-3323733 ấn phẩm PDF: không có chức năng xóa",
+    "E2E-3323733 quiz: đã lưu trữ, lượt làm được giữ lại",
+    "E2E-3323733 công thức: đã lưu trữ",
+    "E2E-3323733 nguyên liệu: tạm khóa"
+  ],
+  "results": [
+    {
+      "name": "navigation",
+      "result": "PASS"
+    },
+    {
+      "name": "catalogue",
+      "result": "PASS"
+    },
+    {
+      "name": "ingredient",
+      "result": "PASS"
+    },
+    {
+      "name": "media",
+      "result": "PASS"
+    },
+    {
+      "name": "recipe",
+      "result": "PASS"
+    },
+    {
+      "name": "pdf",
+      "result": "PASS"
+    },
+    {
+      "name": "quiz",
+      "result": "PASS"
+    },
+    {
+      "name": "viewer",
+      "result": "PASS"
+    },
+    {
+      "name": "results",
+      "result": "PASS"
+    },
+    {
+      "name": "cleanup",
+      "result": "PASS"
+    }
+  ],
+  "ingredientCreated": true,
+  "recipe": "http://localhost:3000/rnd/recipes/dc606b31-8992-4a9e-bd55-b8d30854fefc",
+  "quiz": "http://localhost:3000/rnd/quizzes/88f4736c-f272-4095-8234-45c35f82e683?version=1"
+}

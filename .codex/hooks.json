@@ -1,0 +1,17 @@
+{
+  "description": "RecipeHub: bounded Obsidian filename lookup; no LLM or note content injection.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "C:/Users/tu_core/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe \"D:/03_Dev/01_Projects/01_MyProject/PRN232/Assignment/Project/RecipeHub/.codex/hooks/obsidian_locator.py\"",
+            "timeout": 3,
+            "additionalContextLimit": 700
+          }
+        ]
+      }
+    ]
+  }
+}

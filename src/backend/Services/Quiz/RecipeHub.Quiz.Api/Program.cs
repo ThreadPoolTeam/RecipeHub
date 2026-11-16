@@ -1,3 +1,4 @@
+using Prometheus;
 using RecipeHub.BuildingBlocks.Audit;
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Authentication;
@@ -61,9 +62,16 @@ if (!string.IsNullOrWhiteSpace(redisConn))
 {
     builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(_ => StackExchange.Redis.ConnectionMultiplexer.Connect(redisConn));
 }
-builder.Services.AddAuditActivityPublisher();
+builder.Services.AddAuditActivityPublisher(builder.Configuration);
 
 var app = builder.Build();
+
+app.UseRouting();
+app.UseWhen(
+    context => !context.Request.Path.StartsWithSegments("/metrics")
+        && !context.Request.Path.StartsWithSegments("/health"),
+    branch => branch.UseHttpMetrics());
+app.MapMetrics().WithMetadata(new HttpMethodMetadata([HttpMethods.Get])).AllowAnonymous().ExcludeFromDescription();
 
 if (app.Environment.IsDevelopment())
 {
@@ -97,11 +105,17 @@ app.MapGet("/health/ready", async (QuizDbContext dbContext, CancellationToken ct
         : Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
 });
 
-app.MapGet("/api/v1/quiz/info", () => Results.Ok(new
+app.MapGet("/api/v1/quiz/info", async (QuizDbContext dbContext, CancellationToken ct) =>
 {
-    service = "RecipeHub.Quiz.Api",
-    status = "Active",
-    version = "1.0.0"
-}));
+    var canConnect = await dbContext.Database.CanConnectAsync(ct);
+    return Results.Ok(new
+    {
+        service = "RecipeHub.Quiz.Api",
+        version = "1.0.0",
+        status = canConnect ? "Ready" : "Degraded",
+        database = canConnect ? "Connected" : "Unreachable",
+        timestampUtc = DateTime.UtcNow
+    });
+});
 
 app.Run();

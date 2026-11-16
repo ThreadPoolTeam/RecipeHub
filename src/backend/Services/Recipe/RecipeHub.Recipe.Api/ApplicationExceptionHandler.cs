@@ -22,6 +22,7 @@ public sealed class ApplicationExceptionHandler : IExceptionHandler
             ForbiddenException => (StatusCodes.Status403Forbidden, "Access denied"),
             NotFoundException => (StatusCodes.Status404NotFound, "Resource not found"),
             ConflictException => (StatusCodes.Status409Conflict, "Resource conflict"),
+            AiDraftUnavailableException => (StatusCodes.Status503ServiceUnavailable, "AI draft unavailable"),
             PdfStorageException { Failure: PdfStorageFailure.Unavailable } => (StatusCodes.Status503ServiceUnavailable, "PDF storage unavailable"),
             PdfStorageException { Failure: PdfStorageFailure.Timeout } => (StatusCodes.Status504GatewayTimeout, "PDF storage timeout"),
             PdfStorageException => (StatusCodes.Status502BadGateway, "PDF storage failed"),

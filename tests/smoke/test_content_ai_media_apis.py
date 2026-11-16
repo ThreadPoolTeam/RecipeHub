@@ -310,9 +310,10 @@ def run_tests():
     list_ok = code == 200 and isinstance(res, dict) and "items" in res
     suite.record("R&D GET /media-assets returns 200 OK", list_ok, code, t, str(res))
 
+    list_res = res
     code, res, t = suite.request("GET", f"{content_url}/api/v1/content/media-assets?page=1&pageSize=10", token=admin_token)
-    admin_list_ok = code == 200 and isinstance(res, dict) and "items" in res
-    suite.record("Admin GET /media-assets returns 200 OK", admin_list_ok, code, t, str(res))
+    suite.record("Admin GET /media-assets returns 403 Forbidden (R&D data is rnd-only)", code == 403, code, t, str(res))
+    res = list_res
 
     first_asset_id = None
     if list_ok and len(res.get("items", [])) > 0:

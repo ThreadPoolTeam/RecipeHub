@@ -1,0 +1,53 @@
+$ redis-cli INFO server | head
+# Server
+redis_version:7.4.11
+redis_git_sha1:00000000
+redis_git_dirty:0
+redis_build_id:40ff01a501d8e4b6
+redis_mode:standalone
+os:Linux 7.0.0-43-generic x86_64
+arch_bits:64
+$ redis-cli XINFO STREAM content.image-drafts.v1
+length	1
+radix-tree-keys	1
+radix-tree-nodes	2
+last-generated-id	1794777258191-0
+max-deleted-entry-id	0-0
+entries-added	1
+recorded-first-entry-id	1794777258191-0
+groups	1
+first-entry	1794777258191-0
+eventId	1ffc9b1d-4e3d-4571-a5f3-fed20811c1ef
+eventType	Content.ImageDraftQueued
+payload	{"DraftId": "b74f284f-927e-4218-bbfe-f843879b8512", "UserBrief": "Ly cà phê sữa đá trên bàn gỗ", "TargetKind": "final_product", "RecipeStepId": null, "TimestampUtc": "2026-11-15T21:14:16.9472653+00:00", "RecipeVersionId": "2ac6b3f1-a390-4ae4-8aab-02a1c94294f5", "CreatedByUserRef": "e23b4fb8-ef33-407b-8cfc-ee07cd5c0559"}
+last-entry	1794777258191-0
+eventId	1ffc9b1d-4e3d-4571-a5f3-fed20811c1ef
+eventType	Content.ImageDraftQueued
+payload	{"DraftId": "b74f284f-927e-4218-bbfe-f843879b8512", "UserBrief": "Ly cà phê sữa đá trên bàn gỗ", "TargetKind": "final_product", "RecipeStepId": null, "TimestampUtc": "2026-11-15T21:14:16.9472653+00:00", "RecipeVersionId": "2ac6b3f1-a390-4ae4-8aab-02a1c94294f5", "CreatedByUserRef": "e23b4fb8-ef33-407b-8cfc-ee07cd5c0559"}
+$ redis-cli XINFO CONSUMERS content.image-drafts.v1 <group>
+$ redis-cli XINFO STREAM quiz.ai-generation.v1
+length	0
+radix-tree-keys	0
+radix-tree-nodes	1
+last-generated-id	0-0
+max-deleted-entry-id	0-0
+entries-added	0
+recorded-first-entry-id	0-0
+groups	1
+first-entry	
+last-entry	
+$ redis-cli XINFO CONSUMERS quiz.ai-generation.v1 <group>
+$ redis-cli XINFO STREAM platform.heartbeat.v1
+length	1
+radix-tree-keys	1
+radix-tree-nodes	2
+last-generated-id	1794777067564-0
+max-deleted-entry-id	0-0
+entries-added	1
+recorded-first-entry-id	1794777067564-0
+groups	1
+first-entry	1794777067564-0
+payload	{"EventId":"19397532-c1c7-4a56-9be3-ffa02da5d964","EventType":"PlatformHeartbeatEvent","OccurredAtUtc":"2026-11-15T21:11:07Z","CorrelationId":"19397532-c1c7-4a56-9be3-ffa02da5d964","Source":"smoke-test","SchemaVersion":"1.0","Payload":{"ServiceName":"smoke-test","Status":"Healthy","Message":"Smoke heartbeat"}}
+last-entry	1794777067564-0
+payload	{"EventId":"19397532-c1c7-4a56-9be3-ffa02da5d964","EventType":"PlatformHeartbeatEvent","OccurredAtUtc":"2026-11-15T21:11:07Z","CorrelationId":"19397532-c1c7-4a56-9be3-ffa02da5d964","Source":"smoke-test","SchemaVersion":"1.0","Payload":{"ServiceName":"smoke-test","Status":"Healthy","Message":"Smoke heartbeat"}}
+$ redis-cli XINFO CONSUMERS platform.heartbeat.v1 <group>

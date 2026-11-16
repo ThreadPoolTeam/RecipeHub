@@ -293,7 +293,9 @@ public class QuizAttemptService : IQuizAttemptService
     public async Task<(List<QuizResultListItemDto> Items, int Total)> GetManagementResultsAsync(
         Guid? userRef, Guid? quizId, int? versionNumber, Guid actorUserId, string actorRole, int page, int pageSize, CancellationToken ct = default)
     {
-        var creatorFilter = actorRole.ToLowerInvariant() == "admin" ? (Guid?)null : actorUserId;
+        if (!string.Equals(actorRole, "rnd", StringComparison.OrdinalIgnoreCase))
+            throw new UnauthorizedAccessException("Only rnd is authorized to view quiz results.");
+        Guid? creatorFilter = null;
         var total = await _attemptRepository.GetManagementAttemptsCountAsync(userRef, quizId, versionNumber, creatorFilter, ct);
         var attempts = await _attemptRepository.GetManagementAttemptsAsync(userRef, quizId, versionNumber, creatorFilter, page, pageSize, ct);
 
@@ -323,10 +325,8 @@ public class QuizAttemptService : IQuizAttemptService
         if (attempt is null)
             throw new KeyNotFoundException($"Attempt '{attemptId}' was not found.");
 
-        if (actorRole.ToLowerInvariant() != "admin" && attempt.QuizVersion.Quiz.CreatedByUserRef != actorUserId)
-        {
-            throw new UnauthorizedAccessException("You are not authorized to view results for this quiz.");
-        }
+        if (!string.Equals(actorRole, "rnd", StringComparison.OrdinalIgnoreCase))
+            throw new UnauthorizedAccessException("Only rnd is authorized to view quiz results.");
 
         var resultDto = MapToResultDto(attempt);
         return new QuizResultDetailDto

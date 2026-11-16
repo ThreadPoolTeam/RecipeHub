@@ -14,14 +14,14 @@ docs/systemmd/
 ├── technical-inventory.md               # Kiểm kê source/API/DB/topology/config; snapshot tham chiếu, không thêm chuẩn
 ├── frontend/
 │   ├── 01-architecture-and-folders.md   # Cấu trúc Next.js App Router, quy tắc đặt tên & file
-│   ├── 02-layout-and-navigation.md      # Chuẩn WorkspaceShell, Sidebar thu gọn, Topbar, layout 3 tầng
+│   ├── 02-layout-and-navigation.md      # Chuẩn WorkspaceShell, top-nav, drawer mobile, role skin, layout 3 tầng
 │   ├── 03-roles-and-permissions.md      # Quy hoạch 3 role: Admin, R&D, Viewer (Barista/Store)
-│   ├── 04-design-system-and-components.md # Tích hợp DESIGN.md Warm Editorial, Apple pills, Animation
+│   ├── 04-design-system-and-components.md # Tóm tắt chuẩn token, font, component; nguồn là DESIGN.md (Figma)
 │   └── 05-data-fetching-and-state.md    # API clients, Session provider, Proxy, Error banner
 └── backend/
     ├── 01-clean-architecture-layers.md  # 4 tầng chuẩn (Domain, Application, Infrastructure, Api)
     ├── 02-services-and-boundaries.md    # Ranh giới 5 service: Identity, Recipe, Quiz, Content, Audit
-    ├── 03-inter-service-communication.md # Đồng bộ gRPC + Bất đồng bộ Redis Streams EventEnvelope
+    ├── 03-inter-service-communication.md # gRPC + Kafka (audit) + Redis Streams (hàng đợi việc), EventEnvelope
     ├── 04-database-first-persistence.md # Quy chuẩn DB-First, schema versioning, EF Core mapping
     └── 05-gateway-and-api-conventions.md # YARP routing, REST conventions, Swagger, Error handler
 ```
@@ -32,12 +32,12 @@ docs/systemmd/
 
 1. **Frontend:**
    - Chỉ dùng layout chuẩn `WorkspaceShell`. Không tạo layout ngoài luồng.
-   - Tuân thủ Warm Editorial (`docs/DESIGN.md`): Canvas `#FAF9F5`, viền `#E8E2D9`, nút bấm viên thuốc `#B47820`, font Google Sans + monospace số đo.
+   - Tuân thủ `docs/DESIGN.md` (Figma): semantic token, Outfit + Figtree với Google Sans làm fallback tiếng Việt, button radius 6px (không pill), top-nav + drawer, role skin qua `data-role`.
    - Phân định rõ 3 role: `admin`, `rnd`, `viewer`. Không trộn lẫn menu.
 2. **Backend:**
    - Clean Architecture 4 layer độc lập. Domain không phụ thuộc gì.
    - DB First tuyệt đối: Schema PostgreSQL là nguồn sự thật (SSOT). Cấm EF Code First / dotnet ef migrations / MigrateAsync.
-   - Giao tiếp liên service: gRPC cho truy vấn đồng bộ; Redis Streams cho sự kiện bất đồng bộ.
+   - Giao tiếp liên service: gRPC cho truy vấn đồng bộ; Kafka cho sự kiện nhật ký (audit); Redis Streams cho hàng đợi việc ảnh AI.
    - YARP API Gateway là điểm vào duy nhất: `/api/v1/{service}/*`.
    - Mọi backend API bắt buộc có Swagger UI sẵn sàng cho Development.
 

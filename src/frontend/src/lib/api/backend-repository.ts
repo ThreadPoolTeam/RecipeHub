@@ -32,6 +32,9 @@ export interface CatalogItem {
 export interface UnitItem extends CatalogItem {
   categoryId: string;
   categoryName: string;
+  isBase: boolean;
+  factorToBase: number;
+  offsetToBase: number;
   decimalPlaces: number;
 }
 
@@ -129,6 +132,9 @@ function mapUnit(value: unknown, label: string): UnitItem {
     ...mapCatalog(item, label),
     categoryId: text(item.categoryId, `${label}.categoryId`),
     categoryName: text(item.categoryName, `${label}.categoryName`),
+    isBase: booleanValue(item.isBase, `${label}.isBase`),
+    factorToBase: numberValue(item.factorToBase, `${label}.factorToBase`),
+    offsetToBase: numberValue(item.offsetToBase, `${label}.offsetToBase`),
     decimalPlaces: numberValue(item.decimalPlaces, `${label}.decimalPlaces`),
   };
 }
@@ -563,6 +569,24 @@ export class BackendRepository extends DemoRepository {
     return mapUnit(response, 'unit');
   }
 
+  async updateUnitConversion(
+    actor: SessionInfo,
+    id: string,
+    data: {
+      isBase: boolean;
+      factorToBase: number;
+      offsetToBase: number;
+    }
+  ): Promise<UnitItem> {
+    const response = await requestJson(
+      `api/v1/recipes/units/${id}/conversion`,
+      this.actorId(actor),
+      { method: 'PUT', body: JSON.stringify(data) }
+    );
+    this.units = null;
+    return mapUnit(response, 'unit conversion');
+  }
+
   async deactivateUnit(actor: SessionInfo, id: string): Promise<void> {
     await requestJson(`api/v1/recipes/units/${id}`, this.actorId(actor), { method: 'DELETE' });
     this.units = null;
@@ -704,7 +728,7 @@ export class BackendRepository extends DemoRepository {
         description: data.description ?? current.description ?? null,
         warning: data.warning ?? current.warning ?? null,
         note: data.note ?? current.note ?? null,
-        imageAssetRef: data.imageAssetId ?? current.imageAssetId ?? null,
+        imageAssetRef: data.imageAssetId === undefined ? (current.imageAssetId ?? null) : data.imageAssetId,
       }),
     });
     this.ingredientsCache = null;
@@ -1134,6 +1158,7 @@ export class BackendRepository extends DemoRepository {
         const usage = record(value, `media usages.usages[${index}]`);
         const stepOrder = optionalNumber(usage.stepOrder, `media usages.usages[${index}].stepOrder`);
         return {
+          recipeId: text(usage.recipeId, `media usages.usages[${index}].recipeId`),
           versionId: text(usage.recipeVersionId, `media usages.usages[${index}].recipeVersionId`),
           recipeCode: '',
           recipeName: text(usage.recipeTitle, `media usages.usages[${index}].recipeTitle`),
@@ -1240,6 +1265,9 @@ export class BackendRepository extends DemoRepository {
       'accepted image draft'
     );
     const mediaAssetId = text(accepted.mediaAssetId, 'accepted image draft.mediaAssetId');
+    // Ảnh vừa chấp nhận là media asset mới: bỏ cache để trang chi tiết/biên tập thấy nó.
+    this.mediaCache = null;
+    this.mediaPromise = null;
     const deliveryUrl = optionalText(accepted.deliveryUrl, 'accepted image draft.deliveryUrl');
     const previewBlob = this.draftPreviews.get(candidateId);
     if (previewBlob) {

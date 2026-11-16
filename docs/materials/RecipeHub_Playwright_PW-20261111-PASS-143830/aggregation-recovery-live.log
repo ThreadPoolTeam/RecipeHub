@@ -1,0 +1,39 @@
+**********************
+PowerShell transcript start
+Start time: 20261111215233
+Username: NGUYENSON\nguyen.son
+RunAs User: NGUYENSON\nguyen.son
+Configuration Name: 
+Machine: NGUYENSON (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.9.0_x64__8wekyb3d8bbwe\pwsh.dll -NoLogo -NoProfile -NoExit -File D:\PRN232\ASM\RecipeHub\tests\e2e\recover-test-summary.ps1 -RunId PW-20261111-PASS-143830
+Process ID: 33440
+PSVersion: 7.6.9
+PSEdition: Core
+GitCommitId: 7.6.9
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+RECIPEHUB — VERIFIED FINAL PLAYWRIGHT RESULTS
+Run: PW-20261111-PASS-143830 | dev base b1ad3845310a1f267183a12f84e6cf09c1db318c
+Application: local fixes; application.patch and patch hash retained.
+Summary recovered from COMPLETED TEST LOGS; tests are not re-executed here.
+Time: 2026-11-11T21:52:33.5010853+07:00
+
+Unique cases: 81 | Rounds: 3 | Final assessments: 243
+PASSED: 243 | FAILED: 0 | BLOCKED: 0
+Round 1: 81 passed / 0 failed
+Round 2: 81 passed / 0 failed
+Round 3: 81 passed / 0 failed
+AI attempts: 3 | Failed AI attempts retained: 0
+Runner process exits: 03-edge-full-suite=0, 04-admin-extended=0, 05-chrome-compatibility=0, 06-lifecycle-round-1=0, 06-lifecycle-round-2=0, 06-lifecycle-round-3=0
+
+RED failures, pilot failures, prior AI 503 and summary error remain in history.
+Backend/frontend build + typecheck PASS. Baseline lint: 33 errors / 45 warnings.
+**********************
+PowerShell transcript end
+End time: 20261111215241
+**********************

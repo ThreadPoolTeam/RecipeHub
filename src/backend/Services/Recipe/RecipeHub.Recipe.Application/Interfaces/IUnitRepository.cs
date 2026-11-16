@@ -11,6 +11,7 @@ public interface IUnitRepository
     Task<bool> CategoryCodeExistsAsync(string normalizedCode, Guid? excludedPublicId, CancellationToken cancellationToken);
     Task<bool> CategoryNameExistsAsync(string normalizedName, Guid? excludedPublicId, CancellationToken cancellationToken);
     Task<bool> UnitCodeExistsAsync(string normalizedCode, Guid? excludedPublicId, CancellationToken cancellationToken);
+    Task<bool> BaseUnitExistsAsync(long categoryId, long? excludedUnitId, CancellationToken cancellationToken);
     Task<bool> UnitIsUsedAsync(long unitId, CancellationToken cancellationToken);
     Task AddCategoryAsync(UnitCategory category, CancellationToken cancellationToken);
     Task AddUnitAsync(Unit unit, CancellationToken cancellationToken);

@@ -17,6 +17,9 @@ public sealed record UnitResponse(
     string Name,
     Guid CategoryId,
     string CategoryName,
+    bool IsBase,
+    decimal FactorToBase,
+    decimal OffsetToBase,
     short DecimalPlaces,
     string State,
     DateTime CreatedAt,
@@ -27,6 +30,11 @@ public sealed record UnitRequest(
     string? Name,
     Guid CategoryId,
     short DecimalPlaces);
+
+public sealed record UnitConversionRequest(
+    bool IsBase,
+    decimal FactorToBase,
+    decimal OffsetToBase);
 
 public sealed record IngredientCategoryResponse(
     Guid Id,

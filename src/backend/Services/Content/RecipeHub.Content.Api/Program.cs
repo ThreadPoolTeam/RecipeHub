@@ -1,3 +1,4 @@
+using Prometheus;
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
@@ -7,6 +8,7 @@ using RecipeHub.Content.Api.Services;
 using RecipeHub.Content.Application;
 using RecipeHub.Content.Application.Interfaces;
 using RecipeHub.Content.Infrastructure;
+using RecipeHub.Content.Infrastructure.Data;
 using RecipeHub.GrpcContracts;
 using RecipeHub.GrpcContracts.Identity;
 using StackExchange.Redis;
@@ -68,10 +70,12 @@ builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("ContentEditors", policy =>
         policy.RequireAuthenticatedUser()
-              .RequireRole("admin", "rnd"));
+              .RequireRole("rnd"));
     options.AddPolicy("ContentReaders", policy =>
         policy.RequireAuthenticatedUser()
-              .RequireRole("admin", "rnd", "viewer"));
+              .RequireRole("rnd", "viewer"));
+    options.AddPolicy("ServiceInfo", policy =>
+        policy.RequireAuthenticatedUser());
 });
 
 builder.Services.AddHealthChecks();
@@ -87,6 +91,13 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(redisOptions));
 
 var app = builder.Build();
+
+app.UseRouting();
+app.UseWhen(
+    context => !context.Request.Path.StartsWithSegments("/metrics")
+        && !context.Request.Path.StartsWithSegments("/health"),
+    branch => branch.UseHttpMetrics());
+app.MapMetrics().WithMetadata(new HttpMethodMetadata([HttpMethods.Get])).AllowAnonymous().ExcludeFromDescription();
 
 if (app.Environment.IsDevelopment())
 {
@@ -112,15 +123,27 @@ app.MapGet("/", () => Results.Ok(new
 }));
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "Live" }));
-app.MapGet("/health/ready", () => Results.Ok(new { status = "Ready" }));
-
-app.MapGet("/api/v1/content/info", () => Results.Ok(new
+app.MapGet("/health/ready", async (ContentDbContext db, CancellationToken ct) =>
 {
-    service = "RecipeHub.Content.Api",
-    version = "1.0.0",
-    status = "Ready",
-    description = "Content AI & Media Management Service"
-})).RequireAuthorization("ContentReaders");
+    var canConnect = await db.Database.CanConnectAsync(ct);
+    return canConnect
+        ? Results.Ok(new { status = "Ready", database = "Connected" })
+        : Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+});
+
+app.MapGet("/api/v1/content/info", async (ContentDbContext db, CancellationToken ct) =>
+{
+    var canConnect = await db.Database.CanConnectAsync(ct);
+    return Results.Ok(new
+    {
+        service = "RecipeHub.Content.Api",
+        version = "1.0.0",
+        status = canConnect ? "Ready" : "Degraded",
+        database = canConnect ? "Connected" : "Unreachable",
+        description = "Content AI & Media Management Service",
+        timestampUtc = DateTime.UtcNow
+    });
+}).RequireAuthorization("ServiceInfo");
 
 // Endpoint trigger gRPC Ping to Recipe.Api
 app.MapGet("/api/v1/content/probe-recipe", async (IConfiguration config) =>

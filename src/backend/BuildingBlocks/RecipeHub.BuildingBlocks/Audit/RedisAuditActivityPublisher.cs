@@ -4,7 +4,7 @@ using StackExchange.Redis;
 
 namespace RecipeHub.BuildingBlocks.Audit;
 
-public class RedisAuditActivityPublisher : IAuditActivityPublisher
+public class RedisAuditActivityPublisher : IAuditActivityPublisher, IAuditEnvelopePublisher
 {
     private readonly IConnectionMultiplexer? _redis;
     private readonly ILogger<RedisAuditActivityPublisher> _logger;
@@ -22,24 +22,18 @@ public class RedisAuditActivityPublisher : IAuditActivityPublisher
         AuditActivityEvent activity,
         CancellationToken cancellationToken = default)
     {
-        if (_redis == null || !_redis.IsConnected)
-        {
-            _logger.LogWarning("Redis connection multiplexer unavailable; skipping audit publish for action {Action} on {TargetType}.", activity.Action, activity.TargetType);
-            return;
-        }
+        await PublishEnvelopeAsync(AuditEnvelopeFactory.Create(source, activity), cancellationToken);
+    }
 
-        var envelope = new EventEnvelope<AuditActivityEvent>
-        {
-            EventId = Guid.NewGuid().ToString("N"),
-            EventType = AuditActivityEvent.EventTypeName,
-            OccurredAtUtc = DateTime.UtcNow,
-            Source = source,
-            SchemaVersion = AuditActivityEvent.CurrentSchemaVersion,
-            Payload = activity
-        };
-
+    public async Task PublishEnvelopeAsync(EventEnvelope<AuditActivityEvent> envelope, CancellationToken cancellationToken)
+    {
         try
         {
+            if (_redis == null || !_redis.IsConnected)
+            {
+                _logger.LogWarning("Redis unavailable; skipping audit event {EventId}.", envelope.EventId);
+                return;
+            }
             var db = _redis.GetDatabase();
             var json = envelope.ToJson();
             var entries = new NameValueEntry[]
@@ -48,7 +42,7 @@ public class RedisAuditActivityPublisher : IAuditActivityPublisher
             };
 
             await db.StreamAddAsync(AuditActivityEvent.StreamName, entries).WaitAsync(cancellationToken);
-            _logger.LogInformation("Audit event published to stream {StreamName}: {EventId} [{Action}]", AuditActivityEvent.StreamName, envelope.EventId, activity.Action);
+            _logger.LogInformation("Audit event published to stream {StreamName}: {EventId} [{Action}]", AuditActivityEvent.StreamName, envelope.EventId, envelope.Payload.Action);
         }
         catch (Exception ex)
         {

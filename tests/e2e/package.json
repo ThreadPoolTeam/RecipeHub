@@ -1,0 +1,15 @@
+{
+  "name": "recipehub-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bộ kiểm thử đầu-cuối và chụp ảnh minh chứng tự động cho RecipeHub",
+  "scripts": {
+    "test": "playwright test --grep-invert @destructive",
+    "test:evidence": "playwright test",
+    "test:destructive": "playwright test --grep @destructive",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.49.1"
+  }
+}

@@ -42,7 +42,7 @@ export interface Ingredient {
   costPerUnit?: number;
   description?: string;
   note?: string;
-  imageAssetId?: string;
+  imageAssetId?: string | null;
   createdAt: string;
   updatedAt: string;
   categoryId?: string;
@@ -210,6 +210,7 @@ export interface PaginatedResult<T> {
 export interface MediaReferenceInfo {
   mediaId: string;
   recipes: Array<{
+    recipeId: string;
     versionId: string;
     recipeCode: string;
     recipeName: string;

@@ -21,6 +21,7 @@ Chỉ thay đổi Recipe Service, tài liệu schema `recipe_db` và các màn h
 - Đổi thao tác variant/clone thành `Sao chép` một công thức độc lập.
 - Adapter giữ nguyên yield nullable và primary media khi lưu, không tự tạo sản lượng giả hoặc xóa ảnh.
 - Adapter nguyên liệu giữ riêng description, note và image; tạo nguyên liệu không kích hoạt sẽ ngừng sử dụng ngay sau khi tạo.
+- Thêm `tests/smoke/test_recipe_api.sh` để tự động kiểm tra contract chỉ đọc và vòng đời Recipe đầy đủ bằng API thật.
 - Thêm migration `20261019_simplify_recipe_domain.sql`.
 
 ## Xác minh
@@ -30,4 +31,7 @@ Chỉ thay đổi Recipe Service, tài liệu schema `recipe_db` và các màn h
 - `git -c core.whitespace=cr-at-eol diff --check`: thành công.
 - `npx --no-install tsc --noEmit`: thành công.
 - Route types của Next.js được tạo lại sau khi xóa `/approvals`: thành công.
+- `bash -n tests/smoke/test_recipe_api.sh`: thành công.
+- `tests/smoke/test_recipe_api.sh`: thành công với Recipe API local tại `localhost:5002`.
+- `tests/smoke/test_recipe_api.sh --full`: thành công toàn bộ vòng đời tạo nháp, publish, tạo nháp mới từ bản đã publish, copy độc lập, archive và activate; dữ liệu kiểm thử được đưa về trạng thái archived.
 - `npm run build` không hoàn tất vì Turbopack không được phép bind cổng trong môi trường chạy.

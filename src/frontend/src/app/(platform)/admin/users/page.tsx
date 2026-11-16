@@ -1,21 +1,22 @@
 'use client';
 
+import { pageTitleClass } from '@/components/workspace/page-header';
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useDemo } from '@/lib/demo/provider';
 import { User, Role } from '@/lib/demo/types';
 import { Button, TextInput, Select, Alert, SearchInput } from '@/components/workspace/fields';
-import { DataTable } from '@/components/workspace/data-table';
-import { RoleBadge } from '@/components/workspace/status-badge';
 import { Dialog } from '@/components/workspace/dialog';
-import { Users } from 'lucide-react';
+import { useToast } from '@/components/workspace/toast';
+import { UsersTable } from './users-table';
 
 export default function AdminUsersPage() {
   const { session, repo, dataVersion, touch } = useDemo();
+  const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
-  const [recipes, setRecipes] = useState<Array<{ id: string; recipeId: string; name: string; code: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Search & Filter
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,14 +33,12 @@ export default function AdminUsersPage() {
   const [newFullName, setNewFullName] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState<Role>('rnd');
-  const [newAllowedRecipes, setNewAllowedRecipes] = useState<string[]>([]);
   const [createSubmitting, setCreateSubmitting] = useState(false);
 
   // Edit User Modal
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editFullName, setEditFullName] = useState('');
   const [editRole, setEditRole] = useState<Role>('rnd');
-  const [editAllowedRecipes, setEditAllowedRecipes] = useState<string[]>([]);
   const [editSubmitting, setEditSubmitting] = useState(false);
 
   // Toggle lock state
@@ -54,49 +53,17 @@ export default function AdminUsersPage() {
       setLoading(true);
       const userResult = await repo.getUsersPage(searchTerm, filterRole, filterState, page, 10);
       if (sequence !== loadSequence.current) return;
+      setErrorMsg(null);
       setUsers(userResult.items);
       setTotal(userResult.total);
       setTotalPages(userResult.totalPages);
       if (page > userResult.totalPages) setPage(userResult.totalPages);
-    } catch (err: unknown) {
-      if (sequence === loadSequence.current) setErrorMsg(err instanceof Error ? err.message : 'Lỗi khi tải danh sách người dùng');
+    } catch {
+      if (sequence === loadSequence.current) setErrorMsg('Không thể tải danh sách người dùng. Vui lòng thử lại.');
     } finally {
       if (sequence === loadSequence.current) setLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (!session) return;
-    let active = true;
-    // Recipe choices are independent of the Identity table load.
-    const loadRecipes = async () => {
-      const all: Array<{ id: string; recipeId: string; name: string; code: string }> = [];
-      let recipePage = 1;
-      let pages = 1;
-      do {
-        const result = await repo.getRecipes(session, { status: 'Published', page: recipePage, pageSize: 100 });
-        all.push(...result.items);
-        pages = result.totalPages;
-        recipePage++;
-      } while (recipePage <= pages && active);
-      if (!active) return;
-      // Group recipe by distinct recipeId
-      const uniqueRecipes = new Map<string, { id: string; recipeId: string; name: string; code: string }>();
-      for (const item of all) {
-        if (!uniqueRecipes.has(item.recipeId)) {
-          uniqueRecipes.set(item.recipeId, {
-            id: item.id,
-            recipeId: item.recipeId,
-            name: item.name,
-            code: item.code,
-          });
-        }
-      }
-      setRecipes(Array.from(uniqueRecipes.values()));
-    };
-    void loadRecipes().catch(err => { if (active) setErrorMsg(err instanceof Error ? err.message : 'Không tải được danh mục công thức.'); });
-    return () => { active = false; };
-  }, [session, repo, dataVersion]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => { if (session) void loadData(); }, 250);
@@ -107,32 +74,30 @@ export default function AdminUsersPage() {
   const handleCreateUser = async () => {
     if (!session) return;
     if (!newEmail.trim() || !newFullName.trim()) {
-      setErrorMsg('Vui lòng điền đầy đủ Email và Họ tên');
+      setFormError('Vui lòng điền đầy đủ Email và Họ tên');
       return;
     }
     try {
       setCreateSubmitting(true);
-      setErrorMsg(null);
+      setFormError(null);
       await repo.createUser(session, {
         email: newEmail.trim().toLowerCase(),
         fullName: newFullName.trim(),
         role: newRole,
         password: newPassword,
         isLocked: false,
-        allowedRecipeIds: newRole === 'viewer' ? newAllowedRecipes : [],
+        allowedRecipeIds: [],
       });
-      setSuccessMsg(`Đã tạo tài khoản thành công: ${newEmail}`);
+      toast({ type: 'success', title: 'Đã tạo tài khoản', description: newEmail });
       setIsCreateOpen(false);
-      // reset form
       setNewEmail('');
       setNewFullName('');
       setNewPassword('');
       setNewRole('rnd');
-      setNewAllowedRecipes([]);
       touch();
       await loadData();
-    } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Lỗi khi tạo người dùng');
+    } catch {
+      toast({ type: 'error', title: 'Không thể tạo tài khoản', description: 'Vui lòng kiểm tra thông tin và thử lại.' });
     } finally {
       setCreateSubmitting(false);
     }
@@ -143,31 +108,30 @@ export default function AdminUsersPage() {
     setEditingUser(u);
     setEditFullName(u.fullName);
     setEditRole(u.role);
-    setEditAllowedRecipes(u.allowedRecipeIds || []);
-    setErrorMsg(null);
+    setFormError(null);
   };
 
   // Handle Edit User
   const handleEditUser = async () => {
     if (!session || !editingUser) return;
     if (!editFullName.trim()) {
-      setErrorMsg('Họ tên không được để trống');
+      setFormError('Họ tên không được để trống');
       return;
     }
     try {
       setEditSubmitting(true);
-      setErrorMsg(null);
+      setFormError(null);
       await repo.updateUser(session, editingUser.id, {
         fullName: editFullName.trim(),
         role: editRole,
-        allowedRecipeIds: editRole === 'viewer' ? editAllowedRecipes : [],
+        allowedRecipeIds: [],
       });
-      setSuccessMsg(`Đã cập nhật thông tin tài khoản: ${editingUser.email}`);
+      toast({ type: 'success', title: 'Đã cập nhật tài khoản', description: editingUser.email });
       setEditingUser(null);
       touch();
       await loadData();
-    } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Lỗi khi cập nhật người dùng');
+    } catch {
+      toast({ type: 'error', title: 'Không thể cập nhật tài khoản', description: 'Vui lòng thử lại.' });
     } finally {
       setEditSubmitting(false);
     }
@@ -185,15 +149,15 @@ export default function AdminUsersPage() {
       setErrorMsg(null);
       const updated = await repo.updateUserStatus(session, targetUser.id, targetUser.isLocked);
       const isLocked = updated.isLocked;
-      setSuccessMsg(
-        isLocked
-          ? `Đã khóa tài khoản [${targetUser.email}] và thu hồi mọi session.`
-          : `Đã mở khóa tài khoản [${targetUser.email}].`
-      );
+      toast({
+        type: 'success',
+        title: isLocked ? 'Đã khóa tài khoản' : 'Đã mở khóa tài khoản',
+        description: isLocked ? `${targetUser.email}. Các phiên đăng nhập đã bị thu hồi.` : targetUser.email,
+      });
       touch();
       await loadData();
-    } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Lỗi khi thao tác khóa/mở khóa');
+    } catch {
+      toast({ type: 'error', title: 'Không thể thay đổi trạng thái tài khoản', description: 'Vui lòng thử lại.' });
     } finally {
       setLockingUserId(null);
     }
@@ -202,29 +166,28 @@ export default function AdminUsersPage() {
   const handleResetPassword = async () => {
     if (!session || !passwordUser) return;
     try {
-      setResetSubmitting(true); setErrorMsg(null);
+      setResetSubmitting(true); setFormError(null);
       await repo.resetUserPassword(session, passwordUser.id, resetPassword);
-      setSuccessMsg(`Đã đổi mật khẩu cho ${passwordUser.email} và thu hồi mọi session.`);
+      toast({ type: 'success', title: 'Đã đổi mật khẩu', description: `${passwordUser.email}. Các phiên đăng nhập đã bị thu hồi.` });
       setPasswordUser(null); setResetPassword(''); touch();
-    } catch (err) { setErrorMsg(err instanceof Error ? err.message : 'Không thể đổi mật khẩu.'); }
+    } catch { toast({ type: 'error', title: 'Không thể đổi mật khẩu', description: 'Vui lòng kiểm tra mật khẩu và thử lại.' }); }
     finally { setResetSubmitting(false); }
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E2D9]">
+    <div className="mx-auto max-w-[1360px] space-y-6">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-2xl font-bold text-[#1A1917] flex items-center gap-2.5">
-            <Users className="w-6 h-6 text-[#B47820]" />
-            Quản lý Tài khoản &amp; Phân quyền
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Quản trị</p>
+          <h1 className={`mt-2 ${pageTitleClass}`}>
+            Tài khoản &amp; phân quyền
           </h1>
-          <p className="text-[#706E68] text-sm mt-1">
-            Quản lý tài khoản, vai trò R&amp;D / Barista Viewer và quyền truy cập công thức.
+          <p className="mt-2 text-sm text-muted-foreground">
+            Mỗi tài khoản có đúng một vai trò: Admin, R&amp;D hoặc Viewer.
           </p>
         </div>
-        <Button variant="gold" onClick={() => setIsCreateOpen(true)}>
-          + Thêm người dùng mới
+        <Button variant="primary" className="!h-10" onClick={() => { setFormError(null); setIsCreateOpen(true); }}>
+          Tạo tài khoản
         </Button>
       </div>
 
@@ -234,17 +197,12 @@ export default function AdminUsersPage() {
         </Alert>
       )}
 
-      {successMsg && (
-        <Alert variant="success" onClose={() => setSuccessMsg(null)}>
-          {successMsg}
-        </Alert>
-      )}
 
-      {/* Filter toolbar */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 p-4 bg-white border border-[#E8E2D9] rounded-2xl shadow-xs">
-        <div className="sm:col-span-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,320px)_minmax(160px,200px)_minmax(160px,200px)]">
+        <div>
           <SearchInput
-            placeholder="Tìm theo email hoặc họ tên..."
+            aria-label="Tìm theo tên hoặc email"
+            placeholder="Tìm theo tên hoặc email"
             value={searchTerm}
             onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
             onClear={() => { setSearchTerm(''); setPage(1); }}
@@ -252,6 +210,7 @@ export default function AdminUsersPage() {
         </div>
         <div>
           <Select
+            aria-label="Lọc vai trò"
             value={filterRole}
             onChange={(e) => { setFilterRole(e.target.value as 'all' | Role); setPage(1); }}
             options={[
@@ -266,78 +225,17 @@ export default function AdminUsersPage() {
           options={[{ label: 'Tất cả trạng thái', value: 'all' }, { label: 'Đang hoạt động', value: 'active' }, { label: 'Đã khóa', value: 'inactive' }]} />
       </div>
 
-      {/* Users DataTable */}
-      <DataTable<User>
-        data={users}
-        keyExtractor={(u) => u.id}
-        isLoading={loading}
-        emptyTitle="Không tìm thấy người dùng"
-        emptyMessage="Hãy điều chỉnh từ khóa tìm kiếm hoặc bấm Thêm người dùng mới."
-        columns={[
-          {
-            header: 'Họ tên & Email',
-            render: (u) => (
-              <div>
-                <div className="font-semibold text-[#1A1917] flex items-center gap-2">
-                  {u.fullName}
-                  {u.isLocked && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
-                      BỊ KHÓA
-                    </span>
-                  )}
-                </div>
-                <div className="text-xs text-zinc-400 font-mono mt-0.5">{u.email}</div>
-              </div>
-            ),
-          },
-          {
-            header: 'Vai trò (Role)',
-            render: (u) => <RoleBadge role={u.role} />,
-          },
-          {
-            header: 'Phạm vi công thức',
-            render: (u) => {
-              if (u.role !== 'viewer') {
-                return <span className="text-xs text-[#706E68]">Toàn bộ công thức (theo vai trò)</span>;
-              }
-              const count = u.allowedRecipeIds ? u.allowedRecipeIds.length : 0;
-              return (
-                <div className="text-xs">
-                  <span className="font-mono text-[#B47820] font-semibold">{count}</span> công thức cho phép xem
-                </div>
-              );
-            },
-          },
-          {
-            header: 'Thao tác',
-            className: 'text-right',
-            render: (u) => (
-              <div className="flex items-center justify-end gap-2">
-                <Button size="sm" disabled={u.id === session?.userId} onClick={() => { setPasswordUser(u); setResetPassword(''); setErrorMsg(null); }}>Đổi mật khẩu</Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => openEditModal(u)}
-                >
-                  Sửa
-                </Button>
-                <Button
-                  size="sm"
-                  variant={u.isLocked ? 'gold' : 'danger'}
-                  isLoading={lockingUserId === u.id}
-                  disabled={u.id === session?.userId}
-                  onClick={() => handleToggleLock(u)}
-                  title={u.id === session?.userId ? 'Không thể tự khóa chính mình' : undefined}
-                >
-                  {u.isLocked ? 'Mở khóa' : 'Khóa'}
-                </Button>
-              </div>
-            ),
-          },
-        ]}
+      <UsersTable
+        users={users}
+        loading={loading}
+        currentUserId={session?.userId}
+        lockingUserId={lockingUserId}
+        onResetPassword={(u) => { setPasswordUser(u); setResetPassword(''); setFormError(null); setErrorMsg(null); }}
+        onEdit={openEditModal}
+        onToggleLock={handleToggleLock}
       />
 
-      <div className="flex items-center justify-between gap-3 text-xs text-[#706E68]">
+      <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
         <span>{total} tài khoản · Trang {page}/{totalPages}</span>
         <div className="flex gap-2">
           <Button size="sm" disabled={loading || page <= 1} onClick={() => setPage(p => p - 1)}>Trước</Button>
@@ -348,9 +246,8 @@ export default function AdminUsersPage() {
       <Dialog isOpen={!!passwordUser} onClose={() => { if (!resetSubmitting) { setPasswordUser(null); setResetPassword(''); } }}
         title={`Đổi mật khẩu: ${passwordUser?.email ?? ''}`} description="Mọi session của tài khoản này sẽ bị thu hồi."
         onConfirm={handleResetPassword} confirmLabel="Lưu mật khẩu" isConfirming={resetSubmitting}>
-        {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
         <TextInput label="Mật khẩu mới" type="password" autoComplete="new-password" value={resetPassword} onChange={e => setResetPassword(e.target.value)}
-          helper="8–128 ký tự, gồm chữ hoa, chữ thường và số." />
+          helper="Từ 8 đến 128 ký tự, gồm chữ hoa, chữ thường và số." />
       </Dialog>
 
       {/* Modal Thêm người dùng mới */}
@@ -365,7 +262,7 @@ export default function AdminUsersPage() {
         isConfirming={createSubmitting}
       >
         <div className="space-y-4">
-          {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
+          {formError && <Alert variant="error">{formError}</Alert>}
           <TextInput
             label="Email tài khoản"
             required
@@ -375,7 +272,7 @@ export default function AdminUsersPage() {
           />
 
           <TextInput label="Mật khẩu ban đầu" type="password" autoComplete="new-password" required value={newPassword}
-            onChange={e => setNewPassword(e.target.value)} helper="8–128 ký tự, gồm chữ hoa, chữ thường và số." />
+            onChange={e => setNewPassword(e.target.value)} helper="Từ 8 đến 128 ký tự, gồm chữ hoa, chữ thường và số." />
 
           <TextInput
             label="Họ và tên"
@@ -394,52 +291,10 @@ export default function AdminUsersPage() {
             }}
             options={[
               { label: 'R&D Specialist (Nghiên cứu & phát triển công thức)', value: 'rnd' },
-              { label: 'Barista Viewer (Xem SOP & tra cứu vận hành quầy)', value: 'viewer' },
-              { label: 'System Admin (Quản trị hệ thống toàn quyền)', value: 'admin' },
+              { label: 'Barista Viewer (Tra cứu toàn bộ SOP công thức đã phát hành)', value: 'viewer' },
+              { label: 'System Admin (Quản trị hệ thống & giám sát vận hành)', value: 'admin' },
             ]}
           />
-
-          {/* Cho phép chọn recipeIds nếu là Viewer */}
-          {newRole === 'viewer' && (
-            <div className="p-3 bg-[#FAF9F5] border border-[#E8E2D9] rounded-xl space-y-2">
-              <div className="text-xs font-semibold text-[#1A1917]">
-                Phân quyền xem công thức (Viewer Scope)
-              </div>
-              <p className="text-[11px] text-[#706E68]">
-                Chọn danh sách công thức đã phát hành mà Barista này được quyền tra cứu:
-              </p>
-              {recipes.length === 0 ? (
-                <div className="text-xs text-amber-700">Chưa có công thức đã phát hành nào trong hệ thống.</div>
-              ) : (
-                <div className="max-h-40 overflow-y-auto space-y-1.5 pr-2">
-                  {recipes.map((rcp) => {
-                    const checked = newAllowedRecipes.includes(rcp.recipeId);
-                    return (
-                      <label
-                        key={rcp.recipeId}
-                        className="flex items-center gap-2 p-1.5 rounded hover:bg-[#FAF9F5] text-xs text-[#1A1917] cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setNewAllowedRecipes([...newAllowedRecipes, rcp.recipeId]);
-                            } else {
-                              setNewAllowedRecipes(newAllowedRecipes.filter((id) => id !== rcp.recipeId));
-                            }
-                          }}
-                          className="w-3.5 h-3.5 accent-[#C9A84C]"
-                        />
-                        <span className="font-mono text-[11px] text-[#B47820] font-semibold">{rcp.code}</span>
-                        <span>{rcp.name}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </Dialog>
 
@@ -448,14 +303,14 @@ export default function AdminUsersPage() {
         isOpen={!!editingUser}
         onClose={() => setEditingUser(null)}
         title={`Chỉnh sửa: ${editingUser?.email}`}
-        description="Cập nhật quyền hạn và phạm vi công thức cho tài khoản."
+        description="Cập nhật họ tên và vai trò cho tài khoản."
         confirmLabel="Lưu thay đổi"
         confirmVariant="gold"
         onConfirm={handleEditUser}
         isConfirming={editSubmitting}
       >
         <div className="space-y-4">
-          {errorMsg && <Alert variant="error">{errorMsg}</Alert>}
+          {formError && <Alert variant="error">{formError}</Alert>}
           <TextInput
             label="Họ và tên"
             required
@@ -476,47 +331,6 @@ export default function AdminUsersPage() {
               { label: 'System Admin', value: 'admin' },
             ]}
           />
-
-          {editRole === 'viewer' && (
-            <div className="p-3 bg-[#FAF9F5] border border-[#E8E2D9] rounded-xl space-y-2">
-              <div className="text-xs font-semibold text-[#1A1917]">
-                Phân quyền xem công thức (Viewer Scope)
-              </div>
-              <p className="text-[11px] text-[#706E68]">
-                Chỉ định các công thức Barista này được phép mở và xem SOP:
-              </p>
-              {recipes.length === 0 ? (
-                <div className="text-xs text-amber-700">Chưa có công thức đã phát hành nào.</div>
-              ) : (
-                <div className="max-h-40 overflow-y-auto space-y-1.5 pr-2">
-                  {recipes.map((rcp) => {
-                    const checked = editAllowedRecipes.includes(rcp.recipeId);
-                    return (
-                      <label
-                        key={rcp.recipeId}
-                        className="flex items-center gap-2 p-1.5 rounded hover:bg-[#FAF9F5] text-xs text-[#1A1917] cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setEditAllowedRecipes([...editAllowedRecipes, rcp.recipeId]);
-                            } else {
-                              setEditAllowedRecipes(editAllowedRecipes.filter((id) => id !== rcp.recipeId));
-                            }
-                          }}
-                          className="w-3.5 h-3.5 accent-[#C9A84C]"
-                        />
-                        <span className="font-mono text-[11px] text-[#B47820] font-semibold">{rcp.code}</span>
-                        <span>{rcp.name}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </Dialog>
     </div>

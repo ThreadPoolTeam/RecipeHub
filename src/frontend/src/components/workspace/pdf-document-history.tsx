@@ -1,13 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  FileText,
-  Download,
-  CheckCircle2,
-  AlertCircle,
-  Clock,
-} from 'lucide-react';
+import { Download } from 'lucide-react';
 import {
   PdfDocumentSummaryResponse,
   PdfDocumentResponse,
@@ -21,7 +15,8 @@ import {
   downloadPdfDocumentFile,
 } from '@/lib/api/pdf-documents';
 import { Button, Select, SearchInput, Alert } from './fields';
-import { DataTable } from './data-table';
+import { useToast } from './toast';
+import { PdfDocumentCards } from './pdf-document-cards';
 import { Dialog } from './dialog';
 import { PdfDocumentPreview } from './pdf-document-preview';
 
@@ -34,6 +29,7 @@ export function PdfDocumentHistory({
   actorId = null,
   refreshKey = 0,
 }: PdfDocumentHistoryProps) {
+  const { toast } = useToast();
   const [documents, setDocuments] = useState<PdfDocumentSummaryResponse[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -128,9 +124,13 @@ export function PdfDocumentHistory({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      toast({ type: 'success', title: 'Đã tải tệp PDF', description: name });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Tải tệp PDF thất bại';
-      alert(msg);
+      toast({
+        type: 'error',
+        title: 'Không thể tải tệp PDF',
+        description: err instanceof Error ? err.message : 'Vui lòng thử lại.',
+      });
     } finally {
       setDownloadingId(null);
     }
@@ -144,102 +144,6 @@ export function PdfDocumentHistory({
     return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
   };
 
-  const columns = [
-    {
-      header: 'Tài liệu',
-      render: (item: PdfDocumentSummaryResponse) => (
-        <div className="space-y-0.5">
-          <button
-            type="button"
-            onClick={() => handleViewPdf(item)}
-            disabled={item.state !== 'ready'}
-            className="font-semibold text-[#1A1917] text-sm flex items-center gap-2 hover:text-[#B47820] transition-colors text-left group disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-            title="Nhấn để xem trực tiếp tài liệu PDF"
-          >
-            <FileText className="w-4 h-4 text-[#B47820] shrink-0 group-hover:scale-110 transition-transform" />
-            <span className="group-hover:underline">{item.title}</span>
-          </button>
-          <div className="text-xs text-[#706E68]">
-            {item.exportScope === 'collection'
-              ? `Bộ sưu tập (${item.itemCount} món)`
-              : 'Công thức đơn'}
-          </div>
-        </div>
-      ),
-    },
-    {
-      header: 'Phân loại',
-      render: (item: PdfDocumentSummaryResponse) => (
-        <span
-          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-            item.documentType === 'published'
-              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-              : 'bg-amber-50 text-amber-800 border border-amber-200'
-          }`}
-        >
-          {item.documentType === 'published' ? 'Chính thức' : 'Bản nháp'}
-        </span>
-      ),
-    },
-    {
-      header: 'Trạng thái',
-      render: (item: PdfDocumentSummaryResponse) => {
-        if (item.state === 'ready') {
-          return (
-            <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700 font-medium">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Sẵn sàng
-            </span>
-          );
-        }
-        if (item.state === 'failed') {
-          return (
-            <span className="inline-flex items-center gap-1.5 text-xs text-rose-700 font-medium">
-              <AlertCircle className="w-4 h-4 text-rose-600" /> Thất bại
-            </span>
-          );
-        }
-        return (
-          <span className="inline-flex items-center gap-1.5 text-xs text-amber-700 font-medium">
-            <Clock className="w-4 h-4 animate-spin text-amber-600" /> Đang xử lý
-          </span>
-        );
-      },
-    },
-    {
-      header: 'Thời gian tạo',
-      render: (item: PdfDocumentSummaryResponse) => (
-        <div className="text-xs text-[#706E68] space-y-0.5">
-          <div className="text-[#1A1917] font-medium">
-            {new Date(item.createdAt).toLocaleDateString('vi-VN')}
-          </div>
-          <div className="text-[11px] text-[#8C887F]">
-            {new Date(item.createdAt).toLocaleTimeString('vi-VN', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-            {item.byteSize && item.byteSize > 0 && ` • ${formatFileSize(item.byteSize)}`}
-          </div>
-        </div>
-      ),
-    },
-    {
-      header: 'Thao tác',
-      className: 'text-right',
-      render: (item: PdfDocumentSummaryResponse) => (
-        <div className="flex items-center justify-end">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => handleDownloadFile(item)}
-            isLoading={downloadingId === item.id}
-            disabled={item.state !== 'ready'}
-          >
-            <Download className="w-3.5 h-3.5 mr-1" /> Tải xuống
-          </Button>
-        </div>
-      ),
-    },
-  ];
 
   return (
     <div className="space-y-4">
@@ -281,20 +185,17 @@ export function PdfDocumentHistory({
         </div>
       </div>
 
-      {/* Documents Table */}
-      <DataTable
-        columns={columns}
-        data={documents}
-        keyExtractor={(item) => item.id}
-        isLoading={loading}
-        emptyTitle="Chưa có tài liệu PDF nào"
-        emptyMessage="Hãy bấm nút '+ Xuất tài liệu mới' ở góc trên để tạo ấn phẩm SOP."
-        pagination={{
-          page,
-          total: totalCount,
-          totalPages: Math.ceil(totalCount / pageSize) || 1,
-          onPageChange: (newPage) => setPage(newPage),
-        }}
+      <PdfDocumentCards
+        documents={documents}
+        loading={loading}
+        page={page}
+        totalCount={totalCount}
+        pageSize={pageSize}
+        downloadingId={downloadingId}
+        onPageChange={(newPage) => setPage(newPage)}
+        onView={handleViewPdf}
+        onDownload={handleDownloadFile}
+        formatFileSize={formatFileSize}
       />
 
       {/* Preview Modal */}
@@ -305,7 +206,7 @@ export function PdfDocumentHistory({
         maxWidth="5xl"
       >
         <div className="space-y-4">
-          <div className="h-[600px] border border-[#E8E2D9] rounded-xl overflow-hidden bg-[#FAF9F5]">
+          <div className="h-[600px] overflow-hidden rounded-lg border border-border bg-secondary">
             <PdfDocumentPreview
               blob={previewBlob}
               fileName={previewFileName}
@@ -323,7 +224,7 @@ export function PdfDocumentHistory({
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-[#E8E2D9]">
+          <div className="flex justify-end gap-2 border-t border-border pt-2">
             {selectedDocId && (
               <Button
                 variant="gold"

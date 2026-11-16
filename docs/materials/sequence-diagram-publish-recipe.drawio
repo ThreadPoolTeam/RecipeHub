@@ -1,0 +1,71 @@
+<mxfile host="app.diagrams.net" agent="RecipeHub Sequence Diagram" version="24.0.0">
+  <diagram id="recipehub-sequence-publish" name="Sequence diagram">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="mermaid_code" value="sequenceDiagram
+    autonumber
+    actor User as R&amp;D Specialist
+    participant UI as :RecipeDetailPage (UI)
+    participant API as :RecipesController
+    participant Service as :RecipeService
+    participant Repo as :RecipeRepository
+    participant DB as :PostgreSQL (recipe_db)
+    participant Redis as :RedisStreams (Broker)
+
+    User-&gt;&gt;UI: Bấm nút &quot;Phát hành&quot; (Publish)
+    activate UI
+    UI-&gt;&gt;API: POST /api/v1/recipes/{id}/versions/{vId}/publish
+    activate API
+    API-&gt;&gt;Service: PublishAsync(publicId, versionId, actor)
+    activate Service
+
+    Service-&gt;&gt;Repo: GetRecipeVersionAsync(publicId, versionId)
+    activate Repo
+    Repo-&gt;&gt;DB: SELECT * FROM recipe_version WHERE public_id = @vId
+    activate DB
+    DB--&gt;&gt;Repo: RecipeVersion Entity (Status='draft')
+    deactivate DB
+    Repo--&gt;&gt;Service: version
+    deactivate Repo
+
+    Note over Service: Kiểm tra điều kiện phát hành [BR-01]
+
+    alt FAIL BR-01: Thiếu nguyên liệu / bước SOP / Yield
+        Service--&gt;&gt;API: throw ValidationException(&quot;At least 1 ingredient &amp; 1 step required&quot;)
+        API--&gt;&gt;UI: 400 Bad Request (Validation Error)
+        UI--&gt;&gt;User: Hiển thị cảnh báo lỗi, giữ nguyên Draft để bổ sung
+    else FAIL BR-04: Trạng thái hiện tại không phải Draft
+        Service--&gt;&gt;API: throw ConflictException(&quot;Only a draft can be published&quot;)
+        API--&gt;&gt;UI: 409 Conflict
+        UI--&gt;&gt;User: Cảnh báo công thức đã phát hành là bất biến
+    else PASS BR-01, BR-04 &amp; Quyền duyệt BR-05
+        Service-&gt;&gt;Service: Set Status = &quot;published&quot;, PublishedAt = UtcNow
+        Service-&gt;&gt;Repo: SaveChangesAsync()
+        activate Repo
+        Repo-&gt;&gt;DB: UPDATE recipe_version SET status='published', published_at=NOW()
+        activate DB
+        DB--&gt;&gt;Repo: Rows affected = 1
+        deactivate DB
+        Repo--&gt;&gt;Service: Task (Success)
+        deactivate Repo
+
+        Service-&gt;&gt;Redis: PublishAsync(AuditActivityEvent: &quot;recipe.published&quot;)
+        activate Redis
+        Redis--&gt;&gt;Service: XADD audit.activities.v1 OK
+        deactivate Redis
+
+        Service--&gt;&gt;API: RecipeDetailResponse (Status='published')
+        deactivate Service
+        API--&gt;&gt;UI: 200 OK (RecipeDetailResponse)
+        deactivate API
+        UI--&gt;&gt;User: Phát hành thành công, khóa form bất biến [BR-04]
+        deactivate UI
+    end" style="shape=mxgraph.mermaid;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="1120" height="820" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

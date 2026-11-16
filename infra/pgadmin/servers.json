@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "RecipeHub PostgreSQL",
+      "Group": "RecipeHub",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "recipehub_default",
+      "Username": "recipehub_admin",
+      "SSLMode": "prefer"
+    }
+  }
+}

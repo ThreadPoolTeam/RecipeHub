@@ -3,7 +3,7 @@
 > **Mã kế hoạch:** `261019-mobile-flutter-integration`  
 > **Phạm vi:** Tích hợp ứng dụng Flutter Mobile (`src/mobile/recipehub_mobile`) vào Monorepo `RecipeHub`, kết nối trực tiếp cụm Microservices qua YARP Gateway cổng 5000.  
 > **Người thực hiện:** SonNPXSE183201 (PRM393 / PRN232)  
-> **Trạng thái:** Triển khai (In-Progress)
+> **Trạng thái:** Đã thay thế bởi `docs/plans/261101-mobile-redesign-2roles/plan.md` (01/11/2026). Mobile nay chỉ có 2 vai trò Viewer (Barista) và Admin (quản lý cửa hàng); phần R&D Staff, E-Booklet và PDF Master Book trong kế hoạch này đã bị bỏ khỏi mobile và thuộc web.
 
 ---
 

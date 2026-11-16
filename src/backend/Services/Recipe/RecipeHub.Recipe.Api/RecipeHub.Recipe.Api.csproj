@@ -6,9 +6,14 @@
     <ProjectReference Include="..\..\..\BuildingBlocks\RecipeHub.BuildingBlocks\RecipeHub.BuildingBlocks.csproj" />
     <ProjectReference Include="..\..\..\Contracts\RecipeHub.GrpcContracts\RecipeHub.GrpcContracts.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Prompts\description-suggestion.md" LogicalName="RecipeHub.Recipe.Api.Prompts.description-suggestion.md" />
+  </ItemGroup>
+
 
   <ItemGroup>
     <PackageReference Include="Grpc.AspNetCore" Version="2.66.0" />
+    <PackageReference Include="prometheus-net.AspNetCore" Version="8.2.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11" PrivateAssets="all" />
   </ItemGroup>

@@ -56,11 +56,10 @@ public sealed class ContentPdfMediaQueryServiceImpl : ContentPdfMediaQuery.Conte
             }
 
             var role = validateResponse.Role;
-            if (!string.Equals(role, "admin", StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(role, "rnd", StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(role, "rnd", StringComparison.OrdinalIgnoreCase))
             {
                 response.ErrorCode = "FORBIDDEN";
-                response.ErrorMessage = "Chỉ Admin hoặc R&D mới có quyền truy vấn metadata media PDF.";
+                response.ErrorMessage = "Chỉ R&D mới có quyền truy vấn metadata media PDF.";
                 return response;
             }
         }

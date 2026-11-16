@@ -8,7 +8,7 @@ namespace RecipeHub.Quiz.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/quiz/management/quizzes")]
-[Authorize(Roles = "admin,rnd")]
+[Authorize(Roles = "rnd")]
 public class QuizManagementController : ControllerBase
 {
     private readonly IQuizService _quizService;

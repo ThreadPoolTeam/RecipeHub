@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="RecipeHub Class Design" version="24.0.0">
+  <diagram id="recipehub-class-design" name="Class design">
+    <mxGraphModel adaptiveColors="auto">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    
+      <mxCell id="c_controller" value="&lt;b&gt;RecipesController&lt;/b&gt;&lt;br&gt;&lt;small style='font-size:9px;color:#1e3a8a;'&gt;«Presentation API · Controller»&lt;/small&gt;" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontalStack=0;resizeParent=1;resizeParentMax=0;horizontal=1;startSize=36;collapsible=0;html=1;fillColor=#eff6ff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#1e3a8a;fontSize=12;shadow=1;" vertex="1" parent="1">
+        <mxGeometry x="50" y="70" width="310" height="240" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_controller_fields" value="• - _recipeService: IRecipeService&lt;br&gt;• - IsViewer: bool" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;spacingBottom=6;html=1;fontSize=10;fontColor=#1e293b;" vertex="1" parent="c_controller">
+        <mxGeometry y="36" width="310" height="44" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_controller_sep" value="" style="line;strokeWidth=1;fillColor=none;strokeColor=#3b82f6;align=left;verticalAlign=middle;rotatable=0;html=1;" vertex="1" parent="c_controller">
+        <mxGeometry y="80" width="310" height="4" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_controller_methods" value="+ Search(query, state, versionStatus): Task&lt;br&gt;+ GetById(publicId): Task&lt;ActionResult&gt;&lt;br&gt;+ Create(request): Task&lt;ActionResult&gt;&lt;br&gt;+ Update(publicId, request): Task&lt;ActionResult&gt;&lt;br&gt;+ Publish(publicId, versionId): Task&lt;ActionResult&gt;&lt;br&gt;+ Archive(publicId): Task&lt;IActionResult&gt;&lt;br&gt;+ Copy(publicId, request): Task&lt;ActionResult&gt;" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;spacingBottom=6;html=1;fontSize=10;fontColor=#0f172a;" vertex="1" parent="c_controller">
+        <mxGeometry y="84" width="310" height="126" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_service" value="&lt;b&gt;RecipeService&lt;/b&gt;&lt;br&gt;&lt;small style='font-size:9px;color:#14532d;'&gt;«Application Layer · Orchestrator»&lt;/small&gt;" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontalStack=0;resizeParent=1;resizeParentMax=0;horizontal=1;startSize=36;collapsible=0;html=1;fillColor=#f0fdf4;strokeColor=#16a34a;strokeWidth=1.5;fontColor=#14532d;fontSize=12;shadow=1;" vertex="1" parent="1">
+        <mxGeometry x="440" y="50" width="380" height="280" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_service_fields" value="• - _recipeRepository: IRecipeRepository&lt;br&gt;• - _ingredientRepository: IIngredientRepository&lt;br&gt;• - _unitRepository: IUnitRepository&lt;br&gt;• - _audit: IAuditActivityPublisher?" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;spacingBottom=6;html=1;fontSize=10;fontColor=#1e293b;" vertex="1" parent="c_service">
+        <mxGeometry y="36" width="380" height="76" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_service_sep" value="" style="line;strokeWidth=1;fillColor=none;strokeColor=#16a34a;align=left;verticalAlign=middle;rotatable=0;html=1;" vertex="1" parent="c_service">
+        <mxGeometry y="112" width="380" height="4" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_service_methods" value="+ GetAsync(publicId): Task&lt;RecipeDetailResponse&gt;&lt;br&gt;+ CreateAsync(request, actor): Task&lt;RecipeDetail&gt;&lt;br&gt;+ UpdateAsync(publicId, request, actor): Task&lt;br&gt;+ PublishAsync(publicId, versionId, actor): Task&lt;br&gt;+ ArchiveAsync(publicId, actor): Task&lt;br&gt;+ - ValidateDraftContent(...): ValidatedContent&lt;br&gt;+ - ValidateForPublication(version) [BR-01]&lt;br&gt;+ - SafePublishAuditAsync(auditEvent): Task" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;spacingBottom=6;html=1;fontSize=10;fontColor=#0f172a;" vertex="1" parent="c_service">
+        <mxGeometry y="116" width="380" height="142" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_repo" value="&lt;b&gt;RecipeRepository&lt;/b&gt;&lt;br&gt;&lt;small style='font-size:9px;color:#9a3412;'&gt;«Infrastructure Layer · Persistence»&lt;/small&gt;" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontalStack=0;resizeParent=1;resizeParentMax=0;horizontal=1;startSize=36;collapsible=0;html=1;fillColor=#fff7ed;strokeColor=#ea580c;strokeWidth=1.5;fontColor=#9a3412;fontSize=12;shadow=1;" vertex="1" parent="1">
+        <mxGeometry x="900" y="70" width="330" height="230" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_repo_fields" value="• - _context: RecipeDbContext" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;spacingBottom=6;html=1;fontSize=10;fontColor=#1e293b;" vertex="1" parent="c_repo">
+        <mxGeometry y="36" width="330" height="28" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_repo_sep" value="" style="line;strokeWidth=1;fillColor=none;strokeColor=#ea580c;align=left;verticalAlign=middle;rotatable=0;html=1;" vertex="1" parent="c_repo">
+        <mxGeometry y="64" width="330" height="4" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_repo_methods" value="+ GetRecipeAsync(publicId): Task&lt;Recipe?&gt;&lt;br&gt;+ GetRecipeVersionAsync(pId, vId): Task&lt;RecipeVersion?&gt;&lt;br&gt;+ SearchLatestVersionsAsync(...): Task&lt;Paged&gt;&lt;br&gt;+ GetMaxCodeNumberAsync(prefix): Task&lt;int&gt;&lt;br&gt;+ SaveChangesAsync(ct): Task&lt;int&gt;" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;spacingBottom=6;html=1;fontSize=10;fontColor=#0f172a;" vertex="1" parent="c_repo">
+        <mxGeometry y="68" width="330" height="94" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_recipe" value="&lt;b&gt;Recipe&lt;/b&gt;&lt;br&gt;&lt;small style='font-size:9px;color:#581c87;'&gt;«Domain Entity · Aggregate Root»&lt;/small&gt;" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontalStack=0;resizeParent=1;resizeParentMax=0;horizontal=1;startSize=36;collapsible=0;html=1;fillColor=#faf5ff;strokeColor=#9333ea;strokeWidth=1.5;fontColor=#581c87;fontSize=12;shadow=1;" vertex="1" parent="1">
+        <mxGeometry x="50" y="380" width="310" height="220" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_recipe_fields" value="• + Id: long (PK)&lt;br&gt;• + PublicId: Guid (External ID)&lt;br&gt;• + Code: string (Business Code: REC-xxx)&lt;br&gt;• + ArchivedAt: DateTime?&lt;br&gt;• + CreatedAt / UpdatedAt: DateTime" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;spacingBottom=6;html=1;fontSize=10;fontColor=#1e293b;" vertex="1" parent="c_recipe">
+        <mxGeometry y="36" width="310" height="92" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_recipe_sep" value="" style="line;strokeWidth=1;fillColor=none;strokeColor=#9333ea;align=left;verticalAlign=middle;rotatable=0;html=1;" vertex="1" parent="c_recipe">
+        <mxGeometry y="128" width="310" height="4" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_recipe_methods" value="+ + IsActive(): bool&lt;br&gt;+ + Archive(actorId): void&lt;br&gt;+ + Activate(actorId): void" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;spacingBottom=6;html=1;fontSize=10;fontColor=#0f172a;" vertex="1" parent="c_recipe">
+        <mxGeometry y="132" width="310" height="62" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_version" value="&lt;b&gt;RecipeVersion&lt;/b&gt;&lt;br&gt;&lt;small style='font-size:9px;color:#581c87;'&gt;«Domain Entity · Core Business Rules»&lt;/small&gt;" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontalStack=0;resizeParent=1;resizeParentMax=0;horizontal=1;startSize=36;collapsible=0;html=1;fillColor=#faf5ff;strokeColor=#9333ea;strokeWidth=1.5;fontColor=#581c87;fontSize=12;shadow=1;" vertex="1" parent="1">
+        <mxGeometry x="440" y="370" width="380" height="270" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_version_fields" value="• + Id: long (PK)&lt;br&gt;• + PublicId: Guid&lt;br&gt;• + RecipeId: long (FK)&lt;br&gt;• + VersionNumber: int (v1, v2...)&lt;br&gt;• + Status: string (&quot;draft&quot; | &quot;published&quot;)&lt;br&gt;• + Name: string&lt;br&gt;• + PublishedAt: DateTime?&lt;br&gt;• + RecipeYield: RecipeYield?" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;spacingBottom=6;html=1;fontSize=10;fontColor=#1e293b;" vertex="1" parent="c_version">
+        <mxGeometry y="36" width="380" height="140" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_version_sep" value="" style="line;strokeWidth=1;fillColor=none;strokeColor=#9333ea;align=left;verticalAlign=middle;rotatable=0;html=1;" vertex="1" parent="c_version">
+        <mxGeometry y="176" width="380" height="4" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_version_methods" value="+ + IsImmutable: bool [BR-04]&lt;br&gt;+ + CanPublish(out string error): bool [BR-01]&lt;br&gt;+ + ForkNextRevision(actorId): RecipeVersion" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;spacingBottom=6;html=1;fontSize=10;fontColor=#0f172a;" vertex="1" parent="c_version">
+        <mxGeometry y="180" width="380" height="62" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_parts" value="&lt;b&gt;RecipeIngredient &amp; RecipeStep&lt;/b&gt;&lt;br&gt;&lt;small style='font-size:9px;color:#581c87;'&gt;«Domain Child Entities &amp; Value Objects»&lt;/small&gt;" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontalStack=0;resizeParent=1;resizeParentMax=0;horizontal=1;startSize=36;collapsible=0;html=1;fillColor=#faf5ff;strokeColor=#9333ea;strokeWidth=1.5;fontColor=#581c87;fontSize=12;shadow=1;" vertex="1" parent="1">
+        <mxGeometry x="900" y="380" width="330" height="250" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_parts_fields" value="• «RecipeIngredient»&lt;br&gt;• + IngredientId / UnitId: long&lt;br&gt;• + Quantity: decimal (&gt; 0)&lt;br&gt;• + StageName / Note: string?&lt;br&gt;• + IngredientCodeSnapshot: string&lt;br&gt;• «RecipeStep»&lt;br&gt;• + SortOrder / Title / Description&lt;br&gt;• + DurationSeconds / TemperatureCelsius" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;spacingBottom=6;html=1;fontSize=10;fontColor=#1e293b;" vertex="1" parent="c_parts">
+        <mxGeometry y="36" width="330" height="140" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_parts_sep" value="" style="line;strokeWidth=1;fillColor=none;strokeColor=#9333ea;align=left;verticalAlign=middle;rotatable=0;html=1;" vertex="1" parent="c_parts">
+        <mxGeometry y="176" width="330" height="4" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="c_parts_methods" value="+ + ValidateQuantity(): bool&lt;br&gt;+ + AddMedia(mediaAssetRef, isPrimary)" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;spacingBottom=6;html=1;fontSize=10;fontColor=#0f172a;" vertex="1" parent="c_parts">
+        <mxGeometry y="180" width="330" height="46" as="geometry" />
+      </mxCell>
+    
+
+    <mxCell id="box_rules" value="&lt;b style='font-size:12px;color:#0f172a;'&gt;VỊ TRÍ CỦA BUSINESS RULES &amp;amp; PHÂN ĐỊNH TRÁCH NHIỆM (CLEAN ARCHITECTURE):&lt;/b&gt;&lt;br&gt;&lt;div style='font-size:11px;color:#334155;line-height:1.45;padding-top:4px;'&gt;• &lt;b&gt;Presentation Layer (RecipesController):&lt;/b&gt; Tiếp nhận HTTP request, chuyển đổi DTO, xác thực phân quyền vai trò &lt;b&gt;[BR-05]&lt;/b&gt; (chỉ R&amp;D/Admin được xuất bản, Viewer chỉ được đọc bản published). Không chứa nghiệp vụ tính toán.&lt;br&gt;• &lt;b&gt;Application Layer (RecipeService):&lt;/b&gt; Điều phối Use Cases, kích hoạt thẩm định điều kiện phát hành &lt;b&gt;[BR-01]&lt;/b&gt; (≥1 nguyên liệu, ≥1 bước SOP, sản lượng chuẩn), kiểm tra trạng thái hoạt động của nguyên liệu &lt;b&gt;[BR-07]&lt;/b&gt;, phát tán Audit Event qua Redis Streams.&lt;br&gt;• &lt;b&gt;Domain Layer (Recipe &amp;amp; RecipeVersion):&lt;/b&gt; Nơi giữ Nguồn Sự Thật (SSOT) về tính bất biến &lt;b&gt;[BR-04]&lt;/b&gt; (công thức Published không được phép sửa đè; muốn sửa phải fork thành Version mới). Snapshot tên và mã nguyên liệu để bảo toàn lịch sử pha chế.&lt;br&gt;• &lt;b&gt;Infrastructure Layer (RecipeRepository):&lt;/b&gt; Đóng gói câu lệnh truy vấn CSDL PostgreSQL theo chuẩn DB-First, quản lý giao dịch SaveChanges, hoàn toàn độc lập với UI.&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#64748b;strokeWidth=1.5;align=left;shadow=1;spacing=10;" vertex="1" parent="1">
+      <mxGeometry x="50" y="680" width="1180" height="120" as="geometry" />
+    </mxCell>
+  
+
+      <mxCell id="rel_ctrl_svc" value="«uses»" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;endArrow=open;endSize=8;strokeColor=#3b82f6;strokeWidth=1.8;fontColor=#1e3a8a;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="c_controller" target="c_service">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="rel_svc_repo" value="«uses»" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;endArrow=open;endSize=8;strokeColor=#16a34a;strokeWidth=1.8;fontColor=#14532d;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="c_service" target="c_repo">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="rel_svc_ver" value="enforces [BR-01, BR-04]" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#16a34a;strokeWidth=1.8;endArrow=open;fontColor=#14532d;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="c_service" target="c_version">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="rel_rec_ver" value="1..*" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;startArrow=diamondThin;startFill=1;startSize=14;endArrow=none;strokeColor=#9333ea;strokeWidth=1.8;fontColor=#581c87;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="c_recipe" target="c_version">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+
+      <mxCell id="rel_ver_parts" value="1..*" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;startArrow=diamondThin;startFill=1;startSize=14;endArrow=none;strokeColor=#9333ea;strokeWidth=1.8;fontColor=#581c87;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="c_version" target="c_parts">
+        <mxGeometry relative="1" as="geometry" />
+      </mxCell>
+    
+  </root>
+</mxGraphModel>
+  </diagram>
+</mxfile>
