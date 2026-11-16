@@ -61,6 +61,11 @@ if [ -f "/schema/identity-db/RecipeHub.Identity.postgres" ]; then
     run_sql_file "${IDENTITY_MIGRATOR_USER}" "${IDENTITY_MIGRATOR_PASSWORD}" "${IDENTITY_DB_NAME:-recipehub_identity}" "/schema/identity-db/RecipeHub.Identity.postgres"
 fi
 
+# Demo users (fixed IDs, referenced by recipe/content/quiz seeds); SeedUserAsync skips existing emails
+if [ -f "/schema/identity-db/seed/20261114_demo_users.sql" ]; then
+    run_sql_file "${IDENTITY_MIGRATOR_USER}" "${IDENTITY_MIGRATOR_PASSWORD}" "${IDENTITY_DB_NAME:-recipehub_identity}" "/schema/identity-db/seed/20261114_demo_users.sql"
+fi
+
 # Grant least-privilege runtime DML to identity_user; Grafana gets read-only on non-secret data only
 # (roles + non-credential columns of users; password_hash and auth_sessions stay unreadable).
 PGPASSWORD="${IDENTITY_MIGRATOR_PASSWORD}" psql -v ON_ERROR_STOP=1 --username "${IDENTITY_MIGRATOR_USER}" --dbname "${IDENTITY_DB_NAME:-recipehub_identity}" <<-EOSQL
@@ -87,6 +92,11 @@ if [ -f "/schema/recipe-db/migrations/20261107_seed_catalog_base_units.sql" ]; t
     run_sql_file "${RECIPE_MIGRATOR_USER}" "${RECIPE_MIGRATOR_PASSWORD}" "${RECIPE_DB_NAME:-recipehub_recipe}" "/schema/recipe-db/migrations/20261107_seed_catalog_base_units.sql"
 fi
 
+# Demo recipes (Matcha Hân nè + 5 drinks); must run after catalog seeds for ingredient/unit lookups
+if [ -f "/schema/recipe-db/seed/20261114_demo_recipes.sql" ]; then
+    run_sql_file "${RECIPE_MIGRATOR_USER}" "${RECIPE_MIGRATOR_PASSWORD}" "${RECIPE_DB_NAME:-recipehub_recipe}" "/schema/recipe-db/seed/20261114_demo_recipes.sql"
+fi
+
 # Grant least-privilege runtime DML to recipe_user; read-only to Grafana
 PGPASSWORD="${RECIPE_MIGRATOR_PASSWORD}" psql -v ON_ERROR_STOP=1 --username "${RECIPE_MIGRATOR_USER}" --dbname "${RECIPE_DB_NAME:-recipehub_recipe}" <<-EOSQL
     GRANT USAGE ON SCHEMA recipe_db TO ${RECIPE_DB_USER:-recipe_user}, ${GRAFANA_DB_USER};
@@ -103,6 +113,11 @@ if [ -f "/schema/content-db/RecipeHub.Content.postgres" ]; then
     run_sql_file "${CONTENT_MIGRATOR_USER}" "${CONTENT_MIGRATOR_PASSWORD}" "${CONTENT_DB_NAME:-recipehub_content}" "/schema/content-db/RecipeHub.Content.postgres"
 fi
 
+# Demo media assets + accepted AI drafts (real Cloudinary images)
+if [ -f "/schema/content-db/seed/20261114_demo_media.sql" ]; then
+    run_sql_file "${CONTENT_MIGRATOR_USER}" "${CONTENT_MIGRATOR_PASSWORD}" "${CONTENT_DB_NAME:-recipehub_content}" "/schema/content-db/seed/20261114_demo_media.sql"
+fi
+
 # Grant least-privilege runtime DML to content_user; read-only to Grafana
 PGPASSWORD="${CONTENT_MIGRATOR_PASSWORD}" psql -v ON_ERROR_STOP=1 --username "${CONTENT_MIGRATOR_USER}" --dbname "${CONTENT_DB_NAME:-recipehub_content}" <<-EOSQL
     GRANT USAGE ON SCHEMA content_db TO ${CONTENT_DB_USER:-content_user}, ${GRAFANA_DB_USER};
@@ -117,6 +132,11 @@ EOSQL
 # 4. Execute official versioned DDL as Quiz migration role (sole authority for fresh DB)
 if [ -f "/schema/quiz-db/RecipeHub.Quiz.postgres" ]; then
     PGPASSWORD="${QUIZ_MIGRATOR_PASSWORD:-quiz_migrator_pw}" psql -v ON_ERROR_STOP=1 --username "${QUIZ_MIGRATOR_USER:-quiz_migrator}" --dbname "${QUIZ_DB_NAME:-recipehub_quiz}" -f "/schema/quiz-db/RecipeHub.Quiz.postgres"
+fi
+
+# Demo quizzes linked to the seeded recipe versions
+if [ -f "/schema/quiz-db/seed/20261114_demo_quizzes.sql" ]; then
+    PGPASSWORD="${QUIZ_MIGRATOR_PASSWORD:-quiz_migrator_pw}" psql -v ON_ERROR_STOP=1 --username "${QUIZ_MIGRATOR_USER:-quiz_migrator}" --dbname "${QUIZ_DB_NAME:-recipehub_quiz}" -f "/schema/quiz-db/seed/20261114_demo_quizzes.sql"
 fi
 
 # Grant least-privilege runtime DML to quiz_user; read-only to Grafana

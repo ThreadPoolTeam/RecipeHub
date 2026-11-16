@@ -34,7 +34,7 @@ RecipeHub/
 ├── infra/
 │   ├── compose.yaml                              # Docker Compose full-stack orchestration
 │   ├── pgadmin/
-│   │   └── servers.json                          # Cấu hình sẵn kết nối 5 CSDL cho pgAdmin 4
+│   │   └── servers.json                          # Cấu hình sẵn 1 kết nối PostgreSQL (admin) cho pgAdmin 4
 │   ├── grafana/
 │   │   └── provisioning/                         # Datasources & Dashboard giám sát sẵn có
 │   └── postgres/
