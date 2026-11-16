@@ -25,8 +25,9 @@ public sealed class UsersController(IUserService users) : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(UserPage), 200)]
     public async Task<ActionResult<UserPage>> Search([FromQuery] string? search, [FromQuery] string? role, [FromQuery] string? state,
+        [FromQuery] string? sortBy, [FromQuery] string? sortDirection,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default) =>
-        Ok(await users.GetUsersAsync(search, role, state, page, pageSize, ct));
+        Ok(await users.GetUsersAsync(search, role, state, sortBy, sortDirection, page, pageSize, ct));
 
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(UserResponse), 200)]
