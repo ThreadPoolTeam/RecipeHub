@@ -27,7 +27,8 @@ public sealed class IdentityStore(IdentityDbContext db) : IIdentityStore
     public Task<AuthSession?> FindRefreshAsync(string hash, CancellationToken ct) =>
         db.Sessions.Include(x => x.User).ThenInclude(u => u.Role).SingleOrDefaultAsync(x => x.RefreshTokenHash == hash, ct);
 
-    public async Task<(IReadOnlyList<IdentityUser> Items, int Total)> SearchAsync(string? search, string? role, bool? isActive, int page, int pageSize, CancellationToken ct)
+    public async Task<(IReadOnlyList<IdentityUser> Items, int Total)> SearchAsync(string? search, string? role, bool? isActive,
+        string sortBy, bool descending, int page, int pageSize, CancellationToken ct)
     {
         var query = db.Users.Include(x => x.Role).AsNoTracking();
         if (!string.IsNullOrWhiteSpace(search))
@@ -39,7 +40,24 @@ public sealed class IdentityStore(IdentityDbContext db) : IIdentityStore
             query = query.Where(x => x.Role.Code == role);
         if (isActive.HasValue) query = query.Where(x => x.IsActive == isActive.Value);
         var total = await query.CountAsync(ct);
-        return (await query.OrderBy(x => x.Email).Skip((page - 1) * pageSize).Take(pageSize).ToArrayAsync(ct), total);
+        var ordered = (sortBy, descending) switch
+        {
+            ("email", false) => query.OrderBy(x => x.Email),
+            ("email", true) => query.OrderByDescending(x => x.Email),
+            ("fullname", false) => query.OrderBy(x => x.FullName),
+            ("fullname", true) => query.OrderByDescending(x => x.FullName),
+            ("role", false) => query.OrderBy(x => x.Role.Code),
+            ("role", true) => query.OrderByDescending(x => x.Role.Code),
+            ("state", false) => query.OrderBy(x => x.IsActive),
+            ("state", true) => query.OrderByDescending(x => x.IsActive),
+            ("createdat", false) => query.OrderBy(x => x.CreatedAt),
+            ("createdat", true) => query.OrderByDescending(x => x.CreatedAt),
+            ("updatedat", false) => query.OrderBy(x => x.UpdatedAt),
+            ("updatedat", true) => query.OrderByDescending(x => x.UpdatedAt),
+            _ => throw new ArgumentOutOfRangeException(nameof(sortBy), sortBy, "Unsupported user sort field.")
+        };
+        ordered = descending ? ordered.ThenByDescending(x => x.Id) : ordered.ThenBy(x => x.Id);
+        return (await ordered.Skip((page - 1) * pageSize).Take(pageSize).ToArrayAsync(ct), total);
     }
 
     public async Task RevokeSessionsAsync(Guid userId, CancellationToken ct)

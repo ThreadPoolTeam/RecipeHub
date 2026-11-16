@@ -6,7 +6,8 @@ namespace RecipeHub.Identity.Application.Interfaces;
 public interface IUserService
 {
     Task<UserResponse> GetUserAsync(Guid id, CancellationToken ct);
-    Task<UserPage> GetUsersAsync(string? search, string? role, string? state, int page, int pageSize, CancellationToken ct);
+    Task<UserPage> GetUsersAsync(string? search, string? role, string? state, string? sortBy, string? sortDirection,
+        int page, int pageSize, CancellationToken ct);
     Task<UserResponse> CreateUserAsync(AuditActor actor, CreateUserRequest request, CancellationToken ct);
     Task<UserResponse> UpdateUserAsync(AuditActor actor, Guid id, UpdateUserRequest request, CancellationToken ct);
     Task<UserResponse> SetStatusAsync(AuditActor actor, Guid id, bool active, CancellationToken ct);

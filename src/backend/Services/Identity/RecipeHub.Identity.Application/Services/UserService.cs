@@ -16,13 +16,21 @@ public sealed class UserService(IIdentityStore store, IPasswordService passwords
     public async Task<UserResponse> GetUserAsync(Guid id, CancellationToken ct) =>
         UserMapping.ToResponse(await RequiredUserAsync(id, ct));
 
-    public async Task<UserPage> GetUsersAsync(string? search, string? role, string? state, int page, int pageSize, CancellationToken ct)
+    public async Task<UserPage> GetUsersAsync(string? search, string? role, string? state, string? sortBy,
+        string? sortDirection, int page, int pageSize, CancellationToken ct)
     {
         if (page < 1 || pageSize is < 1 or > 100 || page > int.MaxValue / pageSize)
             throw new IdentityException(400, "Page/pageSize không hợp lệ (pageSize 1–100).");
         role = string.IsNullOrWhiteSpace(role) ? null : ValidateRole(role);
         bool? active = state switch { null or "" or "all" => null, "active" => true, "inactive" => false, _ => throw new IdentityException(400, "State phải là active hoặc inactive.") };
-        var result = await store.SearchAsync(search?.Trim(), role, active, page, pageSize, ct);
+        var normalizedSortBy = string.IsNullOrWhiteSpace(sortBy) ? "email" : sortBy.Trim().ToLowerInvariant();
+        if (normalizedSortBy is not ("email" or "fullname" or "role" or "state" or "createdat" or "updatedat"))
+            throw new IdentityException(400, "SortBy phải là email, fullName, role, state, createdAt hoặc updatedAt.");
+        var normalizedDirection = string.IsNullOrWhiteSpace(sortDirection) ? "asc" : sortDirection.Trim().ToLowerInvariant();
+        if (normalizedDirection is not ("asc" or "desc"))
+            throw new IdentityException(400, "SortDirection phải là asc hoặc desc.");
+        var result = await store.SearchAsync(search?.Trim(), role, active, normalizedSortBy,
+            normalizedDirection == "desc", page, pageSize, ct);
         return new UserPage(result.Items.Select(UserMapping.ToResponse).ToArray(), result.Total, page, pageSize);
     }
 
