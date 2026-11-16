@@ -1,0 +1,207 @@
+{
+  "runId": "PW-20261111-FIX-RED-142554",
+  "base": "http://127.0.0.1:23000",
+  "cases": [
+    {
+      "id": "AUTH-002",
+      "module": "Authentication",
+      "role": "public",
+      "description": "Login has labelled required controls",
+      "requirements": [
+        "FR-FE-21"
+      ],
+      "expected": "Email/password are required and password starts masked",
+      "type": "Normal",
+      "priority": "P0",
+      "round": 1,
+      "runId": "PW-20261111-FIX-RED-142554",
+      "status": "Failed",
+      "actual": "Email required",
+      "error": "AssertionError [ERR_ASSERTION]: Email required\n    at check (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:39:50)\n    at Object.fn (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:75:190)\n    at async execute (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:63:9)\n    at async main (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:117:33)",
+      "startedAt": "2026-11-11T14:25:58.277Z",
+      "finishedAt": "2026-11-11T14:25:58.912Z",
+      "durationMs": 635,
+      "evidence": "runs/PW-20261111-FIX-RED-142554/round-1/AUTH-002",
+      "pageErrors": 0
+    },
+    {
+      "id": "AUTH-003",
+      "module": "Authentication",
+      "role": "public",
+      "description": "Empty credentials blocked by browser",
+      "requirements": [
+        "FR-AUTH-01"
+      ],
+      "expected": "No login request and required field invalid",
+      "type": "Boundary",
+      "priority": "P0",
+      "round": 1,
+      "runId": "PW-20261111-FIX-RED-142554",
+      "status": "Failed",
+      "actual": "Empty email invalid",
+      "error": "AssertionError [ERR_ASSERTION]: Empty email invalid\n    at check (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:39:50)\n    at Object.fn (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:76:247)\n    at async execute (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:63:9)\n    at async main (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:117:33)",
+      "startedAt": "2026-11-11T14:25:59.125Z",
+      "finishedAt": "2026-11-11T14:25:59.910Z",
+      "durationMs": 785,
+      "evidence": "runs/PW-20261111-FIX-RED-142554/round-1/AUTH-003",
+      "pageErrors": 0
+    },
+    {
+      "id": "RECIPE-404",
+      "module": "Recipes",
+      "role": "rnd",
+      "description": "Unknown recipe detail shows not found",
+      "requirements": [
+        "FR-REC-01"
+      ],
+      "expected": "Missing resource displays a not-found message",
+      "type": "Abnormal",
+      "priority": "P0",
+      "round": 1,
+      "runId": "PW-20261111-FIX-RED-142554",
+      "status": "Failed",
+      "actual": "locator.waitFor: Timeout 12000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText(/Không tìm thấy công thức|không tồn tại/i).first() to be visible\u001b[22m\n",
+      "error": "locator.waitFor: Timeout 12000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText(/Không tìm thấy công thức|không tồn tại/i).first() to be visible\u001b[22m\n\n    at Proxy.<anonymous> (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:31:28)\n    at Object.fn (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:100:286)\n    at async execute (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:63:9)\n    at async main (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:117:33)",
+      "startedAt": "2026-11-11T14:26:00.110Z",
+      "finishedAt": "2026-11-11T14:26:15.842Z",
+      "durationMs": 15732,
+      "evidence": "runs/PW-20261111-FIX-RED-142554/round-1/RECIPE-404",
+      "pageErrors": 0
+    },
+    {
+      "id": "AUTH-002",
+      "module": "Authentication",
+      "role": "public",
+      "description": "Login has labelled required controls",
+      "requirements": [
+        "FR-FE-21"
+      ],
+      "expected": "Email/password are required and password starts masked",
+      "type": "Normal",
+      "priority": "P0",
+      "round": 2,
+      "runId": "PW-20261111-FIX-RED-142554",
+      "status": "Failed",
+      "actual": "Email required",
+      "error": "AssertionError [ERR_ASSERTION]: Email required\n    at check (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:39:50)\n    at Object.fn (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:75:190)\n    at async execute (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:63:9)\n    at async main (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:117:33)",
+      "startedAt": "2026-11-11T14:26:17.719Z",
+      "finishedAt": "2026-11-11T14:26:18.311Z",
+      "durationMs": 592,
+      "evidence": "runs/PW-20261111-FIX-RED-142554/round-2/AUTH-002",
+      "pageErrors": 0
+    },
+    {
+      "id": "AUTH-003",
+      "module": "Authentication",
+      "role": "public",
+      "description": "Empty credentials blocked by browser",
+      "requirements": [
+        "FR-AUTH-01"
+      ],
+      "expected": "No login request and required field invalid",
+      "type": "Boundary",
+      "priority": "P0",
+      "round": 2,
+      "runId": "PW-20261111-FIX-RED-142554",
+      "status": "Failed",
+      "actual": "Empty email invalid",
+      "error": "AssertionError [ERR_ASSERTION]: Empty email invalid\n    at check (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:39:50)\n    at Object.fn (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:76:247)\n    at async execute (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:63:9)\n    at async main (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:117:33)",
+      "startedAt": "2026-11-11T14:26:18.484Z",
+      "finishedAt": "2026-11-11T14:26:19.189Z",
+      "durationMs": 705,
+      "evidence": "runs/PW-20261111-FIX-RED-142554/round-2/AUTH-003",
+      "pageErrors": 0
+    },
+    {
+      "id": "RECIPE-404",
+      "module": "Recipes",
+      "role": "rnd",
+      "description": "Unknown recipe detail shows not found",
+      "requirements": [
+        "FR-REC-01"
+      ],
+      "expected": "Missing resource displays a not-found message",
+      "type": "Abnormal",
+      "priority": "P0",
+      "round": 2,
+      "runId": "PW-20261111-FIX-RED-142554",
+      "status": "Failed",
+      "actual": "locator.waitFor: Timeout 12000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText(/Không tìm thấy công thức|không tồn tại/i).first() to be visible\u001b[22m\n",
+      "error": "locator.waitFor: Timeout 12000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText(/Không tìm thấy công thức|không tồn tại/i).first() to be visible\u001b[22m\n\n    at Proxy.<anonymous> (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:31:28)\n    at Object.fn (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:100:286)\n    at async execute (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:63:9)\n    at async main (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:117:33)",
+      "startedAt": "2026-11-11T14:26:19.365Z",
+      "finishedAt": "2026-11-11T14:26:34.832Z",
+      "durationMs": 15467,
+      "evidence": "runs/PW-20261111-FIX-RED-142554/round-2/RECIPE-404",
+      "pageErrors": 0
+    },
+    {
+      "id": "AUTH-002",
+      "module": "Authentication",
+      "role": "public",
+      "description": "Login has labelled required controls",
+      "requirements": [
+        "FR-FE-21"
+      ],
+      "expected": "Email/password are required and password starts masked",
+      "type": "Normal",
+      "priority": "P0",
+      "round": 3,
+      "runId": "PW-20261111-FIX-RED-142554",
+      "status": "Failed",
+      "actual": "Email required",
+      "error": "AssertionError [ERR_ASSERTION]: Email required\n    at check (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:39:50)\n    at Object.fn (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:75:190)\n    at async execute (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:63:9)\n    at async main (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:117:33)",
+      "startedAt": "2026-11-11T14:26:36.765Z",
+      "finishedAt": "2026-11-11T14:26:37.374Z",
+      "durationMs": 609,
+      "evidence": "runs/PW-20261111-FIX-RED-142554/round-3/AUTH-002",
+      "pageErrors": 0
+    },
+    {
+      "id": "AUTH-003",
+      "module": "Authentication",
+      "role": "public",
+      "description": "Empty credentials blocked by browser",
+      "requirements": [
+        "FR-AUTH-01"
+      ],
+      "expected": "No login request and required field invalid",
+      "type": "Boundary",
+      "priority": "P0",
+      "round": 3,
+      "runId": "PW-20261111-FIX-RED-142554",
+      "status": "Failed",
+      "actual": "Empty email invalid",
+      "error": "AssertionError [ERR_ASSERTION]: Empty email invalid\n    at check (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:39:50)\n    at Object.fn (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:76:247)\n    at async execute (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:63:9)\n    at async main (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:117:33)",
+      "startedAt": "2026-11-11T14:26:37.534Z",
+      "finishedAt": "2026-11-11T14:26:38.289Z",
+      "durationMs": 755,
+      "evidence": "runs/PW-20261111-FIX-RED-142554/round-3/AUTH-003",
+      "pageErrors": 0
+    },
+    {
+      "id": "RECIPE-404",
+      "module": "Recipes",
+      "role": "rnd",
+      "description": "Unknown recipe detail shows not found",
+      "requirements": [
+        "FR-REC-01"
+      ],
+      "expected": "Missing resource displays a not-found message",
+      "type": "Abnormal",
+      "priority": "P0",
+      "round": 3,
+      "runId": "PW-20261111-FIX-RED-142554",
+      "status": "Failed",
+      "actual": "locator.waitFor: Timeout 12000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText(/Không tìm thấy công thức|không tồn tại/i).first() to be visible\u001b[22m\n",
+      "error": "locator.waitFor: Timeout 12000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText(/Không tìm thấy công thức|không tồn tại/i).first() to be visible\u001b[22m\n\n    at Proxy.<anonymous> (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:31:28)\n    at Object.fn (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:100:286)\n    at async execute (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:63:9)\n    at async main (D:\\PRN232\\ASM\\RecipeHub\\tests\\e2e\\web-report-runner.cjs:117:33)",
+      "startedAt": "2026-11-11T14:26:38.458Z",
+      "finishedAt": "2026-11-11T14:26:53.877Z",
+      "durationMs": 15419,
+      "evidence": "runs/PW-20261111-FIX-RED-142554/round-3/RECIPE-404",
+      "pageErrors": 0
+    }
+  ],
+  "remaining": [],
+  "startedAt": "2026-11-11T14:25:55.632Z",
+  "finishedAt": "2026-11-11T14:26:53.878Z"
+}

@@ -1,0 +1,89 @@
+LIFE catalogue Passed
+LIFE media Passed
+LIFE ingredient Passed
+AI ATTEMPT 1/3 PASS 7716ms
+LIFE recipe Passed
+LIFE pdf Passed
+LIFE quiz Passed
+LIFE viewer Passed
+LIFE results Passed
+LIFE cleanup Passed
+{
+  "tag": "PW-R3-8530138",
+  "errors": [],
+  "http": [],
+  "expectedHttp": [],
+  "remaining": [
+    "PW-R3-8530138 ─æ╞ín vß╗ï: tß║ím kh├│a",
+    "PW-R3-8530138-image.png: kiß╗âm tra tham chiß║┐u tr╞░ß╗¢c khi dß╗ìn",
+    "PW-R3-8530138 ß║Ñn phß║⌐m PDF: kh├┤ng c├│ chß╗⌐c n─âng x├│a",
+    "PW-R3-8530138 quiz: ─æ├ú l╞░u trß╗», l╞░ß╗út l├ám ─æ╞░ß╗úc giß╗» lß║íi",
+    "PW-R3-8530138 c├┤ng thß╗⌐c: ─æ├ú l╞░u trß╗»",
+    "PW-R3-8530138 nguy├¬n liß╗çu: tß║ím kh├│a"
+  ],
+  "results": [
+    {
+      "name": "catalogue",
+      "result": "PASS",
+      "durationMs": 2074,
+      "startedAt": "2026-11-11T14:48:50.645Z"
+    },
+    {
+      "name": "media",
+      "result": "PASS",
+      "durationMs": 2995,
+      "startedAt": "2026-11-11T14:48:54.891Z"
+    },
+    {
+      "name": "ingredient",
+      "result": "PASS",
+      "durationMs": 2192,
+      "startedAt": "2026-11-11T14:48:59.613Z"
+    },
+    {
+      "name": "ai-live",
+      "result": "PASS",
+      "startedAt": "2026-11-11T14:49:06.854Z",
+      "durationMs": 7717
+    },
+    {
+      "name": "recipe",
+      "result": "PASS",
+      "durationMs": 12451,
+      "startedAt": "2026-11-11T14:49:03.514Z"
+    },
+    {
+      "name": "pdf",
+      "result": "PASS",
+      "durationMs": 8432,
+      "startedAt": "2026-11-11T14:49:20.351Z"
+    },
+    {
+      "name": "quiz",
+      "result": "PASS",
+      "durationMs": 3567,
+      "startedAt": "2026-11-11T14:49:31.237Z"
+    },
+    {
+      "name": "viewer",
+      "result": "PASS",
+      "durationMs": 2358,
+      "startedAt": "2026-11-11T14:49:37.553Z"
+    },
+    {
+      "name": "results",
+      "result": "PASS",
+      "durationMs": 2615,
+      "startedAt": "2026-11-11T14:49:41.845Z"
+    },
+    {
+      "name": "cleanup",
+      "result": "PASS",
+      "durationMs": 3125,
+      "startedAt": "2026-11-11T14:49:45.862Z"
+    }
+  ],
+  "ingredientCreated": true,
+  "recipe": "http://127.0.0.1:43000/rnd/recipes/9d5efb3c-5d6c-4a6a-a929-9b20a2e189a7",
+  "quiz": "http://127.0.0.1:43000/rnd/quizzes/d8bf10fd-1a82-4d81-a5be-c739f2604c69?version=1"
+}

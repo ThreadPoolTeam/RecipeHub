@@ -1,0 +1,9 @@
+{
+  "backendBuild": "PASS: 0 warnings, 0 errors",
+  "frontendBuild": "PASS",
+  "typecheck": "PASS",
+  "lint": "FAIL baseline and fixed both 33 errors / 45 warnings",
+  "diff": "2 application files; no DB/schema/API changes",
+  "coverage": "Not measured across repository; passing E2E scenarios do not establish 80% coverage",
+  "git": "Base dev SHA plus applicationPatchSha256; commit unavailable because author identity not configured."
+}

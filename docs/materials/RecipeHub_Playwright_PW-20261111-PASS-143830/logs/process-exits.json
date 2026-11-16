@@ -1,0 +1,50 @@
+[
+  {
+    "finishedAt": "2026-11-11T14:42:57.5763816+00:00",
+    "exitCode": 0,
+    "startedAt": "2026-11-11T14:39:13.2341184+00:00",
+    "stage": "03-edge-full-suite",
+    "log": "runner.log",
+    "command": "node tests/e2e/web-report-runner.cjs"
+  },
+  {
+    "finishedAt": "2026-11-11T14:43:35.2763108+00:00",
+    "exitCode": 0,
+    "startedAt": "2026-11-11T14:43:01.5872263+00:00",
+    "stage": "04-admin-extended",
+    "log": "extended-v2.log",
+    "command": "node tests/e2e/extended-web-report.cjs"
+  },
+  {
+    "finishedAt": "2026-11-11T14:45:20.0193951+00:00",
+    "exitCode": 0,
+    "startedAt": "2026-11-11T14:44:39.3021348+00:00",
+    "stage": "05-chrome-compatibility",
+    "log": "chrome.log",
+    "command": "node tests/e2e/web-report-runner.cjs"
+  },
+  {
+    "finishedAt": "2026-11-11T14:46:58.3482807+00:00",
+    "exitCode": 0,
+    "startedAt": "2026-11-11T14:45:24.0286035+00:00",
+    "stage": "06-lifecycle-round-1",
+    "log": "lifecycle-1.log",
+    "command": "node tests/e2e/run-lifecycle-report.cjs"
+  },
+  {
+    "finishedAt": "2026-11-11T14:48:45.7023362+00:00",
+    "exitCode": 0,
+    "startedAt": "2026-11-11T14:47:02.3558321+00:00",
+    "stage": "06-lifecycle-round-2",
+    "log": "lifecycle-2.log",
+    "command": "node tests/e2e/run-lifecycle-report.cjs"
+  },
+  {
+    "finishedAt": "2026-11-11T14:49:50.7063003+00:00",
+    "exitCode": 0,
+    "startedAt": "2026-11-11T14:48:49.7079317+00:00",
+    "stage": "06-lifecycle-round-3",
+    "log": "lifecycle-3.log",
+    "command": "node tests/e2e/run-lifecycle-report.cjs"
+  }
+]

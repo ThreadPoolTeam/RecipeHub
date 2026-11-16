@@ -1,0 +1,19 @@
+{
+  "runId": "PW-20261111-PASS-143830",
+  "repository": "https://github.com/ThreadPoolTeam/RecipeHub.git",
+  "branch": "dev",
+  "sha": "b1ad3845310a1f267183a12f84e6cf09c1db318c",
+  "applicationPatchSha256": "f6ed6c25d3ee3e6c030b61967faf912f7abf81d1652dd6b05eefaebf541aa49e",
+  "applicationModified": true,
+  "startedAt": "2026-11-11T14:39:13.672Z",
+  "timezone": "Asia/Saigon",
+  "base": "http://127.0.0.1:43000",
+  "tool": "Playwright",
+  "playwright": "1.62.1",
+  "browser": "157.0.4341.46",
+  "node": "v24.16.0",
+  "rounds": 3,
+  "scope": "Desktop web only",
+  "srsSha256": "b55c8917de65bbe75872a5304b879a66ba02e7de430105a9d052810e2030f739",
+  "note": "Raw traces/videos use demo test accounts and may include their session credentials. Keep local."
+}

@@ -1,0 +1,616 @@
+info: RecipeHub.BackgroundWorker.StreamConsumerWorker[0]
+      BackgroundWorker connecting to Redis at redis:6379
+info: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      ContentDraftProcessingWorker connecting to Redis at redis:6379
+info: RecipeHub.BackgroundWorker.ContentDraftCleanupWorker[0]
+      ContentDraftCleanupWorker started, running every 30s.
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      AuditStreamConsumer connected to Redis at redis:6379
+info: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      Stream content.image-drafts.v1 and consumer group content-draft-workers initialized.
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Consumer group recipehub-audit created on audit.activities.v1 (from 0-0)
+info: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      ContentDraftProcessingWorker active and listening on content.image-drafts.v1...
+info: RecipeHub.BackgroundWorker.StreamConsumerWorker[0]
+      Consumer group recipehub-workers created on platform.heartbeat.v1 (MKSTREAM=true)
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      AuditStreamConsumer ready, consumer: audit-worker-1
+info: RecipeHub.BackgroundWorker.StreamConsumerWorker[0]
+      BackgroundWorker is READY and listening for events on platform.heartbeat.v1...
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: /app
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (49ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (16ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 063d7983-d632-4411-bb86-9ee9617400cc [user.created]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 4592f4cd-c934-4fac-a427-275e693ea190 [user.updated]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 49ffd817-94c2-4f4c-a7d6-9d786298ed7b [user.locked]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 9c0809af-c3be-46c2-9abd-c39816108103 [user.created]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 40cdaa2a-d379-4b84-918e-63adc00e7ddd [user.updated]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (6ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log bc1075ef-3955-42f3-9ffe-4f88432a287f [user.locked]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 88538fcf-e440-42fd-a1d4-e62d817a3d4e [user.created]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log d4a1d23c-0f50-4ce6-99d7-cbd7b26f1d6b [user.updated]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log a43a093c-2260-46e8-8897-36fc94f50300 [user.locked]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (7ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (6ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (8ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      Processing 1 image draft job(s) concurrently from content.image-drafts.v1...
+warn: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      Invalid or missing DraftId in message 1794408336763-0. Acknowledging.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (14ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log ace8a628-20af-4822-93ff-30ff2dcc0769 [recipe.created]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log ec70b6c9-aa74-4ff2-a747-4c45690cca84 [recipe.updated]
+info: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      Processing 1 image draft job(s) concurrently from content.image-drafts.v1...
+info: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      Processing image draft job 4c3dd034-bbbe-47bf-a962-cae582d44a4c from Redis message 1794408351938-0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@__draftId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a.public_id = @__draftId_0
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (8ms) [Parameters=[@p4='?' (DbType = Int64), @p0='?' (DbType = Int32), @p1='?' (DbType = DateTime), @p2='?' (DbType = Guid), @p3='?'], CommandType='Text', CommandTimeout='30']
+      UPDATE content_db.ai_image_draft SET attempt_count = @p0, lease_expires_at = @p1, lease_token = @p2, state = @p3
+      WHERE id = @p4;
+info: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      Calling AI prompt translator for draft 4c3dd034-bbbe-47bf-a962-cae582d44a4c
+info: System.Net.Http.HttpClient.IAiImagePromptTranslator.LogicalHandler[100]
+      Start processing HTTP request POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=[REDACTED]
+info: System.Net.Http.HttpClient.IAiImagePromptTranslator.ClientHandler[100]
+      Sending HTTP request POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=[REDACTED]
+info: System.Net.Http.HttpClient.IAiImagePromptTranslator.ClientHandler[101]
+      Received HTTP response headers after 4159.7968ms - 200
+info: System.Net.Http.HttpClient.IAiImagePromptTranslator.LogicalHandler[101]
+      End processing HTTP request after 4180.9995ms - 200
+info: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      Calling image generator for draft 4c3dd034-bbbe-47bf-a962-cae582d44a4c
+info: System.Net.Http.HttpClient.IAiImageGenerator.LogicalHandler[100]
+      Start processing HTTP request POST https://api.cloudflare.com/client/v4/accounts/2fe042601b89c33fdc7af985edfc5641/ai/run/@cf/black-forest-labs/flux-1-schnell
+info: System.Net.Http.HttpClient.IAiImageGenerator.ClientHandler[100]
+      Sending HTTP request POST https://api.cloudflare.com/client/v4/accounts/2fe042601b89c33fdc7af985edfc5641/ai/run/@cf/black-forest-labs/flux-1-schnell
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: System.Net.Http.HttpClient.IAiImageGenerator.ClientHandler[101]
+      Received HTTP response headers after 1714.5717ms - 200
+info: System.Net.Http.HttpClient.IAiImageGenerator.LogicalHandler[101]
+      End processing HTTP request after 1714.8402ms - 200
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (8ms) [Parameters=[@p6='?' (DbType = Int64), @p0='?' (DbType = DateTime), @p1='?' (DbType = DateTime), @p2='?' (DbType = DateTime), @p3='?' (DbType = Guid), @p4='?', @p5='?', @p7='?' (DbType = Int64), @p8='?' (DbType = Int64), @p9='?' (DbType = Int32), @p10='?', @p11='?', @p12='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      UPDATE content_db.ai_image_draft SET expires_at = @p0, generated_at = @p1, lease_expires_at = @p2, lease_token = @p3, prompt_snapshot = @p4, state = @p5
+      WHERE id = @p6;
+      INSERT INTO content_db.ai_image_draft_file (draft_id, byte_size, height, mime_type, temporary_image_path, width)
+      VALUES (@p7, @p8, @p9, @p10, @p11, @p12);
+info: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      Draft 4c3dd034-bbbe-47bf-a962-cae582d44a4c successfully generated and saved to 4c3dd034bbbe47bfa962cae582d44a4c.png
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log fb5d3908-dadd-4d9b-8015-8efde692f2b1 [recipe.published]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (6ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (92ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 3a09fc99-1f69-4b73-a3fc-ee17cfa7a6ad [quiz.created]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (201ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 83bcebf1-65a3-48dd-8ade-ecfa8b921541 [quiz.updated]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (70ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 699b31ef-c8c8-4461-9ac9-b87d6e80a4d0 [quiz.published]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (6ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 7e31c9e3-936e-48f0-801b-a729d4e94869 [quiz.attempt_submitted]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (18ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 5e0f2d30-b5b2-4bef-be15-a63b5ad34e72 [quiz.archived]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (8ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log c7cddab3-374e-434a-adfc-6b33d01377f8 [recipe.archived]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      Processing 1 image draft job(s) concurrently from content.image-drafts.v1...
+warn: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      Invalid or missing DraftId in message 1794408450806-0. Acknowledging.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (23ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 76194c97-d27c-4ae0-bda5-1437d1d78df0 [recipe.created]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 66c34af2-329f-4c87-9136-d03ea0a2cd71 [recipe.updated]
+info: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      Processing 1 image draft job(s) concurrently from content.image-drafts.v1...
+info: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      Processing image draft job ad312629-6c10-4a42-9881-a85ebd0345a7 from Redis message 1794408463591-0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__draftId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a.public_id = @__draftId_0
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (33ms) [Parameters=[@p4='?' (DbType = Int64), @p0='?' (DbType = Int32), @p1='?' (DbType = DateTime), @p2='?' (DbType = Guid), @p3='?'], CommandType='Text', CommandTimeout='30']
+      UPDATE content_db.ai_image_draft SET attempt_count = @p0, lease_expires_at = @p1, lease_token = @p2, state = @p3
+      WHERE id = @p4;
+info: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      Calling AI prompt translator for draft ad312629-6c10-4a42-9881-a85ebd0345a7
+info: System.Net.Http.HttpClient.IAiImagePromptTranslator.LogicalHandler[100]
+      Start processing HTTP request POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=[REDACTED]
+info: System.Net.Http.HttpClient.IAiImagePromptTranslator.ClientHandler[100]
+      Sending HTTP request POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=[REDACTED]
+info: System.Net.Http.HttpClient.IAiImagePromptTranslator.ClientHandler[101]
+      Received HTTP response headers after 3354.2283ms - 200
+info: System.Net.Http.HttpClient.IAiImagePromptTranslator.LogicalHandler[101]
+      End processing HTTP request after 3354.46ms - 200
+info: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      Calling image generator for draft ad312629-6c10-4a42-9881-a85ebd0345a7
+info: System.Net.Http.HttpClient.IAiImageGenerator.LogicalHandler[100]
+      Start processing HTTP request POST https://api.cloudflare.com/client/v4/accounts/2fe042601b89c33fdc7af985edfc5641/ai/run/@cf/black-forest-labs/flux-1-schnell
+info: System.Net.Http.HttpClient.IAiImageGenerator.ClientHandler[100]
+      Sending HTTP request POST https://api.cloudflare.com/client/v4/accounts/2fe042601b89c33fdc7af985edfc5641/ai/run/@cf/black-forest-labs/flux-1-schnell
+info: System.Net.Http.HttpClient.IAiImageGenerator.ClientHandler[101]
+      Received HTTP response headers after 3852.1428ms - 200
+info: System.Net.Http.HttpClient.IAiImageGenerator.LogicalHandler[101]
+      End processing HTTP request after 3852.373ms - 200
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (61ms) [Parameters=[@p6='?' (DbType = Int64), @p0='?' (DbType = DateTime), @p1='?' (DbType = DateTime), @p2='?' (DbType = DateTime), @p3='?' (DbType = Guid), @p4='?', @p5='?', @p7='?' (DbType = Int64), @p8='?' (DbType = Int64), @p9='?' (DbType = Int32), @p10='?', @p11='?', @p12='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      UPDATE content_db.ai_image_draft SET expires_at = @p0, generated_at = @p1, lease_expires_at = @p2, lease_token = @p3, prompt_snapshot = @p4, state = @p5
+      WHERE id = @p6;
+      INSERT INTO content_db.ai_image_draft_file (draft_id, byte_size, height, mime_type, temporary_image_path, width)
+      VALUES (@p7, @p8, @p9, @p10, @p11, @p12);
+info: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      Draft ad312629-6c10-4a42-9881-a85ebd0345a7 successfully generated and saved to ad3126296c104a429881a85ebd0345a7.png
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (275ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 64d0a33d-db9d-4388-be87-3b71e86006ef [recipe.published]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (11ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 31c06c40-9bf4-4a00-86e8-11b89b83c6f7 [quiz.created]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 55a075c6-b6bb-4111-a484-b588a88ec17d [quiz.updated]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 4acd192e-52a9-44ed-ba62-b656dbbf1503 [quiz.published]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log e44d67c2-907a-4cf9-937a-1af0c060cfd3 [quiz.attempt_submitted]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 9d1ca379-d211-4adb-8bc9-de6e3fdf4255 [quiz.archived]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 30cafd37-10e2-4879-8757-d40bb488c824 [recipe.archived]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (7ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      Processing 1 image draft job(s) concurrently from content.image-drafts.v1...
+warn: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      Invalid or missing DraftId in message 1794408538702-0. Acknowledging.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 11048c67-6b52-46bb-841d-a4e5a357d87e [recipe.created]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 07a9f54c-e85d-4cb6-a14f-34e96a27de76 [recipe.updated]
+info: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      Processing 1 image draft job(s) concurrently from content.image-drafts.v1...
+info: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      Processing image draft job 859b388f-8306-4e69-ab99-0ba147c55511 from Redis message 1794408547712-0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@__draftId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a.public_id = @__draftId_0
+      LIMIT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@p4='?' (DbType = Int64), @p0='?' (DbType = Int32), @p1='?' (DbType = DateTime), @p2='?' (DbType = Guid), @p3='?'], CommandType='Text', CommandTimeout='30']
+      UPDATE content_db.ai_image_draft SET attempt_count = @p0, lease_expires_at = @p1, lease_token = @p2, state = @p3
+      WHERE id = @p4;
+info: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      Calling AI prompt translator for draft 859b388f-8306-4e69-ab99-0ba147c55511
+info: System.Net.Http.HttpClient.IAiImagePromptTranslator.LogicalHandler[100]
+      Start processing HTTP request POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=[REDACTED]
+info: System.Net.Http.HttpClient.IAiImagePromptTranslator.ClientHandler[100]
+      Sending HTTP request POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=[REDACTED]
+info: System.Net.Http.HttpClient.IAiImagePromptTranslator.ClientHandler[101]
+      Received HTTP response headers after 3716.6143ms - 200
+info: System.Net.Http.HttpClient.IAiImagePromptTranslator.LogicalHandler[101]
+      End processing HTTP request after 3716.9022ms - 200
+info: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      Calling image generator for draft 859b388f-8306-4e69-ab99-0ba147c55511
+info: System.Net.Http.HttpClient.IAiImageGenerator.LogicalHandler[100]
+      Start processing HTTP request POST https://api.cloudflare.com/client/v4/accounts/2fe042601b89c33fdc7af985edfc5641/ai/run/@cf/black-forest-labs/flux-1-schnell
+info: System.Net.Http.HttpClient.IAiImageGenerator.ClientHandler[100]
+      Sending HTTP request POST https://api.cloudflare.com/client/v4/accounts/2fe042601b89c33fdc7af985edfc5641/ai/run/@cf/black-forest-labs/flux-1-schnell
+info: System.Net.Http.HttpClient.IAiImageGenerator.ClientHandler[101]
+      Received HTTP response headers after 1906.5073ms - 200
+info: System.Net.Http.HttpClient.IAiImageGenerator.LogicalHandler[101]
+      End processing HTTP request after 1906.6769ms - 200
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@p6='?' (DbType = Int64), @p0='?' (DbType = DateTime), @p1='?' (DbType = DateTime), @p2='?' (DbType = DateTime), @p3='?' (DbType = Guid), @p4='?', @p5='?', @p7='?' (DbType = Int64), @p8='?' (DbType = Int64), @p9='?' (DbType = Int32), @p10='?', @p11='?', @p12='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      UPDATE content_db.ai_image_draft SET expires_at = @p0, generated_at = @p1, lease_expires_at = @p2, lease_token = @p3, prompt_snapshot = @p4, state = @p5
+      WHERE id = @p6;
+      INSERT INTO content_db.ai_image_draft_file (draft_id, byte_size, height, mime_type, temporary_image_path, width)
+      VALUES (@p7, @p8, @p9, @p10, @p11, @p12);
+info: RecipeHub.BackgroundWorker.ContentDraftProcessingWorker[0]
+      Draft 859b388f-8306-4e69-ab99-0ba147c55511 successfully generated and saved to 859b388f83064e69ab990ba147c55511.png
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log c1bb3f0e-d35d-4328-bd5c-e88af83fa8b4 [recipe.published]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log e8c53269-c312-40b1-90eb-768c60bbe5b8 [quiz.created]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 2996eaf6-eb35-4db3-8d86-f8e2d74623bf [quiz.updated]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 27002d4e-9ad7-4af8-9961-74d363013424 [quiz.published]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 68712bfa-0590-4c9a-bbe6-fe401c2e14db [quiz.attempt_submitted]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log c1fe37a3-d8f6-4dd7-acef-e1436e0dd424 [quiz.archived]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = Guid), @p3='?', @p4='?', @p5='?' (DbType = DateTime), @p6='?', @p7='?', @p8='?' (DbType = Guid), @p9='?'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO audit_db.audit_log (id, action, actor_id, actor_name, actor_role, occurred_at, source, summary, target_id, target_type)
+      VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9);
+info: RecipeHub.Audit.Infrastructure.Messaging.AuditStreamConsumer[0]
+      Persisted and ACKed audit log 82039063-fafe-4cea-aef1-5b3e4df75956 [recipe.archived]
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__now_0='?' (DbType = DateTime), @__p_1='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT a.id, a.attempt_count, a.created_at, a.created_by_user_ref, a.decided_at, a.decided_by_user_ref, a.error_code, a.error_message, a.expires_at, a.generated_at, a.geometry_mode, a.input_snapshot, a.lease_expires_at, a.lease_token, a.model, a.prompt_snapshot, a.provider, a.public_id, a.recipe_step_ref, a.recipe_version_ref, a.state, a.target_kind, a.user_brief, a0.draft_id, a0.byte_size, a0.height, a0.mime_type, a0.temporary_image_path, a0.width
+      FROM content_db.ai_image_draft AS a
+      LEFT JOIN content_db.ai_image_draft_file AS a0 ON a.id = a0.draft_id
+      WHERE a0.draft_id IS NOT NULL AND (a.state IN ('accepted', 'discarded', 'expired') OR (a.state = 'generated' AND a.expires_at IS NOT NULL AND a.expires_at <= @__now_0)) AND a.state <> 'accepting' AND (a.lease_expires_at IS NULL OR a.lease_expires_at <= @__now_0)
+      ORDER BY a.created_at
+      LIMIT @__p_1
+
