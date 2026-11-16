@@ -182,9 +182,24 @@ public sealed class IdentityTests
     [Fact]
     public async Task Search_ValidatesPaginationAndState()
     {
-        await Assert.ThrowsAsync<IdentityException>(() => Users.GetUsersAsync(null, null, null, 0, 10, default));
-        await Assert.ThrowsAsync<IdentityException>(() => Users.GetUsersAsync(null, null, "unknown", 1, 10, default));
-        await Assert.ThrowsAsync<IdentityException>(() => Users.GetUsersAsync(null, null, null, int.MaxValue, 100, default));
+        await Assert.ThrowsAsync<IdentityException>(() => Users.GetUsersAsync(null, null, null, null, null, 0, 10, default));
+        await Assert.ThrowsAsync<IdentityException>(() => Users.GetUsersAsync(null, null, "unknown", null, null, 1, 10, default));
+        await Assert.ThrowsAsync<IdentityException>(() => Users.GetUsersAsync(null, null, null, null, null, int.MaxValue, 100, default));
+        await Assert.ThrowsAsync<IdentityException>(() => Users.GetUsersAsync(null, null, null, "unknown", "asc", 1, 10, default));
+        await Assert.ThrowsAsync<IdentityException>(() => Users.GetUsersAsync(null, null, null, "email", "sideways", 1, 10, default));
+    }
+
+    [Fact]
+    public async Task Search_SortsBeforePagingAndNormalizesParameters()
+    {
+        await Create("rnd", "zebra@example.com");
+        await Create("viewer", "alpha@example.com");
+
+        var descending = await Users.GetUsersAsync(null, null, null, " EMAIL ", " DESC ", 1, 1, default);
+        Assert.Single(descending.Items);
+        Assert.Equal("zebra@example.com", descending.Items[0].Email);
+        Assert.Equal("email", store.LastSortBy);
+        Assert.True(store.LastDescending);
     }
 
     private sealed class MemoryStore : IIdentityStore
@@ -206,6 +221,37 @@ public sealed class IdentityTests
         public void AddUser(IdentityUser user) => Users.Add(user);
         public void AddSession(AuthSession session) => Sessions.Add(session);
         public Task SaveAsync(CancellationToken ct) => Task.CompletedTask;
-        public Task<(IReadOnlyList<IdentityUser> Items, int Total)> SearchAsync(string? search, string? role, bool? active, int page, int pageSize, CancellationToken ct) => throw new NotSupportedException();
+        public string? LastSortBy { get; private set; }
+        public bool LastDescending { get; private set; }
+        public Task<(IReadOnlyList<IdentityUser> Items, int Total)> SearchAsync(string? search, string? role, bool? active,
+            string sortBy, bool descending, int page, int pageSize, CancellationToken ct)
+        {
+            LastSortBy = sortBy;
+            LastDescending = descending;
+            IEnumerable<IdentityUser> query = Users;
+            if (!string.IsNullOrWhiteSpace(search))
+                query = query.Where(user => user.Email.Contains(search, StringComparison.OrdinalIgnoreCase)
+                    || user.FullName.Contains(search, StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrWhiteSpace(role)) query = query.Where(user => user.Role.Code == role);
+            if (active.HasValue) query = query.Where(user => user.IsActive == active.Value);
+            var filtered = query.ToArray();
+            query = (sortBy, descending) switch
+            {
+                ("email", false) => filtered.OrderBy(user => user.Email),
+                ("email", true) => filtered.OrderByDescending(user => user.Email),
+                ("fullname", false) => filtered.OrderBy(user => user.FullName),
+                ("fullname", true) => filtered.OrderByDescending(user => user.FullName),
+                ("role", false) => filtered.OrderBy(user => user.Role.Code),
+                ("role", true) => filtered.OrderByDescending(user => user.Role.Code),
+                ("state", false) => filtered.OrderBy(user => user.IsActive),
+                ("state", true) => filtered.OrderByDescending(user => user.IsActive),
+                ("createdat", false) => filtered.OrderBy(user => user.CreatedAt),
+                ("createdat", true) => filtered.OrderByDescending(user => user.CreatedAt),
+                ("updatedat", false) => filtered.OrderBy(user => user.UpdatedAt),
+                ("updatedat", true) => filtered.OrderByDescending(user => user.UpdatedAt),
+                _ => throw new ArgumentOutOfRangeException(nameof(sortBy))
+            };
+            return Task.FromResult(((IReadOnlyList<IdentityUser>)query.Skip((page - 1) * pageSize).Take(pageSize).ToArray(), filtered.Length));
+        }
     }
 }

@@ -40,6 +40,14 @@ try {
     Api GET 'api/v1/identity/users' $null $rnd.accessToken 403 | Out-Null
     $filtered = Api GET "api/v1/identity/users?search=$suffix&role=viewer&state=active&page=1&pageSize=1" $null $admin.accessToken
     Check ($filtered.totalCount -eq 1 -and $filtered.items[0].id -eq $viewerUser.id) 'Server search/role/state/pagination'
+    $sortedAsc = Api GET "api/v1/identity/users?search=$suffix&sortBy=email&sortDirection=asc&page=1&pageSize=10" $null $admin.accessToken
+    $ascEmails = @($sortedAsc.items | ForEach-Object email)
+    Check ($ascEmails.Count -eq 2 -and (($ascEmails -join '|') -eq (($ascEmails | Sort-Object) -join '|'))) 'Users sort email ascending before paging'
+    $sortedDesc = Api GET "api/v1/identity/users?search=$suffix&sortBy=email&sortDirection=desc&page=1&pageSize=10" $null $admin.accessToken
+    $descEmails = @($sortedDesc.items | ForEach-Object email)
+    Check (($descEmails -join '|') -eq (($ascEmails | Sort-Object -Descending) -join '|')) 'Users sort email descending before paging'
+    Api GET 'api/v1/identity/users?sortBy=unknown' $null $admin.accessToken 400 | Out-Null
+    Api GET 'api/v1/identity/users?sortDirection=sideways' $null $admin.accessToken 400 | Out-Null
 
     $units = Api GET 'api/v1/recipes/catalogs/units' $null $rnd.accessToken
     $categories = Api GET 'api/v1/recipes/ingredient-categories' $null $rnd.accessToken
@@ -70,7 +78,7 @@ try {
     $visible = Api GET "api/v1/recipes/$($recipe.id)" $null $viewer.accessToken
     Check ($visible.versionStatus -eq 'published') 'Viewer can read published SOP without assigned recipe IDs'
     Api GET "api/v1/recipes/$($draft.id)" $null $viewer.accessToken 403 | Out-Null
-    Api GET "api/v1/recipes/$([Guid]::NewGuid())" $null $viewer.accessToken 403 | Out-Null
+    Api GET "api/v1/recipes/$([Guid]::NewGuid())" $null $viewer.accessToken 404 | Out-Null
     Api POST 'api/v1/recipes/ingredients' $ingredientBody $viewer.accessToken 403 | Out-Null
 
     # A newer draft must not hide or leak into the published version for Viewer.
