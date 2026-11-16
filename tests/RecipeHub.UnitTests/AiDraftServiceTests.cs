@@ -20,6 +20,25 @@ public class AiDraftServiceTests
     }
 
     [Fact]
+    public async Task CreateStoresTrimmedDistinctOmitIngredients()
+    {
+        var repository = new FakeRepository();
+        await new AiDraftService(repository).CreateAsync(
+            new CreateAiDraftRequest("Trà", null, ["  ổi ", "", "Ổi", "dứa"]), Guid.NewGuid(), default);
+        Assert.Equal(new[] { "ổi", "dứa" }, repository.Request!.Request.OmitIngredients);
+    }
+
+    [Fact]
+    public async Task CreateRejectsMoreThanFiveOmitIngredients() =>
+        await Assert.ThrowsAsync<ValidationException>(() => new AiDraftService(new FakeRepository()).CreateAsync(
+            new CreateAiDraftRequest("Trà", null, ["a", "b", "c", "d", "e", "f"]), Guid.NewGuid(), default));
+
+    [Fact]
+    public async Task CreateRejectsOmitIngredientLongerThanSixtyChars() =>
+        await Assert.ThrowsAsync<ValidationException>(() => new AiDraftService(new FakeRepository()).CreateAsync(
+            new CreateAiDraftRequest("Trà", null, [new string('x', 61)]), Guid.NewGuid(), default));
+
+    [Fact]
     public async Task CreateStoresTrimmedNameAndDescriptionInSnapshot()
     {
         var repository = new FakeRepository();

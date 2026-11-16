@@ -18,7 +18,8 @@ internal static class AiDraftSchema
           "steps":{"type":"ARRAY","items":{"type":"OBJECT","properties":{"order":{"type":"INTEGER"},"title":{"type":"STRING"},"description":{"type":"STRING"},"duration_seconds":{"type":"INTEGER","nullable":true},"temperature_celsius":{"type":"NUMBER","nullable":true},"ingredient_codes":{"type":"ARRAY","items":{"type":"STRING"}},"equipment":{"type":"ARRAY","items":{"type":"STRING"}},"completion_criteria":{"type":"STRING"},"safety_note":{"type":"STRING","nullable":true}},"required":["order","title","description","duration_seconds","temperature_celsius","ingredient_codes","equipment","completion_criteria","safety_note"]}},
           "quality_checks":{"type":"ARRAY","items":{"type":"STRING"}},"serving_instructions":{"type":"STRING"}
         },"required":["name","description","beverage_family","serving_style","servings","estimated_total_volume_ml","yield","ingredients","steps","quality_checks","serving_instructions"]},
-        "missing_requirements":{"type":"ARRAY","items":{"type":"STRING"}}
+        "missing_requirements":{"type":"ARRAY","items":{"type":"STRING"}},
+        "missing_ingredient_names":{"type":"ARRAY","items":{"type":"STRING"}}
       },"required":["status","error_code","recipe","missing_requirements"]
     }
     """;

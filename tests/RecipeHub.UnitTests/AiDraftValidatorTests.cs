@@ -52,4 +52,30 @@ public class AiDraftValidatorTests
 
     [Fact]
     public void KnownCannotGenerateIsAccepted() => Assert.Equal("cannot_generate", AiDraftValidator.Validate("""{"status":"cannot_generate","error_code":"MISSING_CATALOG","recipe":null,"missing_requirements":["Thiếu"]}""", Request()).Outcome);
+
+    [Fact]
+    public void CannotGenerateMapsTrimmedAndCappedMissingIngredients()
+    {
+        var names = string.Join(",", Enumerable.Range(0, 10).Select(i => $"\"n{i}\"")) + $",\"  ổi  \",\"{new string('x', 80)}\",\"\"";
+        var result = AiDraftValidator.Validate($$"""{"status":"cannot_generate","error_code":"MISSING_DEFINING_INGREDIENT","recipe":null,"missing_requirements":["Thiếu"],"missing_ingredient_names":["  ổi  ","{{new string('x', 80)}}","","ổi"]}""", Request());
+        Assert.Equal(new[] { "ổi", new string('x', 60) }, MissingIngredients(result));
+
+        var many = AiDraftValidator.Validate($$"""{"status":"cannot_generate","error_code":"MISSING_DEFINING_INGREDIENT","recipe":null,"missing_requirements":["Thiếu"],"missing_ingredient_names":[{{names}}]}""", Request());
+        Assert.Equal(8, MissingIngredients(many).Length);
+    }
+
+    [Fact]
+    public void CannotGenerateWithoutNamesReturnsEmptyMissingIngredients() =>
+        Assert.Empty(MissingIngredients(AiDraftValidator.Validate("""{"status":"cannot_generate","error_code":"MISSING_CATALOG","recipe":null,"missing_requirements":["Thiếu"]}""", Request())));
+
+    [Fact]
+    public void GeneratedReturnsOmittedIngredients()
+    {
+        var draft = System.Text.Json.JsonSerializer.SerializeToElement(AiDraftValidator.Validate(Valid, Request() with { OmitIngredients = ["ổi"] }).Draft);
+        Assert.Equal(new[] { "ổi" }, draft.GetProperty("omittedIngredients").EnumerateArray().Select(x => x.GetString()).ToArray());
+    }
+
+    private static string[] MissingIngredients(AiDraftResult result) =>
+        System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(result.CannotGenerate)).RootElement
+            .GetProperty("missingIngredients").EnumerateArray().Select(x => x.GetString()!).ToArray();
 }

@@ -4,7 +4,7 @@ namespace RecipeHub.BackgroundWorker;
 
 public sealed record AiCatalogIngredient(Guid Id, string Code, string Name, string Category, string? Description, string State);
 public sealed record AiCatalogUnit(Guid Id, string Code, string Name, string State);
-public sealed record AiDraftRequest(string RecipeName, string? Description, AiCatalogIngredient[] Ingredients, AiCatalogUnit[] Units);
+public sealed record AiDraftRequest(string RecipeName, string? Description, AiCatalogIngredient[] Ingredients, AiCatalogUnit[] Units, string[]? OmitIngredients = null);
 public sealed record AiDraftResult(string Outcome, object? Draft, object? CannotGenerate);
 
 public static class AiDraftValidator
@@ -24,7 +24,7 @@ public static class AiDraftValidator
         if (status == "cannot_generate")
         {
             if (error is null || !Errors.Contains(error) || recipe.ValueKind != JsonValueKind.Null || missing.Length == 0) throw new InvalidDataException();
-            return new(status, null, new { errorCode = error, missingRequirements = missing });
+            return new(status, null, new { errorCode = error, missingRequirements = missing, missingIngredients = MissingIngredientNames(root) });
         }
         if (status != "generated" || error is not null || missing.Length != 0 || recipe.ValueKind != JsonValueKind.Object) throw new InvalidDataException();
         var family = Text(recipe, "beverage_family");
@@ -59,9 +59,16 @@ public static class AiDraftValidator
             steps.Add(new { order, title = Text(step, "title"), description = Text(step, "description"), durationSeconds = NullableInteger(step, "duration_seconds"), temperatureCelsius = NullableNumber(step, "temperature_celsius"), ingredientCodes = stepCodes, equipment = Strings(step, "equipment"), completionCriteria = Text(step, "completion_criteria"), safetyNote = NullableText(step, "safety_note") });
         }
         if (steps.Count == 0 || !codes.SetEquals(used)) throw new InvalidDataException();
-        var draft = new { name = Text(recipe, "name"), description = Text(recipe, "description"), beverageFamily = family, servingStyle = style, servings = RecipeAiDraftWorker.Servings, estimatedTotalVolumeMl = Positive(recipe, "estimated_total_volume_ml"), yield = new { quantity = Positive(yield, "quantity"), unitId = yieldUnit.Id, unitCode = yieldUnit.Code, note = NullableText(yield, "note") }, ingredients, steps, qualityChecks = Strings(recipe, "quality_checks"), servingInstructions = Text(recipe, "serving_instructions") };
+        var draft = new { name = Text(recipe, "name"), description = Text(recipe, "description"), beverageFamily = family, servingStyle = style, servings = RecipeAiDraftWorker.Servings, estimatedTotalVolumeMl = Positive(recipe, "estimated_total_volume_ml"), yield = new { quantity = Positive(yield, "quantity"), unitId = yieldUnit.Id, unitCode = yieldUnit.Code, note = NullableText(yield, "note") }, ingredients, steps, qualityChecks = Strings(recipe, "quality_checks"), servingInstructions = Text(recipe, "serving_instructions"), omittedIngredients = request.OmitIngredients ?? [] };
         return new(status, draft, null);
     }
+
+    private static string[] MissingIngredientNames(JsonElement root) =>
+        root.TryGetProperty("missing_ingredient_names", out var names) && names.ValueKind == JsonValueKind.Array
+            ? names.EnumerateArray().Where(n => n.ValueKind == JsonValueKind.String).Select(n => n.GetString()!.Trim())
+                .Where(n => n.Length > 0).Select(n => n.Length > 60 ? n[..60].TrimEnd() : n)
+                .Distinct(StringComparer.OrdinalIgnoreCase).Take(8).ToArray()
+            : [];
 
     private static AiCatalogUnit Unit(AiDraftRequest request, string code)
     {

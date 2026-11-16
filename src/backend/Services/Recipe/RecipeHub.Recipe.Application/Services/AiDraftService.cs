@@ -11,11 +11,17 @@ public sealed class AiDraftService(IAiDraftRepository repository) : IAiDraftServ
             throw new ValidationException("Tên món phải có từ 1 đến 120 ký tự.");
         if (request.Description?.Length > 1000)
             throw new ValidationException("Mô tả không được vượt quá 1000 ký tự.");
+        var omit = (request.OmitIngredients ?? []).Select(x => x?.Trim() ?? "").Where(x => x.Length > 0).ToArray();
+        if (omit.Length > 5)
+            throw new ValidationException("Chỉ được bỏ tối đa 5 nguyên liệu.");
+        if (omit.Any(x => x.Length > 60))
+            throw new ValidationException("Tên nguyên liệu cần bỏ không được vượt quá 60 ký tự.");
 
         var (ingredients, units) = await repository.GetCatalogAsync(cancellationToken);
         var jobId = Guid.NewGuid();
         await repository.EnqueueAsync(new AiDraftRequestedEvent(
-            jobId, ownerId, new AiDraftRequestSnapshot(request.RecipeName.Trim(), request.Description, ingredients, units)), cancellationToken);
+            jobId, ownerId, new AiDraftRequestSnapshot(request.RecipeName.Trim(), request.Description, ingredients, units,
+                omit.Distinct(StringComparer.OrdinalIgnoreCase).ToArray())), cancellationToken);
         return new CreateAiDraftResponse(jobId);
     }
 
