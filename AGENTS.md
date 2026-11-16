@@ -69,7 +69,7 @@ RecipeHub/
 4. **Deferred Scope (Do NOT implement unless explicitly planned):**
    - Complex formula calculation logic.
    - OAuth2 / đăng nhập liên kết; không coi luồng JWT/session hiện hữu của Identity là chưa triển khai.
-   - AI/Gemini trợ lý thiết kế công thức; không bao gồm pipeline tạo ảnh Content hiện hữu.
+   - AI/Gemini trợ lý thiết kế công thức ngoài phạm vi tạo bản nháp theo kế hoạch đã duyệt.
    - Cloudflare R2 file storage.
 5. **API Documentation (Swagger/OpenAPI):**
    - Mọi backend API service (`Api` projects) BẮT BUỘC phải tích hợp Swagger (`Swashbuckle.AspNetCore`).

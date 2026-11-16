@@ -1,0 +1,10 @@
+{"name":"01-baseline","sequence":1,"at":"2026-11-11T14:38:31.8603601+00:00","runId":"PW-20261111-PASS-143830"}
+{"name":"02-environment-ready","sequence":2,"at":"2026-11-11T14:39:09.2204376+00:00","runId":"PW-20261111-PASS-143830"}
+{"name":"03-edge-full-suite-complete","sequence":3,"at":"2026-11-11T14:42:57.5825097+00:00","runId":"PW-20261111-PASS-143830"}
+{"name":"04-admin-extended-complete","sequence":4,"at":"2026-11-11T14:43:35.2785828+00:00","runId":"PW-20261111-PASS-143830"}
+{"name":"05-chrome-compatibility-complete","sequence":5,"at":"2026-11-11T14:45:20.0216703+00:00","runId":"PW-20261111-PASS-143830"}
+{"name":"06-lifecycle-round-1-complete","sequence":6,"at":"2026-11-11T14:46:58.3511556+00:00","runId":"PW-20261111-PASS-143830"}
+{"name":"06-lifecycle-round-2-complete","sequence":7,"at":"2026-11-11T14:48:45.7041314+00:00","runId":"PW-20261111-PASS-143830"}
+{"name":"06-lifecycle-round-3-complete","sequence":8,"at":"2026-11-11T14:49:50.7084501+00:00","runId":"PW-20261111-PASS-143830"}
+{"name":"error","sequence":9,"at":"2026-11-11T14:49:55.0153482+00:00","runId":"PW-20261111-PASS-143830"}
+{"name":"07-final-summary","sequence":10.0,"runId":"PW-20261111-PASS-143830","at":"2026-11-11T14:52:33.5853278+00:00"}

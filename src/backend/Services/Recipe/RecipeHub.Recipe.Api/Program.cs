@@ -26,6 +26,8 @@ builder.WebHost.ConfigureKestrel(options =>
 
 builder.Services.AddGrpc();
 builder.Services.AddControllers();
+builder.Services.AddHttpClient();
+builder.Services.AddTransient<DescriptionSuggestion>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {

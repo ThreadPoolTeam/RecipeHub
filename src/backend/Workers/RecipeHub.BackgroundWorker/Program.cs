@@ -13,12 +13,14 @@ builder.Services.AddAuditConsumer(builder.Configuration);
 builder.Services.AddQuizInfrastructure(builder.Configuration);
 builder.Services.AddQuizApplication();
 builder.Services.AddAuditActivityPublisher(builder.Configuration);
+builder.Services.AddHttpClient();
 
 
 builder.Services.AddHostedService<StreamConsumerWorker>();
 builder.Services.AddHostedService<ContentDraftProcessingWorker>();
 builder.Services.AddHostedService<ContentDraftCleanupWorker>();
 builder.Services.AddHostedService<QuizAiGenerationWorker>();
+builder.Services.AddHostedService<RecipeAiDraftWorker>();
 
 var host = builder.Build();
 host.Run();

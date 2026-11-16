@@ -146,6 +146,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__Database=Host=postgres;Port=5432;Database=${RECIPE_DB_NAME:-recipehub_recipe};Username=${RECIPE_DB_USER:-recipe_user};Password=${RECIPE_DB_PASSWORD:-recipe_pw}
       - ConnectionStrings__Redis=redis:6379
+      - GEMINI_API_KEYS=${GEMINI_API_KEYS:-}
       - Grpc__IdentityServiceUrl=http://identity-service:5011
       - Grpc__ContentServiceUrl=http://content-service:5013
       - Cloudinary__CloudName=${CLOUDINARY_CLOUD_NAME:-}

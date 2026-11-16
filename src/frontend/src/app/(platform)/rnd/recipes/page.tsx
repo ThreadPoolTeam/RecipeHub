@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Plus, FileDown } from 'lucide-react';
+import { Plus, FileDown, Sparkles } from 'lucide-react';
 import { useDemo } from '@/lib/demo/provider';
 import { RecipeVersion, RecipeStatus } from '@/lib/demo/types';
 import { Button } from '@/components/workspace/fields';
@@ -185,6 +185,11 @@ function RecipeListContent() {
               <FileDown className="w-4 h-4 mr-1" /> Xuất PDF bộ ({selectedRecipeIds.length})
             </Button>
           )}
+          <Link href="/rnd/recipes/ai-draft">
+            <Button variant="secondary" size="sm">
+              <Sparkles className="w-4 h-4 mr-1" strokeWidth={1.5} /> Tạo bằng AI
+            </Button>
+          </Link>
           <Link href="/rnd/recipes/new">
             <Button variant="gold" size="sm">
               <Plus className="w-4 h-4 mr-1" /> Tạo công thức mới
